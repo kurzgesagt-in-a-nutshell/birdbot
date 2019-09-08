@@ -8,7 +8,7 @@ pl1='X'
 pl2='O'
 prefix = 'k!'
 bot = commands.Bot(command_prefix=prefix)
-token = 'NDcxNzA1NzE4OTU3ODAxNDgz.XN7cLw.ntikeK86SgIq58QCw4_apMPfI30'
+token = 'Insert your  owm token here '
 
 @bot.command()    
 async def board(ctx):
