@@ -1,44 +1,30 @@
 import logging
 logging.basicConfig(level=logging.INFO)
-import discord,asyncio,time,random,typing
+import discord,asyncio,time,typing,inspect
 from itertools import cycle
 from discord.ext import commands
-cboard=['1','2','3','4','5','6','7','8','9']
-pl1='X'
-pl2='O'
 prefix = 'k!'
 bot = commands.Bot(command_prefix=prefix)
-token = 'Insert your  owm token here '
+token = 'NDcxNzA1NzE4OTU3ODAxNDgz.XN7cLw.ntikeK86SgIq58QCw4_apMPfI30'
+token2='NjM5NTA4NTE3NTM0OTU3NTk5.Xb7V5Q.O3WHaQhujIDljrqEe2aiDbAex2I'
 
-@bot.command()    
-async def board(ctx):
-	embed=discord.Embed(title="{}".format("Player X:  "),description=("  {}  |  {}  |  {}  \n{}  |  {}  |  {}\n{}  |  {}  |  {}\n").format(*cboard))
-	rm=bot.get_channel(482936367043837976)
-	await rm.send(embed=embed)
 
-async def mod_admin_shuffle():
-    await bot.wait_until_ready()
-    kurz_server = bot.get_guild(414027124836532234)
-    moderators = kurz_server.get_role(414092550031278091)
-    admins = kurz_server.get_role(414029841101225985)
-    mod_admin_set=set(moderators.members+admins.members)
-    mod_admin_list=[]
-    
-    for members in mod_admin_set:
-        if members.status != discord.Status.offline:
-            mod_admin_list.append(members)
-            
-    while bot.is_ready():
-        await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.watching,name=random.choice(mod_admin_list)))
-        await asyncio.sleep(700)
-    
 
+
+@bot.event
+async def on_message(message):
+    ks = bot.get_guild(414027124836532234)
+    fm=ks.get_channel(677771290186219554)
+    if message.channel ==  fm:
+        await message.add_reaction("<:bird_yes:580164400691019826>")
+        await message.add_reaction("<:bird_no:610542174127259688>")
 
 @bot.command()
 @commands.is_owner()
-#@commands.has_any_role(414092550031278091,414029841101225985,414954904382210049)
+@commands.has_any_role(414092550031278091,414029841101225985,414954904382210049)
 async def ban(ctx,members: commands.Greedy[discord.Member],delete_messages: typing.Optional[int]=0,*,reason: str):
     for member in members:
+        await member.ban(delete_message_days=delete_messages,reason=reason)
         await member.ban(delete_message_days=delete_messages,reason=reason)
     await ctx.send("**Banned!** {} for {}".format(member,reason))
         
@@ -46,12 +32,28 @@ async def ban(ctx,members: commands.Greedy[discord.Member],delete_messages: typi
 async def ban_error(ctx,error):
     if isinstance(error,commands.MissingAnyRole):
         await ctx.send('You are not authorized to perform this action')
+
+@bot.command()
+async def filter(ctx,msg: int,*,role: str):
+    ks = bot.get_guild(414027124836532234)
+    giveaway_channel=bot.get_channel(414064220196306968)
+    threshold_role= discord.utils.get(ks.roles,name=role)
+    giveaway_message=giveaway_channel.fetch_message(msg)
+    giveaway_reaction = giveaway_message.reactions
+    users=await giveaway_message.reactions.users().flatten()
+    i=0
+    for i in users:
+        if threshold_role in i.roles:
+            pass
+        else:
+            await giveaway_message.reactions.remove(i)
     
 @bot.command()
-@commands.has_any_role(414092550031278091,414029841101225985,414954904382210049)
+@commands.has_any_role(414092550031278091,414029841101225985,414954904382210049,483132576291094528)
 async def send(ctx,channel: discord.TextChannel,*,msg):
     channel_subs = channel
     await channel.send(msg)
+    
     print("sent the following message to channel : {}\n".format(channel_subs))
     print(msg)
     
@@ -94,28 +96,65 @@ async def presence_error(ctx,error):
     if isinstance(error,commands.CheckFailure):
         await ctx.send("You are not authorized to perform this action")
 
-  
-          
-embed = discord.Embed(title="RULES",description=":one: This is the rules page. Read it.\n:two: No defamation, bullying, harassment, or any other act of the like.\n:three: No advertising\n:four: No impersonating others, especially Kurzgesagt officials.\n:five: No spam (this includes emojis and pings)\n:six: No NSFW content.\n:seven: Don’t ping mods unnecessarily.\n:eight: The admins and moderators of this server are **NOT** a part of the Kurzgesagt team, unless stated otherwise by their role.\n:nine: Do not ask admins or moderators about Kurzgesagt’s upload schedule/topic (put simply, we don’t know).\n:one::zero: Staff ultimately have the final say in how severe a punishment may be. Some crimes are worse than others.\n:one::one: Rules maybe updated and subjected to change over time, so refresh your knowledge every once in a while.\n:one::two: Once you're done reading the rules type    ```!accept``` in <#526882555174191125>",color=0x45c4ff)
-embed.set_footer(text="As of 7;45AM UTC 24th August 2019",icon_url = 'https://cdn.discordapp.com/attachments/414179142020366336/564341337315475456/gtr.png')
-embed.add_field(name="PUNISHMENT",value="**1st offense:** Warning\n**2nd offense:** 48 hour mute\n**3rd offense:** ban\nStaff have the right to deem some offenses worthy of 2 or more warnings.Leaving the server and rejoining to remove offenses on your record/get out of jail will result in a PERMANENT BAN without appeal.",inline=False)
-embed.add_field(name='REWARDS',value=':one: Those who make significant contributions to either the discord or Kurzgesagt itself are able to receive the <@&476852559311798280> role. \n:two: Donators and Patrons of Kurzgesagt (i.e., a monetary contribution) will receive the <@&415154206970740737> role.\n:three: Users who Nitro boost the server receive the<@&598031301622104095> role \n:four: Those who are not donators/Contributors, a series of colours are free for you to pick from in <#558333807548432395>',inline=False)   
-embed.set_thumbnail(url='https://cdn.discordapp.com/attachments/522777063376158760/569234678540926997/orbit.gif')
 
-#rolemenu=discord.Embed(title="React to get a role",description="\n:regional_indicator_v:**:Violet Bird**\n\n:regional_indicator_p:**: Pink Bird**\n\n:regional_indicator_b:**: Blue Bird**\n\n:regional_indicator_g:**: Green Bird**\n\n:regional_indicator_y:**: Yellow Bird**\n\n:regional_indicator_o:**: Orange Bird**\n\n:regional_indicator_r:**: Red Bird**\n\n",color=0x45c4ff)
-#rolemenu.set_thumbnail(url='https://cdn.discordapp.com/attachments/522777063376158760/569239529148645376/bird.gif')
-
-#welcome_menu=discord.Embed(title="React to get a role",description="<:welcome_bird:588032757133869097> : The <@&584461501109108738> role, you will be pinged in <#526882555174191125> every time someone joins.",color=0x45c4ff)
-#welcome_menu.set_thumbnail(url='https://cdn.discordapp.com/emojis/588032757133869097.png')
+linklist=['http://kurzgesagt.org/','https://www.youtube.com/user/Kurzgesagt','https://www.youtube.com/user/KurzgesagtDE','https://www.patreon.com/Kurzgesagt','https://www.reddit.com/r/kurzgesagt/','https://twitter.com/Kurz_Gesagt','https://www.instagram.com/kurz_gesagt/','https://www.facebook.com/Kurzgesagt/','https://www.behance.net/kurzgesagt','https://soundcloud.com/epicmountain','https://open.spotify.com/artist/7meq0SFt3BxWzjbt5EVBbT?si=y0-yrHExQJKtCLc1WHaQ8A','https://discord.gg/cB7ycdv']
 
 
+@bot.command(name='eval', pass_context=True)
+@commands.is_owner()
+async def eval_(ctx, *, command):
+    res = eval(command)
+    if inspect.isawaitable(res):
+        await ctx.send(await res)
+        await ctx.message.add_reaction('\U00002705')
+    else:
+        await ctx.send(res)
+        
+@eval_.error
+async def eval_error(ctx,error):
+    if isinstance(error,commands.CheckFailure):
+        await ctx.send("Y u tryna run an owner only command?")
+
+
+            
+    
+# async def my_background_task():
+    # await bot.wait_until_ready()
+    # counter = 0
+    # ks = bot.get_guild(414027124836532234)
+    
+    # banner_list=[]
+    # for i in range(1,16):
+             
+         # with open("/home/pi/Pictures/kimages/{}.png".format(i), "rb") as image:
+            # f = image.read()
+            # b = bytearray(f)
+            # banner_list.append(b)
+    # print(len(banner_list))
+   
+    # while not bot.is_closed():
+        # if counter>15:
+            # counter=0
+        # await ks.edit(banner=banner_list[counter])
+        # counter = counter + 1
+        
+        # print('Changed Banner to ',counter)
+        # await asyncio.sleep(1800) 
+        
 @bot.event
 async def on_ready():
- print("working...")
- print(round(bot.latency*1000,3))
+ ks = bot.get_guild(414027124836532234)
+ jk=bot.get_guild(482936367043837972)
  await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.listening,name="to Steve's voice"))
+ 
+ 
+ 
+ 
+  
+     
  #announcement_channel=bot.get_channel(414064220196306968)
- #await announcement_channel.send(embed=temp_announcement)
+ #msg= await announcement_channel.fetch_message(623541883825553450)
+ #await msg.edit(content='<:bird_thonk:606149684922155018>',embed=temp_announcement2)
  #rm=bot.get_channel(558333807548432395)
  #await rm.send(embed=welcome_menu)
  #rulech=bot.get_channel(414268041787080708)
@@ -124,7 +163,13 @@ async def on_ready():
 
 
 
-
-taskobj=bot.loop.create_task(mod_admin_shuffle())
-
-bot.run(token)
+ # i=0
+ # for i in ks.features:
+    # print(i)
+    # if i == 'BANNER':
+        # bot.loop.create_task(my_background_task())
+        # print('Shuffling banners')
+        
+    # else:
+        # print('Banner shuffle disabled')
+bot.run(token2)
