@@ -6,7 +6,11 @@ from discord.ext import commands
 prefix = 'k!'
 bot = commands.Bot(command_prefix=prefix)
 token = 'NDcxNzA1NzE4OTU3ODAxNDgz.XN7cLw.ntikeK86SgIq58QCw4_apMPfI30'
+<<<<<<< HEAD
 token2='NjM5NTA4NTE3NTM0OTU3NTk5.Xn4Wgg.BLKvrblu-10X-GSG7rQIyqoAM0I'
+=======
+token2='NjM5NTA4NTE3NTM0OTU3NTk5.Xb7V5Q.O3WHaQhujIDljrqEe2aiDbAex2I'
+>>>>>>> f8205c6341d78643db977372189bd083316cbb41
 
 
 
@@ -142,11 +146,19 @@ async def eval_error(ctx,error):
         # await asyncio.sleep(1800) 
         
 @bot.event
+<<<<<<< HEAD
 async def on_ready(): 
  print("working")
  ks = bot.get_guild(414027124836532234)
  jk=bot.get_guild(482936367043837972)
 
+=======
+async def on_ready():
+ ks = bot.get_guild(414027124836532234)
+ jk=bot.get_guild(482936367043837972)
+ await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.listening,name="to Steve's voice"))
+ 
+>>>>>>> f8205c6341d78643db977372189bd083316cbb41
  
  
  
