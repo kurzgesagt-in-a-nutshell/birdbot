@@ -14,8 +14,8 @@ time.sleep(5)
 
 
 config = json.load(open('config.json'))
-bot = commands.AutoShardedBot(
-    command_prefix=get_prefix, owners=config["owners"],
+bot = commands.AutoShardedBot(command_prefix='k!',
+    owners=config["owners"],
     case_insensitive=True)
 loaded = []
 notloaded = {}
