@@ -10,7 +10,7 @@ class Management(commands.Cog, name='Management'):
     async def on_ready(self):
         print('loaded management')
     
-    @commands.has_any_role('Galacduck', 'Administrator', 'Moderator')
+    @commands.has_any_role('Kurz Temp Access', 'Administrator', 'Moderator')
     @commands.command()
     async def send(self, ctx, channel, *, string):
         msgchannel = discord.utils.get(self.bot.get_guild(414027124836532234).channels, name=channel)
