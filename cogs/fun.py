@@ -1,3 +1,5 @@
+import re
+
 import discord
 from discord.ext import commands
 
@@ -13,7 +15,7 @@ class Fun(commands.Cog, name='Fun'):
     @commands.command()
     async def clap(self, ctx, *, clap):
         """Replaces spaces with :clap:"""
-        claps = clap.replace(" ", " :clap: ")
+        claps = re.sub(' +', ' ', clap).replace(" ", " :clap: ")
         await self.bot.get_channel(414452106129571842).send(claps)
 
 def setup(bot):
