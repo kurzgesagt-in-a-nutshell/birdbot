@@ -10,12 +10,6 @@ class Management(commands.Cog, name='Management'):
     async def on_ready(self):
         print('loaded management')
 
-    @commands.command()
-    async def clap(self, ctx, *, clap):
-        """Replaces spaces with :clap:"""
-        claps = clap.replace(" ", " :clap: ")
-        await get_channel(414452106129571842).send(claps)
-
     @commands.has_any_role('Kurz Temp Access', 'Administrator', 'Moderator')
     @commands.command()
     async def send(self, ctx, channel, *, string):
