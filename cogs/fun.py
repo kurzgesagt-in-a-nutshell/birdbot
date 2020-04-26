@@ -9,11 +9,12 @@ class Fun(commands.Cog, name='Fun'):
     async def on_ready(self):
         print('loaded fun')
 
+    @commands.guild_only()
     @commands.command()
     async def clap(self, ctx, *, clap):
         """Replaces spaces with :clap:"""
         claps = clap.replace(" ", " :clap: ")
-        await get_channel(414452106129571842).send(claps)
+        await self.bot.get_channel(414452106129571842).send(claps)
 
 def setup(bot):
     bot.add_cog(Fun(bot))
