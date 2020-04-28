@@ -48,12 +48,11 @@ for filename in os.listdir('./cogs'):
         else:
             loaded.append(f'cogs.{filename[:-3]}')
 
-async​ ​def​ ​on_command_error​(​self​, ​ctx​, ​err​):
-        traceback_text ​=​ ​'​'​.join(
-            TracebackException.from_exception(err).format())
-        server ​=​ ​self​.bot.get_guild(​414027124836532234​)
-        channel ​=​ server.get_channel(​414179142020366336)
-        await.channel.send(traceback_text)
+#async​ ​def​ ​on_command_error​(​self​, ​ctx​, ​err​):
+#    traceback_text ​=​ ​'​'​.join(TracebackException.from_exception(err).format())
+#    server ​=​ ​self​.bot.get_guild(​414027124836532234​)
+#    channel ​=​ server.get_channel(​414179142020366336)
+#    await.channel.send(traceback_text)
 
 
 
