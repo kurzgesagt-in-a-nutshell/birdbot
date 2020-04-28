@@ -10,6 +10,25 @@ class Management(commands.Cog, name='Management'):
     async def on_ready(self):
         print('loaded management')
 
+    @commands.guild_only()
+    @commands.command()
+    async def emojis(self, ctx):
+        """Shows a list of emojis"""
+        emojilist = []
+        for i in ctx.guild.emojis:
+            emojilist.append(i.name)
+        await ctx.send(str(emojilist))
+
+    @commands.guild_only()
+    @commands.command()
+    async def roles(self, ctx):
+        """Prints a list roles"""
+        rolelist = []
+        for i in ctx.guild.roles:
+            rolelist.append(f'{i.name} : {i.color}')
+        embed = discord.Embed(title = f"{ctx.guild}'s Roles", description = ("\n".join(rolelist)))
+        await ctx.send(embed = embed)
+
     @commands.has_any_role('Kurz Temp Access', 'Administrator', 'Moderator')
     @commands.command()
     async def send(self, ctx, channel, *, string):
