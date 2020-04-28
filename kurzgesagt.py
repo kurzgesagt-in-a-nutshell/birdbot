@@ -35,8 +35,7 @@ async def on_ready():
                                f'{round(time.time()-float(par[1])-5, 4)} '
                                f'seconds (5 seconds buffer.)')
         os.remove('__tmp_restart__.tmp')
-    await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.listening,
-                                                        name="to Steve's voice" ))
+    await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name="to Steve's voice" ))
 
 for filename in os.listdir('./cogs'):
     if filename.endswith('.py'):
@@ -49,6 +48,12 @@ for filename in os.listdir('./cogs'):
         else:
             loaded.append(f'cogs.{filename[:-3]}')
 
+async​ ​def​ ​on_command_error​(​self​, ​ctx​, ​err​):
+        traceback_text ​=​ ​'​'​.join(
+            TracebackException.from_exception(err).format())
+        server ​=​ ​self​.bot.get_guild(​414027124836532234​)
+        channel ​=​ server.get_channel(​414179142020366336)
+        await.channel.send(traceback_text)
 
 
 
