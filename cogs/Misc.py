@@ -34,6 +34,8 @@ class Misc(commands.Cog, name='Fun'):
         countrys = json.load(open('countries.json'))
         country = countrys[data["sys"]["country"]]
         embed = discord.Embed(title = f"{data['name']}, {country}'s weather")
+        if data['name'] == country:
+            embed = discord.Embed(title = f"{country}'s weather")
         val = f"{round(data['main']['temp']-273,1)} °C"
         val2 = f"{round(data['main']['feels_like']-273,1)} °C"
         if units.lower() == 'f':
