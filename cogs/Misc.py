@@ -1,6 +1,5 @@
 import re
 import requests
-from typing import Optional
 import json
 
 import discord
@@ -11,7 +10,7 @@ class Misc(commands.Cog, name='Fun'):
         self.bot = bot    
 
     def is_botcommands(ctx):
-        return ctx.message.channel.id == 414452106129571842
+        return ctx.message.channel.id == 414452106129571842 or ctx.message.channel.id == 414179142020366336
 
     @commands.Cog.listener()
     async def on_ready(self):
@@ -26,7 +25,7 @@ class Misc(commands.Cog, name='Fun'):
 
     @commands.check(is_botcommands)
     @commands.command()
-    async def weather(self, ctx, city, units: Optional[str] = 'C'):
+    async def weather(self, ctx, *, city):
         """Shows weather in a city"""
         link = 'http://api.openweathermap.org/data/2.5/weather?appid=3c3fdfdd08d48ebb5a66a27e376a719f&q='
         adr = link + city.replace(" ", "%20")
@@ -36,13 +35,12 @@ class Misc(commands.Cog, name='Fun'):
         embed = discord.Embed(title = f"{data['name']}, {country}'s weather")
         if data['name'] == country:
             embed = discord.Embed(title = f"{country}'s weather")
-        val = f"{round(data['main']['temp']-273,1)} °C"
-        val2 = f"{round(data['main']['feels_like']-273,1)} °C"
-        if units.lower() == 'f':
-            val = f"{round((data['main']['temp']-273-32)/1.8,1)} °F"
-            val2 = f"{round((data['main']['feels_like']-273-32)/1.8,1)} °F"
-        embed.add_field(name = "Temperature", value = val)
-        embed.add_field(name = "Feels like", value = val2)
+        valc = f"{round(data['main']['temp']-273,1)} °C"
+        valc2 = f"{round(data['main']['feels_like']-273,1)} °C"
+        valf = f"{round((data['main']['temp']-273-32)/1.8,1)} °F"
+        valf2 = f"{round((data['main']['feels_like']-273-32)/1.8,1)} °F"
+        embed.add_field(name = "Temperature", value = valc + "\n" + valf)
+        embed.add_field(name = "Feels like", value = valc2 + "\n" + valf2)
         embed.add_field(name = "Humidity", value = f"{data['main']['humidity']} %")
         embed.add_field(name = "Weather description", value = data['weather'][0]['description'])
         await ctx.send(embed = embed)
