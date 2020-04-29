@@ -14,10 +14,20 @@ class Management(commands.Cog, name='Management'):
     @commands.command()
     async def emojis(self, ctx):
         """Shows a list of emojis"""
-        emojilist = []
-        for i in ctx.guild.emojis:
-            emojilist.append(i.name)
-        await ctx.send(str(emojilist))
+        desc=""
+        embed = discord.Embed(title = f"{ctx.guild}'s Emojis")
+        emojis = ctx.guild.emojis
+        length=0
+        for i in range(len(emojis)):
+            length+=len(str(emojis[i]))+len(str(emojis[i].name))+2
+            if length < 1000:
+                desc += f"{emojis[i].name}: {str(emojis[i])}\n"
+            else:
+                embed.add_field(name="​", value = desc)
+                desc=""
+                length=0
+        embed.add_field(name="​", value = desc)
+        await ctx.send(embed=embed)
 
     @commands.guild_only()
     @commands.command()
