@@ -132,9 +132,9 @@ class Owner(commands.Cog, name="Owner", command_attrs=dict(hidden=True)):
     @commands.command(hidden=True, aliases=['reboot', 'reload'])
     async def restart(self, ctx):
         """Restart the bot instance."""
-        m = await ctx.send('<a:cypherspin:700826407554646038> Restarting')
-        _ = Popen(["python3", 'main.py'])
-        await m.edit(content='<a:cypherspin:700826407554646038> Started new python instance.')
+        m = await ctx.send('Restarting')
+        _ = Popen(["python3", 'kurzgesagt.py'])
+        await m.edit(content='Started new python instance.')
         with open('__tmp_restart__.tmp', 'w+') as f:
             f.write(f'{ctx.channel.id},{time.time()}')
         await ctx.bot.close()
