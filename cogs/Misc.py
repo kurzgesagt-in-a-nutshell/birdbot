@@ -26,7 +26,7 @@ class Misc(commands.Cog, name='Fun'):
 
     @commands.check(is_botcommands)
     @commands.command()
-    async def weather(self, ctx, *, city, units: Optional[str] = 'C'):
+    async def weather(self, ctx, city, units: Optional[str] = 'C'):
         """Shows weather in a city"""
         link = 'http://api.openweathermap.org/data/2.5/weather?appid=3c3fdfdd08d48ebb5a66a27e376a719f&q='
         adr = link + city.replace(" ", "%20")

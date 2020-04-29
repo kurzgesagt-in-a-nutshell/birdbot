@@ -36,7 +36,6 @@ async def on_ready():
                                f'seconds (5 seconds buffer.)')
         os.remove('__tmp_restart__.tmp')
     await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name="to Steve's voice" ))
-    bot.remove_command('help')
 
 for filename in os.listdir('./cogs'):
     if filename.endswith('.py'):
