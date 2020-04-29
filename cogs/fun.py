@@ -9,22 +9,27 @@ from discord.ext import commands
 class Fun(commands.Cog, name='Fun'):
     def __init__(self, bot):
         self.bot = bot    
-    
+
+    def is_botcommands(ctx):
+        return ctx.message.channel.id == 414452106129571842
+
     @commands.Cog.listener()
     async def on_ready(self):
         print('loaded fun')
 
+    @commands.check(is_botcommands)
     @commands.command()
     async def clap(self, ctx, *, clap):
         """Replaces spaces with :clap:"""
         claps = ":clap: " + re.sub(' +', ' ', clap).replace(" ", " :clap: ") + " :clap:"
         await ctx.send(claps)
 
+    @commands.check(is_botcommands)
     @commands.command()
     async def weather(self, ctx, *, city, units: Optional[str] = 'C'):
         """Shows weather in a city"""
         link=' http://api.openweathermap.org/data/2.5/weather?appid=3c3fdfdd08d48ebb5a66a27e376a719f&q='
-        adr = link + city
+        adr = link + city.replace(" ", "%20")
         data = requests.get(adr).json()
         countrys = json.load(open('countries.json'))
         country = countrys[data["sys"]["country"]]
