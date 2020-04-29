@@ -121,6 +121,23 @@ class Owner(commands.Cog, name="Owner", command_attrs=dict(hidden=True)):
             else:
                 self._last_result = ret
                 await ctx.send(f'```py\n{value}{ret}\n```')
+            
+    @commands.command(aliases=['pull'])
+    async def gitpull(self, ctx):
+        """Updates the local code from github"""
+        m = await ctx.send('Pulling repository')
+        run(['git', 'pull'])
+        await m.edit(content='Assuming you do not have any conflicts, the local repo is now updated to '
+                             'the branch the local repo was in.')
+    @commands.command(hidden=True, aliases=['reboot', 'reload'])
+    async def restart(self, ctx):
+        """Restart the bot instance."""
+        m = await ctx.send('<a:cypherspin:700826407554646038> Restarting')
+        _ = Popen(["python3", 'main.py'])
+        await m.edit(content='<a:cypherspin:700826407554646038> Started new python instance.')
+        with open('__tmp_restart__.tmp', 'w+') as f:
+            f.write(f'{ctx.channel.id},{time.time()}')
+        await ctx.bot.close()
                 
 def setup(bot):
     bot.add_cog(Owner(bot))
