@@ -31,7 +31,7 @@ async def on_ready():
         with open('__tmp_restart__.tmp') as f:
             par = f.read().split(',')
             channel = await bot.fetch_channel(par[0])
-            await channel.send(f'<:boolyes:700827341659701248> Successfully reloaded. Took '
+            await channel.send(f'<Successfully reloaded. Took '
                                f'{round(time.time()-float(par[1])-5, 4)} '
                                f'seconds (5 seconds buffer.)')
         os.remove('__tmp_restart__.tmp')
