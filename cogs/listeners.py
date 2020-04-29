@@ -42,7 +42,7 @@ class Errors(commands.Cog):
                 return
             else:
                 embed = discord.Embed(
-                    color=0xfa7e8f, description=f"There was an unhandled exception that occured. If the issue persists please head to our support server at [this link](https://discord.gg/7rkQ6re)")
+                    color=0xfa7e8f, description=f"Unhandled exception.")
                 await ctx.send(embed=embed)
                 await channel.send(err)
         elif isinstance(err, errors.CheckFailure) or isinstance(err, errors.MissingPermissions):
