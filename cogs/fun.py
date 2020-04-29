@@ -28,12 +28,14 @@ class Fun(commands.Cog, name='Fun'):
     @commands.command()
     async def weather(self, ctx, *, city, units: Optional[str] = 'C'):
         """Shows weather in a city"""
-        link=' http://api.openweathermap.org/data/2.5/weather?appid=3c3fdfdd08d48ebb5a66a27e376a719f&q='
+        link = 'http://api.openweathermap.org/data/2.5/weather?appid=3c3fdfdd08d48ebb5a66a27e376a719f&q='
         adr = link + city.replace(" ", "%20")
         data = requests.get(adr).json()
         countrys = json.load(open('countries.json'))
         country = countrys[data["sys"]["country"]]
-        embed = discord.Embed(title = f"{city.title()}, {country}'s weather")
+        embed = discord.Embed(title = f"{data['name']}, {country}'s weather")
+        if data["name"] == country:
+            embed = discord.Embed(title = f"{country}'s weather")
         val = f"{round(data['main']['temp']-273,1)} °C"
         val2 = f"{round(data['main']['feels_like']-273,1)} °C"
         if units.lower() == 'f':
