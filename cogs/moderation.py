@@ -21,7 +21,7 @@ class Moderation(commands.Cog, name='Moderation'):
         if ctx.author.top_role < member.top_role:
             return await ctx.send("Your role isn't high enough to complete that action.")
         await member.ban(reason=reason)
-        await ctx.send(f"<:zac:699895809331953705> **Banned {member} for reason** `{reason}`.")
+        await ctx.send(f"**Banned {member} for reason** `{reason}`.")
 
     @commands.command()
     @commands.has_guild_permissions(kick_members=True)
@@ -49,7 +49,7 @@ class Moderation(commands.Cog, name='Moderation'):
             except Exception as e:
                 await ctx.send(f'Cannot unban user {member.mention} ({member})')
                 print(traceback.TracebackException.from_exception(e).format())
-            await ctx.channel.send(f'Successfully unbanned {member.mention}')
+            await ctx.channel.send(f'Unbanned {member.mention}')
 
     @commands.group(aliases=['purge'])
     @commands.guild_only()
@@ -75,7 +75,7 @@ class Moderation(commands.Cog, name='Moderation'):
         try:
             deleted = await ctx.channel.purge(limit=limit, before=before, after=after, check=predicate)
         except discord.Forbidden:
-            embed = discord.Embed(color=0xfa7e8f, description="I do not have the right permissions to perform this command. Please make sure `Manage Messages` is enabled.")
+            embed = discord.Embed(color=0xfa7e8f, description="Permission Error")
             return await ctx.send(embed=embed)
         except discord.HTTPException as e:
             embed = discord.Embed(color=0xfa7e8f, description=f"IError: {e} (try a smaller search?)")
@@ -84,7 +84,7 @@ class Moderation(commands.Cog, name='Moderation'):
         deleted = len(deleted)
         if message is True:
             plural = "" if deleted == 1 else "s"
-            embed = discord.Embed(colour=0xc3fa7e, description=f"Successfully cleaned `{deleted}` message{plural}!")
+            embed = discord.Embed(colour=0xc3fa7e, description=f"Cleaned `{deleted}` message{plural}!")
 
             embed.set_footer(text=f"Cleaned by {ctx.author}", icon_url=ctx.author.avatar_url)
 
@@ -174,7 +174,7 @@ class Moderation(commands.Cog, name='Moderation'):
                 await message.clear_reactions()
 
         plural = "" if total_reactions == 1 else "s"
-        embed = discord.Embed(colour=0xc3fa7e, description=f"Successfully cleaned `{total_reactions}` message{plural}!")
+        embed = discord.Embed(colour=0xc3fa7e, description=f"Cleaned `{total_reactions}` message{plural}!")
 
         embed.set_footer(text=f"Cleaned by {ctx.author}", icon_url=ctx.author.avatar_url)
 
@@ -183,7 +183,7 @@ class Moderation(commands.Cog, name='Moderation'):
         plural = "" if total_reactions == 1 else "s"
         embed = discord.Embed(colour=0xc3fa7e, description=f"Successfully cleaned `{total_reactions}` message{plural}!")
 
-        embed.set_footer(text=f"This message will be deleted in 5 seconds", icon_url=ctx.author.avatar_url)
+        embed.set_footer(text=f"Clearing in 5s", icon_url=ctx.author.avatar_url)
 
         await ctx.send(embed=embed, delete_after = 5)
 
@@ -290,15 +290,10 @@ class Moderation(commands.Cog, name='Moderation'):
     async def createrole(self, ctx, *, role_name: str):
         """Create a role in the server.
         Example: createrole dumb role"""
-        await ctx.guild.create_role(name=role_name, reason=f'Responsible user: {ctx.author}')
+        await ctx.guild.create_role(name=role_name, reason=f'By user: {ctx.author}')
         embed = discord.Embed(
-            color=0xc3fa7e, description=f"Added a new role called `{role_name}`")
+            color=0xc3fa7e, description=f"Added `{role_name}`")
         await ctx.send(embed=embed)
-
-    # @commands.Cog.listener()
-    # async def on_message(self, message):
-    #     if 'cooli' in message.content.lower() or message.author.name == 'Dragonic' or message.author.name == 'Cooli':
-    #         await message.delete()
 
 
 def setup(bot):
