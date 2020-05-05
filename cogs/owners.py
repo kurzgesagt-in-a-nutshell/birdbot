@@ -138,6 +138,10 @@ class Owner(commands.Cog, name="Owner", command_attrs=dict(hidden=True)):
         with open('__tmp_restart__.tmp', 'w+') as f:
             f.write(f'{ctx.channel.id},{time.time()}')
         await ctx.bot.close()
+
+    @commands.command()
+    async def ping(self, ctx):
+        await ctx.send(f"{int(round(self.bot.latency, 3)*1000)}ms")
                 
 def setup(bot):
     bot.add_cog(Owner(bot))
