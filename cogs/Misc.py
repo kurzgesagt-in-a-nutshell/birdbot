@@ -44,6 +44,10 @@ class Misc(commands.Cog, name='Fun'):
         embed.add_field(name = "Humidity", value = f"{data['main']['humidity']} %")
         embed.add_field(name = "Weather description", value = data['weather'][0]['description'])
         await ctx.send(embed = embed)
+    
+    @commands.command()
+    async def chem(self, ctx, chem):
+        print("gotit")
 
 def setup(bot):
     bot.add_cog(Misc(bot))
