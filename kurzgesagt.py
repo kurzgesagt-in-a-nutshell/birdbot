@@ -13,7 +13,7 @@ from discord.ext import commands
 from enum import Enum
 import logging
 
-logging.basicConfig(level=logging.INFO)
+#logging.basicConfig(level=logging.INFO)
 
 print("Hello!\nDelaying bot for (kinda) successful server creation.")
 time.sleep(5)
@@ -43,7 +43,7 @@ async def on_ready():
         os.remove('__tmp_restart__.tmp')
     await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name="to Steve's voice" ))
 
-    class FlagsEnum(Enum):
+    '''class FlagsEnum(Enum):
         EMPLOYEE = 1
         PARTNER = 2
         HYPESQUAD_EVENTS = 4
@@ -75,8 +75,7 @@ async def on_ready():
         if "EMPLOYEE" in badges:
             await bot.get_channel(414179142020366336).send(f'{member.name} : Employee')
         if "BUG_HUNTER" in badges:
-            await bot.get_channel(414179142020366336).send(f'{member.name} : BH')
-    print(type(bot.get_guild(414027124836532234).members))
+            await bot.get_channel(414179142020366336).send(f'{member.name} : BH')'''
 
 for filename in os.listdir('./cogs'):
     if filename.endswith('.py'):
