@@ -12,7 +12,7 @@ class Bot(commands.AutoShardedBot):
 
     def __init__(self):
         bot = commands.Bot(command_prefix='k!',owner_ids={389718094270038018,183092910495891467,424843380342784011})
-        super().__init__(command_prefix="k!",case_insensitive=True,)
+        super().__init__(command_prefix="k!",case_insensitive=True)
         self.starttime = time.time()
         cogs = []
         fails = {}
