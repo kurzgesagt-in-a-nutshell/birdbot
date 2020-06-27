@@ -14,6 +14,7 @@ class Bot(commands.AutoShardedBot):
         bot = commands.Bot(command_prefix='k!',owner_ids={389718094270038018,183092910495891467,424843380342784011})
         super().__init__(command_prefix="k!",case_insensitive=True)
         self.starttime = time.time()
+        self.logger = logging.getLogger('worker')
         cogs = []
         fails = {}
         for i in cogs:
