@@ -3,6 +3,8 @@ import logging
 import discord
 from discord.ext import commands
 
+from discord.utils import get
+
 from discord.message import Embed
 
 
@@ -28,6 +30,8 @@ class Moderation(commands.Cog):
 
         else:
             await ctx.channel.purge(limit=msg_count+1)
+            logging_channel = get(ctx.guild.channels, id=543884016282239006)
+            
 
 
 def setup(bot):
