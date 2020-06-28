@@ -23,7 +23,7 @@ class Moderation(commands.Cog):
     async def clean(self, ctx, msg_count: int=None):
         """ Clean messages """
         if msg_count is None:
-            await ctx.send(f' ***Enter number of messages*** (k!clean message_count) ')
+            await ctx.send(f' **Enter number of messages** (k!clean message_count) ')
         
         elif msg_count > 200:
             await ctx.send(f'Provided number is too big. (Max limit 200)')
@@ -31,6 +31,12 @@ class Moderation(commands.Cog):
         else:
             await ctx.channel.purge(limit=msg_count+1)
             logging_channel = get(ctx.guild.channels, id=543884016282239006)
+
+            embed = Embed(title=f'**{ msg_count } message(s) deleted**', description="")
+            embed.add_field(name='Deleted By ', value=f'Name : { ctx.author.name }#{ ctx.author.discriminator } \n ID: { ctx.author.id }')
+            embed.add_field(name='Channel ', value=f'<#{ ctx.channel.id }>')
+
+            await logging_channel.send(embed=embed)
             
 
 
