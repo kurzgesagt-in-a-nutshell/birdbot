@@ -144,3 +144,5 @@ prefixes.json
 
 # Unneccessary files 
 helpers.ipynb
+*.swp
+*.swo
