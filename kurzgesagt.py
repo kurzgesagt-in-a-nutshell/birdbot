@@ -2,9 +2,19 @@ import time
 import os
 import logging
 import discord
-from discord.ext import commands
-logging.basicConfig(level=logging.INFO)
 
+from loglevels import setup as llsetup
+from rich.logging import RichHandler
+from discord.ext import commands
+
+llsetup()
+
+logging.basicConfig(
+        format = "%(message)s",
+        level = logging.INFO,
+        handlers = [RichHandler()]
+        )
+logger = logging.getLogger(__name__)
 print("Delaying bot for server creation")
 time.sleep(5)
 class Bot(commands.AutoShardedBot):
@@ -14,15 +24,14 @@ class Bot(commands.AutoShardedBot):
         bot = commands.Bot(command_prefix='k!',owner_ids={389718094270038018,183092910495891467,424843380342784011})
         super().__init__(command_prefix="k!",case_insensitive=True)
         self.starttime = time.time()
-        self.logger = logging.getLogger('worker')
         cogs = ['cogs.moderation']
         fails = {}
         for i in cogs:
             try:
                 super().load_extension(i)
-                self.logger.info(f'Loading {i}')
+                logger.info(f'Loading {i}')
             except Exception as e:
-                self.logger.exception('Exception at {i}')
+                logger.exception('Exception at {i}')
                 fails[i] = e
 
         async def on_ready(self):
