@@ -15,14 +15,14 @@ class Bot(commands.AutoShardedBot):
         super().__init__(command_prefix="k!",case_insensitive=True)
         self.starttime = time.time()
         self.logger = logging.getLogger('worker')
-        cogs = []
+        cogs = ['cogs.moderation']
         fails = {}
         for i in cogs:
             try:
                 super().load_extension(i)
-                logger.info(f'Loading {i}')
+                self.logger.info(f'Loading {i}')
             except Exception as e:
-                logger.exception('Exception at {i}')
+                self.logger.exception('Exception at {i}')
                 fails[i] = e
 
         async def on_ready(self):
@@ -37,4 +37,6 @@ class Bot(commands.AutoShardedBot):
 
 with open('token.txt') as tokenfile:
     token = tokenfile.read()
+
+
 Bot().run(token)
