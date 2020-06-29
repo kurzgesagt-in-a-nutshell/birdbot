@@ -37,9 +37,24 @@ class Moderation(commands.Cog):
         elif msg_count > 200:
             await ctx.send(f'Provided number is too big. (Max limit 200)')
 
+        elif msg_count == 0:
+            await ctx.channel.purge(limit=1)
+
+        elif msg_count == 1:
+            msg = await ctx.channel.purge(limit=2)
+
+            logging_channel = get(ctx.guild.channels, id=self.logging_channel)
+
+            embed = Embed(title=f'**1 message deleted**', description="", color=0xff0000)
+            embed.add_field(name='Deleted By ', value=f'{ ctx.author.name }#{ ctx.author.discriminator } \n({ ctx.author.id })')
+            embed.add_field(name='Channel ', value=f'<#{ ctx.channel.id }>')
+            embed.add_field(name='Message ', value=f'```Content: { msg[-1].content } \nSender: { msg[-1].author } \nTime: { msg[-1].created_at } \nID: { msg[-1].id }```', inline=False)
+
+            await logging_channel.send(embed=embed)
+            
+
         else:
             deleted_msgs = await ctx.channel.purge(limit=msg_count+1)
-
 
             try:
                 haste_data = "Author (ID)".ljust(50) + " | " + "Message Creation Time (UTC)".ljust(30) + " | " + "Content" + "\n\n"
