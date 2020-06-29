@@ -30,8 +30,7 @@ class Dev(commands.Cog):
 
     @commands.group(hidden=True)
     async def activity(self, ctx):
-        """Sets the bots status
-        """
+        """Sets the bots status"""
         await ctx.send_help(str(ctx.command))
 
     async def change_activity(self, ctx, activity):
