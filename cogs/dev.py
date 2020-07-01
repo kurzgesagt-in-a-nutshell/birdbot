@@ -43,7 +43,7 @@ class Dev(commands.Cog):
     @commands.group(hidden=True)
     async def activity(self, ctx):
         """Sets the bots status"""
-        await ctx.send_help(str(ctx.command))
+        pass
 
     async def change_activity(self, ctx, activity):
         await ctx.bot.change_presence(status=ctx.guild.me.status, activity=activity)
