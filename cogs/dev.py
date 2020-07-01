@@ -1,4 +1,16 @@
+import io
+import copy
+import math
+import json
+import time
+import asyncio
+import inspect
 import logging
+import textwrap
+import traceback
+from typing import Optional
+from contextlib import redirect_stdout
+from subprocess import PIPE, STDOUT, Popen, run
 
 import discord
 from discord.ext import commands
@@ -56,9 +68,9 @@ class Dev(commands.Cog):
         game = discord.Activity(name=text, type=discord.ActivityType.playing)
         await self.change_activity(ctx, game)
 
-
+    @commands.is_owner()
     @commands.command(pass_context=True, name='eval')
-    async def _eval(self, ctx, *, body: str):
+    async def eval(self, ctx, *, body: str):
         """Evaluates a code"""
 
         env = {
@@ -70,8 +82,7 @@ class Dev(commands.Cog):
             'message': ctx.message,
             'self': self,
             'math': math,
-            '_': self._last_result
-        }
+         }
 
         env.update(globals())
 
