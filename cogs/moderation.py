@@ -6,10 +6,7 @@ from datetime import datetime
 from hastebin_client.utils import *
 
 import discord
-from discord.member import Member
 from discord.ext import commands
-from discord.utils import get
-from discord.message import Embed
 
 
 class Moderation(commands.Cog):
@@ -30,7 +27,7 @@ class Moderation(commands.Cog):
     
     @commands.command(aliases=['purge'])
     @commands.has_guild_permissions(manage_messages=True)
-    async def clean(self, ctx, msg_count: int = None, member:Member = None):
+    async def clean(self, ctx, msg_count: int = None, member: discord.Member = None):
         """ Clean messages """
         if msg_count is None:
             await ctx.send(f' **Enter number of messages** (k!clean message_count <@member>) ')
@@ -46,9 +43,9 @@ class Moderation(commands.Cog):
             if msg_count == 1:
                 msg = await ctx.channel.purge(limit=2)
 
-                logging_channel = get(ctx.guild.channels, id=self.logging_channel)
+                logging_channel = discord.utils.get(ctx.guild.channels, id=self.logging_channel)
 
-                embed = Embed(title=f'**1 message deleted**', description="", color=0xff0000)
+                embed = discord.Embed(title=f'**1 message deleted**', description="", color=0xff0000)
                 embed.add_field(name='Deleted By ', value=f'{ ctx.author.name }#{ ctx.author.discriminator } \n({ ctx.author.id })')
                 embed.add_field(name='Channel ', value=f'<#{ ctx.channel.id }>')
                 embed.add_field(name='Message ', value=f'```Content: { msg[-1].content } \nSender: { msg[-1].author } \nTime: { msg[-1].created_at } \nID: { msg[-1].id }```', inline=False)
@@ -82,7 +79,7 @@ class Moderation(commands.Cog):
 
                 logging_channel = get(ctx.guild.channels, id=self.logging_channel)
 
-                embed = Embed(title=f'**{ msg_count+1 } message(s) deleted**', description="", color=0xff0000)
+                embed = discord.Embed(title=f'**{ msg_count+1 } message(s) deleted**', description="", color=0xff0000)
                 embed.add_field(name='Deleted By ', value=f'{ ctx.author.name }#{ ctx.author.discriminator } \n({ ctx.author.id })')
                 embed.add_field(name='Channel ', value=f'<#{ ctx.channel.id }>')
                 embed.add_field(name='Details ', value=cache_file_url, inline=False)
@@ -127,7 +124,7 @@ class Moderation(commands.Cog):
 
             logging_channel = get(ctx.guild.channels, id=self.logging_channel)
 
-            embed = Embed(title=f'**{ msg_count } message(s) deleted**', description="", color=0xff0000)
+            embed = discord.Embed(title=f'**{ msg_count } message(s) deleted**', description="", color=0xff0000)
             embed.add_field(name='Deleted By ', value=f'{ ctx.author.name }#{ ctx.author.discriminator } \n({ ctx.author.id })')
             embed.add_field(name='Channel ', value=f'<#{ ctx.channel.id }>')
             embed.add_field(name='Details ', value=cache_file_url, inline=False)
