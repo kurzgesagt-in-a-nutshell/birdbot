@@ -28,9 +28,7 @@ class Moderation(commands.Cog):
         self.logger.info('loaded Moderation')
     
     
-    # FIXME command grouping/alias causes error (TypeError: Callback is already a command.)
-    # @commands.group(aliases=['purge'])
-    @commands.command()
+    @commands.command(aliases=['purge'])
     @commands.has_guild_permissions(manage_messages=True)
     async def clean(self, ctx, msg_count: int = None, member:Member = None):
         """ Clean messages """
@@ -138,6 +136,14 @@ class Moderation(commands.Cog):
 
             await ctx.message.delete()
 
+    @commands.command(aliases = ['yeet'])
+    @commands.has_permissions(ban_members=True)
+    async def ban(self,ctx,members: commands.Greedy[discord.Member],*,reason: str):
+        logging_channel = discord.utils.get(ctx.guild.channels,id=self.logging_channel)
+        for i in members:
+            await i.ban(reason=reason)
+        await ctx.send('Done!')
+        await logging_channel.send(f'Banned {[i.name for i in members]} by {ctx.author} for {reason}.')
 
 def setup(bot):
     bot.add_cog(Moderation(bot))
