@@ -21,7 +21,7 @@ class Bot(commands.AutoShardedBot):
     """Main Bot"""
 
     def __init__(self):
-        super().__init__(command_prefix="k!",case_insensitive=True,owner_ids={389718094270038018,183092910495891467,424843380342784011})
+        super().__init__(command_prefix="k!",case_insensitive=True,owner_ids={389718094270038018,183092910495891467,424843380342784011},reconnect=True)
         self.starttime = time.time()
         cogs = ['cogs.moderation','cogs.dev']        
         fails = {}
@@ -33,14 +33,14 @@ class Bot(commands.AutoShardedBot):
                 logger.exception('Exception at {i}')
                 fails[i] = e
 
-        async def on_ready(self):
-            logger.info('Logged in as')
-            logger.info(f"\tUser: {bot.user.name}")
-            logger.info(f"\tID  : {bot.user.id}")
-            logger.info('------')
-            #bot status
-            activity = discord.Activity(type=discord.ActivityType.listening, name="to Steve's voice" )
-            await bot.change_presence(activity = activity)
+    async def on_ready(self):
+        logger.info('Logged in as')
+        logger.info(f"\tUser: {self.user.name}")
+        logger.info(f"\tID  : {self.user.id}")
+        logger.info('------')
+        #bot status
+        activity = discord.Activity(type=discord.ActivityType.listening, name="Steve's voice" )
+        await self.change_presence(activity = activity)
 
 
 with open('token.txt') as tokenfile:
