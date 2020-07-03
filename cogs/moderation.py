@@ -7,6 +7,22 @@ import discord
 from discord.ext import commands
 
 from hastebin_client.utils import *
+class BannedMember(commands.Converter):
+    async def convert(self, ctx, argument):
+        if argument.isdigit():
+            member_id = int(argument, base=10)
+            try:
+                return await ctx.guild.fetch_ban(discord.Object(id=member_id))
+            except discord.NotFound:
+                raise commands.BadArgument('This member has not been banned before.') from None
+
+        ban_list = await ctx.guild.bans()
+        entity = discord.utils.find(lambda u: str(u.user) == argument, ban_list)
+
+        if entity is None:
+            raise commands.BadArgument('This member has not been banned before.')
+        return entity
+
 
 class Moderation(commands.Cog):
     def __init__(self, bot):
@@ -135,29 +151,28 @@ class Moderation(commands.Cog):
 
     @commands.command(aliases = ['yeet'])
     @commands.has_permissions(ban_members=True)
-    async def ban(self,ctx,members: commands.Greedy[discord.Member],*,reason: str):
+    async def ban(self,ctx,member: discord.Member,*,reason: str):
 
         logging_channel = discord.utils.get(ctx.guild.channels,id=self.logging_channel)
-        for i in members:
-            await i.ban(reason=reason)
+        await member.ban(reason=reason)
         await ctx.send('Done!')
-        await logging_channel.send(f'Banned {[i.name for i in members]} by {ctx.author} for {reason}.')
+        await logging_channel.send(f'Banned {member.name} by {ctx.author} for {reason}.')
 
-        
-    @commands.command(aliases = ['unyeet'])
-    @commands.has_permissions(ban_members=True)
-    async def unban(self,ctx,member):
 
-        ban_list = await ctx.guild.bans()
+    @commands.command()
+    @commands.has_guild_permissions(ban_members=True)
+    async def unban(self, ctx, member: BannedMember, *, reason: str = None):
         logging_channel = discord.utils.get(ctx.guild.channels,id=self.logging_channel)
-        for banned_member in ban_list:
-            if member.id == banned_member.user.id:
-                await ctx.guild.unban(member)
-                await logging_channel.send(f'Unbanned { member.id }.')
+        if reason is None:
+            reason = f'Action done by {ctx.author} (ID: {ctx.author.id})'
 
+        await ctx.guild.unban(member.user, reason=reason)
 
+        if member.reason:
+            await logging_channel.send(f'Unbanned {member.user} (ID: {member.user.id}), previously banned for {member.reason}.')
+        else:
+            await logging_channel.send(f'Unbanned {member.user} (ID: {member.user.id}).')
         await ctx.send('Done!')
-
 
     @commands.command()
     @commands.has_permissions(kick_members=True)
