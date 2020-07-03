@@ -3,11 +3,10 @@ import json
 import os
 from datetime import datetime
 
-from hastebin_client.utils import *
-
 import discord
 from discord.ext import commands
 
+from hastebin_client.utils import *
 
 class Moderation(commands.Cog):
     def __init__(self, bot):
@@ -77,7 +76,7 @@ class Moderation(commands.Cog):
                     self.logger.error(str(e))
 
 
-                logging_channel = get(ctx.guild.channels, id=self.logging_channel)
+                logging_channel = discord.utils.get(ctx.guild.channels, id=self.logging_channel)
 
                 embed = discord.Embed(title=f'**{ msg_count+1 } message(s) deleted**', description="", color=0xff0000)
                 embed.add_field(name='Deleted By ', value=f'{ ctx.author.name }#{ ctx.author.discriminator } \n({ ctx.author.id })')
@@ -122,7 +121,7 @@ class Moderation(commands.Cog):
                 self.logger.error(str(e))
 
 
-            logging_channel = get(ctx.guild.channels, id=self.logging_channel)
+            logging_channel = discord.utils.get(ctx.guild.channels, id=self.logging_channel)
 
             embed = discord.Embed(title=f'**{ msg_count } message(s) deleted**', description="", color=0xff0000)
             embed.add_field(name='Deleted By ', value=f'{ ctx.author.name }#{ ctx.author.discriminator } \n({ ctx.author.id })')
@@ -133,14 +132,42 @@ class Moderation(commands.Cog):
 
             await ctx.message.delete()
 
+
     @commands.command(aliases = ['yeet'])
     @commands.has_permissions(ban_members=True)
     async def ban(self,ctx,members: commands.Greedy[discord.Member],*,reason: str):
+
         logging_channel = discord.utils.get(ctx.guild.channels,id=self.logging_channel)
         for i in members:
             await i.ban(reason=reason)
         await ctx.send('Done!')
         await logging_channel.send(f'Banned {[i.name for i in members]} by {ctx.author} for {reason}.')
+
+        
+    @commands.command(aliases = ['unyeet'])
+    @commands.has_permissions(ban_members=True)
+    async def unban(self,ctx,member):
+
+        ban_list = await ctx.guild.bans()
+        logging_channel = discord.utils.get(ctx.guild.channels,id=self.logging_channel)
+        for banned_member in ban_list:
+            if member.id == banned_member.user.id:
+                await ctx.guild.unban(member)
+                await logging_channel.send(f'Unbanned { member.id }.')
+
+
+        await ctx.send('Done!')
+
+
+    @commands.command()
+    @commands.has_permissions(kick_members=True)
+    async def kick(self,ctx,members: commands.Greedy[discord.Member],*,reason: str):
+        logging_channel = discord.utils.get(ctx.guild.channels,id=self.logging_channel)
+        for i in members:
+            await i.kick(reason=reason)
+        await ctx.send('Done!')
+        await logging_channel.send(f'Kicked {[i.name for i in members]} by {ctx.author} for {reason}.')
+
 
 def setup(bot):
     bot.add_cog(Moderation(bot))
