@@ -183,7 +183,7 @@ class Moderation(commands.Cog):
         await ctx.send('Done!')
         await logging_channel.send(f'Kicked {[i.name for i in members]} by {ctx.author} for {reason}.')
 
-
+    
 def setup(bot):
     bot.add_cog(Moderation(bot))
 

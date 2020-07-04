@@ -81,7 +81,7 @@ class Dev(commands.Cog):
             'message': ctx.message,
             'self': self,
             'math': math,
-         }
+        }
 
         env.update(globals())
 
@@ -133,6 +133,17 @@ class Dev(commands.Cog):
                 else:
                     await ctx.send(f'```py\n{value}{ret}\n```')
 
+    @commands.is_owner()
+    @commands.command(pass_context=True, name='reload', hidden=True)
+    async def reload(self, ctx, *, module: str):
+        ''' Reload a module '''
+        try:
+            self.bot.unload_extension(module)
+            self.bot.load_extension(module)
+            await ctx.send('Module Loaded')
+        except Exception as e:
+            logging.exception('Unable to load module.')
+            logging.exception('{}: {}'.format(type(e).__name__, e))
 
 def setup(bot):
     bot.add_cog(Dev(bot))
