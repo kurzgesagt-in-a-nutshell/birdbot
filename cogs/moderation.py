@@ -156,7 +156,14 @@ class Moderation(commands.Cog):
         logging_channel = discord.utils.get(ctx.guild.channels,id=self.logging_channel)
         await member.ban(reason=reason)
         await ctx.send('Done!')
-        await logging_channel.send(f'Banned {member.name} by {ctx.author} for {reason}.')
+
+        embed = discord.Embed(title=f'{ ctx.author.name }', description="", color=0xff00ff)
+        embed.add_field(name='Users', value=f'{ member.display_name } \n({ member.id })', inline=False)
+        embed.add_field(name='Action', value=f'Banned User', inline=False)
+        embed.add_field(name='Reason', value=f'{ reason }', inline=False)
+        embed.set_footer(text=datetime.utcnow())
+
+        await logging_channel.send(embed=embed)
 
 
     @commands.command()
