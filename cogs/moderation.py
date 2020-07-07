@@ -166,6 +166,7 @@ class Moderation(commands.Cog):
         await logging_channel.send(embed=embed)
 
 
+    # TODO Logging Embed
     @commands.command()
     @commands.has_guild_permissions(ban_members=True)
     async def unban(self, ctx, member: BannedMember, *, reason: str = None):
@@ -181,6 +182,7 @@ class Moderation(commands.Cog):
             await logging_channel.send(f'Unbanned {member.user} (ID: {member.user.id}).')
         await ctx.send('Done!')
 
+    # TODO Logging Embed
     @commands.command()
     @commands.has_permissions(kick_members=True)
     async def kick(self,ctx,members: commands.Greedy[discord.Member],*,reason: str):
@@ -189,6 +191,32 @@ class Moderation(commands.Cog):
             await i.kick(reason=reason)
         await ctx.send('Done!')
         await logging_channel.send(f'Kicked {[i.name for i in members]} by {ctx.author} for {reason}.')
+
+    
+    # TODO Logging Embed
+    @commands.command()
+    @commands.has_permissions(kick_members=True)
+    async def mute(self,ctx,members: commands.Greedy[discord.Member],*,reason: str):
+        logging_channel = discord.utils.get(ctx.guild.channels,id=self.logging_channel)
+        mute_role = discord.utils.get(ctx.guild.roles, id=681323126252240899)
+        for i in members:
+            await i.add_roles(mute_role, reason=reason)
+        await ctx.send('Done!')
+        await logging_channel.send(f'Muted {[i.name for i in members]} by {ctx.author} for {reason}.')
+    
+
+    # TODO Logging Embed
+    @commands.command()
+    @commands.has_permissions(kick_members=True)
+    async def unmute(self,ctx,members: commands.Greedy[discord.Member],*,reason: str):
+        logging_channel = discord.utils.get(ctx.guild.channels,id=self.logging_channel)
+        mute_role = discord.utils.get(ctx.guild.roles, id=681323126252240899)
+        for i in members:
+            await i.remove_roles(mute_role, reason=reason)
+        await ctx.send('Done!')
+        await logging_channel.send(f'Unmuted {[i.name for i in members]} by {ctx.author} for {reason}.')
+    
+
 
     
 def setup(bot):
