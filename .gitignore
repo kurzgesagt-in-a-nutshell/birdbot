@@ -146,3 +146,6 @@ prefixes.json
 helpers.ipynb
 *.swp
 *.swo
+
+# Test files
+cogs/test.py

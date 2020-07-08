@@ -3,6 +3,10 @@ import json
 import os
 from datetime import datetime
 
+import sys
+sys.path.append('..')
+import helper
+
 import discord
 from discord.ext import commands
 
@@ -60,11 +64,13 @@ class Moderation(commands.Cog):
 
                 logging_channel = discord.utils.get(ctx.guild.channels, id=self.logging_channel)
 
-                embed = discord.Embed(title=f'**1 message deleted**', description="", color=0xff0000)
-                embed.add_field(name='Deleted By ', value=f'{ ctx.author.name }#{ ctx.author.discriminator } \n({ ctx.author.id })')
-                embed.add_field(name='Channel ', value=f'<#{ ctx.channel.id }>')
-                embed.add_field(name='Message ', value=f'```Content: { msg[-1].content } \nSender: { msg[-1].author } \nTime: { msg[-1].created_at } \nID: { msg[-1].id }```', inline=False)
+                # embed = discord.Embed(title=f'**1 message deleted**', description="", color=0xff0000)
+                # embed.add_field(name='Deleted By ', value=f'{ ctx.author.name }#{ ctx.author.discriminator } \n({ ctx.author.id })')
+                # embed.add_field(name='Channel ', value=f'<#{ ctx.channel.id }>')
+                # embed.add_field(name='Message ', value=f'```Content: { msg[-1].content } \nSender: { msg[-1].author } \nTime: { msg[-1].created_at } \nID: { msg[-1].id }```', inline=False)
 
+                embed = helper.create_embed(author=ctx.author, users=None, action='1 message deleted', reason="None", extra=f'Message Content: { msg[-1].content } \nSender: { msg[-1].author } \nTime: { msg[-1].created_at } \nID: { msg[-1].id }', color=discord.Color.green())
+                
                 await logging_channel.send(embed=embed)
                 
 
@@ -94,10 +100,12 @@ class Moderation(commands.Cog):
 
                 logging_channel = discord.utils.get(ctx.guild.channels, id=self.logging_channel)
 
-                embed = discord.Embed(title=f'**{ msg_count+1 } message(s) deleted**', description="", color=0xff0000)
-                embed.add_field(name='Deleted By ', value=f'{ ctx.author.name }#{ ctx.author.discriminator } \n({ ctx.author.id })')
-                embed.add_field(name='Channel ', value=f'<#{ ctx.channel.id }>')
-                embed.add_field(name='Details ', value=cache_file_url, inline=False)
+                # embed = discord.Embed(title=f'**{ msg_count+1 } message(s) deleted**', description="", color=0xff0000)
+                # embed.add_field(name='Deleted By ', value=f'{ ctx.author.name }#{ ctx.author.discriminator } \n({ ctx.author.id })')
+                # embed.add_field(name='Channel ', value=f'<#{ ctx.channel.id }>')
+                # embed.add_field(name='Details ', value=cache_file_url, inline=False)
+
+                embed = helper.create_embed(author=ctx.author, users=None, action=f'{ msg_count+1 } message(s) deleted', reason="None", extra=cache_file_url, color=discord.Color.green())
 
                 await logging_channel.send(embed=embed)
 
