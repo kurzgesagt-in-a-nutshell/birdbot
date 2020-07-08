@@ -182,7 +182,7 @@ class Moderation(commands.Cog):
             await logging_channel.send(f'Unbanned {member.user} (ID: {member.user.id}).')
         await ctx.send('Done!')
 
-    # TODO Logging Embed
+    # TODO Logging Embedg
     @commands.command()
     @commands.has_permissions(kick_members=True)
     async def kick(self,ctx,members: commands.Greedy[discord.Member],*,reason: str):
@@ -197,23 +197,32 @@ class Moderation(commands.Cog):
     @commands.command()
     @commands.has_permissions(kick_members=True)
     async def mute(self,ctx,members: commands.Greedy[discord.Member],*,reason: str):
-        logging_channel = discord.utils.get(ctx.guild.channels,id=self.logging_channel)
-        mute_role = discord.utils.get(ctx.guild.roles, id=681323126252240899)
-        for i in members:
-            await i.add_roles(mute_role, reason=reason)
-        await ctx.send('Done!')
+        try:
+            logging_channel = discord.utils.get(ctx.guild.channels,id=self.logging_channel)
+            mute_role = discord.utils.get(ctx.guild.roles, id=681323126252240899)
+            for i in members:
+                await i.add_roles(mute_role, reason=reason)
+
+            await ctx.send('Done!')
+        except Exception as e:
+            logging.exception(str(e))
+            await ctx.send('Unable to mute users.')
+
         await logging_channel.send(f'Muted {[i.name for i in members]} by {ctx.author} for {reason}.')
-    
 
     # TODO Logging Embed
     @commands.command()
     @commands.has_permissions(kick_members=True)
     async def unmute(self,ctx,members: commands.Greedy[discord.Member],*,reason: str):
-        logging_channel = discord.utils.get(ctx.guild.channels,id=self.logging_channel)
-        mute_role = discord.utils.get(ctx.guild.roles, id=681323126252240899)
-        for i in members:
-            await i.remove_roles(mute_role, reason=reason)
-        await ctx.send('Done!')
+        try: 
+            logging_channel = discord.utils.get(ctx.guild.channels,id=self.logging_channel)
+            mute_role = discord.utils.get(ctx.guild.roles, id=681323126252240899)
+            for i in members:
+                await i.remove_roles(mute_role, reason=reason)
+            await ctx.send('Done!')
+        except Exception as e:
+            logging.exception(str(e))
+            await ctx.send('Unable to mute users.')
         await logging_channel.send(f'Unmuted {[i.name for i in members]} by {ctx.author} for {reason}.')
     
 
