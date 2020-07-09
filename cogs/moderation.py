@@ -95,7 +95,7 @@ class Moderation(commands.Cog):
 
                 logging_channel = discord.utils.get(ctx.guild.channels, id=self.logging_channel)
 
-                embed = helper.create_embed(author=ctx.author, users=None, action=f'{ msg_count+1 } message(s) deleted', reason="None", extra=cache_file_url, color=discord.Color.green())
+                embed = helper.create_embed(author=ctx.author, users=None, action=f'{ msg_count+1 } messages deleted', reason="None", extra=cache_file_url, color=discord.Color.green())
 
                 await logging_channel.send(embed=embed)
 
@@ -137,10 +137,8 @@ class Moderation(commands.Cog):
 
             logging_channel = discord.utils.get(ctx.guild.channels, id=self.logging_channel)
 
-            embed = discord.Embed(title=f'**{ msg_count } message(s) deleted**', description="", color=0xff0000)
-            embed.add_field(name='Deleted By ', value=f'{ ctx.author.name }#{ ctx.author.discriminator } \n({ ctx.author.id })')
-            embed.add_field(name='Channel ', value=f'<#{ ctx.channel.id }>')
-            embed.add_field(name='Details ', value=cache_file_url, inline=False)
+            embed = helper.create_embed(author=ctx.author, users=[member], action=f'{ msg_count } messages deleted', reason="None", extra=cache_file_url, color=discord.Color.green())
+
 
             await logging_channel.send(embed=embed)
 
@@ -174,14 +172,10 @@ class Moderation(commands.Cog):
         await ctx.guild.unban(member.user, reason=reason)
 
         if member.reason:
-
-            embed = helper.create_embed(author=ctx.author, users=[member.user], action='Ban', reason=member.reason, color=discord.Color.dark_red())
-
+            embed = helper.create_embed(author=ctx.author, users=[member.user], action='Unban', reason=member.reason, color=discord.Color.dark_red())
             await logging_channel.send(embed=embed)
         else:
-            
-            embed = helper.create_embed(author=ctx.author, users=[member.user], action='Ban', reason=reason, color=discord.Color.dark_red())
-
+            embed = helper.create_embed(author=ctx.author, users=[member.user], action='Unban', reason=reason, color=discord.Color.dark_red())
             await logging_channel.send(embed=embed)
         await ctx.send('Done!')
 
