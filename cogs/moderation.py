@@ -1,7 +1,7 @@
 import logging
 import json
 import os
-from datetime import datetime
+import datetime
 
 import sys
 sys.path.append('..')
@@ -64,11 +64,6 @@ class Moderation(commands.Cog):
 
                 logging_channel = discord.utils.get(ctx.guild.channels, id=self.logging_channel)
 
-                # embed = discord.Embed(title=f'**1 message deleted**', description="", color=0xff0000)
-                # embed.add_field(name='Deleted By ', value=f'{ ctx.author.name }#{ ctx.author.discriminator } \n({ ctx.author.id })')
-                # embed.add_field(name='Channel ', value=f'<#{ ctx.channel.id }>')
-                # embed.add_field(name='Message ', value=f'```Content: { msg[-1].content } \nSender: { msg[-1].author } \nTime: { msg[-1].created_at } \nID: { msg[-1].id }```', inline=False)
-
                 embed = helper.create_embed(author=ctx.author, users=None, action='1 message deleted', reason="None", extra=f'Message Content: { msg[-1].content } \nSender: { msg[-1].author } \nTime: { msg[-1].created_at } \nID: { msg[-1].id }', color=discord.Color.green())
                 
                 await logging_channel.send(embed=embed)
@@ -99,11 +94,6 @@ class Moderation(commands.Cog):
 
 
                 logging_channel = discord.utils.get(ctx.guild.channels, id=self.logging_channel)
-
-                # embed = discord.Embed(title=f'**{ msg_count+1 } message(s) deleted**', description="", color=0xff0000)
-                # embed.add_field(name='Deleted By ', value=f'{ ctx.author.name }#{ ctx.author.discriminator } \n({ ctx.author.id })')
-                # embed.add_field(name='Channel ', value=f'<#{ ctx.channel.id }>')
-                # embed.add_field(name='Details ', value=cache_file_url, inline=False)
 
                 embed = helper.create_embed(author=ctx.author, users=None, action=f'{ msg_count+1 } message(s) deleted', reason="None", extra=cache_file_url, color=discord.Color.green())
 
@@ -159,38 +149,43 @@ class Moderation(commands.Cog):
 
     @commands.command(aliases = ['yeet'])
     @commands.has_permissions(ban_members=True)
-    async def ban(self,ctx,member: discord.Member,*,reason: str):
+    async def ban(self,ctx,member: discord.Member,*,reason: str = None):
+
+        if reason is None:
+            return await ctx.send('Please provide a reason')
 
         logging_channel = discord.utils.get(ctx.guild.channels,id=self.logging_channel)
         await member.ban(reason=reason)
         await ctx.send('Done!')
-
-        embed = discord.Embed(title=f'{ ctx.author.name }', description="", color=0xff00ff)
-        embed.add_field(name='Users', value=f'{ member.display_name } \n({ member.id })', inline=False)
-        embed.add_field(name='Action', value=f'Banned User', inline=False)
-        embed.add_field(name='Reason', value=f'{ reason }', inline=False)
-        embed.set_footer(text=datetime.utcnow())
+        
+        embed = helper.create_embed(author=ctx.author, users=[member], action='Ban', reason=reason, color=discord.Color.dark_red())
 
         await logging_channel.send(embed=embed)
 
 
-    # TODO Logging Embed
     @commands.command()
     @commands.has_guild_permissions(ban_members=True)
     async def unban(self, ctx, member: BannedMember, *, reason: str = None):
         logging_channel = discord.utils.get(ctx.guild.channels,id=self.logging_channel)
+
         if reason is None:
             reason = f'Action done by {ctx.author} (ID: {ctx.author.id})'
 
         await ctx.guild.unban(member.user, reason=reason)
 
         if member.reason:
-            await logging_channel.send(f'Unbanned {member.user} (ID: {member.user.id}), previously banned for {member.reason}.')
+
+            embed = helper.create_embed(author=ctx.author, users=[member.user], action='Ban', reason=member.reason, color=discord.Color.dark_red())
+
+            await logging_channel.send(embed=embed)
         else:
-            await logging_channel.send(f'Unbanned {member.user} (ID: {member.user.id}).')
+            
+            embed = helper.create_embed(author=ctx.author, users=[member.user], action='Ban', reason=reason, color=discord.Color.dark_red())
+
+            await logging_channel.send(embed=embed)
         await ctx.send('Done!')
 
-    # TODO Logging Embedg
+
     @commands.command()
     @commands.has_permissions(kick_members=True)
     async def kick(self,ctx,members: commands.Greedy[discord.Member],*,reason: str):
@@ -198,16 +193,19 @@ class Moderation(commands.Cog):
         for i in members:
             await i.kick(reason=reason)
         await ctx.send('Done!')
-        await logging_channel.send(f'Kicked {[i.name for i in members]} by {ctx.author} for {reason}.')
+
+        embed = helper.create_embed(author=ctx.author, users=members, action='Kick', reason=reason, color=discord.Color.red())
+
+        await logging_channel.send(embed=embed)
 
     
-    # TODO Logging Embed
     @commands.command()
     @commands.has_permissions(kick_members=True)
     async def mute(self,ctx,members: commands.Greedy[discord.Member],*,reason: str):
         try:
             logging_channel = discord.utils.get(ctx.guild.channels,id=self.logging_channel)
             mute_role = discord.utils.get(ctx.guild.roles, id=681323126252240899)
+
             for i in members:
                 await i.add_roles(mute_role, reason=reason)
 
@@ -216,9 +214,11 @@ class Moderation(commands.Cog):
             logging.exception(str(e))
             await ctx.send('Unable to mute users.')
 
-        await logging_channel.send(f'Muted {[i.name for i in members]} by {ctx.author} for {reason}.')
 
-    # TODO Logging Embed
+        embed = helper.create_embed(author=ctx.author, users=members, action='Mute', reason=reason, color=discord.Color.red())
+
+        await logging_channel.send(embed=embed)
+
     @commands.command()
     @commands.has_permissions(kick_members=True)
     async def unmute(self,ctx,members: commands.Greedy[discord.Member],*,reason: str):
@@ -231,7 +231,10 @@ class Moderation(commands.Cog):
         except Exception as e:
             logging.exception(str(e))
             await ctx.send('Unable to mute users.')
-        await logging_channel.send(f'Unmuted {[i.name for i in members]} by {ctx.author} for {reason}.')
+        
+        embed = helper.create_embed(author=ctx.author, users=members, action='Unmute', reason=reason, color=discord.Color.red())
+
+        await logging_channel.send(embed=embed)
     
 
 
