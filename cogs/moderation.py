@@ -11,6 +11,7 @@ import discord
 from discord.ext import commands
 
 from hastebin_client.utils import *
+import asyncio
 class BannedMember(commands.Converter):
     async def convert(self, ctx, argument):
         if argument.isdigit():
@@ -192,10 +193,31 @@ class Moderation(commands.Cog):
 
         await logging_channel.send(embed=embed)
 
-    
     @commands.command()
     @commands.has_permissions(kick_members=True)
-    async def mute(self,ctx,members: commands.Greedy[discord.Member],*,reason: str):
+    async def unmute(self,ctx,members: commands.Greedy[discord.Member],*,reason: str = None):
+        try: 
+            logging_channel = discord.utils.get(ctx.guild.channels,id=self.logging_channel)
+            mute_role = discord.utils.get(ctx.guild.roles, id=681323126252240899)
+            for i in members:
+                await i.remove_roles(mute_role, reason=reason)
+            await ctx.send('Done!')
+        except Exception as e:
+            logging.exception(str(e))
+            await ctx.send('Unable to mute users.')
+        
+        embed = helper.create_embed(author=ctx.author, users=members, action='Unmute', reason=reason, color=discord.Color.red())
+
+        await logging_channel.send(embed=embed)
+    
+
+    @commands.command()
+    @commands.has_permissions(kick_members=True)
+    async def mute(self,ctx,members: commands.Greedy[discord.Member], time: float = None,*,reason: str = None):
+        
+        if reason is None:
+            return await ctx.send('Please provide a reason')
+
         try:
             logging_channel = discord.utils.get(ctx.guild.channels,id=self.logging_channel)
             mute_role = discord.utils.get(ctx.guild.roles, id=681323126252240899)
@@ -213,24 +235,9 @@ class Moderation(commands.Cog):
 
         await logging_channel.send(embed=embed)
 
-    @commands.command()
-    @commands.has_permissions(kick_members=True)
-    async def unmute(self,ctx,members: commands.Greedy[discord.Member],*,reason: str):
-        try: 
-            logging_channel = discord.utils.get(ctx.guild.channels,id=self.logging_channel)
-            mute_role = discord.utils.get(ctx.guild.roles, id=681323126252240899)
-            for i in members:
-                await i.remove_roles(mute_role, reason=reason)
-            await ctx.send('Done!')
-        except Exception as e:
-            logging.exception(str(e))
-            await ctx.send('Unable to mute users.')
-        
-        embed = helper.create_embed(author=ctx.author, users=members, action='Unmute', reason=reason, color=discord.Color.red())
-
-        await logging_channel.send(embed=embed)
-    
-
+        if time is not None:
+            await asyncio.sleep(time * 60)
+            await self.unmute(ctx=ctx, members=members, reason=reason)
 
     
 def setup(bot):
