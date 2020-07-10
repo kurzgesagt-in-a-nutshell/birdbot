@@ -241,21 +241,29 @@ class Moderation(commands.Cog):
 
     @commands.command()
     @commands.has_permissions(manage_roles=True)
-    async def addrole(self, ctx, members: commands.Greedy[discord.Member], *, role: discord.Role):
+    async def addrole(self, ctx, members: commands.Greedy[discord.Member], *, role_name: str = None):
         """Add a role to member(s)"""
         logging_channel = discord.utils.get(ctx.guild.channels,id=self.logging_channel)
 
         try:
+
+            if role_name is None:
+                return await ctx.send('Please enter role name.')
+
+            role = discord.utils.get(ctx.guild.roles, name=role_name)
+            if role is None:
+                return await ctx.send('Role not found')
             if ctx.author.top_role < role:
-                await ctx.send(f'Your role is lower than {role}.')
+                await ctx.send(f'Your role is lower than { role.name }.')
             else:
                 for member in members:
                     await member.add_roles(role)
 
-                embed = helper.create_embed(author=ctx.author, users=members, action='Give role', reason="None", extra=f'Role: {role}\nRole ID: {role.id}', color=discord.Color.purple())
+                embed = helper.create_embed(author=ctx.author, users=members, action='Give role', reason="None", extra=f'Role: { role.name }\nRole ID: {role.id}', color=discord.Color.purple())
                 await logging_channel.send(embed=embed)
 
-        except:
+        except Exception as e:
+            self.logger.error(str(e))
             await ctx.send('Unable to give role.')
     
     @commands.command()
