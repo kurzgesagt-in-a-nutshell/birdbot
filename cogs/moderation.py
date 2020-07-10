@@ -239,7 +239,45 @@ class Moderation(commands.Cog):
             await asyncio.sleep(time * 60)
             await self.unmute(ctx=ctx, members=members, reason=reason)
 
+    @commands.command()
+    @commands.has_permissions(manage_roles=True)
+    async def addrole(self, ctx, members: commands.Greedy[discord.Member], *, role: discord.Role):
+        """Add a role to member(s)"""
+        logging_channel = discord.utils.get(ctx.guild.channels,id=self.logging_channel)
+
+        try:
+            if ctx.author.top_role < role:
+                await ctx.send(f'Your role is lower than {role}.')
+            else:
+                for member in members:
+                    await member.add_roles(role)
+
+                embed = helper.create_embed(author=ctx.author, users=members, action='Give role', reason="None", extra=f'Role: {role}\nRole ID: {role.id}', color=discord.Color.purple())
+                await logging_channel.send(embed=embed)
+
+        except:
+            await ctx.send('Unable to give role.')
     
+    @commands.command()
+    @commands.has_permissions(manage_roles=True)
+    async def remrole(self, ctx, members: commands.Greedy[discord.Member], *, role: discord.Role):
+        """Remove a role from member(s)"""
+        logging_channel = discord.utils.get(ctx.guild.channels,id=self.logging_channel)
+
+        try:
+            if ctx.author.top_role < role:
+                await ctx.send(f"Your role is lower than {role}.")
+            else:
+                for member in members:
+                    await member.remove_roles(role)
+
+                embed = helper.create_embed(author=ctx.author, users=members, action='Remove role', reason="None", extra=f'Role: {role}\nRole ID: {role.id}', color=discord.Color.purple())
+                await logging_channel.send(embed=embed)
+
+        except: 
+            await ctx.send('Unable to remove role.')
+        
+
 def setup(bot):
     bot.add_cog(Moderation(bot))
 
