@@ -3,6 +3,7 @@ import json
 import os
 import datetime
 
+import typing
 import sys
 sys.path.append('..')
 import helper
@@ -48,7 +49,7 @@ class Moderation(commands.Cog):
     @commands.command(aliases=['purge'])
     @commands.has_guild_permissions(manage_messages=True)
     async def clean(self, ctx, msg_count: int = None, member: discord.Member = None):
-        """ Clean messages """
+        """ Clean messages | Usage: clean number_of_messages <@member> """
         if msg_count is None:
             await ctx.send(f' **Enter number of messages** (k!clean message_count <@member>) ')
         
@@ -149,6 +150,7 @@ class Moderation(commands.Cog):
     @commands.command(aliases = ['yeet'])
     @commands.has_permissions(ban_members=True)
     async def ban(self,ctx,member: discord.Member,*,reason: str = None):
+        """ Ban a member. | Usage: ban @member reason """
 
         if reason is None:
             return await ctx.send('Please provide a reason')
@@ -165,6 +167,8 @@ class Moderation(commands.Cog):
     @commands.command()
     @commands.has_guild_permissions(ban_members=True)
     async def unban(self, ctx, member: BannedMember, *, reason: str = None):
+        """ Unban a member. | Usage: unban member_id reason """
+
         logging_channel = discord.utils.get(ctx.guild.channels,id=self.logging_channel)
 
         if reason is None:
@@ -184,6 +188,8 @@ class Moderation(commands.Cog):
     @commands.command()
     @commands.has_permissions(kick_members=True)
     async def kick(self,ctx,members: commands.Greedy[discord.Member],*,reason: str):
+        """ Kick member(s). | Usage: kick @member(s) reason """
+
         logging_channel = discord.utils.get(ctx.guild.channels,id=self.logging_channel)
         for i in members:
             await i.kick(reason=reason)
@@ -193,28 +199,12 @@ class Moderation(commands.Cog):
 
         await logging_channel.send(embed=embed)
 
-    @commands.command()
-    @commands.has_permissions(kick_members=True)
-    async def unmute(self,ctx,members: commands.Greedy[discord.Member],*,reason: str = None):
-        try: 
-            logging_channel = discord.utils.get(ctx.guild.channels,id=self.logging_channel)
-            mute_role = discord.utils.get(ctx.guild.roles, id=681323126252240899)
-            for i in members:
-                await i.remove_roles(mute_role, reason=reason)
-            await ctx.send('Done!')
-        except Exception as e:
-            logging.exception(str(e))
-            await ctx.send('Unable to mute users.')
-        
-        embed = helper.create_embed(author=ctx.author, users=members, action='Unmute', reason=reason, color=discord.Color.red())
-
-        await logging_channel.send(embed=embed)
-    
 
     @commands.command()
     @commands.has_permissions(kick_members=True)
     async def mute(self,ctx,members: commands.Greedy[discord.Member], time: float = None,*,reason: str = None):
-        
+        """ Mute member(s). | Usage: mute @member(s) <time> reason """
+
         if reason is None:
             return await ctx.send('Please provide a reason')
 
@@ -239,10 +229,33 @@ class Moderation(commands.Cog):
             await asyncio.sleep(time * 60)
             await self.unmute(ctx=ctx, members=members, reason=reason)
 
+
+    @commands.command()
+    @commands.has_permissions(kick_members=True)
+    async def unmute(self,ctx,members: commands.Greedy[discord.Member],*,reason: str = None):
+        """ Unmute member(s). | Usage: unmute @member(s) <reason> """
+
+        try: 
+            logging_channel = discord.utils.get(ctx.guild.channels,id=self.logging_channel)
+            mute_role = discord.utils.get(ctx.guild.roles, id=681323126252240899)
+            for i in members:
+                await i.remove_roles(mute_role, reason=reason)
+            await ctx.send('Done!')
+        except Exception as e:
+            logging.exception(str(e))
+            await ctx.send('Unable to mute users.')
+        
+        embed = helper.create_embed(author=ctx.author, users=members, action='Unmute', reason=reason, color=discord.Color.red())
+
+        await logging_channel.send(embed=embed)
+    
+
+
     @commands.command()
     @commands.has_permissions(manage_roles=True)
     async def addrole(self, ctx, members: commands.Greedy[discord.Member], *, role_name: str = None):
-        """Add a role to member(s)"""
+        """ Add a role to member(s). | Usage: addrole @member(s) role_name """
+
         logging_channel = discord.utils.get(ctx.guild.channels,id=self.logging_channel)
 
         try:
@@ -269,7 +282,8 @@ class Moderation(commands.Cog):
     @commands.command()
     @commands.has_permissions(manage_roles=True)
     async def remrole(self, ctx, members: commands.Greedy[discord.Member], *, role: discord.Role):
-        """Remove a role from member(s)"""
+        """ Remove a role to member(s). | Usage: remrole @member(s) role_name """
+        
         logging_channel = discord.utils.get(ctx.guild.channels,id=self.logging_channel)
 
         try:
@@ -285,6 +299,49 @@ class Moderation(commands.Cog):
         except: 
             await ctx.send('Unable to remove role.')
         
+
+    @commands.command(hidden=True)
+    @commands.has_permissions(kick_members=True)
+    async def t(self, ctx, time: typing.Optional[str] = None, *, reason=None):
+        try:
+
+            if reason is None and time is None :
+                return await ctx.send('enter reason')
+
+            if reason is None:
+                reason = time
+                time = None
+
+            tot_time = 0
+            if time is not None:
+                t = 0
+                j = 0
+                for i in time:
+                    
+                    if i.isdigit():
+                        t = t * pow(10, j) + int(i)
+                        j = j + 1
+                    
+                    else:
+                        if i == 'd':
+                            tot_time = tot_time + t * 24 * 60 * 60
+                        elif i == 'h':
+                            tot_time = tot_time + t * 60 * 60
+                        elif i == 'm':
+                            tot_time = tot_time + t * 60
+                        elif i == 's':
+                            tot_time = tot_time + t
+
+                        t = 0
+                        j = 0
+
+            await ctx.send(tot_time.__str__() + " is time in seconds")
+            await ctx.send(reason.__str__() + " is the reason")
+            
+        except Exception as e:
+            logging.error(str(e))
+            await ctx.send('Unable to mute users.')
+
 
 def setup(bot):
     bot.add_cog(Moderation(bot))
