@@ -323,13 +323,13 @@ class Moderation(commands.Cog):
                         j = j + 1
                     
                     else:
-                        if i == 'd':
+                        if i == 'd' or i == 'D':
                             tot_time = tot_time + t * 24 * 60 * 60
-                        elif i == 'h':
+                        elif i == 'h' or i == 'H':
                             tot_time = tot_time + t * 60 * 60
-                        elif i == 'm':
+                        elif i == 'm' or i == 'M':
                             tot_time = tot_time + t * 60
-                        elif i == 's':
+                        elif i == 's' or i == 'S':
                             tot_time = tot_time + t
 
                         t = 0
