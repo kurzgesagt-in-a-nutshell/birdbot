@@ -202,31 +202,66 @@ class Moderation(commands.Cog):
 
     @commands.command()
     @commands.has_permissions(kick_members=True)
-    async def mute(self,ctx,members: commands.Greedy[discord.Member], time: float = None,*,reason: str = None):
+    async def mute(self,ctx,members: commands.Greedy[discord.Member], time: typing.Optional[str] = None, *, reason=None):
         """ Mute member(s). | Usage: mute @member(s) <time> reason """
-
-        if reason is None:
-            return await ctx.send('Please provide a reason')
 
         try:
             logging_channel = discord.utils.get(ctx.guild.channels,id=self.logging_channel)
             mute_role = discord.utils.get(ctx.guild.roles, id=681323126252240899)
 
+            try:
+
+                if members == []:
+                    return await ctx.send('Provide member(s) to mute.')
+
+                if reason is None and time is None :
+                    return await ctx.send('Enter reason.')
+
+                if reason is None:
+                    reason = time
+                    time = None
+
+                tot_time = 0
+                if time is not None:
+                    t = 0
+                    j = 0
+                    for i in time:
+                        
+                        if i.isdigit():
+                            t = t * pow(10, j) + int(i)
+                            j = j + 1
+                        
+                        else:
+                            if i == 'd' or i == 'D':
+                                tot_time = tot_time + t * 24 * 60 * 60
+                            elif i == 'h' or i == 'H':
+                                tot_time = tot_time + t * 60 * 60
+                            elif i == 'm' or i == 'M':
+                                tot_time = tot_time + t * 60
+                            elif i == 's' or i == 'S':
+                                tot_time = tot_time + t
+
+                            t = 0
+                            j = 0
+            except Exception as ex:
+                self.logger.exception(ex.__str__())     
+
+            
             for i in members:
                 await i.add_roles(mute_role, reason=reason)
 
             await ctx.send('Done!')
         except Exception as e:
-            logging.exception(str(e))
+            self.logger.exception(str(e))
             await ctx.send('Unable to mute users.')
 
 
-        embed = helper.create_embed(author=ctx.author, users=members, action='Mute', reason=reason, color=discord.Color.red())
+        embed = helper.create_embed(author=ctx.author, users=members, action='Mute', reason=reason, extra=f'Mute Duration: { time } or { tot_time } seconds' ,color=discord.Color.red())
 
         await logging_channel.send(embed=embed)
 
         if time is not None:
-            await asyncio.sleep(time * 60)
+            await asyncio.sleep(tot_time)
             await self.unmute(ctx=ctx, members=members, reason=reason)
 
 
