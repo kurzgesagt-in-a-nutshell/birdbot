@@ -3,13 +3,13 @@
 
 **General Info:**
 
-=> Main file : [kurzgesagt.py](./kurzgesagt.py)
+=> Main file : [kurzgesagt.py](../kurzgesagt.py)
 
 => Bot Prefic : **k!!**
 
 => All cogs/modules go into cogs folder.
 
-=> For direct creation of cogs run [make_cog.py](./make_cog.py)
+=> For direct creation of cogs run [make_cog.py](../make_cog.py)
 
 => Values that are used in multiple files are to be kept in config.json
 
