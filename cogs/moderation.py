@@ -48,7 +48,7 @@ class Moderation(commands.Cog):
     
     @commands.command(aliases=['purge'])
     @commands.has_guild_permissions(manage_messages=True)
-    async def clean(self, ctx, msg_count: int = None, member: discord.Member = None):
+    async def clean(self, ctx, msg_count: int = None, member: commands.Greedy[discord.Member] = None, channel: discord.TextChannel = None):
         """ Clean messages | Usage: clean number_of_messages <@member> """
         if msg_count is None:
             await ctx.send(f' **Enter number of messages** (k!clean message_count <@member>) ')
@@ -59,20 +59,22 @@ class Moderation(commands.Cog):
         elif msg_count == 0:
             await ctx.channel.purge(limit=1)
         
+        if channel is None:
+            channel = ctx.channel
 
         if member is None:
             if msg_count == 1:
-                msg = await ctx.channel.purge(limit=2)
+                msg = await channel.purge(limit=2)
 
                 logging_channel = discord.utils.get(ctx.guild.channels, id=self.logging_channel)
 
-                embed = helper.create_embed(author=ctx.author, users=None, action='1 message deleted', reason="None", extra=f'Message Content: { msg[-1].content } \nSender: { msg[-1].author } \nTime: { msg[-1].created_at } \nID: { msg[-1].id }', color=discord.Color.green())
+                embed = helper.create_embed(author=ctx.author, users=None, action='1 message deleted', reason="None", extra=f'Message Content: { msg[-1].content } \nSender: { msg[-1].author } \nTime: { msg[-1].created_at } \nID: { msg[-1].id } \nChannel: #{ channel }', color=discord.Color.green())
                 
                 await logging_channel.send(embed=embed)
                 
 
             else:
-                deleted_msgs = await ctx.channel.purge(limit=msg_count+1)
+                deleted_msgs = await channel.purge(limit=msg_count+1)
 
                 try:
                     haste_data = "Author (ID)".ljust(70) + " | " + "Message Creation Time (UTC)".ljust(30) + " | " + "Content" + "\n\n"
@@ -97,7 +99,7 @@ class Moderation(commands.Cog):
 
                 logging_channel = discord.utils.get(ctx.guild.channels, id=self.logging_channel)
 
-                embed = helper.create_embed(author=ctx.author, users=None, action=f'{ msg_count+1 } messages deleted', reason="None", extra=cache_file_url, color=discord.Color.green())
+                embed = helper.create_embed(author=ctx.author, users=None, action=f'{ msg_count+1 } messages deleted', reason="None", extra=cache_file_url + f'\nChannel: #{ channel }', color=discord.Color.green())
 
                 await logging_channel.send(embed=embed)
 
@@ -105,13 +107,15 @@ class Moderation(commands.Cog):
 
             deleted_msgs = []
             count = msg_count 
-            async for m in ctx.channel.history(limit=100, oldest_first=False):
+            async for m in channel.history(limit=200, oldest_first=False):
                 if ctx.message.id == m.id:
                     continue
+
                 deleted_msgs.append(m)
-                if m.author.id == member.id:
-                    count = count - 1
-                    await m.delete()
+                for mem in member:
+                    if m.author.id == mem.id:
+                        count = count - 1
+                        await m.delete()
                 if count <= 0:
                     break
 
@@ -139,7 +143,7 @@ class Moderation(commands.Cog):
 
             logging_channel = discord.utils.get(ctx.guild.channels, id=self.logging_channel)
 
-            embed = helper.create_embed(author=ctx.author, users=[member], action=f'{ msg_count } messages deleted', reason="None", extra=cache_file_url, color=discord.Color.green())
+            embed = helper.create_embed(author=ctx.author, users=member, action=f'{ msg_count } messages deleted', reason="None", extra=cache_file_url + f'\nChannel: #{ channel }', color=discord.Color.green())
 
 
             await logging_channel.send(embed=embed)
