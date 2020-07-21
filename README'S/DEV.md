@@ -27,8 +27,6 @@
 2. **Moderation**
     Module for moderation commands.
     - clean
-        > TODO:
-        > - Add < #channel > argument to delete message from different channel
     - ban
         > TODO:
         > - Add mass/multiple user banning.
