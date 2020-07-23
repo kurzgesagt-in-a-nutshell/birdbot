@@ -153,17 +153,19 @@ class Moderation(commands.Cog):
 
     @commands.command(aliases = ['yeet'])
     @commands.has_permissions(ban_members=True)
-    async def ban(self,ctx,member: discord.Member,*,reason: str = None):
+    async def ban(self,ctx,member: commands.Greedy[discord.Member],*,reason: str = None):
         """ Ban a member. | Usage: ban @member reason """
         try:
             if reason is None:
                 return await ctx.send('Please provide a reason')
 
             logging_channel = discord.utils.get(ctx.guild.channels,id=self.logging_channel)
-            await member.ban(reason=reason)
+            for m in member:
+                await m.ban(reason=reason)
+
             await ctx.send('Done!')
             
-            embed = helper.create_embed(author=ctx.author, users=[member], action='Ban', reason=reason, color=discord.Color.dark_red())
+            embed = helper.create_embed(author=ctx.author, users=member, action='Ban', reason=reason, color=discord.Color.dark_red())
 
             await logging_channel.send(embed=embed)
 
@@ -172,7 +174,7 @@ class Moderation(commands.Cog):
 
     @commands.command()
     @commands.has_guild_permissions(ban_members=True)
-    async def unban(self, ctx, member: BannedMember, *, reason: str = None):
+    async def unban(self, ctx, member_id: commands.Greedy[int], *, reason: str = None):
         """ Unban a member. | Usage: unban member_id reason """
         try:
             logging_channel = discord.utils.get(ctx.guild.channels,id=self.logging_channel)
@@ -180,18 +182,40 @@ class Moderation(commands.Cog):
             if reason is None:
                 reason = f'Action done by {ctx.author} (ID: {ctx.author.id})'
 
-            await ctx.guild.unban(member.user, reason=reason)
 
-            if member.reason:
-                embed = helper.create_embed(author=ctx.author, users=[member.user], action='Unban', reason=member.reason, color=discord.Color.dark_red())
-                await logging_channel.send(embed=embed)
-            else:
-                embed = helper.create_embed(author=ctx.author, users=[member.user], action='Unban', reason=reason, color=discord.Color.dark_red())
-                await logging_channel.send(embed=embed)
+            ban_list = await ctx.guild.bans()
+
+            mem = []    # for listing members in embed
+
+            for b in ban_list:
+                if b.user.id in member_id:
+                    mem.append(b.user)
+                    await ctx.guild.unban(b.user, reason=reason)
+
+            embed = helper.create_embed(author=ctx.author, users=mem, action='Unban', reason=reason, color=discord.Color.dark_red())
+            await logging_channel.send(embed=embed)
+                    
+            # if reason is None:
+            #     reason = f'Action done by {ctx.author} (ID: {ctx.author.id})'
+
+            # r = None
+            # users = []
+            # for m in member:
+            #     r = m.user.reason
+            #     users.append(m.user)
+            #     await ctx.guild.unban(m.user, reason=reason)
+
+            # if r:
+            #     embed = helper.create_embed(author=ctx.author, users=users, action='Unban', reason=r, color=discord.Color.dark_red())
+            #     await logging_channel.send(embed=embed)
+            # else:
+            #     embed = helper.create_embed(author=ctx.author, users=users, action='Unban', reason=reason, color=discord.Color.dark_red())
+            #     await logging_channel.send(embed=embed)
                 
             await ctx.send('Done!')
+
         except Exception as e:
-            self.logger.error(str(e))
+            self.logger.exception(str(e))
 
 
     @commands.command()
