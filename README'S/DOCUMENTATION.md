@@ -52,19 +52,21 @@ General moderation commands.
         > clean 10 @ducky
 
 - **ban**
-    - Ban a user permanently.
+    - Ban a user(s) permanently.
     - Usage:
-        - `ban @member reason`
+        - `ban @member(s) reason`
 
     - Example:
-        > ban @bad_duck reason
+        > ban @bad_duck reason <br>
+        > ban @bad_duck1 @bad_duck2 reason
 
 - **unban**
     - Unban a user.
     - Usage:
-        - `unban user_id <reason>`
+        - `unban user_id(s) <reason>`
     - Example:
-        > unban 471705718957801483 reason
+        > unban 471705718957801483 reason <br> 
+        > unban 471705718957801483 491769129318088714 reason
 
 - **kick**
     - Kick member(s)
@@ -111,3 +113,19 @@ General moderation commands.
     - Example:
         > remrole @ducky Green Bird <br>
         > remrole @duck1 @duck2 Red Bird
+
+- **slowmode**
+    - Add/Remove slowmode for a channel.
+    - Usage:
+        - `slowmode time <#channel> <reason>`
+        - **time:** slowmode duration in seconds. Pass 0 or nothing to remove slowmode.
+        - **channel:** Channel in which slowmode is to be added. By defafult it considers the channel in which command is invoked.
+
+    - Example:
+        > **To add slowmode:**
+        > slowmode 2 go_slow <br>
+        > slowmode 5 #general go_slow <br>
+        > **To remove slowmode:**
+        > slowmode go_fast<br>
+        > slowmode #general go_fast<br> 
+        > slowmode 0 go_fast

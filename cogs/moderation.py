@@ -36,10 +36,9 @@ class Moderation(commands.Cog):
         self.bot = bot
 
         config_file = open(os.path.join(os.path.dirname(__file__), os.pardir, 'config.json'), 'r')
-        config_json = json.loads(config_file.read())
+        self.config_json = json.loads(config_file.read())
 
-        self.logging_channel = config_json['logging']['logging-channel']
-        self.hastebin_URL = config_json['logging']['hastebin-url']
+        self.logging_channel = self.config_json['logging']['logging-channel']
     
     @commands.Cog.listener()
     async def on_ready(self):
@@ -241,7 +240,10 @@ class Moderation(commands.Cog):
 
         try:
             logging_channel = discord.utils.get(ctx.guild.channels,id=self.logging_channel)
-            mute_role = discord.utils.get(ctx.guild.roles, id=681323126252240899)
+            mute_role = discord.utils.get(ctx.guild.roles, id=self.config_json['roles']['mute-role']) #681323126252240899
+
+            tot_time = 0
+            is_muted = False
 
             try:
 
@@ -255,7 +257,6 @@ class Moderation(commands.Cog):
                     reason = time
                     time = None
 
-                tot_time = 0
                 if time is not None:
                     t = 0
                     j = 0
@@ -285,6 +286,8 @@ class Moderation(commands.Cog):
             for i in members:
                 await i.add_roles(mute_role, reason=reason)
 
+            is_muted = True
+
             embed = helper.create_embed(author=ctx.author, users=members, action='Mute', reason=reason, extra=f'Mute Duration: { time } or { tot_time } seconds' ,color=discord.Color.red())
 
             await logging_channel.send(embed=embed)
@@ -294,13 +297,13 @@ class Moderation(commands.Cog):
             self.logger.error(str(e))
             await ctx.send('Unable to mute users.')
 
-
-        try: 
-            if time is not None:
-                await asyncio.sleep(tot_time)
-                await self.unmute(ctx=ctx, members=members, reason=reason)
-        except Exception as e:
-            self.logger.error(str(e))
+        if is_muted:
+            try: 
+                if time is not None:
+                    await asyncio.sleep(tot_time)
+                    await self.unmute(ctx=ctx, members=members, reason=reason)
+            except Exception as e:
+                self.logger.error(str(e))
             
 
     @commands.command()
@@ -310,7 +313,7 @@ class Moderation(commands.Cog):
 
         try: 
             logging_channel = discord.utils.get(ctx.guild.channels,id=self.logging_channel)
-            mute_role = discord.utils.get(ctx.guild.roles, id=681323126252240899)
+            mute_role = discord.utils.get(ctx.guild.roles, id=self.config_json['roles']['mute-role'])
             for i in members:
                 await i.remove_roles(mute_role, reason=reason)
             await ctx.send('Done!')
@@ -391,7 +394,32 @@ class Moderation(commands.Cog):
             self.logger.error(str(e))
             await ctx.send('Unable to remove role.')
         
+    @commands.command()
+    @commands.has_permissions(manage_channels=True)
+    async def slowmode(self, ctx, time: typing.Optional[int] = 0, channel: typing.Optional[discord.TextChannel] = None, *, reason: str = None):
+        try:
+            
+            if time is None or time < 0:
+                return await ctx.send('Please provide valid time.')
 
+            ch = ctx.channel
+
+            if channel is not None:
+                ch = channel
+
+            await ch.edit(slowmode_delay=time)
+
+
+            logging_channel = discord.utils.get(ctx.guild.channels,id=self.logging_channel)
+            embed = helper.create_embed(author=ctx.author, users=None, action='Added slow mode.', reason=reason, extra=f'Channel: { ch }\nTime: { time } seconds', color=discord.Color.orange())
+            await logging_channel.send(embed=embed)
+
+
+            await ctx.send('Done')
+
+        except Exception as e:
+            self.logger.error(str(e))       
+            await ctx.send('Unable to add slowmode.')
 
 def setup(bot):
     bot.add_cog(Moderation(bot))

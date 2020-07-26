@@ -7,11 +7,11 @@
 
 => Bot Prefic : **k!!**
 
-=> All cogs/modules go into cogs folder.
+=> All cogs/modules go into [cogs](../cogs/) folder.
 
 => For direct creation of cogs run [make_cog.py](../make_cog.py)
 
-=> Values that are used in multiple files are to be kept in config.json
+=> Values that are used in multiple files are to be kept in [config.json](../config.py)
 
 => Add functions that are to be used across various files in [helper.py](../helper.py)
 
@@ -28,20 +28,15 @@
     Module for moderation commands.
     - clean
     - ban
-        > TODO:
-        > - Add mass/multiple user banning.
     - unban
-        > TODO:
-        > - Add mass/multiple user unbanning.
     - kick
     - mute
         > TODO:
         > - Currently if time alone is provided it is considered as a reason.
         > - Seperate times as arguments in time string.
     - unmute
-        > TODO:
-        > - Check for none reason string.
     - addrole
     - remrole (remove role)
+    - slowmode
 
 

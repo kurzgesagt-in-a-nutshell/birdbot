@@ -138,12 +138,17 @@ class Dev(commands.Cog):
     async def reload(self, ctx, *, module: str):
         ''' Reload a module '''
         try:
-            self.bot.unload_extension(module)
+            try:
+                self.bot.unload_extension(module)
+            except discord.ext.commands.errors.ExtensionNotLoaded as enl:
+                self.logger.exception('Module not loaded.')
+
             self.bot.load_extension(module)
             await ctx.send('Module Loaded')
+
         except Exception as e:
-            logging.exception('Unable to load module.')
-            logging.exception('{}: {}'.format(type(e).__name__, e))
+            self.logger.error('Unable to load module.')
+            self.logger.error('{}: {}'.format(type(e).__name__, e))
 
 def setup(bot):
     bot.add_cog(Dev(bot))

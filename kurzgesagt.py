@@ -38,7 +38,7 @@ class Bot(commands.AutoShardedBot):
         logger.info(f"\tUser: {self.user.name}")
         logger.info(f"\tID  : {self.user.id}")
         logger.info('------')
-        #bot status
+        # bot status
         activity = discord.Activity(type=discord.ActivityType.listening, name="Steve's voice" )
         await self.change_presence(activity = activity)
 

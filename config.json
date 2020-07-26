@@ -2,5 +2,8 @@
     "logging": {
         "logging-channel": 543884016282239006,
         "hastebin-url": "https://hastebin/document/"
+    },
+    "roles": {
+        "mute-role": 681323126252240899
     }
 }
