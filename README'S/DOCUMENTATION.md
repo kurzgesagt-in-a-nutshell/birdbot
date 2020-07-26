@@ -98,6 +98,14 @@ General moderation commands.
         > unmute @bad_duck reason <br>
         > unmute @bad_duck1 @bad_duck2 
 
+- **warn**
+    - Warn member(s)
+    - Usage:
+        - `warn @member(s) reason`
+    - Example:
+        > warn @bad_duck reason <br>
+        > warn @bad_duck1 @bad_duck2 reason
+
 - **addrole**
     - Add a role to member(s)
     - Usage:
@@ -114,6 +122,8 @@ General moderation commands.
         > remrole @ducky Green Bird <br>
         > remrole @duck1 @duck2 Red Bird
 
+
+
 - **slowmode**
     - Add/Remove slowmode for a channel.
     - Usage:
@@ -122,10 +132,11 @@ General moderation commands.
         - **channel:** Channel in which slowmode is to be added. By defafult it considers the channel in which command is invoked.
 
     - Example:
-        > **To add slowmode:**
+        > **To add slowmode:** <br>
         > slowmode 2 go_slow <br>
         > slowmode 5 #general go_slow <br>
-        > **To remove slowmode:**
+        > **To remove slowmode:** <br>
         > slowmode go_fast<br>
         > slowmode #general go_fast<br> 
         > slowmode 0 go_fast
+

@@ -159,17 +159,20 @@ class Moderation(commands.Cog):
                 return await ctx.send('Please provide a reason')
 
             logging_channel = discord.utils.get(ctx.guild.channels,id=self.logging_channel)
-            for m in member:
-                await m.ban(reason=reason)
 
-            await ctx.send('Done!')
+            # for m in member:
+            #     await m.ban(reason=reason)
+
             
             embed = helper.create_embed(author=ctx.author, users=member, action='Ban', reason=reason, color=discord.Color.dark_red())
-
             await logging_channel.send(embed=embed)
 
+            helper.create_infraction(author=ctx.author, users=member, action='ban', reason=reason)
+
+            await ctx.send('Done')
         except Exception as e:
             self.logger.error(str(e))
+            await ctx.send('Unable to ban member(s).')
 
     @commands.command()
     @commands.has_guild_permissions(ban_members=True)
@@ -194,22 +197,6 @@ class Moderation(commands.Cog):
             embed = helper.create_embed(author=ctx.author, users=mem, action='Unban', reason=reason, color=discord.Color.dark_red())
             await logging_channel.send(embed=embed)
                     
-            # if reason is None:
-            #     reason = f'Action done by {ctx.author} (ID: {ctx.author.id})'
-
-            # r = None
-            # users = []
-            # for m in member:
-            #     r = m.user.reason
-            #     users.append(m.user)
-            #     await ctx.guild.unban(m.user, reason=reason)
-
-            # if r:
-            #     embed = helper.create_embed(author=ctx.author, users=users, action='Unban', reason=r, color=discord.Color.dark_red())
-            #     await logging_channel.send(embed=embed)
-            # else:
-            #     embed = helper.create_embed(author=ctx.author, users=users, action='Unban', reason=reason, color=discord.Color.dark_red())
-            #     await logging_channel.send(embed=embed)
                 
             await ctx.send('Done!')
 
@@ -219,19 +206,27 @@ class Moderation(commands.Cog):
 
     @commands.command()
     @commands.has_permissions(kick_members=True)
-    async def kick(self,ctx,members: commands.Greedy[discord.Member],*,reason: str):
+    async def kick(self,ctx,members: commands.Greedy[discord.Member],*,reason: str = None):
         """ Kick member(s). | Usage: kick @member(s) reason """
         try:
+            if reason is None:
+                return await ctx.send('Please provide a reason.')
+
             logging_channel = discord.utils.get(ctx.guild.channels,id=self.logging_channel)
-            for i in members:
-                await i.kick(reason=reason)
-            await ctx.send('Done!')
+            # for i in members:
+            #     await i.kick(reason=reason)
 
             embed = helper.create_embed(author=ctx.author, users=members, action='Kick', reason=reason, color=discord.Color.red())
-
             await logging_channel.send(embed=embed)
+
+
+            helper.create_infraction(author=ctx.author, users=members, action='kick', reason=reason)
+
+            await ctx.send('Done!')
+
         except Exception as e:
             self.logger.error(str(e))
+            await ctx.send('Unable to kick member(s).')
 
     @commands.command()
     @commands.has_permissions(kick_members=True)
@@ -289,8 +284,10 @@ class Moderation(commands.Cog):
             is_muted = True
 
             embed = helper.create_embed(author=ctx.author, users=members, action='Mute', reason=reason, extra=f'Mute Duration: { time } or { tot_time } seconds' ,color=discord.Color.red())
-
             await logging_channel.send(embed=embed)
+
+            helper.create_infraction(author=ctx.author, users=members, action='mute', reason=reason, time=time)
+
             await ctx.send('Done!')        
 
         except Exception as e:
@@ -393,6 +390,42 @@ class Moderation(commands.Cog):
         except Exception as e:
             self.logger.error(str(e))
             await ctx.send('Unable to remove role.')
+
+
+    @commands.command()
+    @commands.has_permissions(ban_members=True)
+    async def warn(self, ctx, members: commands.Greedy[discord.Member], *, reason: str = None):
+        try:
+            if reason is None:
+                return await ctx.send('Please provide reason.')
+
+            
+            helper.create_infraction(author=ctx.author, users=members, action='warn', reason=reason)
+
+            await ctx.send('Done')
+
+        except Exception as e:
+            self.logger.error(str(e))
+            await ctx.send('Unable to warn member(s).')
+
+    @commands.command(aliases=['infr'])
+    @commands.has_permissions(ban_members=True)
+    async def infractions(self, ctx, member: typing.Optional[discord.Member] = None, mem_id: typing.Optional[int] = None):
+        try:
+            m = None
+            if member is not None:
+                m = member
+            elif mem_id is not None:
+                m = discord.utils.get(ctx.guild.members, id=mem_id)
+
+            infs_embed = helper.get_infractions(member=m)
+
+            await ctx.send(embed=infs_embed)
+
+
+        except Exception as e:
+            self.logger.error(str(e))
+            await ctx.send('Unable to fetch infractions.')
         
     @commands.command()
     @commands.has_permissions(manage_channels=True)
