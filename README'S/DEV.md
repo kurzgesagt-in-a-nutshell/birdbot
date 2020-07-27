@@ -11,7 +11,7 @@
 
 => For direct creation of cogs run [make_cog.py](../make_cog.py)
 
-=> Values that are used in multiple files are to be kept in [config.json](../config.py)
+=> Values that are used in multiple files are to be kept in [config.json](../config.json)
 
 => Add functions that are to be used across various files in [helper.py](../helper.py)
 

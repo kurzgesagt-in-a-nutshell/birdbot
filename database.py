@@ -5,3 +5,4 @@ client = pymongo.MongoClient("mongodb+srv://slothonmeth1:kbotdbpass@kbot.9nvha.m
 db = client.KurzBot
 
 infraction_db = db.Infraction
+timed_actions_db = db.TimedAction

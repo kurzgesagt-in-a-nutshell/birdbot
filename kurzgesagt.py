@@ -7,6 +7,8 @@ from loglevels import setup as llsetup
 from rich.logging import RichHandler
 from discord.ext import commands
 
+import helper
+
 llsetup()
 
 logging.basicConfig(
@@ -41,6 +43,7 @@ class Bot(commands.AutoShardedBot):
         # bot status
         activity = discord.Activity(type=discord.ActivityType.listening, name="Steve's voice" )
         await self.change_presence(activity = activity)
+        await helper.start_timed_actions(self)
 
 
 with open('token.txt') as tokenfile:

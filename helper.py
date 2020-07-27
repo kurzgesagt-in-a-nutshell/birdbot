@@ -1,6 +1,12 @@
 import discord
+
 import datetime
-from database import infraction_db
+import logging
+import asyncio
+import os
+import json
+
+from database import infraction_db, timed_actions_db
 
 def create_embed(author, users, action, reason, extra="None", color=discord.Color.blurple):
     """
@@ -166,3 +172,82 @@ def get_infractions(member):
             embed.add_field(name="No infraction found.", value="```User is clean.```")
 
         return embed
+
+
+def create_timed_action(users, action, time):
+    try:
+        data = []
+        for u in users:
+            data.append({
+                "user_id": u.id,
+                "user_name": u.name,
+                "action": action,
+                "action_start": datetime.datetime.utcnow(),
+                "duration": time,
+                "action_end": datetime.datetime.utcnow() + datetime.timedelta(seconds=time)
+            })
+        ids = timed_actions_db.insert_many(data)
+        return ids.inserted_ids
+    except Exception as e:
+        logging.error(str(e))
+
+
+def delete_time_action(ids):
+    try:
+        timed_actions_db.remove({"_id": {"$in": ids}})
+    except Exception as e:
+        logging.error(str(e))
+
+
+def delete_time_actions_uid(u_id, action):
+    '''
+        Delete timed action by user_id
+    '''
+    try:
+        timed_actions_db.remove({"user_id": u_id, "action": action})
+    except Exception as e:
+        logging.error(str(e))
+
+
+async def start_timed_actions(bot):
+    try:
+
+        config_file = open(os.path.join(os.path.dirname(__file__), 'config.json'), 'r')
+        config_json = json.loads(config_file.read())
+
+        guild = discord.utils.get(bot.guilds, id=414027124836532234)
+
+        logging_channel = discord.utils.get(guild.channels, id=config_json['logging']['logging-channel'])
+        mute_role = discord.utils.get(guild.roles, id=config_json['roles']['mute-role'])
+
+        all_actions = timed_actions_db.find().sort("action_end", 1)
+
+
+        for a in all_actions:
+
+            if a['action_end'] > datetime.datetime.utcnow():
+                rem_time = int((a['action_end'] - datetime.datetime.utcnow()).total_seconds())
+                await asyncio.sleep(rem_time)
+
+            if a['action'] == 'mute':
+                user = discord.utils.get(guild.members, id=a['user_id'])
+                await user.remove_roles(mute_role, reason="Time Expired")
+
+                timed_actions_db.remove({"_id": a["_id"]})
+
+            elif a['action'] == 'ban':  
+                ban_list = await guild.bans()
+                for b in ban_list:
+                    if b.user.id in a['user_id']:
+                        await guild.unban(b.user, reason="Time Expired")
+            
+                timed_actions_db.remove({"_id": a["_id"]})
+            
+            embed = discord.Embed(title='Timed Action', description='Time Expired', color=discord.Color.dark_blue())
+            embed.add_field(name='User Affected', value='```{} ({})```'.format(a['user_name'], a['user_id']), inline=False)
+            embed.add_field(name='Action', value='```Un-{}```'.format(a['action']), inline=False)
+            await logging_channel.send(embed=embed)
+    
+    except Exception as e: 
+        logging.error(str(e))
+        

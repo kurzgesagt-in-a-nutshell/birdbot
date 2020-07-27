@@ -295,10 +295,12 @@ class Moderation(commands.Cog):
             await ctx.send('Unable to mute users.')
 
         if is_muted:
+            ids = helper.create_timed_action(users=members, action='mute', time=tot_time)
             try: 
                 if time is not None:
                     await asyncio.sleep(tot_time)
                     await self.unmute(ctx=ctx, members=members, reason=reason)
+                    helper.delete_time_action(ids=ids)
             except Exception as e:
                 self.logger.error(str(e))
             
@@ -313,6 +315,8 @@ class Moderation(commands.Cog):
             mute_role = discord.utils.get(ctx.guild.roles, id=self.config_json['roles']['mute-role'])
             for i in members:
                 await i.remove_roles(mute_role, reason=reason)
+                helper.delete_time_actions_uid(u_id=i.id, action='mute')
+
             await ctx.send('Done!')
 
 
