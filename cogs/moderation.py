@@ -160,8 +160,8 @@ class Moderation(commands.Cog):
 
             logging_channel = discord.utils.get(ctx.guild.channels,id=self.logging_channel)
 
-            # for m in member:
-            #     await m.ban(reason=reason)
+            for m in member:
+                await m.ban(reason=reason)
 
             
             embed = helper.create_embed(author=ctx.author, users=member, action='Ban', reason=reason, color=discord.Color.dark_red())
@@ -213,8 +213,9 @@ class Moderation(commands.Cog):
                 return await ctx.send('Please provide a reason.')
 
             logging_channel = discord.utils.get(ctx.guild.channels,id=self.logging_channel)
-            # for i in members:
-            #     await i.kick(reason=reason)
+            
+            for i in members:
+                await i.kick(reason=reason)
 
             embed = helper.create_embed(author=ctx.author, users=members, action='Kick', reason=reason, color=discord.Color.red())
             await logging_channel.send(embed=embed)
@@ -295,11 +296,13 @@ class Moderation(commands.Cog):
             await ctx.send('Unable to mute users.')
 
         if is_muted:
+            # TIMED
             ids = helper.create_timed_action(users=members, action='mute', time=tot_time)
             try: 
                 if time is not None:
                     await asyncio.sleep(tot_time)
                     await self.unmute(ctx=ctx, members=members, reason=reason)
+                    # TIMED
                     helper.delete_time_action(ids=ids)
             except Exception as e:
                 self.logger.error(str(e))
@@ -315,6 +318,7 @@ class Moderation(commands.Cog):
             mute_role = discord.utils.get(ctx.guild.roles, id=self.config_json['roles']['mute-role'])
             for i in members:
                 await i.remove_roles(mute_role, reason=reason)
+                # TIMED
                 helper.delete_time_actions_uid(u_id=i.id, action='mute')
 
             await ctx.send('Done!')
