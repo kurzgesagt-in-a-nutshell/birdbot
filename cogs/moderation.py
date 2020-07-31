@@ -2,6 +2,7 @@ import logging
 import json
 import os
 import datetime
+from time import sleep
 
 import typing
 import sys
@@ -86,6 +87,10 @@ class Moderation(commands.Cog):
 
                 await logging_channel.send(embed=embed)
 
+                m = await ctx.send(f'Deleted { msg_count+1 } messages.')
+                sleep(3)
+                await m.delete()
+
         else:
 
             deleted_msgs = []
@@ -132,6 +137,11 @@ class Moderation(commands.Cog):
             await logging_channel.send(embed=embed)
 
             await ctx.message.delete()
+
+            m = await ctx.send(f'Deleted { msg_count } messages.')
+            sleep(3)
+            await m.delete()
+
 
 
     @commands.command(aliases = ['yeet'])
@@ -187,6 +197,7 @@ class Moderation(commands.Cog):
             for m in members:
                 mem_id.append(m.id)
                 await m.ban(reason=reason)
+                await ctx.send(f'Banned { m.name }.\nReason: { reason }')
 
             is_banned = True
             
@@ -194,8 +205,7 @@ class Moderation(commands.Cog):
             await logging_channel.send(embed=embed)
 
             helper.create_infraction(author=ctx.author, users=members, action='ban', reason=reason, time=tot_time)
-
-            await ctx.send('Done')
+               
 
         except Exception as e:
             self.logger.error(str(e))
@@ -234,12 +244,11 @@ class Moderation(commands.Cog):
                 if b.user.id in member_id:
                     mem.append(b.user)
                     await ctx.guild.unban(b.user, reason=reason)
+                    await ctx.send(f'Unbanned { b.user.name }.\nReason: { reason }')
 
             embed = helper.create_embed(author=ctx.author, users=mem, action='Unban', reason=reason, color=discord.Color.dark_red())
             await logging_channel.send(embed=embed)
                     
-                
-            await ctx.send('Done!')
 
         except Exception as e:
             self.logger.exception(str(e))
@@ -257,6 +266,7 @@ class Moderation(commands.Cog):
             
             for i in members:
                 await i.kick(reason=reason)
+                await ctx.send(f'Kicked { i.name }.\nReason: { reason }')
 
             embed = helper.create_embed(author=ctx.author, users=members, action='Kick', reason=reason, color=discord.Color.red())
             await logging_channel.send(embed=embed)
@@ -264,7 +274,6 @@ class Moderation(commands.Cog):
 
             helper.create_infraction(author=ctx.author, users=members, action='kick', reason=reason)
 
-            await ctx.send('Done!')
 
         except Exception as e:
             self.logger.error(str(e))
@@ -277,7 +286,7 @@ class Moderation(commands.Cog):
 
         try:
             logging_channel = discord.utils.get(ctx.guild.channels,id=self.logging_channel)
-            mute_role = discord.utils.get(ctx.guild.roles, id=self.config_json['roles']['mute-role']) #681323126252240899
+            mute_role = discord.utils.get(ctx.guild.roles, id=self.config_json['roles']['mute-role']) 
 
             tot_time = 0
             is_muted = False
@@ -322,6 +331,7 @@ class Moderation(commands.Cog):
             
             for i in members:
                 await i.add_roles(mute_role, reason=reason)
+                await ctx.send(f'Muted { i.name }.\nReason: { reason }')
 
             is_muted = True
 
@@ -329,8 +339,7 @@ class Moderation(commands.Cog):
             await logging_channel.send(embed=embed)
 
             helper.create_infraction(author=ctx.author, users=members, action='mute', reason=reason, time=time)
-
-            await ctx.send('Done!')        
+     
 
         except Exception as e:
             self.logger.error(str(e))
@@ -361,13 +370,13 @@ class Moderation(commands.Cog):
                 await i.remove_roles(mute_role, reason=reason)
                 # TIMED
                 helper.delete_time_actions_uid(u_id=i.id, action='mute')
-
-            await ctx.send('Done!')
+                
+                await ctx.send(f'Unmuted { i.name }.\nReason:{ reason }')
 
 
         except Exception as e:
             logging.error(str(e))
-            await ctx.send('Unable to mute users.')
+            await ctx.send('Unable to unmute users.')
         
         embed = helper.create_embed(author=ctx.author, users=members, action='Unmute', reason=reason, color=discord.Color.red())
 
@@ -397,11 +406,11 @@ class Moderation(commands.Cog):
             else:
                 for member in members:
                     await member.add_roles(role)
+                    await ctx.send(f'Gave role { role.name } to { member.name }')
 
                 embed = helper.create_embed(author=ctx.author, users=members, action='Gave role', reason="None", extra=f'Role: { role.name }\nRole ID: {role.id}', color=discord.Color.purple())
                 await logging_channel.send(embed=embed)
 
-            await ctx.send('Done')
 
         except Exception as e:
             self.logger.error(str(e))
@@ -430,6 +439,7 @@ class Moderation(commands.Cog):
             else:
                 for member in members:
                     await member.remove_roles(role)
+                    await ctx.send(f'Removed role { role.name } to { member.name }')
 
                 embed = helper.create_embed(author=ctx.author, users=members, action='Removed role', reason="None", extra=f'Role: { role.name }\nRole ID: {role.id}', color=discord.Color.purple())
                 await logging_channel.send(embed=embed)
@@ -444,14 +454,19 @@ class Moderation(commands.Cog):
     @commands.command()
     @commands.has_permissions(ban_members=True)
     async def warn(self, ctx, members: commands.Greedy[discord.Member], *, reason: str = None):
+        """ Warn user(s) | Usage: warn @member(s) reason """
         try:
             if reason is None:
                 return await ctx.send('Please provide reason.')
+            
+            if members == []:
+                return await ctx.send('Please provide user(s) to warn.')
 
             
             helper.create_infraction(author=ctx.author, users=members, action='warn', reason=reason)
 
-            await ctx.send('Done')
+            for m in members:
+                await ctx.send(f'Warned { m.name }.\nReason: { reason }')
 
         except Exception as e:
             self.logger.error(str(e))
@@ -460,6 +475,7 @@ class Moderation(commands.Cog):
     @commands.command(aliases=['infr'])
     @commands.has_permissions(ban_members=True)
     async def infractions(self, ctx, member: typing.Optional[discord.Member] = None, mem_id: typing.Optional[int] = None):
+        """ Get Infractions. | Usage: infr OR infr <@member> <member_id> """
         try:
             m = None
             if member is not None:
@@ -479,6 +495,7 @@ class Moderation(commands.Cog):
     @commands.command()
     @commands.has_permissions(manage_channels=True)
     async def slowmode(self, ctx, time: typing.Optional[int] = 0, channel: typing.Optional[discord.TextChannel] = None, *, reason: str = None):
+        """ Add/Remove slowmode. | Usage: slowmode <slowmode_time> <#channel> <reason>"""
         try:
             
             if time is None or time < 0:
@@ -497,11 +514,20 @@ class Moderation(commands.Cog):
             await logging_channel.send(embed=embed)
 
 
-            await ctx.send('Done')
+            await ctx.send(f'Slowmode of { time } added to { channel.name }.')
 
         except Exception as e:
             self.logger.error(str(e))       
             await ctx.send('Unable to add slowmode.')
+
+
+    @commands.command()
+    async def ping(self, ctx):
+        """ Ping Pong """
+        try:
+            await ctx.send(f'{ int(self.bot.latency * 1000) } ms')
+        except Exception as e:
+            self.logger.error(str(e))
 
 def setup(bot):
     bot.add_cog(Moderation(bot))

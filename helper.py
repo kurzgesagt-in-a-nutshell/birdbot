@@ -163,6 +163,15 @@ def get_infractions(member):
                                     + 'Date: {}'.format(w['datetime'].replace(microsecond=0)) + "\n\n"
 
 
+            if warn_str == "":
+                warn_str = None
+            if kick_str == "":
+                kick_str = None
+            if mute_str == "":
+                mute_str = None
+            if ban_str == "":
+                ban_str = None
+
             embed.add_field(name='Warns', value=f'```{ warn_str }```', inline=False)
             embed.add_field(name='Mutes', value=f'```{ mute_str }```', inline=False)
             embed.add_field(name='Bans', value= f'```{ ban_str }```', inline=False)
