@@ -25,7 +25,7 @@ class Bot(commands.AutoShardedBot):
     def __init__(self):
         super().__init__(command_prefix="k!!",case_insensitive=True,owner_ids={389718094270038018,183092910495891467,424843380342784011},reconnect=True)
         self.starttime = time.time()
-        cogs = ['cogs.moderation','cogs.dev']        
+        cogs = ['cogs.moderation','cogs.dev', 'cogs.help']        
         fails = {}
         for i in cogs:
             try:
