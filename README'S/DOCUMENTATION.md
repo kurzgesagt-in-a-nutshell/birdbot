@@ -54,11 +54,13 @@ General moderation commands.
 - **ban**
     - Ban a user(s) permanently.
     - Usage:
-        - `ban @member(s) reason`
+        - `ban @member(s) <time> reason`
 
     - Example:
         > ban @bad_duck reason <br>
-        > ban @bad_duck1 @bad_duck2 reason
+        > ban @bad_duck1 @bad_duck2 reason <br>
+        > ban @bad_duck1 2h30m reason <br>
+        > ban @bad_duck1 @bad_duck2 1d2h30m reason
 
 - **unban**
     - Unban a user.

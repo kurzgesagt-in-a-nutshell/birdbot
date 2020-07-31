@@ -238,10 +238,9 @@ async def start_timed_actions(bot):
             elif a['action'] == 'ban':  
                 ban_list = await guild.bans()
                 for b in ban_list:
-                    if b.user.id in a['user_id']:
+                    if b.user.id == a['user_id']:
                         await guild.unban(b.user, reason="Time Expired")
-            
-                timed_actions_db.remove({"_id": a["_id"]})
+                    timed_actions_db.remove({"_id": a["_id"]})
             
             embed = discord.Embed(title='Timed Action', description='Time Expired', color=discord.Color.dark_blue())
             embed.add_field(name='User Affected', value='```{} ({})```'.format(a['user_name'], a['user_id']), inline=False)

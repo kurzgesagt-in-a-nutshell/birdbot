@@ -13,22 +13,6 @@ from discord.ext import commands
 
 from hastebin_client.utils import *
 import asyncio
-class BannedMember(commands.Converter):
-    async def convert(self, ctx, argument):
-        if argument.isdigit():
-            member_id = int(argument, base=10)
-            try:
-                return await ctx.guild.fetch_ban(discord.Object(id=member_id))
-            except discord.NotFound:
-                raise commands.BadArgument('This member has not been banned before.') from None
-
-        ban_list = await ctx.guild.bans()
-        entity = discord.utils.find(lambda u: str(u.user) == argument, ban_list)
-
-        if entity is None:
-            raise commands.BadArgument('This member has not been banned before.')
-        return entity
-
 
 class Moderation(commands.Cog):
     def __init__(self, bot):
@@ -152,27 +136,84 @@ class Moderation(commands.Cog):
 
     @commands.command(aliases = ['yeet'])
     @commands.has_permissions(ban_members=True)
-    async def ban(self,ctx,member: commands.Greedy[discord.Member],*,reason: str = None):
-        """ Ban a member. | Usage: ban @member reason """
+    async def ban(self,ctx, members: commands.Greedy[discord.Member], time: typing.Optional[str] = None,*,reason: str = None):
+        """ Ban a member. | Usage: ban @member(s) reason """
         try:
-            if reason is None:
-                return await ctx.send('Please provide a reason')
 
             logging_channel = discord.utils.get(ctx.guild.channels,id=self.logging_channel)
 
-            for m in member:
+            tot_time = 0
+            is_banned = False
+            mem_id = []
+
+            try:
+
+                if members == []:
+                    return await ctx.send('Provide member(s) to mute.')
+
+                if reason is None and time is None :
+                    return await ctx.send('Enter reason.')
+
+                if reason is None:
+                    reason = time
+                    time = None
+
+                if time is not None:
+                    t = 0
+                    j = 0
+                    for i in time:
+                        
+                        if i.isdigit():
+                            t = t * pow(10, j) + int(i)
+                            j = j + 1
+                        
+                        else:
+                            if i == 'd' or i == 'D':
+                                tot_time = tot_time + t * 24 * 60 * 60
+                            elif i == 'h' or i == 'H':
+                                tot_time = tot_time + t * 60 * 60
+                            elif i == 'm' or i == 'M':
+                                tot_time = tot_time + t * 60
+                            elif i == 's' or i == 'S':
+                                tot_time = tot_time + t
+
+                            t = 0
+                            j = 0
+
+            except Exception as ex:
+                self.logger.exception(ex.__str__())     
+
+
+            for m in members:
+                mem_id.append(m.id)
                 await m.ban(reason=reason)
 
+            is_banned = True
             
-            embed = helper.create_embed(author=ctx.author, users=member, action='Ban', reason=reason, color=discord.Color.dark_red())
+            embed = helper.create_embed(author=ctx.author, users=members, action='Ban', reason=reason, color=discord.Color.dark_red())
             await logging_channel.send(embed=embed)
 
-            helper.create_infraction(author=ctx.author, users=member, action='ban', reason=reason)
+            helper.create_infraction(author=ctx.author, users=members, action='ban', reason=reason, time=tot_time)
 
             await ctx.send('Done')
+
         except Exception as e:
             self.logger.error(str(e))
             await ctx.send('Unable to ban member(s).')
+
+        
+        if is_banned:
+            try:
+                if tot_time != 0:
+                    # TIMED
+                    ids = helper.create_timed_action(users=members, action='ban', time=tot_time)
+                    await asyncio.sleep(tot_time)
+                    await self.unban(ctx=ctx, member_id=mem_id, reason=reason)
+                    # TIMED
+                    helper.delete_time_action(ids=ids)
+            except Exception as e:
+                self.logger.error(str(e))
+
 
     @commands.command()
     @commands.has_guild_permissions(ban_members=True)
@@ -296,10 +337,10 @@ class Moderation(commands.Cog):
             await ctx.send('Unable to mute users.')
 
         if is_muted:
-            # TIMED
-            ids = helper.create_timed_action(users=members, action='mute', time=tot_time)
             try: 
-                if time is not None:
+                if tot_time != 0:
+                    # TIMED
+                    ids = helper.create_timed_action(users=members, action='mute', time=tot_time)
                     await asyncio.sleep(tot_time)
                     await self.unmute(ctx=ctx, members=members, reason=reason)
                     # TIMED
