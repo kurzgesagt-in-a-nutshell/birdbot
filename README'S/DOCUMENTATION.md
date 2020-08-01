@@ -46,10 +46,12 @@ General moderation commands.
     - Max purge limit: 200 messages.
     - alias: purge
     - Usage:
-        - `clean number_of_messages <@member>`
+        - `clean number_of_messages <@member> <#channel>`
     - Example: 
         > clean 5 <br>
-        > clean 10 @ducky
+        > clean 10 @ducky <br>
+        > clean 15 #general <br>
+        > clean 15 @ducky #general
 
 - **ban**
     - Ban a user(s) permanently.
@@ -130,8 +132,8 @@ General moderation commands.
     - Add/Remove slowmode for a channel.
     - Usage:
         - `slowmode time <#channel> <reason>`
-        - **time:** slowmode duration in seconds. Pass 0 or nothing to remove slowmode.
-        - **channel:** Channel in which slowmode is to be added. By defafult it considers the channel in which command is invoked.
+        --> **time:** slowmode duration in seconds. Pass 0 or nothing to remove slowmode.
+        --> **channel:** Channel in which slowmode is to be added. By defafult it considers the channel in which command is invoked.
 
     - Example:
         > **To add slowmode:** <br>
@@ -142,3 +144,24 @@ General moderation commands.
         > slowmode #general go_fast<br> 
         > slowmode 0 go_fast
 
+- **infractions**
+    - Get infraction list or infractions of a user.
+    - Alias: infr
+    - Usage:
+        - `infraction <@member / member_id> <infraction_type>`
+        --> **infraction_type:**
+            - w/W/warn/warns : To get warns.
+            - m/M/mute/mutes : To get mutes.
+            - b/B/ban/bans : To get bans.
+            - k/K/kick/kicks : To get kicks.
+    - Example
+        > **To get list of infracted users** <br>
+        > infraction OR infr <br>
+        > **To get infraction of a user** <br>
+        >   - Full List: <br>
+        >       - infraction @duck1 <br>
+        >       - infr duck_id
+        >   - Only one infraction: <br>
+        >       - infr @duck1 warns <br>
+        >       - infr @duck1 m <br>
+        >       - infr duck_id ban <br>

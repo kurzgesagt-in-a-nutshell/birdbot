@@ -135,9 +135,11 @@ class Dev(commands.Cog):
 
     @commands.is_owner()
     @commands.command(pass_context=True, name='reload', hidden=True)
-    async def reload(self, ctx, *, module: str):
+    async def reload(self, ctx, *, module: str = None):
         ''' Reload a module '''
         try:
+            if module is None:
+                return await ctx.send('**Usage:** `reload module_name`')
             try:
                 self.bot.unload_extension(module)
             except discord.ext.commands.errors.ExtensionNotLoaded as enl:
@@ -149,6 +151,15 @@ class Dev(commands.Cog):
         except Exception as e:
             self.logger.error('Unable to load module.')
             self.logger.error('{}: {}'.format(type(e).__name__, e))
+
+    @commands.is_owner()
+    @commands.command(hidden=True)
+    async def kill(self, ctx):
+        try:
+            await self.bot.logout()
+        except Exception as e:
+            self.logger.error(str(e))
+            await ctx.send('Unable to kill bot.')
 
 def setup(bot):
     bot.add_cog(Dev(bot))

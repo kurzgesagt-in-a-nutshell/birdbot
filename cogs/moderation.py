@@ -3,6 +3,7 @@ import json
 import os
 import datetime
 from time import sleep
+import re
 
 import typing
 import sys
@@ -30,12 +31,13 @@ class Moderation(commands.Cog):
         self.logger.info('loaded Moderation')
     
     
-    @commands.command(aliases=['purge'])
+    @commands.command(aliases=['purge', 'prune'])
     @commands.has_guild_permissions(manage_messages=True)
     async def clean(self, ctx, msg_count: int = None, member: commands.Greedy[discord.Member] = None, channel: discord.TextChannel = None):
-        """ Clean messages | Usage: clean number_of_messages <@member> """
+        """ Clean messages. \nUsage: clean number_of_messages <@member(s)> <#channel>"""
+
         if msg_count is None:
-            await ctx.send(f' **Enter number of messages** (k!clean message_count <@member>) ')
+            await ctx.send(f'**Usage:** `clean number_of_messages <@member(s)> <#channel>`')
         
         elif msg_count > 200:
             await ctx.send(f'Provided number is too big. (Max limit 200)')
@@ -147,7 +149,7 @@ class Moderation(commands.Cog):
     @commands.command(aliases = ['yeet'])
     @commands.has_permissions(ban_members=True)
     async def ban(self,ctx, members: commands.Greedy[discord.Member], time: typing.Optional[str] = None,*,reason: str = None):
-        """ Ban a member. | Usage: ban @member(s) reason """
+        """ Ban a member.\nUsage: ban @member(s) reason """
         try:
 
             logging_channel = discord.utils.get(ctx.guild.channels,id=self.logging_channel)
@@ -159,10 +161,10 @@ class Moderation(commands.Cog):
             try:
 
                 if members == []:
-                    return await ctx.send('Provide member(s) to mute.')
+                    return await ctx.send('Provide member(s) to mute.\n **Usage:** `ban @member(s) reason`')
 
                 if reason is None and time is None :
-                    return await ctx.send('Enter reason.')
+                    return await ctx.send('Provide a reason.\n **Usage:** `ban @member(s) reason`')
 
                 if reason is None:
                     reason = time
@@ -227,14 +229,13 @@ class Moderation(commands.Cog):
 
     @commands.command()
     @commands.has_guild_permissions(ban_members=True)
-    async def unban(self, ctx, member_id: commands.Greedy[int], *, reason: str = None):
-        """ Unban a member. | Usage: unban member_id reason """
+    async def unban(self, ctx, member_id: commands.Greedy[int] = None, *, reason: str = None):
+        """ Unban a member. \nUsage: unban member_id <reason> """
         try:
+            if member_id is None:
+                return await ctx.send('Provide member id(s).\n**Usage:** `unban member_id <reason>`')
+
             logging_channel = discord.utils.get(ctx.guild.channels,id=self.logging_channel)
-
-            if reason is None:
-                reason = f'Action done by {ctx.author} (ID: {ctx.author.id})'
-
 
             ban_list = await ctx.guild.bans()
 
@@ -243,8 +244,11 @@ class Moderation(commands.Cog):
             for b in ban_list:
                 if b.user.id in member_id:
                     mem.append(b.user)
+                    if reason is None:
+                        reason = b.reason
+
                     await ctx.guild.unban(b.user, reason=reason)
-                    await ctx.send(f'Unbanned { b.user.name }.\nReason: { reason }')
+                    await ctx.send(f'Unbanned { b.user.name }.')
 
             embed = helper.create_embed(author=ctx.author, users=mem, action='Unban', reason=reason, color=discord.Color.dark_red())
             await logging_channel.send(embed=embed)
@@ -257,10 +261,10 @@ class Moderation(commands.Cog):
     @commands.command()
     @commands.has_permissions(kick_members=True)
     async def kick(self,ctx,members: commands.Greedy[discord.Member],*,reason: str = None):
-        """ Kick member(s). | Usage: kick @member(s) reason """
+        """ Kick member(s).\nUsage: kick @member(s) reason """
         try:
             if reason is None:
-                return await ctx.send('Please provide a reason.')
+                return await ctx.send('Provide a reason.\n**Usage:** `kick @member(s) reason`')
 
             logging_channel = discord.utils.get(ctx.guild.channels,id=self.logging_channel)
             
@@ -282,7 +286,7 @@ class Moderation(commands.Cog):
     @commands.command()
     @commands.has_permissions(kick_members=True)
     async def mute(self,ctx,members: commands.Greedy[discord.Member], time: typing.Optional[str] = None, *, reason=None):
-        """ Mute member(s). | Usage: mute @member(s) <time> reason """
+        """ Mute member(s). \nUsage: mute @member(s) <time> reason """
 
         try:
             logging_channel = discord.utils.get(ctx.guild.channels,id=self.logging_channel)
@@ -294,10 +298,10 @@ class Moderation(commands.Cog):
             try:
 
                 if members == []:
-                    return await ctx.send('Provide member(s) to mute.')
+                    return await ctx.send('Provide member(s) to mute.\n**Usage:** `mute @member(s) <time> reason`')
 
                 if reason is None and time is None :
-                    return await ctx.send('Enter reason.')
+                    return await ctx.send('Provide a reason.\n**Usage:** `mute @member(s) <time> reason`')
 
                 if reason is None:
                     reason = time
@@ -361,9 +365,12 @@ class Moderation(commands.Cog):
     @commands.command()
     @commands.has_permissions(kick_members=True)
     async def unmute(self,ctx,members: commands.Greedy[discord.Member],*,reason: str = None):
-        """ Unmute member(s). | Usage: unmute @member(s) <reason> """
+        """ Unmute member(s). \nUsage: unmute @member(s) <reason> """
 
-        try: 
+        try:
+            if members == []:
+                return await ctx.send('Provide members to unmute.\n**Usage:** `unmute @member(s) <reason>`')
+
             logging_channel = discord.utils.get(ctx.guild.channels,id=self.logging_channel)
             mute_role = discord.utils.get(ctx.guild.roles, id=self.config_json['roles']['mute-role'])
             for i in members:
@@ -371,7 +378,7 @@ class Moderation(commands.Cog):
                 # TIMED
                 helper.delete_time_actions_uid(u_id=i.id, action='mute')
                 
-                await ctx.send(f'Unmuted { i.name }.\nReason:{ reason }')
+                await ctx.send(f'Unmuted { i.name }.')
 
 
         except Exception as e:
@@ -387,14 +394,14 @@ class Moderation(commands.Cog):
     @commands.command()
     @commands.has_permissions(manage_roles=True)
     async def addrole(self, ctx, members: commands.Greedy[discord.Member], *, role_name: str = None):
-        """ Add a role to member(s). | Usage: addrole @member(s) role_name """
+        """ Add a role to member(s). \nUsage: addrole @member(s) role_name """
 
         logging_channel = discord.utils.get(ctx.guild.channels,id=self.logging_channel)
 
         try:
 
             if role_name is None:
-                return await ctx.send('Please enter role name.')
+                return await ctx.send('Provide role name.\n**Usage:** `addrole @member(s) role_name`')
 
             role = discord.utils.get(ctx.guild.roles, name=role_name)
 
@@ -419,14 +426,14 @@ class Moderation(commands.Cog):
     @commands.command()
     @commands.has_permissions(manage_roles=True)
     async def remrole(self, ctx, members: commands.Greedy[discord.Member], *, role_name: str = None):
-        """ Remove a role to member(s). | Usage: remrole @member(s) role_name """
+        """ Remove a role to member(s). \nUsage: remrole @member(s) role_name """
         
         logging_channel = discord.utils.get(ctx.guild.channels,id=self.logging_channel)
 
         try:
 
             if role_name is None:
-                return await ctx.send('Please enter role name.')
+                return await ctx.send('Provide role name.\n**Usage:** `remrole @member(s) role_name`')
 
             role = discord.utils.get(ctx.guild.roles, name=role_name)
 
@@ -454,14 +461,15 @@ class Moderation(commands.Cog):
     @commands.command()
     @commands.has_permissions(ban_members=True)
     async def warn(self, ctx, members: commands.Greedy[discord.Member], *, reason: str = None):
-        """ Warn user(s) | Usage: warn @member(s) reason """
+        """ Warn user(s) \nUsage: warn @member(s) reason """
         try:
-            if reason is None:
-                return await ctx.send('Please provide reason.')
-            
-            if members == []:
-                return await ctx.send('Please provide user(s) to warn.')
 
+            if members == []:
+                return await ctx.send('Provide member(s) to warn.\n**Usage:** `warn @member(s) reason`')
+
+            if reason is None:
+                return await ctx.send('Provide a reason.\n**Usage:** `warn @member(s) reason`')
+            
             
             helper.create_infraction(author=ctx.author, users=members, action='warn', reason=reason)
 
@@ -474,16 +482,27 @@ class Moderation(commands.Cog):
 
     @commands.command(aliases=['infr'])
     @commands.has_permissions(ban_members=True)
-    async def infractions(self, ctx, member: typing.Optional[discord.Member] = None, mem_id: typing.Optional[int] = None):
-        """ Get Infractions. | Usage: infr OR infr <@member> <member_id> """
+    async def infractions(self, ctx, member: typing.Optional[discord.Member] = None, mem_id: typing.Optional[int] = None, inf_type: str = None):
+        """ Get Infractions. \nUsage: infr OR infr <@member> <member_id> <infraction_type>"""
         try:
+            
+            if inf_type is not None:
+                if inf_type == 'w' or inf_type == 'W' or re.match('warn', inf_type, re.IGNORECASE):
+                    inf_type = 'warn'
+                elif inf_type == 'm' or inf_type == 'M' or re.match('mute', inf_type, re.IGNORECASE):
+                    inf_type = 'mute'
+                elif inf_type == 'b' or inf_type == 'B' or re.match('ban', inf_type, re.IGNORECASE):
+                    inf_type = 'ban'
+                elif inf_type == 'k' or inf_type == 'K' or re.match('kick', inf_type, re.IGNORECASE):
+                    inf_type = 'kick'
+
             m = None
             if member is not None:
                 m = member
             elif mem_id is not None:
                 m = discord.utils.get(ctx.guild.members, id=mem_id)
 
-            infs_embed = helper.get_infractions(member=m)
+            infs_embed = helper.get_infractions(member=m, inf_type=inf_type)
 
             await ctx.send(embed=infs_embed)
 
@@ -491,15 +510,16 @@ class Moderation(commands.Cog):
         except Exception as e:
             self.logger.error(str(e))
             await ctx.send('Unable to fetch infractions.')
-        
+
+
     @commands.command()
     @commands.has_permissions(manage_channels=True)
-    async def slowmode(self, ctx, time: typing.Optional[int] = 0, channel: typing.Optional[discord.TextChannel] = None, *, reason: str = None):
-        """ Add/Remove slowmode. | Usage: slowmode <slowmode_time> <#channel> <reason>"""
+    async def slowmode(self, ctx, time: typing.Optional[int] = None, channel: typing.Optional[discord.TextChannel] = None, *, reason: str = None):
+        """ Add/Remove slowmode. \nUsage: slowmode <slowmode_time> <#channel> <reason>"""
         try:
             
             if time is None or time < 0:
-                return await ctx.send('Please provide valid time.')
+                return await ctx.send('Provide a valid time.\n**Usage:** `slowmode <slowmode_time> <#channel> <reason>`')
 
             ch = ctx.channel
 

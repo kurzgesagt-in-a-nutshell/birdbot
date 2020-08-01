@@ -114,7 +114,7 @@ def create_infraction(author, users, action, reason, time=None):
         infraction_db.update_one({"user_id": u.id}, {"$set": inf})
 
 
-def get_infractions(member):
+def get_infractions(member, inf_type):
     
     if member is None:
 
@@ -125,6 +125,7 @@ def get_infractions(member):
         for i in infractions:
             embed.add_field(name='{} ({})'.format(i['user_name'], i['user_id']), value='Total Infractions: {}'.format(i['total_infractions']['total']), inline=False)
         
+        embed.set_footer(text='Do "infractions user/user_id" to get infractions of a user.')
         return embed
 
     else:
@@ -172,10 +173,22 @@ def get_infractions(member):
             if ban_str == "":
                 ban_str = None
 
-            embed.add_field(name='Warns', value=f'```{ warn_str }```', inline=False)
-            embed.add_field(name='Mutes', value=f'```{ mute_str }```', inline=False)
-            embed.add_field(name='Bans', value= f'```{ ban_str }```', inline=False)
-            embed.add_field(name='Kicks', value=f'```{ kick_str }```', inline=False)
+            if inf_type is None:
+                embed.add_field(name='Warns', value=f'```{ warn_str }```', inline=False)
+                embed.add_field(name='Mutes', value=f'```{ mute_str }```', inline=False)
+                embed.add_field(name='Bans', value= f'```{ ban_str }```', inline=False)
+                embed.add_field(name='Kicks', value=f'```{ kick_str }```', inline=False)
+            
+            elif inf_type == 'warn':
+                embed.add_field(name='Warns', value=f'```{ warn_str }```', inline=False)
+            elif inf_type == 'mute':
+                embed.add_field(name='Mutes', value=f'```{ mute_str }```', inline=False)
+            elif inf_type == 'ban':
+                embed.add_field(name='Bans', value= f'```{ ban_str }```', inline=False)
+            elif inf_type == 'kick':
+                embed.add_field(name='Kicks', value=f'```{ kick_str }```', inline=False)
+
+
 
         else:
             embed.add_field(name="No infraction found.", value="```User is clean.```")
