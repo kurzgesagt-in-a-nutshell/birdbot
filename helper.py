@@ -114,14 +114,14 @@ def create_infraction(author, users, action, reason, time=None):
         infraction_db.update_one({"user_id": u.id}, {"$set": inf})
 
 
-def get_infractions(member, inf_type):
+def get_infractions(member, inf_type, page_no=1):
     
     if member is None:
 
-        infractions = infraction_db.find().limit(5)
+        infractions = infraction_db.find().skip(5 * (page_no - 1)).limit(5)
 
 
-        embed = discord.Embed(title='Infractions', description=f'Last 5 Infracetd User', color=discord.Color.green())
+        embed = discord.Embed(title='Infractions', description=f'{5 * (page_no - 1) + 1} - {5 * (page_no - 1) + 5} Infracetd User', color=discord.Color.green())
         for i in infractions:
             embed.add_field(name='{} ({})'.format(i['user_name'], i['user_id']), value='Total Infractions: {}'.format(i['total_infractions']['total']), inline=False)
         
@@ -158,7 +158,7 @@ def get_infractions(member, inf_type):
                                     + 'Date: {}'.format(w['datetime'].replace(microsecond=0)) + "\n\n"
 
             kick_str = ""
-            for w in i["warn"]:
+            for w in i["kick"]:
                 kick_str = kick_str + 'Author: {} ({})'.format(w['author_name'], w['author_id']) + "\n" \
                                     + 'Reason: {}'.format(w['reason']) + "\n" \
                                     + 'Date: {}'.format(w['datetime'].replace(microsecond=0)) + "\n\n"

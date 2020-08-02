@@ -483,8 +483,13 @@ class Moderation(commands.Cog):
     @commands.command(aliases=['infr'])
     @commands.has_permissions(ban_members=True)
     async def infractions(self, ctx, member: typing.Optional[discord.Member] = None, mem_id: typing.Optional[int] = None, inf_type: str = None):
-        """ Get Infractions. \nUsage: infr OR infr <@member> <member_id> <infraction_type>"""
+        """ Get Infractions. \nUsage: infr <page_no> OR infr <@member / member_id> <infraction_type>"""
         try:
+
+            page_no = 1
+            if mem_id is not None:
+                if len(str(mem_id)) != 18:
+                    page_no = mem_id
             
             if inf_type is not None:
                 if inf_type == 'w' or inf_type == 'W' or re.match('warn', inf_type, re.IGNORECASE):
@@ -502,7 +507,7 @@ class Moderation(commands.Cog):
             elif mem_id is not None:
                 m = discord.utils.get(ctx.guild.members, id=mem_id)
 
-            infs_embed = helper.get_infractions(member=m, inf_type=inf_type)
+            infs_embed = helper.get_infractions(member=m, inf_type=inf_type, page_no=page_no)
 
             await ctx.send(embed=infs_embed)
 

@@ -35,6 +35,13 @@ Module only for developers.
     - Example:
         `reload cogs.test`
 
+- kill
+    - Used to kill the bot.
+    - Usage:
+        `kill`
+    - Example:
+        `kill`
+
 
 ### 2. Moderation
 
@@ -148,7 +155,8 @@ General moderation commands.
     - Get infraction list or infractions of a user.
     - Alias: infr
     - Usage:
-        - `infraction <@member / member_id> <infraction_type>`
+        - `infraction <page_no>` <br>
+        - `infraction <@member / member_id> <infraction_type>` <br>
         --> **infraction_type:**
             - w/W/warn/warns : To get warns.
             - m/M/mute/mutes : To get mutes.
@@ -157,6 +165,7 @@ General moderation commands.
     - Example
         > **To get list of infracted users** <br>
         > infraction OR infr <br>
+        > infr 3 *(to get 3rd page or 10-15th infraction from the list)*
         > **To get infraction of a user** <br>
         >   - Full List: <br>
         >       - infraction @duck1 <br>

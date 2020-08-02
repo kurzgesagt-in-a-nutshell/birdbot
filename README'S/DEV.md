@@ -23,6 +23,7 @@
     Module for dev commands.
     - eval
     - reload
+    - kill
 
 2. **Moderation**
     Module for moderation commands.
@@ -42,5 +43,6 @@
     - addrole
     - remrole (remove role)
     - slowmode
+    - infraction
 
 
