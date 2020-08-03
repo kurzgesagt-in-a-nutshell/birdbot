@@ -29,15 +29,9 @@
     Module for moderation commands.
     - clean
     - ban
-        > TODO:
-        > - Currently if time alone is provided it is considered as a reason.
-        > - Seperate times as arguments in time string.
     - unban
     - kick
     - mute
-        > TODO:
-        > - Currently if time alone is provided it is considered as a reason.
-        > - Seperate times as arguments in time string.
     - unmute
     - warn
     - addrole

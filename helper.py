@@ -271,4 +271,68 @@ async def start_timed_actions(bot):
     
     except Exception as e: 
         logging.error(str(e))
+
+
+def calc_time(args):
+    tot_time = 0
+    is_muted = False
+    reason = None
+    time_str = ""
+    try:
+
+        r = 0
+        for a in args:
+            s = 0
+            for c in a:
+                if c.isdigit():
+                    s = s + 1
+                else:
+                    break
         
+
+            if a[:s] == "":
+                break
+            else:
+
+                time_str = time_str + a + " "
+                t = 0
+                j = 0
+                for i in a:
+                    
+                    if i.isdigit():
+                        t = t * pow(10, j) + int(i)
+                        j = j + 1
+                    
+                    else:
+                        if i == 'd' or i == 'D':
+                            tot_time = tot_time + t * 24 * 60 * 60
+                        elif i == 'h' or i == 'H':
+                            tot_time = tot_time + t * 60 * 60
+                        elif i == 'm' or i == 'M':
+                            tot_time = tot_time + t * 60
+                        elif i == 's' or i == 'S':
+                            tot_time = tot_time + t
+
+                        t = 0
+                        j = 0
+                
+                r = r + 1
+
+        if r < len(args):
+            for a in args[r:]:
+                if reason is None:
+                    reason = a
+                else:
+                    reason = reason + " " + a
+        
+        else: 
+            return None, None, None
+        
+        if time_str == "":
+            time_str = tot_time.__str__()
+
+        return tot_time, reason, time_str
+
+    except Exception as ex:
+        self.logger.exception(str(e))  
+        return None, -1, None 

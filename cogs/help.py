@@ -31,7 +31,7 @@ class Help(commands.Cog):
 
             elif self.bot.get_command(cmnd).cog_name in cogs:
                 command = self.bot.get_command(cmnd)
-                embed=discord.Embed(title=command.name, description=f'```{ command.help }```', color=discord.Color.green())
+                embed = discord.Embed(title=command.name, description=f'```{ command.help }```', color=discord.Color.green())
                 if command.aliases != []:
                     embed.add_field(name='Alias', value=f'```{ ", ".join(command.aliases) }```', inline=False)
                 return await ctx.send(embed=embed)

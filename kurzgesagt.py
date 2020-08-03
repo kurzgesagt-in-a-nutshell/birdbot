@@ -16,14 +16,17 @@ logging.basicConfig(
         level = logging.INFO,
         handlers = [RichHandler()]
         )
+
 logger = logging.getLogger(__name__)
 print("Delaying bot for server creation")
 time.sleep(5)
+
+
 class Bot(commands.AutoShardedBot):
     """Main Bot"""
 
     def __init__(self):
-        super().__init__(command_prefix="k!!",case_insensitive=True,owner_ids={389718094270038018,183092910495891467,424843380342784011},reconnect=True)
+        super().__init__(command_prefix="kt!",case_insensitive=True,owner_ids={389718094270038018,183092910495891467,424843380342784011},reconnect=True)
         self.starttime = time.time()
         cogs = ['cogs.moderation','cogs.dev', 'cogs.help']        
         fails = {}
@@ -42,7 +45,7 @@ class Bot(commands.AutoShardedBot):
         logger.info('------')
         # bot status
         activity = discord.Activity(type=discord.ActivityType.listening, name="Steve's voice" )
-        await self.change_presence(activity = activity)
+        # await self.change_presence(activity = activity)
 
         # TIMED
         # await helper.start_timed_actions(self)

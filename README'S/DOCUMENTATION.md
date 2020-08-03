@@ -69,7 +69,14 @@ General moderation commands.
         > ban @bad_duck reason <br>
         > ban @bad_duck1 @bad_duck2 reason <br>
         > ban @bad_duck1 2h30m reason <br>
-        > ban @bad_duck1 @bad_duck2 1d2h30m reason
+        > ban @bad_duck1 @bad_duck2 1d2h30m reason <br>
+        > ban @bad_duck1 @bad_duck2 1day 2hr 30m 5sec reason <br>
+        > **Note:** <br> 
+        > D/d/day/days - Days <br> 
+        > H/h/hour/hours/hr - Hours <br> 
+        > M/m/min/mins/minutes - Minutes <br> 
+        > S/s/sec/second/seconds - Seconds <br>
+        > Providing all times(ie days, hours, mins, sec) are not required. i.e. 1d30m or 1h2m or 1day 30s are all valid.
 
 - **unban**
     - Unban a user.
@@ -95,11 +102,13 @@ General moderation commands.
         > mute @bad_duck reason <br>
         > mute @bad_duck1 @bad_duck2 @bad_duck3 reason <br>
         > mute @bad_duck 1d2h30m50s reason <br>
+        > mute @bad_duck 1day 2hr 30mims 50s reason <br>
         > **Note:** <br> 
-        > D/d - Days, H/h - Hours, M/m - Minutes, S/s - Seconds <br>
-        > Do not seperate times in time string. That is, 1d 2h 30m is invalid. And 1d2h30m is valid. <br>
-        > Providing all times(ie days, hours, mins, sec) are not required. i.e. 1d30m or 1h2m or 1d30s are all valid. <br>
-        > Currently, do not provide time alone. If done so it will be considered as a reason. 
+        > D/d/day/days - Days <br> 
+        > H/h/hour/hours/hr - Hours <br> 
+        > M/m/min/mins/minutes - Minutes <br> 
+        > S/s/sec/second/seconds - Seconds <br>
+        > Providing all times(ie days, hours, mins, sec) are not required. i.e. 1d30m or 1h2m or 1day 30s are all valid.
             
 - **unmute**
     - Unmute member(s).

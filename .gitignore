@@ -135,6 +135,7 @@ __tmp_restart__.tmp
 
 # Token file
 token.txt
+token_2.txt
 
 # Git
 .gitconfig

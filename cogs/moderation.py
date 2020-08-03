@@ -1,9 +1,8 @@
-import logging
 import json
 import os
-import datetime
 from time import sleep
 import re
+import logging
 
 import typing
 import sys
@@ -148,62 +147,37 @@ class Moderation(commands.Cog):
 
     @commands.command(aliases = ['yeet'])
     @commands.has_permissions(ban_members=True)
-    async def ban(self,ctx, members: commands.Greedy[discord.Member], time: typing.Optional[str] = None,*,reason: str = None):
+    async def ban(self,ctx, members: commands.Greedy[discord.Member], *args):
         """ Ban a member.\nUsage: ban @member(s) reason """
+
+        tot_time = 0
+        is_banned = False
+        mem_id = []
+
         try:
 
-            logging_channel = discord.utils.get(ctx.guild.channels,id=self.logging_channel)
+            logging_channel = discord.utils.get(ctx.guild.channels, id=self.logging_channel)
 
-            tot_time = 0
-            is_banned = False
-            mem_id = []
 
-            try:
 
-                if members == []:
-                    return await ctx.send('Provide member(s) to mute.\n **Usage:** `ban @member(s) reason`')
+            if members == []:
+                return await ctx.send('Provide member(s) to ban.\n **Usage:** `ban @member(s) reason`')
 
-                if reason is None and time is None :
-                    return await ctx.send('Provide a reason.\n **Usage:** `ban @member(s) reason`')
+            tot_time, reason, time_str = helper.calc_time(args)     
 
-                if reason is None:
-                    reason = time
-                    time = None
+            if reason is None:
+                return await ctx.send('Provide a reason for banning.\n **Usage:** `ban @member(s) reason`')
 
-                if time is not None:
-                    t = 0
-                    j = 0
-                    for i in time:
-                        
-                        if i.isdigit():
-                            t = t * pow(10, j) + int(i)
-                            j = j + 1
-                        
-                        else:
-                            if i == 'd' or i == 'D':
-                                tot_time = tot_time + t * 24 * 60 * 60
-                            elif i == 'h' or i == 'H':
-                                tot_time = tot_time + t * 60 * 60
-                            elif i == 'm' or i == 'M':
-                                tot_time = tot_time + t * 60
-                            elif i == 's' or i == 'S':
-                                tot_time = tot_time + t
-
-                            t = 0
-                            j = 0
-
-            except Exception as ex:
-                self.logger.exception(ex.__str__())     
 
 
             for m in members:
                 mem_id.append(m.id)
                 await m.ban(reason=reason)
-                await ctx.send(f'Banned { m.name }.\nReason: { reason }')
+                await ctx.send(f'Banned { m.name } for { time_str }.\nReason: { reason }')
 
             is_banned = True
             
-            embed = helper.create_embed(author=ctx.author, users=members, action='Ban', reason=reason, color=discord.Color.dark_red())
+            embed = helper.create_embed(author=ctx.author, users=members, action='Ban', extra=f'Ban Duration: { time_str } or { tot_time } seconds', reason=reason, color=discord.Color.dark_red())
             await logging_channel.send(embed=embed)
 
             helper.create_infraction(author=ctx.author, users=members, action='ban', reason=reason, time=tot_time)
@@ -249,6 +223,10 @@ class Moderation(commands.Cog):
 
                     await ctx.guild.unban(b.user, reason=reason)
                     await ctx.send(f'Unbanned { b.user.name }.')
+                    member_id.remove(b.user.id)
+
+            for m in member_id:
+                await ctx.send(f'Member with ID { m } has not been banned before.')
 
             embed = helper.create_embed(author=ctx.author, users=mem, action='Unban', reason=reason, color=discord.Color.dark_red())
             await logging_channel.send(embed=embed)
@@ -285,64 +263,38 @@ class Moderation(commands.Cog):
 
     @commands.command()
     @commands.has_permissions(kick_members=True)
-    async def mute(self,ctx,members: commands.Greedy[discord.Member], time: typing.Optional[str] = None, *, reason=None):
+    async def mute(self, ctx, members: commands.Greedy[discord.Member], *args):
         """ Mute member(s). \nUsage: mute @member(s) <time> reason """
+
+        tot_time = 0
+        is_muted = False
 
         try:
             logging_channel = discord.utils.get(ctx.guild.channels,id=self.logging_channel)
             mute_role = discord.utils.get(ctx.guild.roles, id=self.config_json['roles']['mute-role']) 
 
-            tot_time = 0
-            is_muted = False
 
-            try:
 
-                if members == []:
-                    return await ctx.send('Provide member(s) to mute.\n**Usage:** `mute @member(s) <time> reason`')
+            if members == []:
+                return await ctx.send('Provide member(s) to mute.\n**Usage:** `mute @member(s) <time> reason`')
 
-                if reason is None and time is None :
-                    return await ctx.send('Provide a reason.\n**Usage:** `mute @member(s) <time> reason`')
 
-                if reason is None:
-                    reason = time
-                    time = None
+            tot_time, reason, time_str = helper.calc_time(args)     
 
-                if time is not None:
-                    t = 0
-                    j = 0
-                    for i in time:
-                        
-                        if i.isdigit():
-                            t = t * pow(10, j) + int(i)
-                            j = j + 1
-                        
-                        else:
-                            if i == 'd' or i == 'D':
-                                tot_time = tot_time + t * 24 * 60 * 60
-                            elif i == 'h' or i == 'H':
-                                tot_time = tot_time + t * 60 * 60
-                            elif i == 'm' or i == 'M':
-                                tot_time = tot_time + t * 60
-                            elif i == 's' or i == 'S':
-                                tot_time = tot_time + t
-
-                            t = 0
-                            j = 0
-
-            except Exception as ex:
-                self.logger.exception(ex.__str__())     
+            if reason is None:
+                return await ctx.send('Provide reason to mute.\n**Usage:** `mute @member(s) <time> reason`')
 
             
             for i in members:
                 await i.add_roles(mute_role, reason=reason)
-                await ctx.send(f'Muted { i.name }.\nReason: { reason }')
+                await ctx.send(f'Muted { i.name } for { time_str }.\nReason: { reason }')
 
             is_muted = True
 
-            embed = helper.create_embed(author=ctx.author, users=members, action='Mute', reason=reason, extra=f'Mute Duration: { time } or { tot_time } seconds' ,color=discord.Color.red())
+            embed = helper.create_embed(author=ctx.author, users=members, action='Mute', reason=reason, extra=f'Mute Duration: { time_str } or { tot_time } seconds' ,color=discord.Color.red())
             await logging_channel.send(embed=embed)
 
-            helper.create_infraction(author=ctx.author, users=members, action='mute', reason=reason, time=time)
+            helper.create_infraction(author=ctx.author, users=members, action='mute', reason=reason, time=time_str)
      
 
         except Exception as e:
@@ -371,7 +323,7 @@ class Moderation(commands.Cog):
             if members == []:
                 return await ctx.send('Provide members to unmute.\n**Usage:** `unmute @member(s) <reason>`')
 
-            logging_channel = discord.utils.get(ctx.guild.channels,id=self.logging_channel)
+            logging_channel = discord.utils.get(ctx.guild.channels, id=self.logging_channel)
             mute_role = discord.utils.get(ctx.guild.roles, id=self.config_json['roles']['mute-role'])
             for i in members:
                 await i.remove_roles(mute_role, reason=reason)
