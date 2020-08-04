@@ -126,22 +126,13 @@ General moderation commands.
         > warn @bad_duck reason <br>
         > warn @bad_duck1 @bad_duck2 reason
 
-- **addrole**
-    - Add a role to member(s)
+- **role**
+    - Add/Remove a role to member(s)
+    - If provided role is not assigned to the member is will give the role, and if role is present it will remove the role.
     - Usage:
-        - `addrole @member(s) role_name`
+        - `role @member role_name`
     - Example:
-        > addrole @ducky Green Bird <br>
-        > addrole @duck1 @duck2 Red Bird
-
-- **remrole**
-    - Remove a role from member(s)
-    - Usage:
-        - `remrole @member(s) role_name`
-    - Example:
-        > remrole @ducky Green Bird <br>
-        > remrole @duck1 @duck2 Red Bird
-
+        > role @ducky Green Bird
 
 
 - **slowmode**

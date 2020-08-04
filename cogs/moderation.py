@@ -345,15 +345,16 @@ class Moderation(commands.Cog):
 
     @commands.command()
     @commands.has_permissions(manage_roles=True)
-    async def addrole(self, ctx, members: commands.Greedy[discord.Member], *, role_name: str = None):
-        """ Add a role to member(s). \nUsage: addrole @member(s) role_name """
+    async def role(self, ctx, member: discord.Member = None, *, role_name: str = None):
+        """ Add/Remove a role to member. \nUsage: addrole @member role_name """
 
         logging_channel = discord.utils.get(ctx.guild.channels,id=self.logging_channel)
 
         try:
-
+            if member is None:
+                return await ctx.send('Provide member.\n**Usage:** `addrole @member role_name`')
             if role_name is None:
-                return await ctx.send('Provide role name.\n**Usage:** `addrole @member(s) role_name`')
+                return await ctx.send('Provide role name.\n**Usage:** `addrole @member role_name`')
 
             role = discord.utils.get(ctx.guild.roles, name=role_name)
 
@@ -362,53 +363,26 @@ class Moderation(commands.Cog):
 
             if ctx.author.top_role < role:
                 await ctx.send(f'Your role is lower than { role.name }.')
+
             else:
-                for member in members:
+                r = discord.utils.get(member.roles, name=role.name)
+                if r is None:
                     await member.add_roles(role)
                     await ctx.send(f'Gave role { role.name } to { member.name }')
+                    
+                    embed = helper.create_embed(author=ctx.author, users=[member], action='Gave role', reason="None", extra=f'Role: { role.name }\nRole ID: { role.id }', color=discord.Color.purple())
+                    return await logging_channel.send(embed=embed)
 
-                embed = helper.create_embed(author=ctx.author, users=members, action='Gave role', reason="None", extra=f'Role: { role.name }\nRole ID: {role.id}', color=discord.Color.purple())
-                await logging_channel.send(embed=embed)
-
+                else:
+                    await member.remove_roles(role)
+                    await ctx.send(f'Removed role { role.name } from { member.name }')
+                    embed = helper.create_embed(author=ctx.author, users=[member], action='Removed role', reason="None", extra=f'Role: { role.name }\nRole ID: {role.id}', color=discord.Color.purple())
+                    return await logging_channel.send(embed=embed)
 
         except Exception as e:
             self.logger.error(str(e))
             await ctx.send('Unable to give role.')
     
-    @commands.command()
-    @commands.has_permissions(manage_roles=True)
-    async def remrole(self, ctx, members: commands.Greedy[discord.Member], *, role_name: str = None):
-        """ Remove a role to member(s). \nUsage: remrole @member(s) role_name """
-        
-        logging_channel = discord.utils.get(ctx.guild.channels,id=self.logging_channel)
-
-        try:
-
-            if role_name is None:
-                return await ctx.send('Provide role name.\n**Usage:** `remrole @member(s) role_name`')
-
-            role = discord.utils.get(ctx.guild.roles, name=role_name)
-
-            if role is None:
-                return await ctx.send('Role not found')
-                
-            if ctx.author.top_role < role:
-                await ctx.send(f'Your role is lower than { role.name }.')
-
-            else:
-                for member in members:
-                    await member.remove_roles(role)
-                    await ctx.send(f'Removed role { role.name } to { member.name }')
-
-                embed = helper.create_embed(author=ctx.author, users=members, action='Removed role', reason="None", extra=f'Role: { role.name }\nRole ID: {role.id}', color=discord.Color.purple())
-                await logging_channel.send(embed=embed)
-
-            await ctx.send('Done')
-            
-        except Exception as e:
-            self.logger.error(str(e))
-            await ctx.send('Unable to remove role.')
-
 
     @commands.command()
     @commands.has_permissions(ban_members=True)

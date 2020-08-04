@@ -34,8 +34,7 @@
     - mute
     - unmute
     - warn
-    - addrole
-    - remrole (remove role)
+    - role
     - slowmode
     - infraction
 
