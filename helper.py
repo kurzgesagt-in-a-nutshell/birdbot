@@ -24,12 +24,12 @@ def create_embed(author, users, action, reason, extra="None", color=discord.Colo
         for u in users:
             user_str = user_str + f'{ u }  ({ u.id })' + "\n"
 
-    embed = discord.Embed(title=f'{author.name}#{author.discriminator}', description=f'{author.id}', color=color)
+    embed = discord.Embed(title=f'{author.name}#{author.discriminator}', description=f'{author.id}', color=color, timestamp = datetime.datetime.utcnow())
     embed.add_field(name='User(s) Affected ', value=f'```{ user_str }```', inline=False)
     embed.add_field(name='Action',value=f'```{ action }```', inline=False)
     embed.add_field(name='Reason', value=f'```{ reason }```', inline=False)
     embed.add_field(name='Additional Info', value=f'```{ extra }```', inline=False)
-    embed.set_footer(text=datetime.datetime.utcnow())
+    # embed.set_footer(text=datetime.datetime.utcnow())
 
     return embed
 
@@ -121,7 +121,7 @@ def get_infractions(member, inf_type, page_no=1):
         infractions = infraction_db.find().skip(5 * (page_no - 1)).limit(5)
 
 
-        embed = discord.Embed(title='Infractions', description=f'{5 * (page_no - 1) + 1} - {5 * (page_no - 1) + 5} Infracetd User', color=discord.Color.green())
+        embed = discord.Embed(title='Infractions', description=f'{5 * (page_no - 1) + 1} - {5 * (page_no - 1) + 5} Infracetd User', color=discord.Color.green(), timestamp = datetime.datetime.utcnow())
         for i in infractions:
             embed.add_field(name='{} ({})'.format(i['user_name'], i['user_id']), value='Total Infractions: {}'.format(i['total_infractions']['total']), inline=False)
         
@@ -130,7 +130,7 @@ def get_infractions(member, inf_type, page_no=1):
 
     else:
 
-        embed = discord.Embed(title='Infractions', description=f'Member: { member.name }', color=discord.Color.green())
+        embed = discord.Embed(title='Infractions', description=f'Member: { member.name }', color=discord.Color.green(), timestamp = datetime.datetime.utcnow())
         i = infraction_db.find_one({"user_id": member.id})
 
         if i:
@@ -264,7 +264,7 @@ async def start_timed_actions(bot):
                         await guild.unban(b.user, reason="Time Expired")
                     timed_actions_db.remove({"_id": a["_id"]})
             
-            embed = discord.Embed(title='Timed Action', description='Time Expired', color=discord.Color.dark_blue())
+            embed = discord.Embed(title='Timed Action', description='Time Expired', color=discord.Color.dark_blue(), timestamp = datetime.datetime.utcnow())
             embed.add_field(name='User Affected', value='```{} ({})```'.format(a['user_name'], a['user_id']), inline=False)
             embed.add_field(name='Action', value='```Un-{}```'.format(a['action']), inline=False)
             await logging_channel.send(embed=embed)

@@ -2,6 +2,7 @@ import logging
 
 import discord
 from discord.ext import commands
+import datetime
 
 
 class Help(commands.Cog):
@@ -20,7 +21,7 @@ class Help(commands.Cog):
         cogs = ['Moderation', 'Help']
         try:
             if cmnd == None:
-                embed=discord.Embed(title="Kurzbot Help", description=f'To see more info do help [command].', color=discord.Color.green())
+                embed=discord.Embed(title="Kurzbot Help", description=f'To see more info do help [command].', color=discord.Color.green(), timestamp = datetime.datetime.utcnow())
                 for i in cogs:
                     cog = self.bot.get_cog(i)
                     commands = cog.get_commands()
@@ -31,7 +32,7 @@ class Help(commands.Cog):
 
             elif self.bot.get_command(cmnd).cog_name in cogs:
                 command = self.bot.get_command(cmnd)
-                embed = discord.Embed(title=command.name, description=f'```{ command.help }```', color=discord.Color.green())
+                embed = discord.Embed(title=command.name, description=f'```{ command.help }```', color=discord.Color.green(), timestamp = datetime.datetime.utcnow())
                 if command.aliases != []:
                     embed.add_field(name='Alias', value=f'```{ ", ".join(command.aliases) }```', inline=False)
                 return await ctx.send(embed=embed)
