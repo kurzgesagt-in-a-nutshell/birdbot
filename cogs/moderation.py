@@ -8,6 +8,7 @@ import typing
 import sys
 sys.path.append('..')
 import helper
+import custom_converters
 
 import discord
 from discord.ext import commands
@@ -15,6 +16,7 @@ from discord.ext import commands
 from hastebin_client.utils import *
 import asyncio
 
+# from custom_converters import *
 class Moderation(commands.Cog):
     def __init__(self, bot):
         self.logger = logging.getLogger('Moderation')
@@ -147,7 +149,7 @@ class Moderation(commands.Cog):
 
     @commands.command(aliases = ['yeet'])
     @commands.has_permissions(ban_members=True)
-    async def ban(self,ctx, members: commands.Greedy[discord.Member], *args):
+    async def ban(self, ctx, *args):
         """ Ban a member.\nUsage: ban @member(s) reason """
 
         tot_time = 0
@@ -158,12 +160,12 @@ class Moderation(commands.Cog):
 
             logging_channel = discord.utils.get(ctx.guild.channels, id=self.logging_channel)
 
+            members, extra = custom_converters.get_members(ctx, *args)
 
-
-            if members == []:
+            if members is None:
                 return await ctx.send('Provide member(s) to ban.\n **Usage:** `ban @member(s) reason`')
 
-            tot_time, reason, time_str = helper.calc_time(args)     
+            tot_time, reason, time_str = helper.calc_time(extra)     
 
             if reason is None:
                 return await ctx.send('Provide a reason for banning.\n **Usage:** `ban @member(s) reason`')
@@ -187,7 +189,6 @@ class Moderation(commands.Cog):
             self.logger.error(str(e))
             await ctx.send('Unable to ban member(s).')
 
-        
         if is_banned:
             try:
                 if tot_time != 0:
@@ -238,13 +239,21 @@ class Moderation(commands.Cog):
 
     @commands.command()
     @commands.has_permissions(kick_members=True)
-    async def kick(self,ctx,members: commands.Greedy[discord.Member],*,reason: str = None):
+    # async def kick(self,ctx,members: commands.Greedy[discord.Member],*,reason: str = None):
+    async def kick(self, ctx, *args):
         """ Kick member(s).\nUsage: kick @member(s) reason """
         try:
+
+            members, reason = custom_converters.get_members(ctx, *args)
+
             if reason is None:
                 return await ctx.send('Provide a reason.\n**Usage:** `kick @member(s) reason`')
 
-            logging_channel = discord.utils.get(ctx.guild.channels,id=self.logging_channel)
+            if members is None:
+                return await ctx.send('Provide member(s).\n**Usage:** `kick @member(s) reason`')
+
+            reason = " ".join(reason)
+            logging_channel = discord.utils.get(ctx.guild.channels, id=self.logging_channel)
             
             for i in members:
                 await i.kick(reason=reason)
@@ -263,7 +272,7 @@ class Moderation(commands.Cog):
 
     @commands.command()
     @commands.has_permissions(kick_members=True)
-    async def mute(self, ctx, members: commands.Greedy[discord.Member], *args):
+    async def mute(self, ctx, *args):
         """ Mute member(s). \nUsage: mute @member(s) <time> reason """
 
         tot_time = 0
@@ -273,13 +282,13 @@ class Moderation(commands.Cog):
             logging_channel = discord.utils.get(ctx.guild.channels,id=self.logging_channel)
             mute_role = discord.utils.get(ctx.guild.roles, id=self.config_json['roles']['mute-role']) 
 
+            members, extra = custom_converters.get_members(ctx, *args)
 
-
-            if members == []:
+            if members == None:
                 return await ctx.send('Provide member(s) to mute.\n**Usage:** `mute @member(s) <time> reason`')
 
 
-            tot_time, reason, time_str = helper.calc_time(args)     
+            tot_time, reason, time_str = helper.calc_time(extra)     
 
             if reason is None:
                 return await ctx.send('Provide reason to mute.\n**Usage:** `mute @member(s) <time> reason`')
@@ -386,17 +395,20 @@ class Moderation(commands.Cog):
 
     @commands.command()
     @commands.has_permissions(ban_members=True)
-    async def warn(self, ctx, members: commands.Greedy[discord.Member], *, reason: str = None):
+    async def warn(self, ctx, *args):
         """ Warn user(s) \nUsage: warn @member(s) reason """
         try:
+            
+            members, reason = custom_converters.get_members(ctx, *args)
 
-            if members == []:
+            if members is None:
                 return await ctx.send('Provide member(s) to warn.\n**Usage:** `warn @member(s) reason`')
 
             if reason is None:
                 return await ctx.send('Provide a reason.\n**Usage:** `warn @member(s) reason`')
             
-            
+            reason = " ".join(reason)
+
             helper.create_infraction(author=ctx.author, users=members, action='warn', reason=reason)
 
             for m in members:
@@ -479,6 +491,7 @@ class Moderation(commands.Cog):
             await ctx.send(f'{ int(self.bot.latency * 1000) } ms')
         except Exception as e:
             self.logger.error(str(e))
+
 
 def setup(bot):
     bot.add_cog(Moderation(bot))
