@@ -18,7 +18,7 @@ class {''.join(name.title().split())}(commands.Cog):
     async def your_command(self, ctx):
         \"\"\"Command description\"\"\"
         await ctx.send('thing')
-
+    
 
 def setup(bot):
     bot.add_cog({''.join(name.title().split())}(bot))

@@ -150,7 +150,7 @@ class Moderation(commands.Cog):
     @commands.command(aliases = ['yeet'])
     @commands.has_permissions(ban_members=True)
     async def ban(self, ctx, *args):
-        """ Ban a member.\nUsage: ban @member(s) reason """
+        """ Ban a member.\nUsage: ban @member(s) <time> reason """
 
         tot_time = 0
         is_banned = False
@@ -163,12 +163,12 @@ class Moderation(commands.Cog):
             members, extra = custom_converters.get_members(ctx, *args)
 
             if members is None:
-                return await ctx.send('Provide member(s) to ban.\n **Usage:** `ban @member(s) reason`')
+                return await ctx.send('Provide member(s) to ban.\n **Usage:** `ban @member(s) <time> reason`')
 
             tot_time, reason, time_str = helper.calc_time(extra)     
 
             if reason is None:
-                return await ctx.send('Provide a reason for banning.\n **Usage:** `ban @member(s) reason`')
+                return await ctx.send('Provide a reason for banning.\n **Usage:** `ban @member(s) <time> reason`')
 
 
 
@@ -483,16 +483,10 @@ class Moderation(commands.Cog):
             self.logger.error(str(e))       
             await ctx.send('Unable to add slowmode.')
 
-
-    @commands.command()
-    async def ping(self, ctx):
-        """ Ping Pong """
-        try:
-            await ctx.send(f'{ int(self.bot.latency * 1000) } ms')
-        except Exception as e:
-            self.logger.error(str(e))
+    
 
 
 def setup(bot):
     bot.add_cog(Moderation(bot))
+    
 

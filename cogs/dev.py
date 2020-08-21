@@ -25,6 +25,7 @@ class Dev(commands.Cog):
     async def on_ready(self):
         self.logger.info('loaded Dev')
 
+
     def cleanup_code(self,content):
         """Remove codeblock from eval"""
         if content.startswith('```') and content.endswith('```'):
@@ -66,6 +67,7 @@ class Dev(commands.Cog):
         """Set playing activity"""
         game = discord.Activity(name=text, type=discord.ActivityType.playing)
         await self.change_activity(ctx, game)
+
 
     @commands.is_owner()
     @commands.command(pass_context=True, name='eval')

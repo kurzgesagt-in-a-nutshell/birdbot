@@ -127,7 +127,7 @@ General moderation commands.
         > warn @bad_duck1 @bad_duck2 reason
 
 - **role**
-    - Add/Remove a role to member(s)
+    - Add/Remove a role to member
     - If provided role is not assigned to the member is will give the role, and if role is present it will remove the role.
     - Usage:
         - `role @member role_name`

@@ -15,6 +15,7 @@ class Help(commands.Cog):
     async def on_ready(self):
         self.logger.info('loaded Help')
     
+
     @commands.command(aliases=['h'])
     async def help(self, ctx, cmnd=None):
         """Display help. \nUsage: help command_name"""
@@ -41,6 +42,14 @@ class Help(commands.Cog):
             self.logger.error(str(e))
 
 
+    @commands.command()
+    async def ping(self, ctx):
+        """ Ping Pong """
+        try:
+            await ctx.send(f'{ int(self.bot.latency * 1000) } ms')
+        except Exception as e:
+            self.logger.error(str(e))
+            
 def setup(bot):
     bot.add_cog(Help(bot))
 
