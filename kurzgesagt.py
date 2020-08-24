@@ -27,12 +27,12 @@ class Bot(commands.AutoShardedBot):
 
     def __init__(self):
         # For Bird Bot
-        super().__init__(command_prefix="k!",case_insensitive=True,owner_ids={389718094270038018,183092910495891467,424843380342784011},reconnect=True)
+        super().__init__(command_prefix=["!", "k!"],case_insensitive=True,owner_ids={389718094270038018,183092910495891467,424843380342784011},reconnect=True)
         
         # For Kurz Temp Bot
         # super().__init__(command_prefix="kt!",case_insensitive=True,owner_ids={389718094270038018,183092910495891467,424843380342784011},reconnect=True)
         self.starttime = time.time()
-        cogs = ['cogs.moderation','cogs.dev', 'cogs.help']        
+        cogs = ['cogs.moderation', 'cogs.dev', 'cogs.help']
         fails = {}
         for i in cogs:
             try:
@@ -54,13 +54,13 @@ class Bot(commands.AutoShardedBot):
         # TIMED
         await helper.start_timed_actions(self)
 
-    
+
     @commands.Cog.listener()
     async def on_command_error(self, ctx, error):
 
         if isinstance(error, commands.MissingPermissions):
             pass
-
+            
         elif isinstance(error, commands.MissingRequiredArgument):
             return await ctx.send("Missing Arguments. Please check syntax using help command.")
 

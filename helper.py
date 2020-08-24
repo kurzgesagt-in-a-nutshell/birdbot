@@ -334,5 +334,6 @@ def calc_time(args):
         return tot_time, reason, time_str
 
     except Exception as ex:
-        self.logger.exception(str(e))  
+        logging.error(str(ex))  
         return None, -1, None 
+

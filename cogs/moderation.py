@@ -162,7 +162,13 @@ class Moderation(commands.Cog):
 
             members, extra = custom_converters.get_members(ctx, *args)
 
-            if members is None:
+            if members is not None:
+                for m in members:
+                    if m.id == 471705718957801483 or m.id == 639508517534957599:
+                        await ctx.send("Can't ban the bot.")
+                        members.remove(m)
+            
+            if members is None or members == []:
                 return await ctx.send('Provide member(s) to ban.\n **Usage:** `ban @member(s) <time> reason`')
 
             tot_time, reason, time_str = helper.calc_time(extra)     
@@ -249,7 +255,13 @@ class Moderation(commands.Cog):
             if reason is None:
                 return await ctx.send('Provide a reason.\n**Usage:** `kick @member(s) reason`')
 
-            if members is None:
+            if members is not None:
+                for m in members:
+                    if m.id == 471705718957801483 or m.id == 639508517534957599:
+                        await ctx.send("Can't kick the bot.")
+                        members.remove(m)
+
+            if members is None or members == []:
                 return await ctx.send('Provide member(s).\n**Usage:** `kick @member(s) reason`')
 
             reason = " ".join(reason)
@@ -284,9 +296,14 @@ class Moderation(commands.Cog):
 
             members, extra = custom_converters.get_members(ctx, *args)
 
-            if members == None:
+            if members is not None:
+                for m in members:
+                    if m.id == 471705718957801483 or m.id == 639508517534957599:
+                        await ctx.send("Can't mute the bot.")
+                        members.remove(m)
+            
+            if members == None or members == []:
                 return await ctx.send('Provide member(s) to mute.\n**Usage:** `mute @member(s) <time> reason`')
-
 
             tot_time, reason, time_str = helper.calc_time(extra)     
 
@@ -403,6 +420,12 @@ class Moderation(commands.Cog):
 
             if members is None:
                 return await ctx.send('Provide member(s) to warn.\n**Usage:** `warn @member(s) reason`')
+            
+            if members is not None:
+                for m in members:
+                    if m.id == 471705718957801483 or m.id == 639508517534957599:
+                        await ctx.send("Can't warn the bot.")
+                        members.remove(m)
 
             if reason is None:
                 return await ctx.send('Provide a reason.\n**Usage:** `warn @member(s) reason`')
