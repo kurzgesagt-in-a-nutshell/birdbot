@@ -152,10 +152,9 @@ General moderation commands.
         > slowmode 0 go_fast
 
 - **infractions**
-    - Get infraction list or infractions of a user.
-    - Alias: infr
+    - Get infractions of a user.
+    - Alias: infr, inf
     - Usage:
-        - `infraction <page_no>` <br>
         - `infraction <@member / member_id> <infraction_type>` <br>
         --> **infraction_type:**
             - w/W/warn/warns : To get warns.
@@ -163,9 +162,6 @@ General moderation commands.
             - b/B/ban/bans : To get bans.
             - k/K/kick/kicks : To get kicks.
     - Example
-        > **To get list of infracted users** <br>
-        > infraction OR infr <br>
-        > infr 3 *(to get 3rd page or 10-15th infraction from the list)*
         > **To get infraction of a user** <br>
         >   - Full List: <br>
         >       - infraction @duck1 <br>

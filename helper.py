@@ -114,86 +114,73 @@ def create_infraction(author, users, action, reason, time=None):
         infraction_db.update_one({"user_id": u.id}, {"$set": inf})
 
 
-def get_infractions(member, inf_type, page_no=1):
+def get_infractions(member_id, inf_type):
+
+    i = infraction_db.find_one({"user_id": member_id})
+
+    embed = discord.Embed(title='Infractions', description=' ', color=discord.Color.green(), timestamp = datetime.datetime.utcnow())
     
-    if member is None:
+    if i:
 
-        infractions = infraction_db.find().skip(5 * (page_no - 1)).limit(5)
-
-
-        embed = discord.Embed(title='Infractions', description=f'{5 * (page_no - 1) + 1} - {5 * (page_no - 1) + 5} Infracetd User', color=discord.Color.green(), timestamp = datetime.datetime.utcnow())
-        for i in infractions:
-            embed.add_field(name='{} ({})'.format(i['user_name'], i['user_id']), value='Total Infractions: {}'.format(i['total_infractions']['total']), inline=False)
+        embed.add_field(name='{} ({})'.format(i['user_name'], i['user_id']), value='```Total Infractions: {}```'.format(i['total_infractions']['total']), inline=False)
         
-        embed.set_footer(text='Do "infractions user/user_id" to get infractions of a user.')
-        return embed
+        warn_str = ""
+        for w in i["warn"]:
+            warn_str = warn_str + 'Author: {} ({})'.format(w['author_name'], w['author_id']) + "\n" \
+                                + 'Reason: {}'.format(w['reason']) + "\n" \
+                                + 'Date: {}'.format(w['datetime'].replace(microsecond=0)) + "\n\n"
+
+        mute_str = ""
+        for w in i["mute"]:
+            mute_str = mute_str + 'Author: {} ({})'.format(w['author_name'], w['author_id']) + "\n" \
+                                + 'Reason: {}'.format(w['reason']) + "\n" \
+                                + 'Duration: {}'.format(w['duration']) + "\n" \
+                                + 'Date: {}'.format(w['datetime'].replace(microsecond=0)) + "\n\n"
+
+        ban_str = ""
+        for w in i["ban"]:
+            ban_str = ban_str   + 'Author: {} ({})'.format(w['author_name'], w['author_id']) + "\n" \
+                                + 'Reason: {}'.format(w['reason']) + "\n" \
+                                + 'Duration: {}'.format(w['duration']) + "\n" \
+                                + 'Date: {}'.format(w['datetime'].replace(microsecond=0)) + "\n\n"
+
+        kick_str = ""
+        for w in i["kick"]:
+            kick_str = kick_str + 'Author: {} ({})'.format(w['author_name'], w['author_id']) + "\n" \
+                                + 'Reason: {}'.format(w['reason']) + "\n" \
+                                + 'Date: {}'.format(w['datetime'].replace(microsecond=0)) + "\n\n"
+
+
+        if warn_str == "":
+            warn_str = None
+        if kick_str == "":
+            kick_str = None
+        if mute_str == "":
+            mute_str = None
+        if ban_str == "":
+            ban_str = None
+
+        if inf_type is None:
+            embed.add_field(name='Warns', value=f'```{ warn_str }```', inline=False)
+            embed.add_field(name='Mutes', value=f'```{ mute_str }```', inline=False)
+            embed.add_field(name='Bans', value= f'```{ ban_str }```', inline=False)
+            embed.add_field(name='Kicks', value=f'```{ kick_str }```', inline=False)
+        
+        elif inf_type == 'warn':
+            embed.add_field(name='Warns', value=f'```{ warn_str }```', inline=False)
+        elif inf_type == 'mute':
+            embed.add_field(name='Mutes', value=f'```{ mute_str }```', inline=False)
+        elif inf_type == 'ban':
+            embed.add_field(name='Bans', value= f'```{ ban_str }```', inline=False)
+        elif inf_type == 'kick':
+            embed.add_field(name='Kicks', value=f'```{ kick_str }```', inline=False)
+
+
 
     else:
+        embed.add_field(name="No infraction found.", value="```User is clean.```")
 
-        embed = discord.Embed(title='Infractions', description=f'Member: { member.name }', color=discord.Color.green(), timestamp = datetime.datetime.utcnow())
-        i = infraction_db.find_one({"user_id": member.id})
-
-        if i:
-
-            embed.add_field(name='{} ({})'.format(i['user_name'], i['user_id']), value='```Total Infractions: {}```'.format(i['total_infractions']['total']), inline=False)
-            
-            warn_str = ""
-            for w in i["warn"]:
-                warn_str = warn_str + 'Author: {} ({})'.format(w['author_name'], w['author_id']) + "\n" \
-                                    + 'Reason: {}'.format(w['reason']) + "\n" \
-                                    + 'Date: {}'.format(w['datetime'].replace(microsecond=0)) + "\n\n"
-
-            mute_str = ""
-            for w in i["mute"]:
-                mute_str = mute_str + 'Author: {} ({})'.format(w['author_name'], w['author_id']) + "\n" \
-                                    + 'Reason: {}'.format(w['reason']) + "\n" \
-                                    + 'Duration: {}'.format(w['duration']) + "\n" \
-                                    + 'Date: {}'.format(w['datetime'].replace(microsecond=0)) + "\n\n"
-
-            ban_str = ""
-            for w in i["ban"]:
-                ban_str = ban_str   + 'Author: {} ({})'.format(w['author_name'], w['author_id']) + "\n" \
-                                    + 'Reason: {}'.format(w['reason']) + "\n" \
-                                    + 'Duration: {}'.format(w['duration']) + "\n" \
-                                    + 'Date: {}'.format(w['datetime'].replace(microsecond=0)) + "\n\n"
-
-            kick_str = ""
-            for w in i["kick"]:
-                kick_str = kick_str + 'Author: {} ({})'.format(w['author_name'], w['author_id']) + "\n" \
-                                    + 'Reason: {}'.format(w['reason']) + "\n" \
-                                    + 'Date: {}'.format(w['datetime'].replace(microsecond=0)) + "\n\n"
-
-
-            if warn_str == "":
-                warn_str = None
-            if kick_str == "":
-                kick_str = None
-            if mute_str == "":
-                mute_str = None
-            if ban_str == "":
-                ban_str = None
-
-            if inf_type is None:
-                embed.add_field(name='Warns', value=f'```{ warn_str }```', inline=False)
-                embed.add_field(name='Mutes', value=f'```{ mute_str }```', inline=False)
-                embed.add_field(name='Bans', value= f'```{ ban_str }```', inline=False)
-                embed.add_field(name='Kicks', value=f'```{ kick_str }```', inline=False)
-            
-            elif inf_type == 'warn':
-                embed.add_field(name='Warns', value=f'```{ warn_str }```', inline=False)
-            elif inf_type == 'mute':
-                embed.add_field(name='Mutes', value=f'```{ mute_str }```', inline=False)
-            elif inf_type == 'ban':
-                embed.add_field(name='Bans', value= f'```{ ban_str }```', inline=False)
-            elif inf_type == 'kick':
-                embed.add_field(name='Kicks', value=f'```{ kick_str }```', inline=False)
-
-
-
-        else:
-            embed.add_field(name="No infraction found.", value="```User is clean.```")
-
-        return embed
+    return embed
 
 
 def create_timed_action(users, action, time):

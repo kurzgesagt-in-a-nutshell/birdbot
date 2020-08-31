@@ -73,7 +73,6 @@ class Dev(commands.Cog):
     @commands.command(pass_context=True, name='eval')
     async def eval(self, ctx, *, body: str):
         """Evaluates a code"""
-
         env = {
             'bot': self.bot,
             'ctx': ctx,

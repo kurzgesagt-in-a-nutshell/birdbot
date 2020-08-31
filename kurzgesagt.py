@@ -48,7 +48,7 @@ class Bot(commands.AutoShardedBot):
         logger.info(f"\tID  : {self.user.id}")
         logger.info('------')
         # bot status
-        activity = discord.Activity(type=discord.ActivityType.listening, name="Steve's voice" )
+        activity = discord.Activity(type=discord.ActivityType.listening, name="Steve's Voice" )
         await self.change_presence(activity = activity)
 
         # TIMED
@@ -72,7 +72,7 @@ class Bot(commands.AutoShardedBot):
             return await ctx.send("Can't execute the command!!")
 
 
-with open('token_bird.txt') as tokenfile:
+with open('token.txt') as tokenfile:
     token = tokenfile.read()
 
 

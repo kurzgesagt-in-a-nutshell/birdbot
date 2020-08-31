@@ -19,7 +19,8 @@ class Help(commands.Cog):
     @commands.command(aliases=['h'])
     async def help(self, ctx, cmnd=None):
         """Display help. \nUsage: help command_name"""
-        cogs = ['Moderation', 'Help']
+        cogs = list(self.bot.cogs)
+        cogs.remove('Dev')
         try:
             if cmnd == None:
                 embed=discord.Embed(title="Kurzbot Help", description=f'To see more info do help [command].', color=discord.Color.green(), timestamp = datetime.datetime.utcnow())
