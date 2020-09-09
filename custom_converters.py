@@ -1,9 +1,8 @@
-
-from discord.ext.commands.converter import Converter, IDConverter, _get_from_guilds, _utils_get
-from discord.ext.commands.errors import BadArgument
-
-import re
 import logging
+import re
+
+from discord.ext.commands.converter import _get_from_guilds, _utils_get
+
 
 def _get_id_match(argument):
     _id_regex = re.compile(r'([0-9]{15,21})$')
@@ -15,7 +14,6 @@ def memberconverter(ctx, argument):
         bot = ctx.bot
         guild = ctx.guild
         match = _get_id_match(argument) or re.match(r'<@!?([0-9]+)>$', argument)
-        member = None
         if match is None:
             result = None
         else:
@@ -38,7 +36,7 @@ def get_members(ctx, *args):
         got_members = False
         for a in args:
             result = memberconverter(ctx, a)
-            if got_members == False:
+            if not got_members:
                 if result:
                     members.append(result)
                 else:
@@ -46,10 +44,10 @@ def get_members(ctx, *args):
                     extra.append(a)
             else:
                 extra.append(a)
-        
-        if members == []:
+
+        if not members:
             members = None
-        if extra == []:
+        if not extra:
             extra = None
 
         return members, extra

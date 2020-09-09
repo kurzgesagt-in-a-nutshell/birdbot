@@ -1,16 +1,9 @@
 import io
-import copy
-import math
-import json
-import time
-import asyncio
-import inspect
 import logging
+import math
 import textwrap
 import traceback
-from typing import Optional
 from contextlib import redirect_stdout
-from subprocess import PIPE, STDOUT, Popen, run
 
 import discord
 from discord.ext import commands
@@ -20,14 +13,15 @@ class Dev(commands.Cog):
     def __init__(self, bot):
         self.logger = logging.getLogger('Dev')
         self.bot = bot
-    
+
     @commands.Cog.listener()
     async def on_ready(self):
         self.logger.info('loaded Dev')
 
-
-    def cleanup_code(self,content):
-        """Remove codeblock from eval"""
+    def cleanup_code(self, content):
+        """
+            Remove code-block from eval
+        """
         if content.startswith('```') and content.endswith('```'):
             return '\n'.join(content.split('\n')[1:-1])
 
@@ -68,11 +62,11 @@ class Dev(commands.Cog):
         game = discord.Activity(name=text, type=discord.ActivityType.playing)
         await self.change_activity(ctx, game)
 
-
     @commands.is_owner()
     @commands.command(pass_context=True, name='eval')
     async def eval(self, ctx, *, body: str):
         """Evaluates a code"""
+        self.logger.info(body)
         env = {
             'bot': self.bot,
             'ctx': ctx,
@@ -162,6 +156,6 @@ class Dev(commands.Cog):
             self.logger.error(str(e))
             await ctx.send('Unable to kill bot.')
 
+
 def setup(bot):
     bot.add_cog(Dev(bot))
-
