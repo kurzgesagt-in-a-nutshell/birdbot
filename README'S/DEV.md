@@ -37,7 +37,3 @@
     - role
     - slowmode
     - infraction
-
-
-TODO:
-- Check for attachments in clean method.

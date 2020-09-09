@@ -379,6 +379,7 @@ class Moderation(commands.Cog):
 
         try:
             logging_channel = discord.utils.get(ctx.guild.channels, id=self.logging_channel)
+            
             if member is None:
                 return await ctx.send('Provide member.\n**Usage:** `role @member role_name`')
             if role_name is None:
@@ -421,7 +422,8 @@ class Moderation(commands.Cog):
     async def warn(self, ctx, *args):
         """ Warn user(s) \nUsage: warn @member(s) reason """
         try:
-
+            logging_channel = discord.utils.get(ctx.guild.channels, id=self.logging_channel)
+            
             members, reason = custom_converters.get_members(ctx, *args)
 
             if members is None:
@@ -440,6 +442,10 @@ class Moderation(commands.Cog):
 
             helper.create_infraction(author=ctx.author, users=members, action='warn', reason=reason)
 
+            embed = helper.create_embed(author=ctx.author, users=members, action='Warned User', reason=reason,
+                                        color=discord.Color.red())
+
+            await logging_channel.send(embed=embed)
             for m in members:
                 await ctx.send(f'Warned {m.name}.\nReason: {reason}')
 
