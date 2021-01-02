@@ -26,12 +26,15 @@ class Bot(commands.AutoShardedBot):
 
     def __init__(self):
         # For Bird Bot
-        super().__init__(command_prefix=["!", "k!"], case_insensitive=True,
-                         owner_ids={389718094270038018, 183092910495891467, 424843380342784011}, reconnect=True)
+        # super().__init__(command_prefix=["!", "k!"], case_insensitive=True,
+        #                  owner_ids={389718094270038018, 183092910495891467, 424843380342784011}, reconnect=True)
 
         # For Kurz Temp Bot
-        # super().__init__(command_prefix="kt!", case_insensitive=True,
-        #                  owner_ids={389718094270038018, 183092910495891467, 424843380342784011}, reconnect=True)
+        # intents = discord.Intents.all()
+        
+        # intents = discord.Intents.all()
+        super().__init__(command_prefix="kt!", case_insensitive=True,
+                         owner_ids={389718094270038018, 183092910495891467, 424843380342784011}, reconnect=True)
 
         self.starttime = time.time()
         cogs = ['cogs.moderation', 'cogs.dev', 'cogs.help']
@@ -73,7 +76,7 @@ class Bot(commands.AutoShardedBot):
             return await ctx.send("Can't execute the command!!")
 
 
-with open('token.txt') as tokenfile:
+with open('token_temp.txt') as tokenfile:
     token = tokenfile.read()
 
 Bot().run(token)

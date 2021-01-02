@@ -9,7 +9,7 @@ import discord
 from database import infraction_db, timed_actions_db
 
 
-def create_embed(author, users, action, reason, extra="None", color=discord.Color.blurple):
+def create_embed(author, users, action, reason=None, extra=None, color=discord.Color.blurple, link=None):
     """
         Author: Message sender. (eg: ctx.author)
         Users: List of users affected (Pass None if no users)
@@ -22,15 +22,23 @@ def create_embed(author, users, action, reason, extra="None", color=discord.Colo
     user_str = "None"
     if users is not None:
         user_str = ""
-        for u in users:
-            user_str = user_str + f'{u}  ({u.id})' + "\n"
 
-    embed = discord.Embed(title=f'{author.name}#{author.discriminator}', description=f'{author.id}', color=color,
+        for u in users:
+            user_str = user_str + f'{u.mention}  ({u.id})' + "\n"
+
+    embed = discord.Embed(title=f'{action}', description=f'Action By: {author.mention}', color=color,
                           timestamp=datetime.datetime.utcnow())
-    embed.add_field(name='User(s) Affected ', value=f'```{user_str}```', inline=False)
-    embed.add_field(name='Action', value=f'```{action}```', inline=False)
-    embed.add_field(name='Reason', value=f'```{reason}```', inline=False)
-    embed.add_field(name='Additional Info', value=f'```{extra}```', inline=False)
+    embed.add_field(name='User(s) Affected ', value=f'{user_str}', inline=False)
+
+    if reason:
+        embed.add_field(name='Reason', value=f'{reason}', inline=False)
+
+    if extra:
+        embed.add_field(name='Additional Info', value=f'{extra}', inline=False)
+
+    if link:
+        embed.add_field(name="Link", value=link, inline=False)
+
     # embed.set_footer(text=datetime.datetime.utcnow())
 
     return embed

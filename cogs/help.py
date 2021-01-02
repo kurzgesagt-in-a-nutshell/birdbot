@@ -20,6 +20,7 @@ class Help(commands.Cog):
         """
             Display help. \nUsage: help command_name
         """
+
         cogs = list(self.bot.cogs)
         cogs.remove('Dev')
         try:
