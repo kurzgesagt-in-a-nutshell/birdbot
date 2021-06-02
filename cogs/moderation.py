@@ -298,7 +298,9 @@ class Moderation(commands.Cog):
 
     @commands.command()
     @commands.has_permissions(kick_members=True)
+    @commands.has_any_role(849423379706150946)
     async def mute(self, ctx, *args):
+
         """ Mute member(s). \nUsage: mute @member(s) <time> reason """
 
         tot_time = 0
@@ -347,7 +349,7 @@ class Moderation(commands.Cog):
                     # TIMED
                     ids = helper.create_timed_action(users=members, action='mute', time=tot_time)
                     await asyncio.sleep(tot_time)
-                    await self.unmute(ctx=ctx, members=members, reason=reason)
+                    await self.unmute(ctx=ctx, members=members, reason=reason,from_cmd=True)
                     # TIMED
                     helper.delete_time_action(ids=ids)
             except Exception as e:
@@ -355,7 +357,8 @@ class Moderation(commands.Cog):
 
     @commands.command()
     @commands.has_permissions(kick_members=True)
-    async def unmute(self, ctx, members: commands.Greedy[discord.Member], *, reason: str = None):
+    @commands.has_any_role(849423379706150946)
+    async def unmute(self, ctx, members: commands.Greedy[discord.Member], *, reason: str = None,from_cmd=False):
         """ Unmute member(s). \nUsage: unmute @member(s) <reason> """
 
         try:
@@ -369,8 +372,8 @@ class Moderation(commands.Cog):
                 await i.remove_roles(mute_role, reason=reason)
                 # TIMED
                 helper.delete_time_actions_uid(u_id=i.id, action='mute')
-
-                await ctx.send(f'Unmuted {i.name}.')
+                if from_cmd==False:
+                    await ctx.send(f'Unmuted {i.name}.')
 
         except Exception as e:
             logging.error(str(e))
@@ -428,6 +431,7 @@ class Moderation(commands.Cog):
 
     @commands.command()
     @commands.has_permissions(ban_members=True)
+    @commands.has_any_role(849423379706150946)
     async def warn(self, ctx, *args):
         """ Warn user(s) \nUsage: warn @member(s) reason """
         try:
