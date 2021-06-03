@@ -23,7 +23,8 @@ class Moderation(commands.Cog):
         self.logger = logging.getLogger('Moderation')
         self.bot = bot
 
-        config_file = open(os.path.join(os.path.dirname(__file__), os.pardir, 'config.json'), 'r')
+        config_file = open(os.path.join(os.path.dirname(
+            __file__), os.pardir, 'config.json'), 'r')
         self.config_json = json.loads(config_file.read())
 
         self.logging_channel = self.config_json['logging']['logging-channel']
@@ -34,6 +35,7 @@ class Moderation(commands.Cog):
 
     @commands.command(aliases=['purge', 'prune', 'clear'])
     @commands.has_guild_permissions(manage_messages=True)
+    @commands.has_permissions(ban_members=True)
     async def clean(self, ctx, msg_count: int = None, member: commands.Greedy[discord.Member] = None,
                     channel: discord.TextChannel = None):
         """ Clean messages. \nUsage: clean number_of_messages <@member(s)> <#channel>"""
@@ -54,7 +56,8 @@ class Moderation(commands.Cog):
                 if msg_count == 1:
                     msg = await channel.purge(limit=2)
 
-                    logging_channel = discord.utils.get(ctx.guild.channels, id=self.logging_channel)
+                    logging_channel = discord.utils.get(
+                        ctx.guild.channels, id=self.logging_channel)
 
                     embed = helper.create_embed(author=ctx.author, users=None, action='1 message deleted',
                                                 extra=f'Message Content: {msg[-1].content} \nSender: {msg[-1].author.mention} \nTime: {msg[-1].created_at} \nID: {msg[-1].id} \nChannel: {channel.mention}',
@@ -69,7 +72,8 @@ class Moderation(commands.Cog):
                         haste_data = "Author (ID)".ljust(70) + " | " + "Message Creation Time (UTC)".ljust(
                             30) + " | " + "Content" + "\n\n"
                         for msg in deleted_msgs:
-                            author = f'{msg.author.name}#{msg.author.discriminator} ({msg.author.id})'.ljust(70)
+                            author = f'{msg.author.name}#{msg.author.discriminator} ({msg.author.id})'.ljust(
+                                70)
                             time = f'{msg.created_at}'.ljust(30)
 
                             content = f'{msg.content}'
@@ -92,7 +96,8 @@ class Moderation(commands.Cog):
                         cache_file_url = str(e)
                         self.logger.error(str(e))
 
-                    logging_channel = discord.utils.get(ctx.guild.channels, id=self.logging_channel)
+                    logging_channel = discord.utils.get(
+                        ctx.guild.channels, id=self.logging_channel)
 
                     embed = helper.create_embed(author=ctx.author, users=None,
                                                 action=f'{msg_count + 1} messages deleted',
@@ -126,7 +131,8 @@ class Moderation(commands.Cog):
                     haste_data = "Author (ID)".ljust(70) + " | " + "Message Creation Time (UTC)".ljust(
                         30) + " | " + "Content" + "\n\n"
                     for msg in deleted_msgs:
-                        author = f'{msg.author.name}#{msg.author.discriminator} ({msg.author.id})'.ljust(70)
+                        author = f'{msg.author.name}#{msg.author.discriminator} ({msg.author.id})'.ljust(
+                            70)
                         time = f'{msg.created_at}'.ljust(30)
 
                         content = f'{msg.content}'
@@ -148,7 +154,8 @@ class Moderation(commands.Cog):
                     cache_file_url = str(e)
                     self.logger.error(str(e))
 
-                logging_channel = discord.utils.get(ctx.guild.channels, id=self.logging_channel)
+                logging_channel = discord.utils.get(
+                    ctx.guild.channels, id=self.logging_channel)
 
                 embed = helper.create_embed(author=ctx.author, users=member, action=f'{msg_count} messages deleted',
                                             extra=f'\nChannel: {channel.mention}',
@@ -177,7 +184,8 @@ class Moderation(commands.Cog):
 
         try:
 
-            logging_channel = discord.utils.get(ctx.guild.channels, id=self.logging_channel)
+            logging_channel = discord.utils.get(
+                ctx.guild.channels, id=self.logging_channel)
 
             members, extra = custom_converters.get_members(ctx, *args)
 
@@ -208,7 +216,8 @@ class Moderation(commands.Cog):
                                         color=discord.Color.dark_red())
             await logging_channel.send(embed=embed)
 
-            helper.create_infraction(author=ctx.author, users=members, action='ban', reason=reason, time=tot_time)
+            helper.create_infraction(
+                author=ctx.author, users=members, action='ban', reason=reason, time=tot_time)
 
         except Exception as e:
             self.logger.error(str(e))
@@ -218,7 +227,8 @@ class Moderation(commands.Cog):
             try:
                 if tot_time != 0:
                     # TIMED
-                    ids = helper.create_timed_action(users=members, action='ban', time=tot_time)
+                    ids = helper.create_timed_action(
+                        users=members, action='ban', time=tot_time)
                     await asyncio.sleep(tot_time)
                     await self.unban(ctx=ctx, member_id=mem_id, reason=reason)
                     # TIMED
@@ -234,7 +244,8 @@ class Moderation(commands.Cog):
             if member_id is None:
                 return await ctx.send('Provide member id(s).\n**Usage:** `unban member_id <reason>`')
 
-            logging_channel = discord.utils.get(ctx.guild.channels, id=self.logging_channel)
+            logging_channel = discord.utils.get(
+                ctx.guild.channels, id=self.logging_channel)
 
             ban_list = await ctx.guild.bans()
 
@@ -281,7 +292,8 @@ class Moderation(commands.Cog):
                 return await ctx.send('Provide member(s).\n**Usage:** `kick @member(s) reason`')
 
             reason = " ".join(reason)
-            logging_channel = discord.utils.get(ctx.guild.channels, id=self.logging_channel)
+            logging_channel = discord.utils.get(
+                ctx.guild.channels, id=self.logging_channel)
 
             for i in members:
                 if i.top_role < ctx.author.top_role:
@@ -292,7 +304,8 @@ class Moderation(commands.Cog):
                                         color=discord.Color.red())
             await logging_channel.send(embed=embed)
 
-            helper.create_infraction(author=ctx.author, users=members, action='kick', reason=reason)
+            helper.create_infraction(
+                author=ctx.author, users=members, action='kick', reason=reason)
 
         except Exception as e:
             self.logger.error(str(e))
@@ -308,8 +321,10 @@ class Moderation(commands.Cog):
         is_muted = False
 
         try:
-            logging_channel = discord.utils.get(ctx.guild.channels, id=self.logging_channel)
-            mute_role = discord.utils.get(ctx.guild.roles, id=self.config_json['roles']['mute-role'])
+            logging_channel = discord.utils.get(
+                ctx.guild.channels, id=self.logging_channel)
+            mute_role = discord.utils.get(
+                ctx.guild.roles, id=self.config_json['roles']['mute-role'])
 
             members, extra = custom_converters.get_members(ctx, *args)
 
@@ -339,7 +354,8 @@ class Moderation(commands.Cog):
                                         color=discord.Color.red())
             await logging_channel.send(embed=embed)
 
-            helper.create_infraction(author=ctx.author, users=members, action='mute', reason=reason, time=time_str)
+            helper.create_infraction(
+                author=ctx.author, users=members, action='mute', reason=reason, time=time_str)
 
         except Exception as e:
             self.logger.error(str(e))
@@ -349,9 +365,10 @@ class Moderation(commands.Cog):
             try:
                 if tot_time != 0:
                     # TIMED
-                    ids = helper.create_timed_action(users=members, action='mute', time=tot_time)
+                    ids = helper.create_timed_action(
+                        users=members, action='mute', time=tot_time)
                     await asyncio.sleep(tot_time)
-                    await self.unmute(ctx=ctx, members=members, reason=reason,from_cmd=True)
+                    await self.unmute(ctx=ctx, members=members, reason=reason, from_cmd=True)
                     # TIMED
                     helper.delete_time_action(ids=ids)
             except Exception as e:
@@ -359,21 +376,23 @@ class Moderation(commands.Cog):
 
     @commands.command()
     @commands.has_permissions(manage_messages=True)
-    async def unmute(self, ctx, members: commands.Greedy[discord.Member], *, reason: str = None,from_cmd=False):
+    async def unmute(self, ctx, members: commands.Greedy[discord.Member], *, reason: str = None, from_cmd=False):
         """ Unmute member(s). \nUsage: unmute @member(s) <reason> """
 
         try:
-            logging_channel = discord.utils.get(ctx.guild.channels, id=self.logging_channel)
+            logging_channel = discord.utils.get(
+                ctx.guild.channels, id=self.logging_channel)
 
             if not members:
                 return await ctx.send('Provide members to unmute.\n**Usage:** `unmute @member(s) <reason>`')
 
-            mute_role = discord.utils.get(ctx.guild.roles, id=self.config_json['roles']['mute-role'])
+            mute_role = discord.utils.get(
+                ctx.guild.roles, id=self.config_json['roles']['mute-role'])
             for i in members:
                 await i.remove_roles(mute_role, reason=reason)
                 # TIMED
                 helper.delete_time_actions_uid(u_id=i.id, action='mute')
-                if from_cmd==False:
+                if from_cmd == False:
                     await ctx.send(f'Unmuted {i.name}.')
 
         except Exception as e:
@@ -391,8 +410,9 @@ class Moderation(commands.Cog):
         """ Add/Remove a role to member. \nUsage: role @member role_name """
 
         try:
-            logging_channel = discord.utils.get(ctx.guild.channels, id=self.logging_channel)
-            
+            logging_channel = discord.utils.get(
+                ctx.guild.channels, id=self.logging_channel)
+
             if member is None:
                 return await ctx.send('Provide member.\n**Usage:** `role @member role_name`')
             if role_name is None:
@@ -429,14 +449,14 @@ class Moderation(commands.Cog):
             self.logger.error(str(e))
             await ctx.send('Unable to give role.')
 
-
     @commands.command()
     @commands.has_permissions(manage_messages=True)
     async def warn(self, ctx, *args):
         """ Warn user(s) \nUsage: warn @member(s) reason """
         try:
-            logging_channel = discord.utils.get(ctx.guild.channels, id=self.logging_channel)
-            
+            logging_channel = discord.utils.get(
+                ctx.guild.channels, id=self.logging_channel)
+
             members, reason = custom_converters.get_members(ctx, *args)
 
             if members is None:
@@ -453,7 +473,8 @@ class Moderation(commands.Cog):
 
             reason = " ".join(reason)
 
-            helper.create_infraction(author=ctx.author, users=members, action='warn', reason=reason)
+            helper.create_infraction(
+                author=ctx.author, users=members, action='warn', reason=reason)
 
             embed = helper.create_embed(author=ctx.author, users=members, action='Warned User(s)', reason=reason,
                                         color=discord.Color.red())
@@ -490,7 +511,8 @@ class Moderation(commands.Cog):
             if member is not None:
                 mem_id = member.id
 
-            infs_embed = helper.get_infractions(member_id=mem_id, inf_type=inf_type)
+            infs_embed = helper.get_infractions(
+                member_id=mem_id, inf_type=inf_type)
 
             await ctx.send(embed=infs_embed)
 
@@ -516,7 +538,8 @@ class Moderation(commands.Cog):
 
             await ch.edit(slowmode_delay=time)
 
-            logging_channel = discord.utils.get(ctx.guild.channels, id=self.logging_channel)
+            logging_channel = discord.utils.get(
+                ctx.guild.channels, id=self.logging_channel)
             embed = helper.create_embed(author=ctx.author, users=None, action='Added slow mode.', reason=reason,
                                         extra=f'Channel: {ch.mention}\nSlowmode Duration: {time} seconds', color=discord.Color.orange())
             await logging_channel.send(embed=embed)

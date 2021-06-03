@@ -31,7 +31,7 @@ class Bot(commands.AutoShardedBot):
 
         # For Kurz Temp Bot
         # intents = discord.Intents.all()
-        
+
         # intents = discord.Intents.all()
         super().__init__(command_prefix="!", case_insensitive=True,
                          owner_ids={389718094270038018, 183092910495891467, 424843380342784011}, reconnect=True)
@@ -53,7 +53,8 @@ class Bot(commands.AutoShardedBot):
         logger.info(f"\tID  : {self.user.id}")
         logger.info('------')
         # bot status
-        activity = discord.Activity(type=discord.ActivityType.listening, name="Steve's Voice")
+        activity = discord.Activity(
+            type=discord.ActivityType.listening, name="Steve's Voice")
         await self.change_presence(activity=activity)
 
         # TIMED
