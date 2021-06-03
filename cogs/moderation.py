@@ -297,8 +297,7 @@ class Moderation(commands.Cog):
             await ctx.send('Unable to kick member(s).')
 
     @commands.command()
-    @commands.has_permissions(kick_members=True)
-    @commands.has_any_role(849423379706150946)
+    @commands.has_permissions(manage_messages=True)
     async def mute(self, ctx, *args):
 
         """ Mute member(s). \nUsage: mute @member(s) <time> reason """
@@ -356,8 +355,7 @@ class Moderation(commands.Cog):
                 self.logger.error(str(e))
 
     @commands.command()
-    @commands.has_permissions(kick_members=True)
-    @commands.has_any_role(849423379706150946)
+    @commands.has_permissions(manage_messages=True)
     async def unmute(self, ctx, members: commands.Greedy[discord.Member], *, reason: str = None,from_cmd=False):
         """ Unmute member(s). \nUsage: unmute @member(s) <reason> """
 
@@ -430,8 +428,7 @@ class Moderation(commands.Cog):
 
 
     @commands.command()
-    @commands.has_permissions(ban_members=True)
-    @commands.has_any_role(849423379706150946)
+    @commands.has_permissions(manage_messages=True)
     async def warn(self, ctx, *args):
         """ Warn user(s) \nUsage: warn @member(s) reason """
         try:
