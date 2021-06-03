@@ -196,9 +196,10 @@ class Moderation(commands.Cog):
                 return await ctx.send('Provide a reason for banning.\n **Usage:** `ban @member(s) <time> reason`')
 
             for m in members:
-                mem_id.append(m.id)
-                await m.ban(reason=reason)
-                await ctx.send(f'Banned {m.name} for {time_str}.\nReason: {reason}')
+                if m.top_role < ctx.author.top_role:
+                    mem_id.append(m.id)
+                    await m.ban(reason=reason)
+                    await ctx.send(f'Banned {m.name} for {time_str}.\nReason: {reason}')
 
             is_banned = True
 
@@ -283,8 +284,9 @@ class Moderation(commands.Cog):
             logging_channel = discord.utils.get(ctx.guild.channels, id=self.logging_channel)
 
             for i in members:
-                await i.kick(reason=reason)
-                await ctx.send(f'Kicked {i.name}.\nReason: {reason}')
+                if i.top_role < ctx.author.top_role:
+                    await i.kick(reason=reason)
+                    await ctx.send(f'Kicked {i.name}.\nReason: {reason}')
 
             embed = helper.create_embed(author=ctx.author, users=members, action='Kicked User(s)', reason=reason,
                                         color=discord.Color.red())
@@ -326,8 +328,9 @@ class Moderation(commands.Cog):
                 return await ctx.send('Provide reason to mute.\n**Usage:** `mute @member(s) <time> reason`')
 
             for i in members:
-                await i.add_roles(mute_role, reason=reason)
-                await ctx.send(f'Muted {i.name} for {time_str}.\nReason: {reason}')
+                if i.top_role < ctx.author.top_role:
+                    await i.add_roles(mute_role, reason=reason)
+                    await ctx.send(f'Muted {i.name} for {time_str}.\nReason: {reason}')
 
             is_muted = True
 
@@ -457,7 +460,8 @@ class Moderation(commands.Cog):
 
             await logging_channel.send(embed=embed)
             for m in members:
-                await ctx.send(f'Warned {m.name}.\nReason: {reason}')
+                if m.top_role < ctx.author.top_role:
+                    await ctx.send(f'Warned {m.name}.\nReason: {reason}')
 
         except Exception as e:
             self.logger.error(str(e))

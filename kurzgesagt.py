@@ -33,7 +33,7 @@ class Bot(commands.AutoShardedBot):
         # intents = discord.Intents.all()
         
         # intents = discord.Intents.all()
-        super().__init__(command_prefix="kt!", case_insensitive=True,
+        super().__init__(command_prefix="!", case_insensitive=True,
                          owner_ids={389718094270038018, 183092910495891467, 424843380342784011}, reconnect=True)
 
         self.starttime = time.time()
