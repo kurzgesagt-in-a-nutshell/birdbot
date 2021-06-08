@@ -1,13 +1,7 @@
 {
     "logging": {
         "logging_channel": 543884016282239006,
-<<<<<<< HEAD
         "hastebin_url": "https://hastebin/document/"
-    },
-    "roles": {
-        "mute_role": 681323126252240899
-=======
-        "hastebin-url": "https://hastebin/document/"
     },
     "roles": {
         "mute_role": 681323126252240899,
@@ -15,6 +9,5 @@
         "mod_role": 414092550031278091, 
         "admin_role":414029841101225985,
         "kgsofficial_role": 414954904382210049
->>>>>>> mod_cmd
     }
 }
