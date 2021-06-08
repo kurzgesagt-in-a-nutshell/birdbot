@@ -16,7 +16,7 @@ config_roles = config_json["roles"]
 def helper_and_above():
     async def predicate(ctx):
         user_role_ids = [x.id for x in ctx.author.roles]
-        check_role_ids = [ config_roles["mod_role"], config_roles["mod_role"], config_roles["admin_role"], config_roles["kgsofficial_role"] ]
+        check_role_ids = [ config_roles["helper_role"], config_roles["mod_role"], config_roles["mod_role"], config_roles["admin_role"], config_roles["kgsofficial_role"] ]
         return any(x in user_role_ids for x in check_role_ids)
 
     return commands.check(predicate)
@@ -285,9 +285,9 @@ async def start_timed_actions(bot):
         guild = discord.utils.get(bot.guilds, id=414027124836532234)
 
         logging_channel = discord.utils.get(
-            guild.channels, id=config_json['logging']['logging-channel'])
+            guild.channels, id=config_json['logging']['logging_channel'])
         mute_role = discord.utils.get(
-            guild.roles, id=config_json['roles']['mute-role'])
+            guild.roles, id=config_json['roles']['mute_role'])
 
         all_actions = timed_actions_db.find().sort("action_end", 1)
 
