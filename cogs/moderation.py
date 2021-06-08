@@ -33,12 +33,7 @@ class Moderation(commands.Cog):
         self.logger.info('loaded Moderation')
 
     @commands.command(aliases=['purge', 'prune', 'clear'])
-<<<<<<< Updated upstream
-    @commands.has_guild_permissions(manage_messages=True)
-    @commands.has_permissions(ban_members=True)
-=======
     @mod_and_above()
->>>>>>> Stashed changes
     async def clean(self, ctx, msg_count: int = None, member: commands.Greedy[discord.Member] = None,
                     channel: discord.TextChannel = None):
         """ Clean messages. \nUsage: clean number_of_messages <@member(s)> <#channel>"""
@@ -319,11 +314,7 @@ class Moderation(commands.Cog):
             await ctx.send('Unable to kick member(s).')
 
     @commands.command()
-<<<<<<< Updated upstream
-    @commands.has_permissions(manage_messages=True)
-=======
     @helper_and_above()
->>>>>>> Stashed changes
     async def mute(self, ctx, *args):
 
         """ Mute member(s). \nUsage: mute @member(s) <time> reason """
@@ -389,13 +380,8 @@ class Moderation(commands.Cog):
                 self.logger.error(str(e))
 
     @commands.command()
-<<<<<<< Updated upstream
-    @commands.has_permissions(manage_messages=True)
-    async def unmute(self, ctx, members: commands.Greedy[discord.Member], *, reason: str = None, from_cmd=False):
-=======
     @helper_and_above()
-    async def unmute(self, ctx, members: commands.Greedy[discord.Member], *, reason: str = None):
->>>>>>> Stashed changes
+    async def unmute(self, ctx, members: commands.Greedy[discord.Member], *, reason: str = None, from_cmd=False):
         """ Unmute member(s). \nUsage: unmute @member(s) <reason> """
 
         try:
@@ -469,11 +455,7 @@ class Moderation(commands.Cog):
             await ctx.send('Unable to give role.')
 
     @commands.command()
-<<<<<<< Updated upstream
-    @commands.has_permissions(manage_messages=True)
-=======
     @helper_and_above()
->>>>>>> Stashed changes
     async def warn(self, ctx, *args):
         """ Warn user(s) \nUsage: warn @member(s) reason """
         try:
@@ -543,13 +525,9 @@ class Moderation(commands.Cog):
             self.logger.error(str(e))
             await ctx.send('Unable to fetch infractions.')
 
-<<<<<<< HEAD
+
     @commands.command(aliases=['slothmode'])
-    @commands.has_permissions(manage_channels=True)
-=======
-    @commands.command()
     @mod_and_above()
->>>>>>> mod_cmd
     async def slowmode(self, ctx, time: typing.Optional[int] = None,
                        channel: typing.Optional[discord.TextChannel] = None, *, reason: str = None):
         """ Add/Remove slowmode. \nUsage: slowmode <slowmode_time> <#channel> <reason>"""
