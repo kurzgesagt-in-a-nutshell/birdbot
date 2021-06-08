@@ -77,7 +77,7 @@ class Bot(commands.AutoShardedBot):
             return await ctx.send("Can't execute the command!!")
 
 
-with open('token_temp.txt') as tokenfile:
+with open('token.txt') as tokenfile:
     token = tokenfile.read()
 
 Bot().run(token)

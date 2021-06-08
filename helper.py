@@ -28,7 +28,8 @@ def create_embed(author, users, action, reason=None, extra=None, color=discord.C
 
     embed = discord.Embed(title=f'{action}', description=f'Action By: {author.mention}', color=color,
                           timestamp=datetime.datetime.utcnow())
-    embed.add_field(name='User(s) Affected ', value=f'{user_str}', inline=False)
+    embed.add_field(name='User(s) Affected ',
+                    value=f'{user_str}', inline=False)
 
     if reason:
         embed.add_field(name='Reason', value=f'{reason}', inline=False)
@@ -135,31 +136,41 @@ def get_infractions(member_id, inf_type):
         warn_str = ""
         for w in i["warn"]:
             warn_str = "{0}{1}\n{2}\n{3}\n\n".format(warn_str,
-                                                     'Author: {} ({})'.format(w['author_name'], w['author_id']),
-                                                     'Reason: {}'.format(w['reason']),
+                                                     'Author: {} ({})'.format(
+                                                         w['author_name'], w['author_id']),
+                                                     'Reason: {}'.format(
+                                                         w['reason']),
                                                      'Date: {}'.format(w['datetime'].replace(microsecond=0)))
 
         mute_str = ""
         for w in i["mute"]:
             mute_str = "{0}{1}\n{2}\n{3}\n{4}\n\n".format(mute_str,
-                                                          'Author: {} ({})'.format(w['author_name'], w['author_id']),
-                                                          'Reason: {}'.format(w['reason']),
-                                                          'Duration: {}'.format(w['duration']),
+                                                          'Author: {} ({})'.format(
+                                                              w['author_name'], w['author_id']),
+                                                          'Reason: {}'.format(
+                                                              w['reason']),
+                                                          'Duration: {}'.format(
+                                                              w['duration']),
                                                           'Date: {}'.format(w['datetime'].replace(microsecond=0)))
 
         ban_str = ""
         for w in i["ban"]:
             ban_str = "{0}{1}\n{2}\n{3}\n{4}\n\n".format(ban_str,
-                                                         'Author: {} ({})'.format(w['author_name'], w['author_id']),
-                                                         'Reason: {}'.format(w['reason']),
-                                                         'Duration: {}'.format(w['duration']),
+                                                         'Author: {} ({})'.format(
+                                                             w['author_name'], w['author_id']),
+                                                         'Reason: {}'.format(
+                                                             w['reason']),
+                                                         'Duration: {}'.format(
+                                                             w['duration']),
                                                          'Date: {}'.format(w['datetime'].replace(microsecond=0)))
 
         kick_str = ""
         for w in i["kick"]:
             kick_str = "{0}{1}\n{2}\n{3}\n\n".format(kick_str,
-                                                     'Author: {} ({})'.format(w['author_name'], w['author_id']),
-                                                     'Reason: {}'.format(w['reason']),
+                                                     'Author: {} ({})'.format(
+                                                         w['author_name'], w['author_id']),
+                                                     'Reason: {}'.format(
+                                                         w['reason']),
                                                      'Date: {}'.format(w['datetime'].replace(microsecond=0)))
 
         if warn_str == "":
@@ -172,22 +183,31 @@ def get_infractions(member_id, inf_type):
             ban_str = None
 
         if inf_type is None:
-            embed.add_field(name='Warns', value=f'```{warn_str}```', inline=False)
-            embed.add_field(name='Mutes', value=f'```{mute_str}```', inline=False)
-            embed.add_field(name='Bans', value=f'```{ban_str}```', inline=False)
-            embed.add_field(name='Kicks', value=f'```{kick_str}```', inline=False)
+            embed.add_field(
+                name='Warns', value=f'```{warn_str}```', inline=False)
+            embed.add_field(
+                name='Mutes', value=f'```{mute_str}```', inline=False)
+            embed.add_field(
+                name='Bans', value=f'```{ban_str}```', inline=False)
+            embed.add_field(
+                name='Kicks', value=f'```{kick_str}```', inline=False)
 
         elif inf_type == 'warn':
-            embed.add_field(name='Warns', value=f'```{warn_str}```', inline=False)
+            embed.add_field(
+                name='Warns', value=f'```{warn_str}```', inline=False)
         elif inf_type == 'mute':
-            embed.add_field(name='Mutes', value=f'```{mute_str}```', inline=False)
+            embed.add_field(
+                name='Mutes', value=f'```{mute_str}```', inline=False)
         elif inf_type == 'ban':
-            embed.add_field(name='Bans', value=f'```{ban_str}```', inline=False)
+            embed.add_field(
+                name='Bans', value=f'```{ban_str}```', inline=False)
         elif inf_type == 'kick':
-            embed.add_field(name='Kicks', value=f'```{kick_str}```', inline=False)
+            embed.add_field(
+                name='Kicks', value=f'```{kick_str}```', inline=False)
 
     else:
-        embed.add_field(name="No infraction found.", value="```User is clean.```")
+        embed.add_field(name="No infraction found.",
+                        value="```User is clean.```")
 
     return embed
 
@@ -230,20 +250,24 @@ def delete_time_actions_uid(u_id, action):
 async def start_timed_actions(bot):
     try:
 
-        config_file = open(os.path.join(os.path.dirname(__file__), 'config.json'), 'r')
+        config_file = open(os.path.join(
+            os.path.dirname(__file__), 'config.json'), 'r')
         config_json = json.loads(config_file.read())
 
         guild = discord.utils.get(bot.guilds, id=414027124836532234)
 
-        logging_channel = discord.utils.get(guild.channels, id=config_json['logging']['logging-channel'])
-        mute_role = discord.utils.get(guild.roles, id=config_json['roles']['mute-role'])
+        logging_channel = discord.utils.get(
+            guild.channels, id=config_json['logging']['logging-channel'])
+        mute_role = discord.utils.get(
+            guild.roles, id=config_json['roles']['mute-role'])
 
         all_actions = timed_actions_db.find().sort("action_end", 1)
 
         for a in all_actions:
 
             if a['action_end'] > datetime.datetime.utcnow():
-                rem_time = int((a['action_end'] - datetime.datetime.utcnow()).total_seconds())
+                rem_time = int(
+                    (a['action_end'] - datetime.datetime.utcnow()).total_seconds())
                 await asyncio.sleep(rem_time)
 
             if a['action'] == 'mute':
@@ -263,7 +287,8 @@ async def start_timed_actions(bot):
                                   timestamp=datetime.datetime.utcnow())
             embed.add_field(name='User Affected', value='```{} ({})```'.format(a['user_name'], a['user_id']),
                             inline=False)
-            embed.add_field(name='Action', value='```Un-{}```'.format(a['action']), inline=False)
+            embed.add_field(
+                name='Action', value='```Un-{}```'.format(a['action']), inline=False)
             await logging_channel.send(embed=embed)
 
     except Exception as e:
@@ -326,7 +351,7 @@ def calc_time(args):
         if time_str == "":
             time_str = tot_time.__str__()
 
-        return tot_time, reason, time_str
+        return tot_time, reason, time_str.strip()
 
     except Exception as ex:
         logging.error(str(ex))

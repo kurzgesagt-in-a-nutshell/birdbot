@@ -207,7 +207,11 @@ class Moderation(commands.Cog):
                 if m.top_role < ctx.author.top_role:
                     mem_id.append(m.id)
                     await m.ban(reason=reason)
-                    await ctx.send(f'Banned {m.name} for {time_str}.\nReason: {reason}')
+
+                    if time_str != "0":
+                        await ctx.send(f'Banned {m.name} for {time_str}.\nReason: {reason}')
+                    else:
+                        await ctx.send(f'Banned {m.name}.\nReason: {reason}')
 
             is_banned = True
 
@@ -345,7 +349,10 @@ class Moderation(commands.Cog):
             for i in members:
                 if i.top_role < ctx.author.top_role:
                     await i.add_roles(mute_role, reason=reason)
-                    await ctx.send(f'Muted {i.name} for {time_str}.\nReason: {reason}')
+                    if time_str != "0":
+                        await ctx.send(f'Muted {i.name} for {time_str}.\nReason: {reason}')
+                    else:
+                        await ctx.send(f'Muted {i.name}.\nReason: {reason}')
 
             is_muted = True
 
@@ -520,7 +527,7 @@ class Moderation(commands.Cog):
             self.logger.error(str(e))
             await ctx.send('Unable to fetch infractions.')
 
-    @commands.command()
+    @commands.command(aliases=['slothmode'])
     @commands.has_permissions(manage_channels=True)
     async def slowmode(self, ctx, time: typing.Optional[int] = None,
                        channel: typing.Optional[discord.TextChannel] = None, *, reason: str = None):
