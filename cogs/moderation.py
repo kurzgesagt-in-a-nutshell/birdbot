@@ -27,7 +27,7 @@ class Moderation(commands.Cog):
             __file__), os.pardir, 'config.json'), 'r')
         self.config_json = json.loads(config_file.read())
 
-        self.logging_channel = self.config_json['logging']['logging-channel']
+        self.logging_channel = self.config_json['logging']['logging_channel']
 
     @commands.Cog.listener()
     async def on_ready(self):
@@ -328,7 +328,7 @@ class Moderation(commands.Cog):
             logging_channel = discord.utils.get(
                 ctx.guild.channels, id=self.logging_channel)
             mute_role = discord.utils.get(
-                ctx.guild.roles, id=self.config_json['roles']['mute-role'])
+                ctx.guild.roles, id=self.config_json['roles']['mute_role'])
 
             members, extra = custom_converters.get_members(ctx, *args)
 
@@ -394,7 +394,7 @@ class Moderation(commands.Cog):
                 return await ctx.send('Provide members to unmute.\n**Usage:** `unmute @member(s) <reason>`')
 
             mute_role = discord.utils.get(
-                ctx.guild.roles, id=self.config_json['roles']['mute-role'])
+                ctx.guild.roles, id=self.config_json['roles']['mute_role'])
             for i in members:
                 await i.remove_roles(mute_role, reason=reason)
                 # TIMED
