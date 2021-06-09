@@ -6,7 +6,7 @@ import typing
 from time import sleep
 
 import helper
-from helper import helper_and_above,mod_and_above
+from helper import helper_and_above, mod_and_above
 import custom_converters
 
 import discord
@@ -16,6 +16,7 @@ from hastebin_client.utils import *
 import asyncio
 
 # from custom_converters import *
+
 
 class Moderation(commands.Cog):
     def __init__(self, bot):
@@ -326,7 +327,7 @@ class Moderation(commands.Cog):
             logging_channel = discord.utils.get(
                 ctx.guild.channels, id=self.logging_channel)
             mute_role = discord.utils.get(
-                ctx.guild.roles, id=self.config_json['roles']['mute-role'])
+                ctx.guild.roles, id=self.config_json['roles']['mute_role'])
 
             members, extra = custom_converters.get_members(ctx, *args)
 
@@ -392,7 +393,7 @@ class Moderation(commands.Cog):
                 return await ctx.send('Provide members to unmute.\n**Usage:** `unmute @member(s) <reason>`')
 
             mute_role = discord.utils.get(
-                ctx.guild.roles, id=self.config_json['roles']['mute-role'])
+                ctx.guild.roles, id=self.config_json['roles']['mute_role'])
             for i in members:
                 await i.remove_roles(mute_role, reason=reason)
                 # TIMED
@@ -524,7 +525,6 @@ class Moderation(commands.Cog):
         except Exception as e:
             self.logger.error(str(e))
             await ctx.send('Unable to fetch infractions.')
-
 
     @commands.command(aliases=['slothmode'])
     @mod_and_above()
