@@ -4,6 +4,10 @@
         "hastebin_url": "https://hastebin/document/"
     },
     "roles": {
-        "mute_role": 681323126252240899
+        "mute_role": 681323126252240899,
+        "helper_role": 849423379706150946,
+        "mod_role": 414092550031278091,
+        "admin_role": 414029841101225985,
+        "kgsofficial_role": 414954904382210049
     }
 }

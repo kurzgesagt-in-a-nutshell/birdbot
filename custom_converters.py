@@ -9,17 +9,19 @@ def _get_id_match(argument):
     return _id_regex.match(argument)
 
 
-def memberconverter(ctx, argument):
+def member_converter(ctx, argument):
     try:
         bot = ctx.bot
         guild = ctx.guild
-        match = _get_id_match(argument) or re.match(r'<@!?([0-9]+)>$', argument)
+        match = _get_id_match(argument) or re.match(
+            r'<@!?([0-9]+)>$', argument)
         if match is None:
             result = None
         else:
             user_id = int(match.group(1))
             if guild:
-                result = guild.get_member(user_id) or _utils_get(ctx.message.mentions, id=user_id)
+                result = guild.get_member(user_id) or _utils_get(
+                    ctx.message.mentions, id=user_id)
             else:
                 result = _get_from_guilds(bot, 'get_member', user_id)
 
@@ -35,7 +37,7 @@ def get_members(ctx, *args):
         extra = []
         got_members = False
         for a in args:
-            result = memberconverter(ctx, a)
+            result = member_converter(ctx, a)
             if not got_members:
                 if result:
                     members.append(result)

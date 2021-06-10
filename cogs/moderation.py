@@ -15,9 +15,6 @@ from hastebin_client.utils import *
 import asyncio
 
 
-# from custom_converters import *
-
-
 class Moderation(commands.Cog):
     def __init__(self, bot):
         self.logger = logging.getLogger('Moderation')
@@ -515,17 +512,79 @@ class Moderation(commands.Cog):
                 elif inf_type == 'k' or inf_type == 'K' or re.match('kick', inf_type, re.IGNORECASE):
                     inf_type = 'kick'
 
+            else:
+                inf_type = 'warn'
+
             if member is not None:
                 mem_id = member.id
 
             infs_embed = helper.get_infractions(
                 member_id=mem_id, inf_type=inf_type)
 
-            await ctx.send(embed=infs_embed)
+            msg = None
+            msg = await ctx.send(embed=infs_embed)
+            await msg.add_reaction(u"\u26A0")
+            await msg.add_reaction(u"\U0001F507")
+            await msg.add_reaction(u"\U0001F528")
+            await msg.add_reaction(u"\U0001F3CC")
+
+            while True:
+                try:
+                    reaction, user = await self.bot.wait_for('reaction_add', check=lambda reaction, user: user == ctx.author and reaction.emoji in [u"\u26A0", u"\U0001F528", u"\U0001F507", u"\U0001F3CC"], timeout=20.0)
+                except asyncio.exceptions.TimeoutError:
+                    await ctx.send("Embed Timed Out.", delete_after=3.0)
+                    if msg:
+                        await msg.clear_reaction(u"\u26A0")
+                        await msg.clear_reaction(u"\U0001F528")
+                        await msg.clear_reaction(u"\U0001F507")
+                        await msg.clear_reaction(u"\U0001F3CC")
+                    break
+
+                else:
+                    em = reaction.emoji
+                    if em == u"\u26A0":
+                        inf_type = "warn"
+                        infs_embed = helper.get_infractions(
+                            member_id=mem_id, inf_type=inf_type)
+                        await msg.edit(embed=infs_embed)
+                        await msg.remove_reaction(emoji=em, member=user)
+
+                    elif em == u"\U0001F528":
+                        inf_type = "ban"
+                        infs_embed = helper.get_infractions(
+                            member_id=mem_id, inf_type=inf_type)
+                        await msg.edit(embed=infs_embed)
+                        await msg.remove_reaction(emoji=em, member=user)
+
+                    elif em == u"\U0001F507":
+                        inf_type = "mute"
+                        infs_embed = helper.get_infractions(
+                            member_id=mem_id, inf_type=inf_type)
+                        await msg.edit(embed=infs_embed)
+                        await msg.remove_reaction(emoji=em, member=user)
+
+                    elif em == u"\U0001F3CC":
+                        inf_type = "kick"
+                        infs_embed = helper.get_infractions(
+                            member_id=mem_id, inf_type=inf_type)
+                        await msg.edit(embed=infs_embed)
+                        await msg.remove_reaction(emoji=em, member=user)
+
+        except asyncio.exceptions.TimeoutError:
+            await ctx.send("Embed Timed Out.", delete_after=3.0)
+            if msg:
+                await msg.clear_reaction(u"\u26A0")
+                await msg.clear_reaction(u"\U0001F528")
+                await msg.clear_reaction(u"\U0001F507")
+                await msg.clear_reaction(u"\U0001F3CC")
 
         except Exception as e:
-            self.logger.error(str(e))
-            await ctx.send('Unable to fetch infractions.')
+            logging.error(e)
+            if msg:
+                await msg.clear_reaction(u"\u26A0")
+                await msg.clear_reaction(u"\U0001F528")
+                await msg.clear_reaction(u"\U0001F507")
+                await msg.clear_reaction(u"\U0001F3CC")
 
     @commands.command(aliases=['slothmode'])
     @commands.has_permissions(manage_channels=True)

@@ -30,11 +30,10 @@ class Bot(commands.AutoShardedBot):
         #                  owner_ids={389718094270038018, 183092910495891467, 424843380342784011}, reconnect=True)
 
         # For Kurz Temp Bot
-        # intents = discord.Intents.all()
+        intents = discord.Intents.all()
 
-        # intents = discord.Intents.all()
         super().__init__(command_prefix="!", case_insensitive=True,
-                         owner_ids={389718094270038018, 183092910495891467, 424843380342784011}, reconnect=True)
+                         owner_ids={389718094270038018, 183092910495891467, 424843380342784011}, reconnect=True, intents=intents)
 
         self.starttime = time.time()
         cogs = ['cogs.moderation', 'cogs.dev', 'cogs.help']
