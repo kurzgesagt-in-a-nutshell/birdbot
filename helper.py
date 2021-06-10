@@ -1,13 +1,48 @@
 import asyncio
 import datetime
-import enum
 import json
 import logging
 import os
 
 import discord
+from discord.ext import commands
 
 from database import infraction_db, timed_actions_db
+
+config_json = json.load(open('config.json'))
+config_roles = config_json["roles"]
+
+# Custom checks
+
+
+def helper_and_above():
+    async def predicate(ctx):
+        user_role_ids = [x.id for x in ctx.author.roles]
+        check_role_ids = [config_roles["mod_role"], config_roles["mod_role"],
+                          config_roles["admin_role"], config_roles["kgsofficial_role"]]
+        return any(x in user_role_ids for x in check_role_ids)
+
+    return commands.check(predicate)
+
+
+def mod_and_above():
+    async def predicate(ctx):
+        user_role_ids = [x.id for x in ctx.author.roles]
+        check_role_ids = [config_roles["mod_role"],
+                          config_roles["admin_role"], config_roles["kgsofficial_role"]]
+        return any(x in user_role_ids for x in check_role_ids)
+
+    return commands.check(predicate)
+
+
+def admin_and_above():
+    async def predicate(ctx):
+        user_role_ids = [x.id for x in ctx.author.roles]
+        check_role_ids = [config_roles["admin_role"],
+                          config_roles["kgsofficial_role"]]
+        return any(x in user_role_ids for x in check_role_ids)
+
+    return commands.check(predicate)
 
 
 def create_embed(author, users, action, reason=None, extra=None, color=discord.Color.blurple, link=None):

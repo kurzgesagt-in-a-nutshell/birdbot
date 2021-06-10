@@ -6,6 +6,7 @@ import typing
 from time import sleep
 
 import helper
+from helper import helper_and_above, mod_and_above
 import custom_converters
 
 import discord
@@ -31,8 +32,7 @@ class Moderation(commands.Cog):
         self.logger.info('loaded Moderation')
 
     @commands.command(aliases=['purge', 'prune', 'clear'])
-    @commands.has_guild_permissions(manage_messages=True)
-    @commands.has_permissions(ban_members=True)
+    @mod_and_above()
     async def clean(self, ctx, msg_count: int = None, member: commands.Greedy[discord.Member] = None,
                     channel: discord.TextChannel = None):
         """ Clean messages. \nUsage: clean number_of_messages <@member(s)> <#channel>"""
@@ -171,7 +171,7 @@ class Moderation(commands.Cog):
             self.logger.error(str(e))
 
     @commands.command(aliases=['yeet'])
-    @commands.has_permissions(ban_members=True)
+    @mod_and_above()
     async def ban(self, ctx, *args):
         """ Ban a member.\nUsage: ban @member(s) <time> reason """
 
@@ -238,7 +238,7 @@ class Moderation(commands.Cog):
                 self.logger.error(str(e))
 
     @commands.command()
-    @commands.has_guild_permissions(ban_members=True)
+    @mod_and_above()
     async def unban(self, ctx, member_id: commands.Greedy[int] = None, *, reason: str = None):
         """ Unban a member. \nUsage: unban member_id <reason> """
         try:
@@ -273,7 +273,7 @@ class Moderation(commands.Cog):
             self.logger.exception(str(e))
 
     @commands.command()
-    @commands.has_permissions(kick_members=True)
+    @mod_and_above()
     async def kick(self, ctx, *args):
         """ Kick member(s).\nUsage: kick @member(s) reason """
         try:
@@ -313,7 +313,7 @@ class Moderation(commands.Cog):
             await ctx.send('Unable to kick member(s).')
 
     @commands.command()
-    @commands.has_permissions(manage_messages=True)
+    @helper_and_above()
     async def mute(self, ctx, *args):
 
         """ Mute member(s). \nUsage: mute @member(s) <time> reason """
@@ -379,7 +379,7 @@ class Moderation(commands.Cog):
                 self.logger.error(str(e))
 
     @commands.command()
-    @commands.has_permissions(manage_messages=True)
+    @helper_and_above()
     async def unmute(self, ctx, members: commands.Greedy[discord.Member], *, reason: str = None, from_cmd=False):
         """ Unmute member(s). \nUsage: unmute @member(s) <reason> """
 
@@ -409,7 +409,7 @@ class Moderation(commands.Cog):
         await logging_channel.send(embed=embed)
 
     @commands.command()
-    @commands.has_permissions(manage_roles=True)
+    @mod_and_above()
     async def role(self, ctx, member: discord.Member = None, *, role_name: str = None):
         """ Add/Remove a role to member. \nUsage: role @member role_name """
 
@@ -454,7 +454,7 @@ class Moderation(commands.Cog):
             await ctx.send('Unable to give role.')
 
     @commands.command()
-    @commands.has_permissions(manage_messages=True)
+    @helper_and_above()
     async def warn(self, ctx, *args):
         """ Warn user(s) \nUsage: warn @member(s) reason """
         try:
@@ -493,7 +493,7 @@ class Moderation(commands.Cog):
             await ctx.send('Unable to warn member(s).')
 
     @commands.command(aliases=['infr', 'inf'])
-    @commands.has_permissions(ban_members=True)
+    @mod_and_above()
     async def infractions(self, ctx, member: typing.Optional[discord.Member] = None,
                           mem_id: typing.Optional[int] = None, inf_type: str = None):
         """ Get Infractions. \nUsage: infr <@member / member_id> <infraction_type> """
@@ -587,7 +587,7 @@ class Moderation(commands.Cog):
                 await msg.clear_reaction(u"\U0001F3CC")
 
     @commands.command(aliases=['slothmode'])
-    @commands.has_permissions(manage_channels=True)
+    @mod_and_above()
     async def slowmode(self, ctx, time: typing.Optional[int] = None,
                        channel: typing.Optional[discord.TextChannel] = None, *, reason: str = None):
         """ Add/Remove slowmode. \nUsage: slowmode <slowmode_time> <#channel> <reason>"""
