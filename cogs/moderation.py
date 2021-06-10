@@ -15,8 +15,6 @@ from discord.ext import commands
 from hastebin_client.utils import *
 import asyncio
 
-# from custom_converters import *
-
 
 class Moderation(commands.Cog):
     def __init__(self, bot):
