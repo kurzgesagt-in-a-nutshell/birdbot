@@ -159,85 +159,102 @@ def create_infraction(author, users, action, reason, time=None):
 
 
 def get_infractions(member_id, inf_type):
-    i = infraction_db.find_one({"user_id": member_id})
+
+    infr = infraction_db.find_one({"user_id": member_id})
 
     embed = discord.Embed(title='Infractions', description=' ', color=discord.Color.green(),
                           timestamp=datetime.datetime.utcnow())
 
-    if i:
+    if infr:
 
-        embed.add_field(name='{} ({})'.format(i['user_name'], i['user_id']),
-                        value='```Total Infractions: {}```'.format(i['total_infractions']['total']), inline=False)
+        embed.add_field(name='{} ({})'.format(infr['user_name'], infr['user_id']),
+                        value='```Total Infractions: {}```'.format(infr['total_infractions']['total']), inline=False)
 
-        warn_str = ""
-        for w in i["warn"]:
-            warn_str = "{0}{1}\n{2}\n{3}\n\n".format(warn_str,
-                                                     'Author: {} ({})'.format(
-                                                         w['author_name'], w['author_id']),
-                                                     'Reason: {}'.format(
-                                                         w['reason']),
-                                                     'Date: {}'.format(w['datetime'].replace(microsecond=0)))
-
-        mute_str = ""
-        for w in i["mute"]:
-            mute_str = "{0}{1}\n{2}\n{3}\n{4}\n\n".format(mute_str,
-                                                          'Author: {} ({})'.format(
-                                                              w['author_name'], w['author_id']),
-                                                          'Reason: {}'.format(
-                                                              w['reason']),
-                                                          'Duration: {}'.format(
-                                                              w['duration']),
-                                                          'Date: {}'.format(w['datetime'].replace(microsecond=0)))
-
-        ban_str = ""
-        for w in i["ban"]:
-            ban_str = "{0}{1}\n{2}\n{3}\n{4}\n\n".format(ban_str,
+        if inf_type == 'warn':
+            warn_str = ""
+            for idx, warn in enumerate(infr["warn"]):
+                warn_str = "{0}{1}\n{2}\n{3}\n\n".format(warn_str,
                                                          'Author: {} ({})'.format(
-                                                             w['author_name'], w['author_id']),
+                                                             warn['author_name'], warn['author_id']),
                                                          'Reason: {}'.format(
-                                                             w['reason']),
-                                                         'Duration: {}'.format(
-                                                             w['duration']),
-                                                         'Date: {}'.format(w['datetime'].replace(microsecond=0)))
+                                                             warn['reason']),
+                                                         'Date: {}'.format(warn['datetime'].replace(microsecond=0)))
 
-        kick_str = ""
-        for w in i["kick"]:
-            kick_str = "{0}{1}\n{2}\n{3}\n\n".format(kick_str,
-                                                     'Author: {} ({})'.format(
-                                                         w['author_name'], w['author_id']),
-                                                     'Reason: {}'.format(
-                                                         w['reason']),
-                                                     'Date: {}'.format(w['datetime'].replace(microsecond=0)))
+                if (idx + 1) % 5 == 0:
+                    embed.add_field(
+                        name=f'Warns', value=f'```{warn_str}```', inline=False)
+                    warn_str = ""
 
-        if warn_str == "":
-            warn_str = None
-        if kick_str == "":
-            kick_str = None
-        if mute_str == "":
-            mute_str = None
-        if ban_str == "":
-            ban_str = None
+            if warn_str == "":
+                warn_str = None
 
-        if inf_type is None:
             embed.add_field(
-                name='Warns', value=f'```{warn_str}```', inline=False)
-            embed.add_field(
-                name='Mutes', value=f'```{mute_str}```', inline=False)
-            embed.add_field(
-                name='Bans', value=f'```{ban_str}```', inline=False)
-            embed.add_field(
-                name='Kicks', value=f'```{kick_str}```', inline=False)
+                name=f'Warns', value=f'```{warn_str}```', inline=False)
 
-        elif inf_type == 'warn':
-            embed.add_field(
-                name='Warns', value=f'```{warn_str}```', inline=False)
         elif inf_type == 'mute':
+            mute_str = ""
+            for idx, mute in enumerate(infr["mute"]):
+                mute_str = "{0}{1}\n{2}\n{3}\n{4}\n\n".format(mute_str,
+                                                              'Author: {} ({})'.format(
+                                                                  mute['author_name'], mute['author_id']),
+                                                              'Reason: {}'.format(
+                                                                  mute['reason']),
+                                                              'Duration: {}'.format(
+                                                                  mute['duration']),
+                                                              'Date: {}'.format(mute['datetime'].replace(microsecond=0)))
+
+                if (idx + 1) % 5 == 0:
+                    embed.add_field(
+                        name='Mutes', value=f'```{mute_str}```', inline=False)
+                    mute_str = ""
+
+            if mute_str == "":
+                mute_str = None
+
             embed.add_field(
                 name='Mutes', value=f'```{mute_str}```', inline=False)
+
         elif inf_type == 'ban':
+            ban_str = ""
+            for idx, ban in enumerate(infr["ban"]):
+                ban_str = "{0}{1}\n{2}\n{3}\n{4}\n\n".format(ban_str,
+                                                             'Author: {} ({})'.format(
+                                                                 ban['author_name'], ban['author_id']),
+                                                             'Reason: {}'.format(
+                                                                 ban['reason']),
+                                                             'Duration: {}'.format(
+                                                                 ban['duration']),
+                                                             'Date: {}'.format(ban['datetime'].replace(microsecond=0)))
+
+                if (idx + 1) % 5 == 0:
+                    embed.add_field(
+                        name='Bans', value=f'```{ban_str}```', inline=False)
+                    ban_str = ""
+
+            if ban_str == "":
+                ban_str = None
+
             embed.add_field(
                 name='Bans', value=f'```{ban_str}```', inline=False)
+
         elif inf_type == 'kick':
+            kick_str = ""
+            for idx, kick in enumerate(infr["kick"]):
+                kick_str = "{0}{1}\n{2}\n{3}\n\n".format(kick_str,
+                                                         'Author: {} ({})'.format(
+                                                             kick['author_name'], kick['author_id']),
+                                                         'Reason: {}'.format(
+                                                             kick['reason']),
+                                                         'Date: {}'.format(kick['datetime'].replace(microsecond=0)))
+
+                if (idx + 1) % 5 == 0:
+                    embed.add_field(
+                        name='Kicks', value=f'```{kick_str}```', inline=False)
+                    kick_str = ""
+
+            if kick_str == "":
+                kick_str = None
+
             embed.add_field(
                 name='Kicks', value=f'```{kick_str}```', inline=False)
 
