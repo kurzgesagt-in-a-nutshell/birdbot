@@ -1,12 +1,12 @@
 import json
 import os
+import io
 import re
-import sys
 import typing
 from time import sleep
 
 import helper
-from helper import helper_and_above,mod_and_above
+from helper import helper_and_above, mod_and_above
 import custom_converters
 
 import discord
@@ -15,7 +15,6 @@ from discord.ext import commands
 from hastebin_client.utils import *
 import asyncio
 
-# from custom_converters import *
 
 class Moderation(commands.Cog):
     def __init__(self, bot):
@@ -25,6 +24,7 @@ class Moderation(commands.Cog):
         config_file = open(os.path.join(os.path.dirname(
             __file__), os.pardir, 'config.json'), 'r')
         self.config_json = json.loads(config_file.read())
+        config_file.close()
 
         self.logging_channel = self.config_json['logging']['logging_channel']
 
@@ -36,137 +36,70 @@ class Moderation(commands.Cog):
     @mod_and_above()
     async def clean(self, ctx, msg_count: int = None, member: commands.Greedy[discord.Member] = None,
                     channel: discord.TextChannel = None):
-        """ Clean messages. \nUsage: clean number_of_messages <@member(s)> <#channel>"""
+        """ Clean messages. \nUsage: clean number_of_messages <@member(s)/ id(s)> <#channel>"""
         try:
+            messsage_count = msg_count
             if msg_count is None:
-                return await ctx.send(f'**Usage:** `clean number_of_messages <@member(s)> <#channel>`')
+                return await ctx.send(f'**Usage:** `clean number_of_messages <@member(s)/ id(s)> <#channel>`')
 
             elif msg_count > 200:
-                return await ctx.send(f'Provided number is too big. (Max limit 200)')
+                return await ctx.send(f'Provided number is too big. (Max limit 100)')
 
             elif msg_count <= 0:
                 return await ctx.channel.purge(limit=1)
 
-            if channel is None:
-                channel = ctx.channel
+            else:
+                if channel is None:
+                    channel = ctx.channel
 
-            if member is None:
+                def check(m):
+                    if m.author in member:
+                        nonlocal messsage_count
+                        messsage_count -= 1
+                        if messsage_count >= 0:
+                            return True
+                    return False
+
+                if not member:
+                    deleted_messages = await channel.purge(limit=msg_count + 1)
+                else:
+                    deleted_messages = await channel.purge(limit=150, check=check)
+
+                await ctx.send(f"Deleted {len(deleted_messages) - 1} message(s)", delete_after=3.0)
+
                 if msg_count == 1:
-                    msg = await channel.purge(limit=2)
-
                     logging_channel = discord.utils.get(
                         ctx.guild.channels, id=self.logging_channel)
 
                     embed = helper.create_embed(author=ctx.author, users=None, action='1 message deleted',
-                                                extra=f'Message Content: {msg[-1].content} \nSender: {msg[-1].author.mention} \nTime: {msg[-1].created_at} \nID: {msg[-1].id} \nChannel: {channel.mention}',
+                                                extra=f'Message Content: {deleted_messages[-1].content} \nSender: {deleted_messages[-1].author.mention} \nTime: {deleted_messages[-1].created_at.replace(microsecond=0)} \nID: {deleted_messages[-1].id} \nChannel: {channel.mention}',
                                                 color=discord.Color.green())
 
                     await logging_channel.send(embed=embed)
 
                 else:
-                    deleted_msgs = await channel.purge(limit=msg_count + 1)
-
-                    try:
-                        haste_data = "Author (ID)".ljust(70) + " | " + "Message Creation Time (UTC)".ljust(
-                            30) + " | " + "Content" + "\n\n"
-                        for msg in deleted_msgs:
-                            author = f'{msg.author.name}#{msg.author.discriminator} ({msg.author.id})'.ljust(
-                                70)
-                            time = f'{msg.created_at}'.ljust(30)
-
-                            content = f'{msg.content}'
-
-                            if msg.attachments:
-                                content = "Attachment(s): "
-                                for a in msg.attachments:
-                                    content = content + f'{a.filename}' + ", "
-
-                            haste_data = haste_data + author + " | " + time + " | " + content + "\n"
-
-                        key = upload(haste_data.encode("utf-8"))
-                        cache_file_url = create_url(key) + ".txt"
-
-                    except ValueError as ve:
-                        cache_file_url = str(ve)
-                        self.logger.error(str(ve))
-
-                    except Exception as e:
-                        cache_file_url = str(e)
-                        self.logger.error(str(e))
-
-                    logging_channel = discord.utils.get(
-                        ctx.guild.channels, id=self.logging_channel)
-
-                    embed = helper.create_embed(author=ctx.author, users=None,
-                                                action=f'{msg_count + 1} messages deleted',
-                                                extra=f'\nChannel: {channel.mention}',
-                                                color=discord.Color.green(),
-                                                link=cache_file_url)
-
-                    await logging_channel.send(embed=embed)
-
-                    m = await ctx.send(f'Deleted {msg_count + 1} messages.')
-                    sleep(3)
-                    await m.delete()
-
-            else:
-
-                deleted_msgs = []
-                count = msg_count
-                async for m in channel.history(limit=200, oldest_first=False):
-                    if ctx.message.id == m.id:
-                        continue
-
-                    for mem in member:
-                        if m.author.id == mem.id:
-                            count = count - 1
-                            deleted_msgs.append(m)
-                            await m.delete()
-                    if count <= 0:
-                        break
-
-                try:
-                    haste_data = "Author (ID)".ljust(70) + " | " + "Message Creation Time (UTC)".ljust(
+                    log_str = "Author (ID)".ljust(70) + " | " + "Message Creation Time (UTC)".ljust(
                         30) + " | " + "Content" + "\n\n"
-                    for msg in deleted_msgs:
+
+                    for msg in deleted_messages:
                         author = f'{msg.author.name}#{msg.author.discriminator} ({msg.author.id})'.ljust(
                             70)
-                        time = f'{msg.created_at}'.ljust(30)
+                        time = f'{msg.created_at.replace(microsecond=0)}'.ljust(
+                            30)
 
                         content = f'{msg.content}'
+
                         if msg.attachments:
                             content = "Attachment(s): "
                             for a in msg.attachments:
                                 content = content + f'{a.filename}' + ", "
 
-                        haste_data = haste_data + author + " | " + time + " | " + content + "\n"
+                        log_str = log_str + author + " | " + time + " | " + content + "\n"
 
-                    key = upload(haste_data.encode("utf-8"))
-                    cache_file_url = create_url(key) + ".txt"
+                    logging_channel = discord.utils.get(
+                        ctx.guild.channels, id=self.logging_channel)
 
-                except ValueError as ve:
-                    cache_file_url = str(ve)
-                    self.logger.error(str(ve))
-
-                except Exception as e:
-                    cache_file_url = str(e)
-                    self.logger.error(str(e))
-
-                logging_channel = discord.utils.get(
-                    ctx.guild.channels, id=self.logging_channel)
-
-                embed = helper.create_embed(author=ctx.author, users=member, action=f'{msg_count} messages deleted',
-                                            extra=f'\nChannel: {channel.mention}',
-                                            color=discord.Color.green(),
-                                            link=cache_file_url)
-
-                await logging_channel.send(embed=embed)
-
-                await ctx.message.delete()
-
-                m = await ctx.send(f'Deleted {msg_count} messages.')
-                sleep(3)
-                await m.delete()
+                    await logging_channel.send(f'{len(deleted_messages)} messages deleted in {channel.mention}', file=discord.File(io.BytesIO(f'{log_str}'.encode()), filename=f'{len(deleted_messages)} messages deleted in {channel.name}'))
 
         except Exception as e:
             self.logger.error(str(e))
@@ -326,7 +259,7 @@ class Moderation(commands.Cog):
             logging_channel = discord.utils.get(
                 ctx.guild.channels, id=self.logging_channel)
             mute_role = discord.utils.get(
-                ctx.guild.roles, id=self.config_json['roles']['mute-role'])
+                ctx.guild.roles, id=self.config_json['roles']['mute_role'])
 
             members, extra = custom_converters.get_members(ctx, *args)
 
@@ -392,7 +325,7 @@ class Moderation(commands.Cog):
                 return await ctx.send('Provide members to unmute.\n**Usage:** `unmute @member(s) <reason>`')
 
             mute_role = discord.utils.get(
-                ctx.guild.roles, id=self.config_json['roles']['mute-role'])
+                ctx.guild.roles, id=self.config_json['roles']['mute_role'])
             for i in members:
                 await i.remove_roles(mute_role, reason=reason)
                 # TIMED
@@ -513,18 +446,79 @@ class Moderation(commands.Cog):
                 elif inf_type == 'k' or inf_type == 'K' or re.match('kick', inf_type, re.IGNORECASE):
                     inf_type = 'kick'
 
+            else:
+                inf_type = 'warn'
+
             if member is not None:
                 mem_id = member.id
 
             infs_embed = helper.get_infractions(
                 member_id=mem_id, inf_type=inf_type)
 
-            await ctx.send(embed=infs_embed)
+            msg = None
+            msg = await ctx.send(embed=infs_embed)
+            await msg.add_reaction(u"\u26A0")
+            await msg.add_reaction(u"\U0001F507")
+            await msg.add_reaction(u"\U0001F528")
+            await msg.add_reaction(u"\U0001F3CC")
+
+            while True:
+                try:
+                    reaction, user = await self.bot.wait_for('reaction_add', check=lambda reaction, user: user == ctx.author and reaction.emoji in [u"\u26A0", u"\U0001F528", u"\U0001F507", u"\U0001F3CC"], timeout=20.0)
+                except asyncio.exceptions.TimeoutError:
+                    await ctx.send("Embed Timed Out.", delete_after=3.0)
+                    if msg:
+                        await msg.clear_reaction(u"\u26A0")
+                        await msg.clear_reaction(u"\U0001F528")
+                        await msg.clear_reaction(u"\U0001F507")
+                        await msg.clear_reaction(u"\U0001F3CC")
+                    break
+
+                else:
+                    em = reaction.emoji
+                    if em == u"\u26A0":
+                        inf_type = "warn"
+                        infs_embed = helper.get_infractions(
+                            member_id=mem_id, inf_type=inf_type)
+                        await msg.edit(embed=infs_embed)
+                        await msg.remove_reaction(emoji=em, member=user)
+
+                    elif em == u"\U0001F528":
+                        inf_type = "ban"
+                        infs_embed = helper.get_infractions(
+                            member_id=mem_id, inf_type=inf_type)
+                        await msg.edit(embed=infs_embed)
+                        await msg.remove_reaction(emoji=em, member=user)
+
+                    elif em == u"\U0001F507":
+                        inf_type = "mute"
+                        infs_embed = helper.get_infractions(
+                            member_id=mem_id, inf_type=inf_type)
+                        await msg.edit(embed=infs_embed)
+                        await msg.remove_reaction(emoji=em, member=user)
+
+                    elif em == u"\U0001F3CC":
+                        inf_type = "kick"
+                        infs_embed = helper.get_infractions(
+                            member_id=mem_id, inf_type=inf_type)
+                        await msg.edit(embed=infs_embed)
+                        await msg.remove_reaction(emoji=em, member=user)
+
+        except asyncio.exceptions.TimeoutError:
+            await ctx.send("Embed Timed Out.", delete_after=3.0)
+            if msg:
+                await msg.clear_reaction(u"\u26A0")
+                await msg.clear_reaction(u"\U0001F528")
+                await msg.clear_reaction(u"\U0001F507")
+                await msg.clear_reaction(u"\U0001F3CC")
 
         except Exception as e:
-            self.logger.error(str(e))
-            await ctx.send('Unable to fetch infractions.')
-
+            logging.error(e)
+            if msg:
+                await msg.clear_reaction(u"\u26A0")
+                await msg.clear_reaction(u"\U0001F528")
+                await msg.clear_reaction(u"\U0001F507")
+                await msg.clear_reaction(u"\U0001F3CC")
 
     @commands.command(aliases=['slothmode'])
     @mod_and_above()
