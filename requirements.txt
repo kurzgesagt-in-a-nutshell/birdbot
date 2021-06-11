@@ -6,6 +6,7 @@ chardet==3.0.4
 colorama==0.4.3
 commonmark==0.9.1
 discord.py==1.7.2
+python-dotenv==0.17.1
 dnspython==1.16.0
 hastebin-client==0.1.2
 idna==2.10

@@ -1,5 +1,7 @@
 import logging
+import os
 import time
+import dotenv
 
 import discord
 from discord.ext import commands
@@ -8,7 +10,14 @@ from rich.logging import RichHandler
 import helper
 from loglevels import setup as llsetup
 
+import argparse
+parser = argparse.ArgumentParser()
+parser.add_argument("-b", "--beta", help="Run the beta instance of the bot" ,
+                    action="store_true")
+args = parser.parse_args()  
+
 llsetup()
+dotenv.load_dotenv()
 
 logging.basicConfig(
     format="%(message)s",
@@ -25,15 +34,13 @@ class Bot(commands.AutoShardedBot):
     """Main Bot"""
 
     def __init__(self):
-        # For Bird Bot
-        # super().__init__(command_prefix=["!", "k!"], case_insensitive=True,
-        #                  owner_ids={389718094270038018, 183092910495891467, 424843380342784011}, reconnect=True)
-
-        # For Kurz Temp Bot
-        intents = discord.Intents.all()
-
-        super().__init__(command_prefix="!", case_insensitive=True,
-                         owner_ids={389718094270038018, 183092910495891467, 424843380342784011}, reconnect=True, intents=intents)
+        if args.beta:
+            intents = discord.Intents.all()
+            super().__init__(command_prefix="kt!", case_insensitive=True,
+                             owner_ids={389718094270038018, 183092910495891467, 424843380342784011}, reconnect=True, intents=intents)
+        else:
+            super().__init__(command_prefix=["!","k!"], case_insensitive=True,
+                             owner_ids={389718094270038018, 183092910495891467, 424843380342784011}, reconnect=True, intents=intents)
 
         self.starttime = time.time()
         cogs = ['cogs.moderation', 'cogs.dev', 'cogs.help']
@@ -43,7 +50,7 @@ class Bot(commands.AutoShardedBot):
                 super().load_extension(i)
                 logger.info(f'Loading {i}')
             except Exception as e:
-                logger.exception('Exception at {i}')
+                logger.exception(f'Exception at {i}')
                 fails[i] = e
 
     async def on_ready(self):
@@ -52,8 +59,10 @@ class Bot(commands.AutoShardedBot):
         logger.info(f"\tID  : {self.user.id}")
         logger.info('------')
         # bot status
-        activity = discord.Activity(
-            type=discord.ActivityType.listening, name="Steve's Voice")
+        if args.beta:
+            activity = discord.Activity( type=discord.ActivityType.watching, name="for bugs")
+        else:
+            activity = discord.Activity( type=discord.ActivityType.listening, name="to Steve's voice")
         await self.change_presence(activity=activity)
 
         # TIMED
@@ -75,8 +84,13 @@ class Bot(commands.AutoShardedBot):
             logger.error(str(error))
             return await ctx.send("Can't execute the command!!")
 
-
-with open('token_temp.txt') as tokenfile:
-    token = tokenfile.read()
+try:
+    if args.beta:
+        logger.info('Running beta instance')
+        token = os.environ.get('BETA_BOT_TOKEN')
+    else:
+        token = os.environ.get('MAIN_BOT_TOKEN')
+except KeyError:
+    logger.error('No tokens found, check .env file')
 
 Bot().run(token)

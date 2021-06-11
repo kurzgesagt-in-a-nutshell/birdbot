@@ -1,8 +1,20 @@
 import pymongo
+import dotenv
 import dns
+import os
+import logging
 
-client = pymongo.MongoClient("mongodb+srv://slothonmeth1:kbotdbpass@kbot.9nvha.mongodb.net/kbot?retryWrites=true&w=majority")
-db = client.KurzBot
+dotenv.load_dotenv()
+try:
+    db_key = os.environ.get('DB_KEY')
+    client = pymongo.MongoClient(db_key)
+    print('connected to mongo')
+    db = client.KurzBot
+    infraction_db = db.Infraction
+    timed_actions_db = db.TimedAction
 
-infraction_db = db.Infraction
-timed_actions_db = db.TimedAction
+except KeyError:
+    logging.error('Database key not found. Check your .env file')
+
+
+
