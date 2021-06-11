@@ -40,7 +40,7 @@ class Bot(commands.AutoShardedBot):
                              owner_ids={389718094270038018, 183092910495891467, 424843380342784011}, reconnect=True, intents=intents)
         else:
             super().__init__(command_prefix=["!","k!"], case_insensitive=True,
-                             owner_ids={389718094270038018, 183092910495891467, 424843380342784011}, reconnect=True, intents=intents)
+                             owner_ids={389718094270038018, 183092910495891467, 424843380342784011}, reconnect=True)
 
         self.starttime = time.time()
         cogs = ['cogs.moderation', 'cogs.dev', 'cogs.help']
