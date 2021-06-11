@@ -24,6 +24,7 @@ class Moderation(commands.Cog):
         config_file = open(os.path.join(os.path.dirname(
             __file__), os.pardir, 'config.json'), 'r')
         self.config_json = json.loads(config_file.read())
+        config_file.close()
 
         self.logging_channel = self.config_json['logging']['logging_channel']
 
