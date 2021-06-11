@@ -32,11 +32,11 @@ class Bot(commands.AutoShardedBot):
         # For Kurz Temp Bot
         intents = discord.Intents.all()
 
-        super().__init__(command_prefix="!", case_insensitive=True,
+        super().__init__(command_prefix="kt!", case_insensitive=True,
                          owner_ids={389718094270038018, 183092910495891467, 424843380342784011}, reconnect=True, intents=intents)
 
         self.starttime = time.time()
-        cogs = ['cogs.moderation', 'cogs.dev', 'cogs.help']
+        cogs = ['cogs.moderation', 'cogs.dev', 'cogs.help', 'cogs.clean']
         fails = {}
         for i in cogs:
             try:
@@ -76,7 +76,7 @@ class Bot(commands.AutoShardedBot):
             return await ctx.send("Can't execute the command!!")
 
 
-with open('token.txt') as tokenfile:
+with open('token_temp.txt') as tokenfile:
     token = tokenfile.read()
 
 Bot().run(token)

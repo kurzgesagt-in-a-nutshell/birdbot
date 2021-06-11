@@ -1,7 +1,6 @@
 import json
 import os
 import re
-import sys
 import typing
 from time import sleep
 
@@ -24,6 +23,7 @@ class Moderation(commands.Cog):
         config_file = open(os.path.join(os.path.dirname(
             __file__), os.pardir, 'config.json'), 'r')
         self.config_json = json.loads(config_file.read())
+        config_file.close()
 
         self.logging_channel = self.config_json['logging']['logging_channel']
 
@@ -35,10 +35,10 @@ class Moderation(commands.Cog):
     @mod_and_above()
     async def clean(self, ctx, msg_count: int = None, member: commands.Greedy[discord.Member] = None,
                     channel: discord.TextChannel = None):
-        """ Clean messages. \nUsage: clean number_of_messages <@member(s)> <#channel>"""
+        """ Clean messages. \nUsage: clean number_of_messages <@member(s)/ id(s)> <#channel>"""
         try:
             if msg_count is None:
-                return await ctx.send(f'**Usage:** `clean number_of_messages <@member(s)> <#channel>`')
+                return await ctx.send(f'**Usage:** `clean number_of_messages <@member(s)/ id(s)> <#channel>`')
 
             elif msg_count > 200:
                 return await ctx.send(f'Provided number is too big. (Max limit 200)')
@@ -104,9 +104,7 @@ class Moderation(commands.Cog):
 
                     await logging_channel.send(embed=embed)
 
-                    m = await ctx.send(f'Deleted {msg_count + 1} messages.')
-                    sleep(3)
-                    await m.delete()
+                    await ctx.send(f'Deleted {msg_count + 1} messages.', delete_after=3.0)
 
             else:
 
@@ -163,9 +161,7 @@ class Moderation(commands.Cog):
 
                 await ctx.message.delete()
 
-                m = await ctx.send(f'Deleted {msg_count} messages.')
-                sleep(3)
-                await m.delete()
+                await ctx.send(f'Deleted {msg_count} messages.', delete_after=3.0)
 
         except Exception as e:
             self.logger.error(str(e))
