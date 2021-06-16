@@ -38,7 +38,7 @@ class Moderation(commands.Cog):
                     channel: discord.TextChannel = None):
         """ Clean messages. \nUsage: clean number_of_messages <@member(s)/ id(s)> <#channel>"""
         try:
-            messsage_count = msg_count
+            messsage_count = msg_count #used to display number of messages deleted
             if msg_count is None:
                 return await ctx.send(f'**Usage:** `clean number_of_messages <@member(s)/ id(s)> <#channel>`')
 
@@ -51,7 +51,8 @@ class Moderation(commands.Cog):
             else:
                 if channel is None:
                     channel = ctx.channel
-
+                
+                #check if message sent is by a user who is in command argument
                 def check(m):
                     if m.author in member:
                         nonlocal messsage_count
@@ -68,24 +69,26 @@ class Moderation(commands.Cog):
                 await ctx.send(f"Deleted {len(deleted_messages) - 1} message(s)", delete_after=3.0)
 
                 if msg_count == 1:
-                    logging_channel = discord.utils.get(
-                        ctx.guild.channels, id=self.logging_channel)
+                    logging_channel = discord.utils.get(ctx.guild.channels, id=self.logging_channel)
 
                     embed = helper.create_embed(author=ctx.author, users=None, action='1 message deleted',
-                                                extra=f'Message Content: {deleted_messages[-1].content} \nSender: {deleted_messages[-1].author.mention} \nTime: {deleted_messages[-1].created_at.replace(microsecond=0)} \nID: {deleted_messages[-1].id} \nChannel: {channel.mention}',
+                                                extra=f"""Message Content: {deleted_messages[-1].content} 
+                                                      \nSender: {deleted_messages[-1].author.mention} 
+                                                      \nTime: {deleted_messages[-1].created_at.replace(microsecond=0)} 
+                                                      \nID: {deleted_messages[-1].id} 
+                                                      \nChannel: {channel.mention}""",
                                                 color=discord.Color.green())
 
                     await logging_channel.send(embed=embed)
 
                 else:
+                    #formatting string to be sent as file for logging
                     log_str = "Author (ID)".ljust(70) + " | " + "Message Creation Time (UTC)".ljust(
                         30) + " | " + "Content" + "\n\n"
 
                     for msg in deleted_messages:
-                        author = f'{msg.author.name}#{msg.author.discriminator} ({msg.author.id})'.ljust(
-                            70)
-                        time = f'{msg.created_at.replace(microsecond=0)}'.ljust(
-                            30)
+                        author = f'{msg.author.name}#{msg.author.discriminator} ({msg.author.id})'.ljust(70)
+                        time = f'{msg.created_at.replace(microsecond=0)}'.ljust(30)
 
                         content = f'{msg.content}'
 
@@ -96,13 +99,15 @@ class Moderation(commands.Cog):
 
                         log_str = log_str + author + " | " + time + " | " + content + "\n"
 
-                    logging_channel = discord.utils.get(
-                        ctx.guild.channels, id=self.logging_channel)
+                    logging_channel = discord.utils.get(ctx.guild.channels, id=self.logging_channel)
 
-                    await logging_channel.send(f'{len(deleted_messages)} messages deleted in {channel.mention}', file=discord.File(io.BytesIO(f'{log_str}'.encode()), filename=f'{len(deleted_messages)} messages deleted in {channel.name}'))
+                    await logging_channel.send(f'{len(deleted_messages)} messages deleted in {channel.mention}', 
+                                               file=discord.File(io.BytesIO(f'{log_str}'.encode()), 
+                                               filename=f'{len(deleted_messages)} messages deleted in {channel.name}'))
 
         except Exception as e:
             self.logger.error(str(e))
+        await ctx.message.delete(delay = 4)
 
     @commands.command(aliases=['yeet'])
     @mod_and_above()
