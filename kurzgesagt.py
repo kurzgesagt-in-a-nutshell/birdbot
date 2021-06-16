@@ -26,7 +26,7 @@ logging.basicConfig(
 )
 
 logger = logging.getLogger(__name__)
-print("Delaying bot for server creation")
+logger.info("Delaying bot for server creation")
 time.sleep(5)
 
 
@@ -37,10 +37,13 @@ class Bot(commands.AutoShardedBot):
         if args.beta:
             intents = discord.Intents.all()
             super().__init__(command_prefix="kt!", case_insensitive=True,
-                             owner_ids={389718094270038018, 183092910495891467, 424843380342784011}, reconnect=True, intents=intents)
+                             owner_ids={389718094270038018, 183092910495891467, 424843380342784011}, reconnect=True, intents=intents,
+                             activity = discord.Activity( type=discord.ActivityType.watching, name="for bugs"))
         else:
             super().__init__(command_prefix=["!","k!"], case_insensitive=True,
-                             owner_ids={389718094270038018, 183092910495891467, 424843380342784011}, reconnect=True)
+                             owner_ids={389718094270038018, 183092910495891467, 424843380342784011}, reconnect=True,
+                             activity = discord.Activity( type=discord.ActivityType.listening, name="to Steve's voice"))
+
 
         self.starttime = time.time()
         cogs = ['cogs.moderation', 'cogs.dev', 'cogs.help']
@@ -58,13 +61,6 @@ class Bot(commands.AutoShardedBot):
         logger.info(f"\tUser: {self.user.name}")
         logger.info(f"\tID  : {self.user.id}")
         logger.info('------')
-        # bot status
-        if args.beta:
-            activity = discord.Activity( type=discord.ActivityType.watching, name="for bugs")
-        else:
-            activity = discord.Activity( type=discord.ActivityType.listening, name="to Steve's voice")
-        await self.change_presence(activity=activity)
-
         # TIMED
         await helper.start_timed_actions(self)
 
