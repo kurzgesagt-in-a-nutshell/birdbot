@@ -8,7 +8,6 @@ commonmark==0.9.1
 discord.py==1.7.2
 python-dotenv==0.17.1
 dnspython==1.16.0
-hastebin-client==0.1.2
 idna==2.10
 multidict==4.7.6
 pprintpp==0.4.0

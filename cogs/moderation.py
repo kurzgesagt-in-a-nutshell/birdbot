@@ -3,17 +3,17 @@ import os
 import io
 import re
 import typing
-from time import sleep
+import time
+import asyncio
 
 import helper
 from helper import helper_and_above, mod_and_above
+
 import custom_converters
 
 import discord
 from discord.ext import commands
 
-from hastebin_client.utils import *
-import asyncio
 
 
 class Moderation(commands.Cog):

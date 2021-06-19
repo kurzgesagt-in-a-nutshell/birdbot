@@ -1,7 +1,6 @@
 {
     "logging": {
-        "logging_channel": 543884016282239006,
-        "hastebin_url": "https://hastebin/document/"
+        "logging_channel": 543884016282239006
     },
     "roles": {
         "mute_role": 681323126252240899,
