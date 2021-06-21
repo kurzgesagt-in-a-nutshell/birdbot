@@ -1,6 +1,7 @@
 import logging
 import os
 import time
+from discord.ext.commands import errors
 import dotenv
 
 import discord
@@ -12,9 +13,9 @@ from loglevels import setup as llsetup
 
 import argparse
 parser = argparse.ArgumentParser()
-parser.add_argument("-b", "--beta", help="Run the beta instance of the bot" ,
+parser.add_argument("-b", "--beta", help="Run the beta instance of the bot",
                     action="store_true")
-args = parser.parse_args()  
+args = parser.parse_args()
 
 llsetup()
 dotenv.load_dotenv()
@@ -38,15 +39,14 @@ class Bot(commands.AutoShardedBot):
             intents = discord.Intents.all()
             super().__init__(command_prefix="kt!", case_insensitive=True,
                              owner_ids={389718094270038018, 183092910495891467}, reconnect=True, intents=intents,
-                             activity = discord.Activity( type=discord.ActivityType.watching, name="for bugs"))
+                             activity=discord.Activity(type=discord.ActivityType.watching, name="for bugs"))
         else:
-            super().__init__(command_prefix=["!","k!"], case_insensitive=True,
+            super().__init__(command_prefix=["!", "k!"], case_insensitive=True,
                              owner_ids={389718094270038018, 183092910495891467}, reconnect=True,
-                             activity = discord.Activity( type=discord.ActivityType.listening, name="to Steve's voice"))
-
+                             activity=discord.Activity(type=discord.ActivityType.listening, name="to Steve's voice"))
 
         self.starttime = time.time()
-        cogs = ['cogs.moderation', 'cogs.dev', 'cogs.help']
+        cogs = ['cogs.moderation', 'cogs.dev', 'cogs.help', 'cogs.fun']
         fails = {}
         for i in cogs:
             try:
@@ -76,9 +76,13 @@ class Bot(commands.AutoShardedBot):
         elif isinstance(error, commands.CommandNotFound):
             pass
 
+        elif isinstance(error, commands.errors.CommandOnCooldown):
+            return await ctx.send(error, delete_after=3.0)
+
         else:
             logger.error(str(error))
             return await ctx.send("Can't execute the command!!")
+
 
 try:
     if args.beta:
