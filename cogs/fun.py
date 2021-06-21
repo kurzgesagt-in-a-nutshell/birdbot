@@ -14,19 +14,18 @@ class Fun(commands.Cog):
         self.logger = logging.getLogger('Fun')
         self.bot = bot
 
-        topic_file = open(os.path.join(os.path.dirname(
-            __file__), os.pardir, 'topics.json'), 'r')
+        topic_file = open('topics.json', 'r')
 
         self.topics = json.loads(topic_file.read())["topics"]
 
         topic_file.close()
 
-    @commands.Cog.listener()
+    @ commands.Cog.listener()
     async def on_ready(self):
         self.logger.info('loaded Fun')
 
-    @commands.command()
-    @commands.cooldown(1, 30)
+    @ commands.command()
+    @ commands.cooldown(1, 30)
     async def topic(self, ctx):
         """Command description"""
         try:
