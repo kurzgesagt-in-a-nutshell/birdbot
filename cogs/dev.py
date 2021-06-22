@@ -8,6 +8,8 @@ from contextlib import redirect_stdout
 import discord
 from discord.ext import commands
 
+from helper import mod_and_above
+
 
 class Dev(commands.Cog):
     def __init__(self, bot):
@@ -27,15 +29,13 @@ class Dev(commands.Cog):
 
         return content.strip('`\n')
 
-    async def cog_check(self, ctx):
-        return ctx.author.id in self.bot.owner_ids
-
     def get_syntax_error(self, e):
         if e.text is None:
             return f'```py\n{e.__class__.__name__}: {e}\n```'
         return f'```py\n{e.text}{"^":>{e.offset}}\n{e.__class__.__name__}: {e}```'
 
     @commands.group(hidden=True)
+    @commands.is_owner()
     async def activity(self, ctx):
         """Sets the bots status"""
         pass
@@ -45,18 +45,22 @@ class Dev(commands.Cog):
         await ctx.send(' presence changed.')
 
     @activity.command(aliases=['l'])
+    @commands.is_owner()
     async def listening(self, ctx, *, text):
         """Set listening activity"""
-        audio = discord.Activity(name=text, type=discord.ActivityType.listening)
+        audio = discord.Activity(
+            name=text, type=discord.ActivityType.listening)
         await self.change_activity(ctx, audio)
 
     @activity.command(aliases=['w'])
+    @commands.is_owner()
     async def watching(self, ctx, *, text):
         """Set watching activity"""
         video = discord.Activity(name=text, type=discord.ActivityType.watching)
         await self.change_activity(ctx, video)
 
     @activity.command(aliases=['p'])
+    @commands.is_owner()
     async def playing(self, ctx, *, text):
         """Set playing activity"""
         game = discord.Activity(name=text, type=discord.ActivityType.playing)
@@ -116,7 +120,8 @@ class Dev(commands.Cog):
                     else:
                         await ctx.send(f'```py\n{value}\n```')
             else:
-                self.logger.info(f'Output chars: {len(str(value)) + len(str(ret))}')
+                self.logger.info(
+                    f'Output chars: {len(str(value)) + len(str(ret))}')
                 self._last_result = ret
                 if len(str(value)) + len(str(ret)) >= 2000:
                     await ctx.send(f'Returned over 2k chars, sending as file instead.\n'
@@ -146,8 +151,8 @@ class Dev(commands.Cog):
             self.logger.error('Unable to load module.')
             self.logger.error('{}: {}'.format(type(e).__name__, e))
 
-    @commands.is_owner()
     @commands.command(hidden=True)
+    @mod_and_above()
     async def kill(self, ctx):
         try:
             await self.bot.logout()

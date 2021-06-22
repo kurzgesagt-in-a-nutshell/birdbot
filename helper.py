@@ -18,7 +18,8 @@ config_roles = config_json["roles"]
 def helper_and_above():
     async def predicate(ctx):
         user_role_ids = [x.id for x in ctx.author.roles]
-        check_role_ids = [ config_roles["helper_role"], config_roles["mod_role"], config_roles["mod_role"], config_roles["admin_role"], config_roles["kgsofficial_role"] ]
+        check_role_ids = [config_roles["helper_role"], config_roles["mod_role"],
+                          config_roles["mod_role"], config_roles["admin_role"], config_roles["kgsofficial_role"]]
         return any(x in user_role_ids for x in check_role_ids)
 
     return commands.check(predicate)
@@ -302,8 +303,7 @@ def delete_time_actions_uid(u_id, action):
 async def start_timed_actions(bot):
     try:
 
-        config_file = open(os.path.join(
-            os.path.dirname(__file__), 'config.json'), 'r')
+        config_file = open('config.json', 'r')
         config_json = json.loads(config_file.read())
 
         guild = discord.utils.get(bot.guilds, id=414027124836532234)
