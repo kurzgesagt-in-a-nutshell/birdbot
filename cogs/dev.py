@@ -1,4 +1,5 @@
 import io
+import asyncio
 import logging
 import math
 import textwrap
@@ -9,7 +10,6 @@ import discord
 from discord.ext import commands
 
 from helper import mod_and_above
-
 
 class Dev(commands.Cog):
     def __init__(self, bot):
@@ -133,7 +133,7 @@ class Dev(commands.Cog):
                     await ctx.send(f'```py\n{value}{ret}\n```')
 
     @commands.is_owner()
-    @commands.command(pass_context=True, name='reload', hidden=True)
+    @commands.command(name='reload', hidden=True)
     async def reload(self, ctx, *, module: str = None):
         ''' Reload a module '''
         try:
@@ -154,12 +154,27 @@ class Dev(commands.Cog):
     @commands.command(hidden=True)
     @mod_and_above()
     async def kill(self, ctx):
+        """Kill the bot"""
         try:
             await self.bot.logout()
         except Exception as e:
             self.logger.error(str(e))
             await ctx.send('Unable to kill bot.')
 
+    @commands.is_owner()
+    @commands.command(hidden=True)
+    async def pull(self,ctx):
+        self.logger.info('pulling repository')
+        proc = await asyncio.create_subprocess_shell('git pull',
+                                                     stdout=asyncio.subprocess.PIPE,
+                                                     stderr=asyncio.subprocess.STDOUT)
+        output = await proc.communicate()
+        if len(output[0].decode()) > 2000:
+            self.logger.info('Output too large, sending a file instead')
+            file = discord.File(io.BytesIO(output[0]),filename='output.txt')
+            await ctx.send('Pull output',file= file)
+        else:
+            await ctx.send(f"```{output[0].decode()}```")
 
 def setup(bot):
     bot.add_cog(Dev(bot))
