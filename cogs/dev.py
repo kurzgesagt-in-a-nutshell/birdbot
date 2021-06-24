@@ -165,6 +165,7 @@ class Dev(commands.Cog):
     @commands.command(hidden=True)
     async def pull(self,ctx):
         self.logger.info('pulling repository')
+        await asyncio.create_subprocess_shell('git fetch')
         proc = await asyncio.create_subprocess_shell('git pull',
                                                      stdout=asyncio.subprocess.PIPE,
                                                      stderr=asyncio.subprocess.STDOUT)
