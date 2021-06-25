@@ -47,7 +47,7 @@ class Bot(commands.AutoShardedBot):
                              activity=discord.Activity(type=discord.ActivityType.listening, name="to Steve's voice"))
 
         # This is a test string XDXD
-        os.environ['forcibly_killed'] = '0'
+        os.environ['FORCIBLY_KILLED'] = '0'
         self.starttime = time.time()
         cogs = ['cogs.moderation', 'cogs.dev', 'cogs.help', 'cogs.fun']
         fails = {}

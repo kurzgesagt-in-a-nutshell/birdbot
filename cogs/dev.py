@@ -162,7 +162,7 @@ class Dev(commands.Cog):
     async def kill(self, ctx):
         """Kill the bot"""
         try:
-            os.environ['forcibly_killed'] = '1'
+            os.environ['FORCIBLY_KILLED'] = '1'
             await ctx.send('Bravo 6 going dark')
             await self.bot.logout()
         except Exception as e:
