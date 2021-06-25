@@ -20,12 +20,12 @@ class Fun(commands.Cog):
 
         topic_file.close()
 
-    @ commands.Cog.listener()
+    @commands.Cog.listener()
     async def on_ready(self):
         self.logger.info('loaded Fun')
 
-    @ commands.command()
-    @ commands.cooldown(1, 30)
+    @commands.command()
+    @commands.cooldown(1, 30)
     async def topic(self, ctx):
         """Command description"""
         try:

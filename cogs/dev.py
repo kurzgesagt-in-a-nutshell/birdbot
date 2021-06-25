@@ -5,6 +5,8 @@ import math
 import textwrap
 import traceback
 import subprocess
+import os
+import dotenv
 from contextlib import redirect_stdout
 
 import discord
@@ -12,6 +14,8 @@ from discord.ext import commands
 
 from kurzgesagt import args
 from helper import mod_and_above
+
+dotenv.load_dotenv()
 
 class Dev(commands.Cog):
     def __init__(self, bot):
@@ -158,6 +162,8 @@ class Dev(commands.Cog):
     async def kill(self, ctx):
         """Kill the bot"""
         try:
+            os.environ['forcibly_killed'] = '1'
+            await ctx.send('Bravo 6 going dark')
             await self.bot.logout()
         except Exception as e:
             self.logger.error(str(e))
@@ -196,18 +202,10 @@ class Dev(commands.Cog):
                 return
             if str(reaction.emoji) == '<:kgsYes:580164400691019826>':
                 self.logger.info('reaction yes')
-                await self.restart(ctx)
+                await self.bot.close()
             elif str(reaction.emoji) == '<:kgsNo:610542174127259688>':
                 self.logger.info('reaction no')
                 await m.delete()
                     
-    @commands.is_owner()
-    @commands.command(aliases=['reboot'])
-    async def restart(self, ctx):
-        """Restart the bot instance."""
-        subprocess.Popen(["python3", 'kurzgesagt.py'])
-        await ctx.send('Restarted bot instance')
-        await self.bot.close()
-
 def setup(bot):
     bot.add_cog(Dev(bot))

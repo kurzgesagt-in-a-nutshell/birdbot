@@ -169,7 +169,7 @@ class Moderation(commands.Cog):
                 if tot_time != 0:
                     # TIMED
                     ids = helper.create_timed_action(
-                        users=members, action='ban', time=tot_time)
+                        users=members, action='ban', ime=tot_time)
                     await asyncio.sleep(tot_time)
                     await self.unban(ctx=ctx, member_id=mem_id, reason=reason)
                     # TIMED
