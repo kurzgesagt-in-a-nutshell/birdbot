@@ -4,11 +4,13 @@ import logging
 import math
 import textwrap
 import traceback
+import subprocess
 from contextlib import redirect_stdout
 
 import discord
 from discord.ext import commands
 
+from kurzgesagt import args
 from helper import mod_and_above
 
 class Dev(commands.Cog):
@@ -176,6 +178,36 @@ class Dev(commands.Cog):
             await ctx.send('Pull output',file= file)
         else:
             await ctx.send(f"```{output[0].decode()}```")
+
+        #check for reaction call
+        def check(reaction,user):
+            return user == ctx.author and str(reaction.emoji) in ('<:kgsYes:580164400691019826>','<:kgsNo:610542174127259688>')
+
+        #if no error is found in pulling, ask if restart is needed
+        #DOES NOT WORK FOR BETA INSTANCE
+        if output[1] is None and not args.beta:
+            m = await ctx.send('Would you like to restart the bot instance?')
+            await m.add_reaction('<:kgsYes:580164400691019826>')
+            await m.add_reaction('<:kgsNo:610542174127259688>')
+            try:
+                reaction, user = await self.bot.wait_for('reaction_add',timeout=20.0,check=check)  
+            except asyncio.TimeoutError:
+                await m.delete()
+                return
+            if str(reaction.emoji) == '<:kgsYes:580164400691019826>':
+                self.logger.info('reaction yes')
+                await self.restart(ctx)
+            elif str(reaction.emoji) == '<:kgsNo:610542174127259688>':
+                self.logger.info('reaction no')
+                await m.delete()
+                    
+    @commands.is_owner()
+    @commands.command(aliases=['reboot'])
+    async def restart(self, ctx):
+        """Restart the bot instance."""
+        subprocess.Popen(["python3", 'kurzgesagt.py'])
+        await ctx.send('Restarted bot instance')
+        await self.bot.close()
 
 def setup(bot):
     bot.add_cog(Dev(bot))

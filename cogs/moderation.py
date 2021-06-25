@@ -35,7 +35,7 @@ class Moderation(commands.Cog):
     @mod_and_above()
     async def clean(self, ctx, member: commands.Greedy[discord.Member] = None,
                     msg_count: int = None, channel: discord.TextChannel = None):
-        """ Clean messages. \nUsage: clean number_of_messages <@member(s)/ id(s)> <#channel>"""
+        """ Clean messages. \nUsage: clean <@member(s)/ id(s)> number_of_messages <#channel>"""
         try:
             messsage_count = msg_count  # used to display number of messages deleted
             if msg_count is None:

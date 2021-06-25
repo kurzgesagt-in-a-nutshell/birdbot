@@ -41,6 +41,7 @@ class Bot(commands.AutoShardedBot):
                              owner_ids={389718094270038018, 183092910495891467}, reconnect=True, intents=intents,
                              activity=discord.Activity(type=discord.ActivityType.watching, name="for bugs"))
         else:
+            intents = discord.Intents.all()
             super().__init__(command_prefix=["!", "k!"], case_insensitive=True,
                              owner_ids={389718094270038018, 183092910495891467}, reconnect=True,
                              activity=discord.Activity(type=discord.ActivityType.listening, name="to Steve's voice"))
