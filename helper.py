@@ -283,14 +283,14 @@ def create_timed_action(users, action, time):
         logging.error(str(e))
 
 
-def delete_time_action(ids):
+def delete_timed_action(ids):
     try:
         timed_actions_db.remove({"_id": {"$in": ids}})
     except Exception as e:
         logging.error(str(e))
 
 
-def delete_time_actions_uid(u_id, action):
+def delete_timed_actions_uid(u_id, action):
     """
         Delete timed action by user_id
     """
@@ -376,7 +376,9 @@ def calc_time(args):
                         j = j + 1
 
                     else:
-                        if i == 'd' or i == 'D':
+                        if i == 'w' or i == 'W':
+                            tot_time = tot_time + t * 7 * 24 * 60 * 60
+                        elif i == 'd' or i == 'D':
                             tot_time = tot_time + t * 24 * 60 * 60
                         elif i == 'h' or i == 'H':
                             tot_time = tot_time + t * 60 * 60
