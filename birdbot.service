@@ -1,0 +1,12 @@
+[Unit]
+Description=Birdbot
+
+[Service]
+ExecStart=/home/sloth/birdbot/kurzgesagtbot/startbot.sh
+Restart=always
+RestartPreventExitStatus=0
+StartLimitInterval=90
+StartLimitBurst=3
+
+[Install]
+WantedBy=multi-user.target
