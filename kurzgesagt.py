@@ -46,7 +46,6 @@ class Bot(commands.AutoShardedBot):
                              owner_ids={389718094270038018, 183092910495891467}, reconnect=True, intents=intents,
                              activity=discord.Activity(type=discord.ActivityType.listening, name="Steve's voice"))
 
-        # This is a test string XDXD
         try:
             del os.environ['FORCIBLY_KILLED']
         except KeyError:
