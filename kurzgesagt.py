@@ -44,7 +44,7 @@ class Bot(commands.AutoShardedBot):
             intents = discord.Intents.all()
             super().__init__(command_prefix=["!", "k!"], case_insensitive=True,
                              owner_ids={389718094270038018, 183092910495891467}, reconnect=True, intents=intents,
-                             activity=discord.Activity(type=discord.ActivityType.listening, name="to Steve's voice"))
+                             activity=discord.Activity(type=discord.ActivityType.listening, name="Steve's voice"))
 
         # This is a test string XDXD
         try:

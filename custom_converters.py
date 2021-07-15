@@ -3,6 +3,7 @@ import re
 
 from discord.ext.commands.converter import _get_from_guilds, _utils_get
 
+logger = logging.getLogger('CustomConverters')
 
 def _get_id_match(argument):
     _id_regex = re.compile(r'([0-9]{15,21})$')
@@ -11,6 +12,7 @@ def _get_id_match(argument):
 
 def member_converter(ctx, argument):
     try:
+        logger.info('running member_converter')
         bot = ctx.bot
         guild = ctx.guild
         match = _get_id_match(argument) or re.match(
@@ -19,11 +21,13 @@ def member_converter(ctx, argument):
             result = None
         else:
             user_id = int(match.group(1))
+            logger.info(user_id)
             if guild:
                 result = guild.get_member(user_id) or _utils_get(
                     ctx.message.mentions, id=user_id)
             else:
                 result = _get_from_guilds(bot, 'get_member', user_id)
+        logger.info(result)
 
         return result
     except Exception as e:
