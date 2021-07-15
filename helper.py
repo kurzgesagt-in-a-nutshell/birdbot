@@ -16,12 +16,18 @@ config_roles = config_json["roles"]
 
 logger = logging.getLogger('Helper')
 
+class NoAuthority(commands.CheckFailure):
+    """Raised when user has no clearance to run a command"""
+    pass
+
 def helper_and_above():
     async def predicate(ctx):
         user_role_ids = [x.id for x in ctx.author.roles]
         check_role_ids = [config_roles["helper_role"], config_roles["mod_role"],
                           config_roles["mod_role"], config_roles["admin_role"], config_roles["kgsofficial_role"]]
-        return any(x in user_role_ids for x in check_role_ids)
+        if not any(x in user_role_ids for x in check_role_ids):
+            raise NoAuthority
+        return True
 
     return commands.check(predicate)
 
@@ -31,7 +37,9 @@ def mod_and_above():
         user_role_ids = [x.id for x in ctx.author.roles]
         check_role_ids = [config_roles["mod_role"],
                           config_roles["admin_role"], config_roles["kgsofficial_role"]]
-        return any(x in user_role_ids for x in check_role_ids)
+        if not any(x in user_role_ids for x in check_role_ids):
+            raise NoAuthority
+        return True
 
     return commands.check(predicate)
 
@@ -41,8 +49,9 @@ def admin_and_above():
         user_role_ids = [x.id for x in ctx.author.roles]
         check_role_ids = [config_roles["admin_role"],
                           config_roles["kgsofficial_role"]]
-        return any(x in user_role_ids for x in check_role_ids)
-
+        if not any(x in user_role_ids for x in check_role_ids):
+            raise NoAuthority
+        return True
     return commands.check(predicate)
 
 

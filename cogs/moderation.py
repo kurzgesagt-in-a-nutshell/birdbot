@@ -217,7 +217,7 @@ class Moderation(commands.Cog):
                 members.remove(i)
 
         await ctx.message.add_reaction('<:kgsYes:580164400691019826>')
-        if failed_kick = True:
+        if failed_kick:
             x= await ctx.send('Could not kick certain users due to your clearance')
         embed = helper.create_embed(author=ctx.author, users=members, action='Kicked User(s)', reason=reason,
                                     color=discord.Color.red())

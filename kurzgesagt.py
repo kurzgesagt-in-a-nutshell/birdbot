@@ -51,7 +51,7 @@ class Bot(commands.AutoShardedBot):
         except KeyError:
             pass
         self.starttime = time.time()
-        cogs = ['cogs.moderation', 'cogs.dev', 'cogs.help', 'cogs.fun']
+        cogs = ['cogs.moderation', 'cogs.dev', 'cogs.help', 'cogs.fun','cogs.listeners']
         fails = {}
         for i in cogs:
             try:
@@ -68,25 +68,6 @@ class Bot(commands.AutoShardedBot):
         logger.info('------')
         # TIMED
         await helper.start_timed_actions(self)
-
-    @commands.Cog.listener()
-    async def on_command_error(self, ctx, error):
-
-        if isinstance(error, commands.MissingPermissions):
-            pass
-
-        elif isinstance(error, commands.MissingRequiredArgument):
-            return await ctx.send("Missing Arguments. Please check syntax using help command.")
-
-        elif isinstance(error, commands.CommandNotFound):
-            pass
-
-        elif isinstance(error, commands.errors.CommandOnCooldown):
-            return await ctx.send(error, delete_after=3.0)
-
-        else:
-            logger.error(str(error))
-            return await ctx.send("Can't execute the command!!")
 
 
 try:
