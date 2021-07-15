@@ -40,7 +40,7 @@ class Dev(commands.Cog):
             return f'```py\n{e.__class__.__name__}: {e}\n```'
         return f'```py\n{e.text}{"^":>{e.offset}}\n{e.__class__.__name__}: {e}```'
 
-    @commands.group(hidden=True.aliases=['presence'])
+    @commands.group(hidden=True,aliases=['presence'])
     @commands.is_owner()
     async def activity(self, ctx):
         """Sets the bots status"""

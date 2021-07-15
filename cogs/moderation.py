@@ -115,142 +115,120 @@ class Moderation(commands.Cog):
     async def ban(self, ctx, *args):
         """ Ban a member.\nUsage: ban @member(s) <time> reason """
 
-        tot_time = 0
-        is_banned = False
         mem_id = []
 
-        try:
+        logging_channel = discord.utils.get(
+            ctx.guild.channels, id=self.logging_channel)
 
-            logging_channel = discord.utils.get(
-                ctx.guild.channels, id=self.logging_channel)
+        members, extra = custom_converters.get_members(ctx, *args)
 
-            members, extra = custom_converters.get_members(ctx, *args)
+        if members is None or members == []:
+            raise commands.BadArgument(message='Improper members passed')
 
-            if members is not None:
-                for m in members:
-                    if m.id == 471705718957801483 or m.id == 639508517534957599:
-                        await ctx.send("Can't ban the bot.")
-                        members.remove(m)
+        reason = ' '.join(extra)
+        if reason == '':
+            raise commands.BadArgument(message='Please provide a reason and re-run the command')
 
-            if members is None or members == []:
-                return await ctx.send('Provide member(s) to ban.\n **Usage:** `ban @member(s) <time> reason`')
+        for m in members:
+            if m.top_role < ctx.author.top_role:
+                try:
+                    await ctx.send(f'You have been permanently removed from the server for reason: {reason}')
+                except discord.Forbidden:
+                    pass
+                await m.ban(reason=reason)
+            else:
+                members.remove(m)
+                failed_ban = True
 
-            tot_time, reason, time_str = helper.calc_time(extra)
+        if failed_ban: 
+            x=await ctx.send('Certain users could not be banned due to your clearance')
+        await ctx.message.add_reaction('<:kgsYes:580164400691019826>')
+        embed = helper.create_embed(author=ctx.author, users=members, action='Banned user(s)',
+                                    extra=f'Ban Duration: {time_str} or {tot_time} seconds', reason=reason,
+                                    color=discord.Color.dark_red())
 
-            if reason is None:
-                return await ctx.send('Provide a reason for banning.\n **Usage:** `ban @member(s) <time> reason`')
+        await logging_channel.send(embed=embed)
 
-            for m in members:
-                if m.top_role < ctx.author.top_role:
-                    mem_id.append(m.id)
-                    await m.ban(reason=reason)
+        helper.create_infraction(
+            author=ctx.author, users=members, action='ban', reason=reason)
+        await asyncio.sleep(6)
+        await ctx.message.delete()
+        await x.delete()
 
-                    if time_str != "0":
-                        await ctx.send(f'Banned {m.name} for {time_str}.\nReason: {reason}')
-                    else:
-                        await ctx.send(f'Banned {m.name}.\nReason: {reason}')
-
-            is_banned = True
-
-            embed = helper.create_embed(author=ctx.author, users=members, action='Banned user(s)',
-                                        extra=f'Ban Duration: {time_str} or {tot_time} seconds', reason=reason,
-                                        color=discord.Color.dark_red())
-            await logging_channel.send(embed=embed)
-
-            helper.create_infraction(
-                author=ctx.author, users=members, action='ban', reason=reason, time=tot_time)
-
-        except Exception as e:
-            self.logger.error(str(e))
-            await ctx.send('Unable to ban member(s).')
-
-        if is_banned:
-            try:
-                if tot_time != 0:
-                    # TIMED
-                    ids = helper.create_timed_action(
-                        users=members, action='ban', ime=tot_time)
-                    await asyncio.sleep(tot_time)
-                    await self.unban(ctx=ctx, member_id=mem_id, reason=reason)
-                    # TIMED
-                    helper.delete_timed_action(ids=ids)
-            except Exception as e:
-                self.logger.error(str(e))
 
     @commands.command()
     @mod_and_above()
     async def unban(self, ctx, member_id: commands.Greedy[int] = None, *, reason: str = None):
         """ Unban a member. \nUsage: unban member_id <reason> """
-        try:
-            if member_id is None:
-                return await ctx.send('Provide member id(s).\n**Usage:** `unban member_id <reason>`')
+        if member_id is None:
+            raise commands.BadArgument(message='Invalid member ID provided')
+            return
 
-            logging_channel = discord.utils.get(
-                ctx.guild.channels, id=self.logging_channel)
+        logging_channel = discord.utils.get(
+            ctx.guild.channels, id=self.logging_channel)
 
-            ban_list = await ctx.guild.bans()
+        ban_list = await ctx.guild.bans()
 
-            mem = []  # for listing members in embed
+        mem = []  # for listing members in embed
 
-            for b in ban_list:
-                if b.user.id in member_id:
-                    mem.append(b.user)
-                    if reason is None:
-                        reason = b.reason
+        for b in ban_list:
+            if b.user.id in member_id:
+                mem.append(b.user)
+                if reason is None:
+                    reason = b.reason
 
-                    await ctx.guild.unban(b.user, reason=reason)
-                    await ctx.send(f'Unbanned {b.user.name}.')
-                    member_id.remove(b.user.id)
+                await ctx.guild.unban(b.user, reason=reason)
+                member_id.remove(b.user.id)
 
-            for m in member_id:
-                await ctx.send(f'Member with ID {m} has not been banned before.')
+        for m in member_id:
+            await ctx.send(f'Member with ID {m} has not been banned before.')
 
-            embed = helper.create_embed(author=ctx.author, users=mem, action='Unbanned user(s)', reason=reason,
-                                        color=discord.Color.dark_red())
-            await logging_channel.send(embed=embed)
+        embed = helper.create_embed(author=ctx.author, users=mem, action='Unbanned user(s)', reason=reason,
+                                    color=discord.Color.dark_red())
+        await logging_channel.send(embed=embed)
+        await ctx.message.add_reaction('<:kgsYes:580164400691019826>')
 
-        except Exception as e:
-            self.logger.exception(str(e))
 
     @commands.command()
     @mod_and_above()
     async def kick(self, ctx, *args):
         """ Kick member(s).\nUsage: kick @member(s) reason """
-        try:
 
-            members, reason = custom_converters.get_members(ctx, *args)
+        members, reason = custom_converters.get_members(ctx, *args)
 
-            if reason is None:
-                return await ctx.send('Provide a reason.\n**Usage:** `kick @member(s) reason`')
+        if reason is None:
+            raise commands.BadArgument(message='Please provide a reason and re-run the command')
+            return
 
-            if members is not None:
-                for m in members:
-                    if m.id == 471705718957801483 or m.id == 639508517534957599:
-                        await ctx.send("Can't kick the bot.")
-                        members.remove(m)
+        if members is None:
+            raise commands.BadArgument(message='Improper members passed')
+            return
 
-            if members is None or members == []:
-                return await ctx.send('Provide member(s).\n**Usage:** `kick @member(s) reason`')
+        reason = " ".join(reason)
+        logging_channel = discord.utils.get(
+            ctx.guild.channels, id=self.logging_channel)
+        
+        failed_kick = False
+        for i in members:
+            if i.top_role < ctx.author.top_role:
+                await i.kick(reason=reason)
+            else:
+                failed_kick=True
+                members.remove(i)
 
-            reason = " ".join(reason)
-            logging_channel = discord.utils.get(
-                ctx.guild.channels, id=self.logging_channel)
+        await ctx.message.add_reaction('<:kgsYes:580164400691019826>')
+        if failed_kick = True:
+            x= await ctx.send('Could not kick certain users due to your clearance')
+        embed = helper.create_embed(author=ctx.author, users=members, action='Kicked User(s)', reason=reason,
+                                    color=discord.Color.red())
+        await logging_channel.send(embed=embed)
 
-            for i in members:
-                if i.top_role < ctx.author.top_role:
-                    await i.kick(reason=reason)
-                    await ctx.send(f'Kicked {i.name}.\nReason: {reason}')
+        helper.create_infraction(
+            author=ctx.author, users=members, action='kick', reason=reason)
 
-            embed = helper.create_embed(author=ctx.author, users=members, action='Kicked User(s)', reason=reason,
-                                        color=discord.Color.red())
-            await logging_channel.send(embed=embed)
-
-            helper.create_infraction(
-                author=ctx.author, users=members, action='kick', reason=reason)
-
-        except Exception as e:
-            self.logger.error(str(e))
-            await ctx.send('Unable to kick member(s).')
+        await asyncio.sleep(6)
+        await ctx.message.delete()
+        await x.delete()
 
     @commands.command()
     @helper_and_above()
@@ -261,49 +239,47 @@ class Moderation(commands.Cog):
         tot_time = 0
         is_muted = False
 
-        try:
-            logging_channel = discord.utils.get(
-                ctx.guild.channels, id=self.logging_channel)
-            mute_role = discord.utils.get(
-                ctx.guild.roles, id=self.config_json['roles']['mute_role'])
+        logging_channel = discord.utils.get(
+            ctx.guild.channels, id=self.logging_channel)
+        mute_role = discord.utils.get(
+            ctx.guild.roles, id=self.config_json['roles']['mute_role'])
 
-            members, extra = custom_converters.get_members(ctx, *args)
+        members, extra = custom_converters.get_members(ctx, *args)
 
-            if members is not None:
-                for m in members:
-                    if m.id == 471705718957801483 or m.id == 639508517534957599:
-                        await ctx.send("Can't mute the bot.")
-                        members.remove(m)
+        if members is None:
+            raise commands.BadArgument(message='Improper member passed')
 
-            if members is None or members == []:
-                return await ctx.send('Provide member(s) to mute.\n**Usage:** `mute @member(s) <time> reason`')
+        tot_time, reason, time_str = helper.calc_time(extra)
 
-            tot_time, reason, time_str = helper.calc_time(extra)
+        if reason is None:
+            raise commands.BadArgument(message='Please provide a reason and re-run the command')
+        
+        failed_mute = False
+        for i in members:
+            if i.top_role < ctx.author.top_role:
+                await i.add_roles(mute_role, reason=reason)
+                try:
+                    await i.send(f'You have been muted for {time_str}\nGiven reason: {reason}\n'
+                                 '(Note: Accumulation of mutes may lead to permanent removal from the server)')
+                except discord.Forbidden:
+                    pass
+            else:
+                failed_mute = True
+                members.remove(i)
 
-            if reason is None:
-                return await ctx.send('Provide reason to mute.\n**Usage:** `mute @member(s) <time> reason`')
+        await ctx.message.add_reaction('<:kgsYes:580164400691019826>')
+        if failed_mute:
+            x = await ctx.send('Certain members could not be muted due to your clearance')
 
-            for i in members:
-                if i.top_role < ctx.author.top_role:
-                    await i.add_roles(mute_role, reason=reason)
-                    if time_str != "0":
-                        await ctx.send(f'Muted {i.name} for {time_str}.\nReason: {reason}')
-                    else:
-                        await ctx.send(f'Muted {i.name}.\nReason: {reason}')
+        is_muted = True
 
-            is_muted = True
+        embed = helper.create_embed(author=ctx.author, users=members, action='Muted User(s)', reason=reason,
+                                    extra=f'Mute Duration: {time_str} or {tot_time} seconds',
+                                    color=discord.Color.red())
+        await logging_channel.send(embed=embed)
 
-            embed = helper.create_embed(author=ctx.author, users=members, action='Muted User(s)', reason=reason,
-                                        extra=f'Mute Duration: {time_str} or {tot_time} seconds',
-                                        color=discord.Color.red())
-            await logging_channel.send(embed=embed)
-
-            helper.create_infraction(
-                author=ctx.author, users=members, action='mute', reason=reason, time=time_str)
-
-        except Exception as e:
-            self.logger.error(str(e))
-            await ctx.send('Unable to mute users.')
+        helper.create_infraction(
+            author=ctx.author, users=members, action='mute', reason=reason, time=time_str)
 
         if is_muted:
             try:
@@ -312,125 +288,125 @@ class Moderation(commands.Cog):
                     ids = helper.create_timed_action(
                         users=members, action='mute', time=tot_time)
                     await asyncio.sleep(tot_time)
-                    await self.unmute(ctx=ctx, members=members, reason=reason, from_cmd=True)
+                    await self.unmute(ctx=ctx, members=members, reason=reason)
                     # TIMED
                     helper.delete_timed_action(ids=ids)
             except Exception as e:
                 self.logger.error(str(e))
+        await asyncio.sleep(6)
+        await ctx.message.delete()
+        await x.delete()
 
     @commands.command()
     @helper_and_above()
-    async def unmute(self, ctx, members: commands.Greedy[discord.Member], *, reason: str = None, from_cmd=False):
+    async def unmute(self, ctx, members: commands.Greedy[discord.Member]):
         """ Unmute member(s). \nUsage: unmute @member(s) <reason> """
 
-        try:
-            logging_channel = discord.utils.get(
-                ctx.guild.channels, id=self.logging_channel)
+        logging_channel = discord.utils.get(
+            ctx.guild.channels, id=self.logging_channel)
 
-            if not members:
-                return await ctx.send('Provide members to unmute.\n**Usage:** `unmute @member(s) <reason>`')
+        if not members:
+            raise commands.BadArgument(message='Provide members to mute')
 
-            mute_role = discord.utils.get(
-                ctx.guild.roles, id=self.config_json['roles']['mute_role'])
-            for i in members:
-                await i.remove_roles(mute_role, reason=reason)
-                # TIMED
-                helper.delete_timed_actions_uid(u_id=i.id, action='mute')
-                if from_cmd == False:
-                    await ctx.send(f'Unmuted {i.name}.')
+        mute_role = discord.utils.get(
+            ctx.guild.roles, id=self.config_json['roles']['mute_role'])
+        for i in members:
+            await i.remove_roles(mute_role,reason=f'Unmuted by {ctx.author}')
+            try:
+                await i.send('You have been unmuted!')
+            except discord.Forbidden:
+                pass
+            # TIMED
+            helper.delete_timed_actions_uid(u_id=i.id, action='mute')
 
-        except Exception as e:
-            logging.error(str(e))
-            await ctx.send('Unable to unmute users.')
-
+        await ctx.message.add_reaction('<:kgsYes:580164400691019826>')
         embed = helper.create_embed(author=ctx.author, users=members, action='Unmuted User(s)', reason=reason,
                                     color=discord.Color.red())
 
         await logging_channel.send(embed=embed)
+        await asyncio.sleep(6)
+        await ctx.message.delete()
 
     @commands.command()
     @mod_and_above()
     async def role(self, ctx, member: discord.Member = None, *, role_name: str = None):
-        """ Add/Remove a role to member. \nUsage: role @member role_name """
+        """ Add/Remove a role from a member. \nUsage: role @member role_name """
 
-        try:
-            logging_channel = discord.utils.get(
-                ctx.guild.channels, id=self.logging_channel)
+        logging_channel = discord.utils.get(
+            ctx.guild.channels, id=self.logging_channel)
 
-            if member is None:
-                return await ctx.send('Provide member.\n**Usage:** `role @member role_name`')
-            if role_name is None:
-                return await ctx.send('Provide role name.\n**Usage:** `role @member role_name`')
+        if member is None:
+            raise commands.BadArgument(message='No members provided')
+        if role_name is None:
+            raise commands.BadArgument(message='No role provided')
 
-            role = discord.utils.get(ctx.guild.roles, name=role_name)
+        role = discord.utils.get(ctx.guild.roles, name=role_name)
 
-            if role is None:
-                return await ctx.send('Role not found')
+        if role is None:
+            return await ctx.send('Role not found')
 
-            if ctx.author.top_role < role:
-                await ctx.send(f'Your role is lower than {role.name}.')
+        if ctx.author.top_role < role:
+            raise commands.BadArgument(message='You don\'t have clearance to do that')
 
-            else:
-                r = discord.utils.get(member.roles, name=role.name)
-                if r is None:
-                    await member.add_roles(role)
-                    await ctx.send(f'Gave role {role.name} to {member.name}')
+        r = discord.utils.get(member.roles, name=role.name)
+        if r is None:
+            await member.add_roles(role)
+            await ctx.send(f'Gave role {role.name} to {member.name}')
 
-                    embed = helper.create_embed(author=ctx.author, users=[member], action='Gave role',
-                                                extra=f'Role: {role.mention}',
-                                                color=discord.Color.purple())
-                    return await logging_channel.send(embed=embed)
+            embed = helper.create_embed(author=ctx.author, users=[member], action='Gave role',
+                                        extra=f'Role: {role.mention}',
+                                        color=discord.Color.purple())
+            return await logging_channel.send(embed=embed)
 
-                else:
-                    await member.remove_roles(role)
-                    await ctx.send(f'Removed role {role.name} from {member.name}')
-                    embed = helper.create_embed(author=ctx.author, users=[member], action='Removed role',
-                                                extra=f'Role: {role.mention}',
-                                                color=discord.Color.purple())
-                    return await logging_channel.send(embed=embed)
+        await member.remove_roles(role)
+        await ctx.send(f'Removed role {role.name} from {member.name}')
+        embed = helper.create_embed(author=ctx.author, users=[member], action='Removed role',
+                                    extra=f'Role: {role.mention}',
+                                    color=discord.Color.purple())
+        return await logging_channel.send(embed=embed)
 
-        except Exception as e:
-            self.logger.error(str(e))
-            await ctx.send('Unable to give role.')
 
     @commands.command()
     @helper_and_above()
     async def warn(self, ctx, *args):
         """ Warn user(s) \nUsage: warn @member(s) reason """
-        try:
-            logging_channel = discord.utils.get(
-                ctx.guild.channels, id=self.logging_channel)
+        logging_channel = discord.utils.get(
+            ctx.guild.channels, id=self.logging_channel)
 
-            members, reason = custom_converters.get_members(ctx, *args)
+        members, reason = custom_converters.get_members(ctx, *args)
 
-            if members is None:
-                return await ctx.send('Provide member(s) to warn.\n**Usage:** `warn @member(s) reason`')
+        if members is None:
+            raise commands.BadArgument(message='No members provided')
+        if reason is None:
+            raise commands.BadArgument(message='No reason provided, please re-run the command with a reaso')
 
-            if members is not None:
-                for m in members:
-                    if m.id == 471705718957801483 or m.id == 639508517534957599:
-                        await ctx.send("Can't warn the bot.")
-                        members.remove(m)
+        reason = " ".join(reason)
 
-            if reason is None:
-                return await ctx.send('Provide a reason.\n**Usage:** `warn @member(s) reason`')
+        helper.create_infraction(
+            author=ctx.author, users=members, action='warn', reason=reason)
 
-            reason = " ".join(reason)
+        embed = helper.create_embed(author=ctx.author, users=members, action='Warned User(s)',
+                                    reason=reason,color=discord.Color.red())
 
-            helper.create_infraction(
-                author=ctx.author, users=members, action='warn', reason=reason)
+        await logging_channel.send(embed=embed)
+        failed_warn = False
+        for m in members:
+            if m.top_role < ctx.author.top_role:
+                try:
+                    await m.send(f'You have been warned for {reason} (Note: Accumulation of warns may lead to permanent removal from the server)')
+                except discord.Forbidden:
+                    pass
+            else:
+                failed_warn = True
+                members.remove(m)
 
-            embed = helper.create_embed(author=ctx.author, users=members, action='Warned User(s)', reason=reason,
-                                        color=discord.Color.red())
+        if failed_warn:
+            x=await ctx.send('Certain members could not be warned due to your clearance')
+        await ctx.message.add_reaction('<:kgsYes:580164400691019826>')
+        await asyncio.sleep(6)
+        await ctx.message.delete()
+        await x.delete()
 
-            await logging_channel.send(embed=embed)
-            for m in members:
-                if m.top_role < ctx.author.top_role:
-                    await ctx.send(f'Warned {m.name}.\nReason: {reason}')
-
-        except Exception as e:
-            self.logger.error(str(e))
-            await ctx.send('Unable to warn member(s).')
 
     @commands.command(aliases=['infr', 'inf'])
     @mod_and_above()

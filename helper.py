@@ -14,6 +14,7 @@ config_roles = config_json["roles"]
 
 # Custom checks
 
+logger = logging.getLogger('Helper')
 
 def helper_and_above():
     async def predicate(ctx):
@@ -278,6 +279,7 @@ def create_timed_action(users, action, time):
                 "action_end": datetime.datetime.utcnow() + datetime.timedelta(seconds=time)
             })
         ids = timed_actions_db.insert_many(data)
+        logger.info(type(ids))
         return ids.inserted_ids
     except Exception as e:
         logging.error(str(e))
