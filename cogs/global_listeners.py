@@ -1,19 +1,22 @@
+import io
 import asyncio
 import json
 
 import logging
+
+import traceback
 from traceback import TracebackException
 
 import discord
 from discord.ext import commands
 
-from helper import NoAuthority
+from helper import NoAuthorityError
 
 class Errors(commands.Cog):
     def __init__(self, bot):
         with open('config.json', 'r') as config_file:
             self.config_json = json.loads(config_file.read())
-        self.dev_logging_channel = self.config_json['logging']['logging_channel']
+        self.dev_logging_channel = self.config_json['logging']['dev_logging_channel']
 
         self.logger = logging.getLogger('Listeners')
         self.bot = bot
@@ -24,8 +27,9 @@ class Errors(commands.Cog):
     
     @commands.Cog.listener()
     async def on_command_error(self, ctx, err):
+
         traceback_txt = ''.join(TracebackException.from_exception(err).format())
-        channel = self.bot.fetch_channel(dev_logging_channel)
+        channel = await self.bot.fetch_channel(self.dev_logging_channel)
 
         if isinstance(err, commands.errors.MissingPermissions):
             await ctx.message.add_reaction('<:kgsNo:610542174127259688>')
@@ -43,7 +47,7 @@ class Errors(commands.Cog):
             await asyncio.sleep(4)
             await ctx.message.delete()
 
-        elif isinstance(err,NoAuthority):
+        elif isinstance(err,NoAuthorityError):
             await ctx.message.add_reaction('<:kgsNo:610542174127259688>')
 
         elif isinstance(err,commands.errors.BadArgument):
@@ -53,8 +57,13 @@ class Errors(commands.Cog):
 
         else:
             await ctx.message.add_reaction('<:kgsStop:579824947959169024>')
-            await ctx.send("An unhandled exception occured, if this issue persists please contact FC or sloth")
-
+            await ctx.send("Uh oh, an unhandled exception occured, if this issue persists please contact FC or sloth")
+            description=f"An [**unhandled exception**]({ctx.message.jump_url}) occured in <#{ctx.message.channel.id}> when " \
+                        f"running the **{ctx.command.name}** command.```\n{err}```"
+            embed = discord.Embed(title="Unhandled Exception", description=description,
+                                  color=0xff0000)
+            file = discord.File(io.BytesIO(traceback_txt.encode()),filename='traceback.txt')
+            await channel.send(embed=embed,file=file)
             
 
 def setup(bot):

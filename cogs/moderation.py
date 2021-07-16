@@ -386,7 +386,7 @@ class Moderation(commands.Cog):
                                     reason=reason,color=discord.Color.red())
 
         await logging_channel.send(embed=embed)
-        failed_warn = False
+        # failed_warn = False
         for m in members:
             if m.top_role < ctx.author.top_role:
                 try:
