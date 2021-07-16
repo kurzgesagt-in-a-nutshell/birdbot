@@ -51,7 +51,7 @@ class Bot(commands.AutoShardedBot):
         except KeyError:
             pass
         self.starttime = time.time()
-        cogs = ['cogs.moderation', 'cogs.dev', 'cogs.help', 'cogs.fun','cogs.listeners']
+        cogs = ['cogs.moderation', 'cogs.dev', 'cogs.help', 'cogs.fun','cogs.global_listeners']
         fails = {}
         for i in cogs:
             try:

@@ -129,19 +129,20 @@ class Moderation(commands.Cog):
         if reason == '':
             raise commands.BadArgument(message='Please provide a reason and re-run the command')
 
+        failed_ban = False
         for m in members:
             if m.top_role < ctx.author.top_role:
                 try:
-                    await ctx.send(f'You have been permanently removed from the server for reason: {reason}')
+                    await m.send(f'You have been permanently removed from the server for reason: {reason}')
                 except discord.Forbidden:
                     pass
                 await m.ban(reason=reason)
             else:
                 members.remove(m)
                 failed_ban = True
-
-        if failed_ban: 
+        if failed_ban:
             x=await ctx.send('Certain users could not be banned due to your clearance')
+
         await ctx.message.add_reaction('<:kgsYes:580164400691019826>')
         embed = helper.create_embed(author=ctx.author, users=members, action='Banned user(s)',
                                     extra=f'Ban Duration: {time_str} or {tot_time} seconds', reason=reason,
@@ -288,7 +289,7 @@ class Moderation(commands.Cog):
                     ids = helper.create_timed_action(
                         users=members, action='mute', time=tot_time)
                     await asyncio.sleep(tot_time)
-                    await self.unmute(ctx=ctx, members=members, reason=reason)
+                    await self.unmute(ctx=ctx, members=members)
                     # TIMED
                     helper.delete_timed_action(ids=ids)
             except Exception as e:
@@ -312,10 +313,6 @@ class Moderation(commands.Cog):
             ctx.guild.roles, id=self.config_json['roles']['mute_role'])
         for i in members:
             await i.remove_roles(mute_role,reason=f'Unmuted by {ctx.author}')
-            try:
-                await i.send('You have been unmuted!')
-            except discord.Forbidden:
-                pass
             # TIMED
             helper.delete_timed_actions_uid(u_id=i.id, action='mute')
 
