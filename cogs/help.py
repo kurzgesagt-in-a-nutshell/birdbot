@@ -23,6 +23,7 @@ class Help(commands.Cog):
 
         cogs = list(self.bot.cogs)
         cogs.remove('Dev')
+        cogs.remove('Errors')
         try:
             if cmnd is None:
                 embed = discord.Embed(title="Kurzbot Help", description=f'To see more info do help [command].',
