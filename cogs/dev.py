@@ -161,13 +161,9 @@ class Dev(commands.Cog):
     @mod_and_above()
     async def kill(self, ctx):
         """Kill the bot"""
-        try:
-            os.environ['FORCIBLY_KILLED'] = '1'
-            await ctx.send('Bravo 6 going dark')
-            await self.bot.logout()
-        except Exception as e:
-            self.logger.error(str(e))
-            await ctx.send('Unable to kill bot.')
+        os.environ['FORCIBLY_KILLED'] = '1'
+        await ctx.send('Bravo 6 going dark')
+        await self.bot.logout()
 
     @commands.is_owner()
     @commands.command(hidden=True)
@@ -201,10 +197,8 @@ class Dev(commands.Cog):
                 await m.delete()
                 return
             if str(reaction.emoji) == '<:kgsYes:580164400691019826>':
-                self.logger.info('reaction yes')
                 await self.bot.close()
             elif str(reaction.emoji) == '<:kgsNo:610542174127259688>':
-                self.logger.info('reaction no')
                 await m.delete()
                     
 def setup(bot):
