@@ -115,8 +115,6 @@ class Moderation(commands.Cog):
     async def ban(self, ctx, *args):
         """ Ban a member.\nUsage: ban @member(s) <time> reason """
 
-        mem_id = []
-
         logging_channel = discord.utils.get(
             ctx.guild.channels, id=self.logging_channel)
 
@@ -145,7 +143,7 @@ class Moderation(commands.Cog):
 
         await ctx.message.add_reaction('<:kgsYes:580164400691019826>')
         embed = helper.create_embed(author=ctx.author, users=members, action='Banned user(s)',
-                                    extra=f'Ban Duration: {time_str} or {tot_time} seconds', reason=reason,
+                                    reason=reason,
                                     color=discord.Color.dark_red())
 
         await logging_channel.send(embed=embed)
@@ -317,7 +315,7 @@ class Moderation(commands.Cog):
             helper.delete_timed_actions_uid(u_id=i.id, action='mute')
 
         await ctx.message.add_reaction('<:kgsYes:580164400691019826>')
-        embed = helper.create_embed(author=ctx.author, users=members, action='Unmuted User(s)', reason=reason,
+        embed = helper.create_embed(author=ctx.author, users=members, action='Unmuted User(s)',
                                     color=discord.Color.red())
 
         await logging_channel.send(embed=embed)
@@ -405,7 +403,7 @@ class Moderation(commands.Cog):
         await x.delete()
 
 
-    @commands.command(aliases=['infr', 'inf'])
+    @commands.command(aliases=['infr', 'inf','infraction'])
     @mod_and_above()
     async def infractions(self, ctx, member: typing.Optional[discord.Member] = None,
                           mem_id: typing.Optional[int] = None, inf_type: str = None):
@@ -490,13 +488,6 @@ class Moderation(commands.Cog):
                 await msg.clear_reaction(u"\U0001F528")
                 await msg.clear_reaction(u"\U0001F507")
                 await msg.clear_reaction(u"\U0001F3CC")
-
-        except Exception as e:
-            logging.error(e)
-            if msg:
-                await msg.clear_reaction(u"\u26A0")
-                await msg.clear_reaction(u"\U0001F528")
-                await msg.clear_reaction(u"\U0001F507")
                 await msg.clear_reaction(u"\U0001F3CC")
 
     @commands.command(aliases=['slothmode'])

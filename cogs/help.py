@@ -24,38 +24,31 @@ class Help(commands.Cog):
         cogs = list(self.bot.cogs)
         cogs.remove('Dev')
         cogs.remove('Errors')
-        try:
-            if cmnd is None:
-                embed = discord.Embed(title="Kurzbot Help", description=f'To see more info do help [command].',
-                                      color=discord.Color.green(), timestamp=datetime.datetime.utcnow())
-                for i in cogs:
-                    cog = self.bot.get_cog(i)
-                    commands = cog.get_commands()
-                    commands = ['`' + c.name + '`' for c in commands]
-                    embed.add_field(name=i, value='\n'.join(commands))
+        if cmnd is None:
+            embed = discord.Embed(title="Kurzbot Help", description=f'To see more info do help [command].',
+                                  color=discord.Color.green(), timestamp=datetime.datetime.utcnow())
+            for i in cogs:
+                cog = self.bot.get_cog(i)
+                commands = cog.get_commands()
+                commands = ['`' + c.name + '`' for c in commands]
+                embed.add_field(name=i, value='\n'.join(commands))
 
-                return await ctx.send(embed=embed)
+            return await ctx.send(embed=embed)
 
-            elif self.bot.get_command(cmnd).cog_name in cogs:
-                command = self.bot.get_command(cmnd)
-                embed = discord.Embed(title=command.name, description=f'```{command.help}```',
-                                      color=discord.Color.green(), timestamp=datetime.datetime.utcnow())
-                if command.aliases:
-                    embed.add_field(name='Alias', value=f'```{", ".join(command.aliases)}```', inline=False)
-                return await ctx.send(embed=embed)
-
-        except Exception as e:
-            self.logger.error(str(e))
+        elif self.bot.get_command(cmnd).cog_name in cogs:
+            command = self.bot.get_command(cmnd)
+            embed = discord.Embed(title=command.name, description=f'```{command.help}```',
+                                  color=discord.Color.green(), timestamp=datetime.datetime.utcnow())
+            if command.aliases:
+                embed.add_field(name='Alias', value=f'```{", ".join(command.aliases)}```', inline=False)
+            return await ctx.send(embed=embed)
 
     @commands.command()
     async def ping(self, ctx):
         """
             Ping Pong
         """
-        try:
-            await ctx.send(f'{int(self.bot.latency * 1000)} ms')
-        except Exception as e:
-            self.logger.error(str(e))
+        await ctx.send(f'{int(self.bot.latency * 1000)} ms')
 
 
 def setup(bot):
