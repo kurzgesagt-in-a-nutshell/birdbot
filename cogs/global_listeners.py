@@ -33,6 +33,8 @@ class Errors(commands.Cog):
 
         if isinstance(err, commands.errors.MissingPermissions):
             await ctx.message.add_reaction('<:kgsNo:610542174127259688>')
+            asyncio.sleep(6)
+            await ctx.message.delete()
 
         elif isinstance(err, commands.MissingRequiredArgument):
             await ctx.send(f"You're missing the {err.param.name} argument. Please check syntax using help command.",delete_after=6)
@@ -49,6 +51,8 @@ class Errors(commands.Cog):
 
         elif isinstance(err,NoAuthorityError):
             await ctx.message.add_reaction('<:kgsNo:610542174127259688>')
+            asyncio.sleep(6)
+            await ctx.message.delete()
 
         elif isinstance(err,commands.errors.BadArgument):
             await ctx.send(f'```{err}```',delete_after=6)
