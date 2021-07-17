@@ -4,7 +4,6 @@ import json
 
 import logging
 
-import traceback
 from traceback import TracebackException
 
 import discord
