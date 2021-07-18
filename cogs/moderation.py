@@ -77,7 +77,7 @@ class Moderation(commands.Cog):
 
             await logging_channel.send(embed=embed)
 
-         else:
+        else:
             # formatting string to be sent as file for logging
             log_str = "Author (ID)".ljust(70) + " | " + "Message Creation Time (UTC)".ljust(
                 30) + " | " + "Content" + "\n\n"
