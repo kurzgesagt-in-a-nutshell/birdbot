@@ -384,7 +384,7 @@ class Moderation(commands.Cog):
                                     reason=reason,color=discord.Color.red())
 
         await logging_channel.send(embed=embed)
-        # failed_warn = False
+        failed_warn = False
         for m in members:
             if m.top_role < ctx.author.top_role:
                 try:
@@ -400,7 +400,8 @@ class Moderation(commands.Cog):
         await ctx.message.add_reaction('<:kgsYes:580164400691019826>')
         await asyncio.sleep(6)
         await ctx.message.delete()
-        await x.delete()
+        if failed_warn:
+            await x.delete()
 
 
     @commands.command(aliases=['infr', 'inf','infraction'])
