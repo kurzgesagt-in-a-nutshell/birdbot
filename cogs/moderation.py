@@ -498,7 +498,10 @@ class Moderation(commands.Cog):
         """ Add/Remove slowmode. \nUsage: slowmode <slowmode_time> <#channel> <reason>"""
         try:
 
-            if time is None or time < 0:
+            if time is None:
+                time = 0
+
+            if time < 0:
                 return await ctx.send(
                     'Provide a valid time.\n**Usage:** `slowmode <slowmode_time> <#channel> <reason>`')
 
@@ -507,7 +510,7 @@ class Moderation(commands.Cog):
             if channel is not None:
                 ch = channel
 
-            await ch.edit(slowmode_delay=time)
+            await ch.edit(slowmode_delay=time, reason=reason)
 
             logging_channel = discord.utils.get(
                 ctx.guild.channels, id=self.logging_channel)
@@ -515,7 +518,7 @@ class Moderation(commands.Cog):
                                         extra=f'Channel: {ch.mention}\nSlowmode Duration: {time} seconds', color=discord.Color.orange())
             await logging_channel.send(embed=embed)
 
-            await ctx.send(f'Slowmode of {time} added to {channel.name}.')
+            await ctx.send(f'Slowmode of {time}s added to {ch.mention}.')
 
         except Exception as e:
             self.logger.error(str(e))
