@@ -136,6 +136,8 @@ class Moderation(commands.Cog):
                 failed_ban = True
         if failed_ban:
             x = await ctx.send('Certain users could not be banned due to your clearance')
+        if len(members) == 0:
+            return
 
         await ctx.message.add_reaction('<:kgsYes:580164400691019826>')
         embed = helper.create_embed(author=ctx.author, users=members, action='Banned user(s)',
@@ -213,6 +215,8 @@ class Moderation(commands.Cog):
         await ctx.message.add_reaction('<:kgsYes:580164400691019826>')
         if failed_kick:
             x = await ctx.send('Could not kick certain users due to your clearance')
+        if len(members) == 0:
+            return
         embed = helper.create_embed(author=ctx.author, users=members, action='Kicked User(s)', reason=reason,
                                     color=discord.Color.red())
         await logging_channel.send(embed=embed)
@@ -265,6 +269,8 @@ class Moderation(commands.Cog):
         await ctx.message.add_reaction('<:kgsYes:580164400691019826>')
         if failed_mute:
             x = await ctx.send('Certain members could not be muted due to your clearance')
+        if len(members) == 0:
+            return
 
         is_muted = True
 
@@ -385,6 +391,11 @@ class Moderation(commands.Cog):
                 failed_warn = True
                 members.remove(m)
 
+        if failed_warn:
+            x = await ctx.send('Certain members could not be warned due to your clearance')
+        if len(members) == 0:
+            return
+
         helper.create_infraction(
             author=ctx.author, users=members, action='warn', reason=reason)
 
@@ -392,8 +403,6 @@ class Moderation(commands.Cog):
                                     reason=reason, color=discord.Color.red())
         await logging_channel.send(embed=embed)
 
-        if failed_warn:
-            x = await ctx.send('Certain members could not be warned due to your clearance')
         await ctx.message.add_reaction('<:kgsYes:580164400691019826>')
         await asyncio.sleep(6)
         await ctx.message.delete()
