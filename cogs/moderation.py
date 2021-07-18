@@ -1,9 +1,7 @@
 import json
-import os
 import io
 import re
 import typing
-import time
 import asyncio
 import logging
 
@@ -125,7 +123,8 @@ class Moderation(commands.Cog):
 
         reason = ' '.join(extra)
         if reason == '':
-            raise commands.BadArgument(message='Please provide a reason and re-run the command')
+            raise commands.BadArgument(
+                message='Please provide a reason and re-run the command')
 
         failed_ban = False
         for m in members:
@@ -139,7 +138,7 @@ class Moderation(commands.Cog):
                 members.remove(m)
                 failed_ban = True
         if failed_ban:
-            x=await ctx.send('Certain users could not be banned due to your clearance')
+            x = await ctx.send('Certain users could not be banned due to your clearance')
 
         await ctx.message.add_reaction('<:kgsYes:580164400691019826>')
         embed = helper.create_embed(author=ctx.author, users=members, action='Banned user(s)',
@@ -153,7 +152,6 @@ class Moderation(commands.Cog):
         await asyncio.sleep(6)
         await ctx.message.delete()
         await x.delete()
-
 
     @commands.command()
     @mod_and_above()
@@ -187,7 +185,6 @@ class Moderation(commands.Cog):
         await logging_channel.send(embed=embed)
         await ctx.message.add_reaction('<:kgsYes:580164400691019826>')
 
-
     @commands.command()
     @mod_and_above()
     async def kick(self, ctx, *args):
@@ -196,7 +193,8 @@ class Moderation(commands.Cog):
         members, reason = custom_converters.get_members(ctx, *args)
 
         if reason is None:
-            raise commands.BadArgument(message='Please provide a reason and re-run the command')
+            raise commands.BadArgument(
+                message='Please provide a reason and re-run the command')
             return
 
         if members is None:
@@ -206,18 +204,18 @@ class Moderation(commands.Cog):
         reason = " ".join(reason)
         logging_channel = discord.utils.get(
             ctx.guild.channels, id=self.logging_channel)
-        
+
         failed_kick = False
         for i in members:
             if i.top_role < ctx.author.top_role:
                 await i.kick(reason=reason)
             else:
-                failed_kick=True
+                failed_kick = True
                 members.remove(i)
 
         await ctx.message.add_reaction('<:kgsYes:580164400691019826>')
         if failed_kick:
-            x= await ctx.send('Could not kick certain users due to your clearance')
+            x = await ctx.send('Could not kick certain users due to your clearance')
         embed = helper.create_embed(author=ctx.author, users=members, action='Kicked User(s)', reason=reason,
                                     color=discord.Color.red())
         await logging_channel.send(embed=embed)
@@ -251,8 +249,9 @@ class Moderation(commands.Cog):
         tot_time, reason, time_str = helper.calc_time(extra)
 
         if reason is None:
-            raise commands.BadArgument(message='Please provide a reason and re-run the command')
-        
+            raise commands.BadArgument(
+                message='Please provide a reason and re-run the command')
+
         failed_mute = False
         for i in members:
             if i.top_role < ctx.author.top_role:
@@ -310,7 +309,7 @@ class Moderation(commands.Cog):
         mute_role = discord.utils.get(
             ctx.guild.roles, id=self.config_json['roles']['mute_role'])
         for i in members:
-            await i.remove_roles(mute_role,reason=f'Unmuted by {ctx.author}')
+            await i.remove_roles(mute_role, reason=f'Unmuted by {ctx.author}')
             # TIMED
             helper.delete_timed_actions_uid(u_id=i.id, action='mute')
 
@@ -341,7 +340,8 @@ class Moderation(commands.Cog):
             return await ctx.send('Role not found')
 
         if ctx.author.top_role < role:
-            raise commands.BadArgument(message='You don\'t have clearance to do that')
+            raise commands.BadArgument(
+                message='You don\'t have clearance to do that')
 
         r = discord.utils.get(member.roles, name=role.name)
         if r is None:
@@ -360,7 +360,6 @@ class Moderation(commands.Cog):
                                     color=discord.Color.purple())
         return await logging_channel.send(embed=embed)
 
-
     @commands.command()
     @helper_and_above()
     async def warn(self, ctx, *args):
@@ -373,7 +372,8 @@ class Moderation(commands.Cog):
         if members is None:
             raise commands.BadArgument(message='No members provided')
         if reason is None:
-            raise commands.BadArgument(message='No reason provided, please re-run the command with a reaso')
+            raise commands.BadArgument(
+                message='No reason provided, please re-run the command with a reaso')
 
         reason = " ".join(reason)
 
@@ -381,7 +381,7 @@ class Moderation(commands.Cog):
             author=ctx.author, users=members, action='warn', reason=reason)
 
         embed = helper.create_embed(author=ctx.author, users=members, action='Warned User(s)',
-                                    reason=reason,color=discord.Color.red())
+                                    reason=reason, color=discord.Color.red())
 
         await logging_channel.send(embed=embed)
         failed_warn = False
@@ -396,18 +396,16 @@ class Moderation(commands.Cog):
                 members.remove(m)
 
         if failed_warn:
-            x=await ctx.send('Certain members could not be warned due to your clearance')
+            x = await ctx.send('Certain members could not be warned due to your clearance')
         await ctx.message.add_reaction('<:kgsYes:580164400691019826>')
         await asyncio.sleep(6)
         await ctx.message.delete()
         if failed_warn:
             await x.delete()
 
-
-    @commands.command(aliases=['infr', 'inf','infraction'])
+    @commands.command(aliases=['infr', 'inf', 'infraction'])
     @mod_and_above()
-    async def infractions(self, ctx, member: typing.Optional[discord.Member] = None,
-                          mem_id: typing.Optional[int] = None, inf_type: str = None):
+    async def infractions(self, ctx, member: typing.Optional[discord.Member] = None, mem_id: typing.Optional[int] = None, inf_type: str = None):
         """ Get Infractions. \nUsage: infr <@member / member_id> <infraction_type> """
         try:
 
@@ -496,33 +494,27 @@ class Moderation(commands.Cog):
     async def slowmode(self, ctx, time: typing.Optional[int] = None,
                        channel: typing.Optional[discord.TextChannel] = None, *, reason: str = None):
         """ Add/Remove slowmode. \nUsage: slowmode <slowmode_time> <#channel> <reason>"""
-        try:
 
-            if time is None:
-                time = 0
+        if time is None:
+            time = 0
 
-            if time < 0:
-                return await ctx.send(
-                    'Provide a valid time.\n**Usage:** `slowmode <slowmode_time> <#channel> <reason>`')
+        if time < 0:
+            raise commands.BadArgument(message="Improper time provided")
 
-            ch = ctx.channel
+        ch = ctx.channel
 
-            if channel is not None:
-                ch = channel
+        if channel is not None:
+            ch = channel
 
-            await ch.edit(slowmode_delay=time, reason=reason)
+        await ch.edit(slowmode_delay=time, reason=reason)
 
-            logging_channel = discord.utils.get(
-                ctx.guild.channels, id=self.logging_channel)
-            embed = helper.create_embed(author=ctx.author, users=None, action='Added slow mode.', reason=reason,
-                                        extra=f'Channel: {ch.mention}\nSlowmode Duration: {time} seconds', color=discord.Color.orange())
-            await logging_channel.send(embed=embed)
+        logging_channel = discord.utils.get(
+            ctx.guild.channels, id=self.logging_channel)
+        embed = helper.create_embed(author=ctx.author, users=None, action='Added slow mode.', reason=reason,
+                                    extra=f'Channel: {ch.mention}\nSlowmode Duration: {time} seconds', color=discord.Color.orange())
+        await logging_channel.send(embed=embed)
 
-            await ctx.send(f'Slowmode of {time}s added to {ch.mention}.')
-
-        except Exception as e:
-            self.logger.error(str(e))
-            await ctx.send('Unable to add slowmode.')
+        await ctx.send(f'Slowmode of {time}s added to {ch.mention}.')
 
 
 def setup(bot):
