@@ -34,78 +34,75 @@ class Moderation(commands.Cog):
     async def clean(self, ctx, member: commands.Greedy[discord.Member] = None,
                     msg_count: int = None, channel: discord.TextChannel = None):
         """ Clean messages. \nUsage: clean <@member(s)/ id(s)> number_of_messages <#channel>"""
-        try:
-            messsage_count = msg_count  # used to display number of messages deleted
-            if msg_count is None:
-                return await ctx.send(f'**Usage:** `clean <@member(s)/ id(s)> number_of_messages <#channel>`')
+        messsage_count = msg_count  # used to display number of messages deleted
+        if msg_count is None:
+            return await ctx.send(f'**Usage:** `clean <@member(s)/ id(s)> number_of_messages <#channel>`')
 
-            if msg_count > 200:
-                return await ctx.send(f'Provided number is too big. (Max limit 100)')
+        if msg_count > 200:
+            return await ctx.send(f'Provided number is too big. (Max limit 100)')
 
-            if msg_count <= 0:
-                return await ctx.channel.purge(limit=1)
+        if msg_count <= 0:
+            return await ctx.channel.purge(limit=1)
 
-            if channel is None:
-                channel = ctx.channel
+        if channel is None:
+            channel = ctx.channel
 
-            # check if message sent is by a user who is in command argument
-            def check(m):
-                if m.author in member:
-                    nonlocal messsage_count
-                    messsage_count -= 1
-                    if messsage_count >= 0:
-                        return True
-                return False
+        # check if message sent is by a user who is in command argument
+        def check(m):
+            if m.author in member:
+                nonlocal messsage_count
+                messsage_count -= 1
+                if messsage_count >= 0:
+                    return True
+            return False
 
-            if not member:
-                deleted_messages = await channel.purge(limit=msg_count+1)
-            else:
-                deleted_messages = await channel.purge(limit=150, check=check)
+        if not member:
+            deleted_messages = await channel.purge(limit=msg_count+1)
+        else:
+            deleted_messages = await channel.purge(limit=150, check=check)
 
-            await ctx.send(f"Deleted {len(deleted_messages) - 1} message(s)", delete_after=3.0)
+        await ctx.send(f"Deleted {len(deleted_messages) - 1} message(s)", delete_after=3.0)
 
-            if msg_count == 1:
-                logging_channel = discord.utils.get(
-                    ctx.guild.channels, id=self.logging_channel)
+        if msg_count == 1:
+            logging_channel = discord.utils.get(
+                ctx.guild.channels, id=self.logging_channel)
 
-                embed = helper.create_embed(author=ctx.author, users=None, action='1 message deleted',
-                                            extra=f"""Message Content: {deleted_messages[-1].content} 
-                                                  \nSender: {deleted_messages[-1].author.mention} 
-                                                  \nTime: {deleted_messages[-1].created_at.replace(microsecond=0)} 
-                                                  \nID: {deleted_messages[-1].id} 
-                                                  \nChannel: {channel.mention}""",
-                                            color=discord.Color.green())
+            embed = helper.create_embed(author=ctx.author, users=None, action='1 message deleted',
+                                        extra=f"""Message Content: {deleted_messages[-1].content} 
+                                              \nSender: {deleted_messages[-1].author.mention} 
+                                              \nTime: {deleted_messages[-1].created_at.replace(microsecond=0)} 
+                                              \nID: {deleted_messages[-1].id} 
+                                              \nChannel: {channel.mention}""",
+                                        color=discord.Color.green())
 
-                await logging_channel.send(embed=embed)
+            await logging_channel.send(embed=embed)
 
-            else:
-                # formatting string to be sent as file for logging
-                log_str = "Author (ID)".ljust(70) + " | " + "Message Creation Time (UTC)".ljust(
-                    30) + " | " + "Content" + "\n\n"
+         else:
+            # formatting string to be sent as file for logging
+            log_str = "Author (ID)".ljust(70) + " | " + "Message Creation Time (UTC)".ljust(
+                30) + " | " + "Content" + "\n\n"
 
-                for msg in deleted_messages:
-                    author = f'{msg.author.name}#{msg.author.discriminator} ({msg.author.id})'.ljust(
-                        70)
-                    time = f'{msg.created_at.replace(microsecond=0)}'.ljust(30)
+            for msg in deleted_messages:
+                author = f'{msg.author.name}#{msg.author.discriminator} ({msg.author.id})'.ljust(
+                    70)
+                time = f'{msg.created_at.replace(microsecond=0)}'.ljust(30)
 
-                    content = f'{msg.content}'
-                    # TODO save attachments and upload to logging channel
-                    if msg.attachments:
-                        content = "Attachment(s): "
-                        for a in msg.attachments:
-                            content = content + f'{a.filename}' + ", "
+                content = f'{msg.content}'
+                # TODO save attachments and upload to logging channel
+                if msg.attachments:
+                    content = "Attachment(s): "
+                    for a in msg.attachments:
+                        content = content + f'{a.filename}' + ", "
 
-                    log_str = log_str + author + " | " + time + " | " + content + "\n"
+                log_str = log_str + author + " | " + time + " | " + content + "\n"
 
-                logging_channel = discord.utils.get(
-                    ctx.guild.channels, id=self.logging_channel)
+            logging_channel = discord.utils.get(
+                ctx.guild.channels, id=self.logging_channel)
 
-                await logging_channel.send(f'{len(deleted_messages)} messages deleted in {channel.mention}',
-                                           file=discord.File(io.BytesIO(f'{log_str}'.encode()),
-                                                             filename=f'{len(deleted_messages)} messages deleted in {channel.name}'))
+            await logging_channel.send(f'{len(deleted_messages)} messages deleted in {channel.mention}',
+                                       file=discord.File(io.BytesIO(f'{log_str}'.encode()),
+                                                         filename=f'{len(deleted_messages)} messages deleted in {channel.name}'))
 
-        except Exception as e:
-            self.logger.error(str(e))
         await ctx.message.delete(delay=4)
 
     @commands.command(aliases=['yeet'])
@@ -254,7 +251,7 @@ class Moderation(commands.Cog):
 
         failed_mute = False
         for i in members:
-            if i.top_role < ctx.author.top_role:
+            if i.top_role.name != 'Muted' and i.top_role < ctx.author.top_role:
                 await i.add_roles(mute_role, reason=reason)
                 try:
                     await i.send(f'You have been muted for {time_str}\nGiven reason: {reason}\n'
@@ -377,16 +374,9 @@ class Moderation(commands.Cog):
 
         reason = " ".join(reason)
 
-        helper.create_infraction(
-            author=ctx.author, users=members, action='warn', reason=reason)
-
-        embed = helper.create_embed(author=ctx.author, users=members, action='Warned User(s)',
-                                    reason=reason, color=discord.Color.red())
-
-        await logging_channel.send(embed=embed)
         failed_warn = False
         for m in members:
-            if m.top_role < ctx.author.top_role:
+            if m.top_role.name != 'Muted' and m.top_role < ctx.author.top_role:
                 try:
                     await m.send(f'You have been warned for {reason} (Note: Accumulation of warns may lead to permanent removal from the server)')
                 except discord.Forbidden:
@@ -394,6 +384,13 @@ class Moderation(commands.Cog):
             else:
                 failed_warn = True
                 members.remove(m)
+
+        helper.create_infraction(
+            author=ctx.author, users=members, action='warn', reason=reason)
+
+        embed = helper.create_embed(author=ctx.author, users=members, action='Warned User(s)',
+                                    reason=reason, color=discord.Color.red())
+        await logging_channel.send(embed=embed)
 
         if failed_warn:
             x = await ctx.send('Certain members could not be warned due to your clearance')
