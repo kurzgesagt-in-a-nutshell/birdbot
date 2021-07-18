@@ -1,7 +1,6 @@
 import logging
 import os
 import time
-from discord.ext.commands import errors
 import dotenv
 
 import discord
@@ -51,7 +50,8 @@ class Bot(commands.AutoShardedBot):
         except KeyError:
             pass
         self.starttime = time.time()
-        cogs = ['cogs.moderation', 'cogs.dev', 'cogs.help', 'cogs.fun','cogs.global_listeners']
+        cogs = ['cogs.moderation', 'cogs.dev', 'cogs.help',
+                'cogs.fun', 'cogs.global_listeners']
         fails = {}
         for i in cogs:
             try:
@@ -66,8 +66,6 @@ class Bot(commands.AutoShardedBot):
         logger.info(f"\tUser: {self.user.name}")
         logger.info(f"\tID  : {self.user.id}")
         logger.info('------')
-        # TIMED
-        await helper.start_timed_actions(self)
 
 
 try:

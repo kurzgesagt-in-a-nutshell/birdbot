@@ -2,7 +2,6 @@ import asyncio
 import datetime
 import json
 import logging
-import os
 
 import discord
 from discord.ext import commands
@@ -16,9 +15,11 @@ config_roles = config_json["roles"]
 
 logger = logging.getLogger('Helper')
 
+
 class NoAuthorityError(commands.CheckFailure):
     """Raised when user has no clearance to run a command"""
     pass
+
 
 def helper_and_above():
     async def predicate(ctx):
@@ -288,7 +289,6 @@ def create_timed_action(users, action, time):
                 "action_end": datetime.datetime.utcnow() + datetime.timedelta(seconds=time)
             })
         ids = timed_actions_db.insert_many(data)
-        logger.info(type(ids))
         return ids.inserted_ids
     except Exception as e:
         logging.error(str(e))
@@ -421,3 +421,11 @@ def calc_time(args):
     except Exception as ex:
         logging.error(str(ex))
         return None, -1, None
+
+
+def get_timed_actions():
+    try:
+        return timed_actions_db.find().sort("action_end", 1)
+
+    except Exception as e:
+        logging.exception(e)

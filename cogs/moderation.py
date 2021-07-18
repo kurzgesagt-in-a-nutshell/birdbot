@@ -1,9 +1,8 @@
 import json
-import os
 import io
 import re
 import typing
-import time
+import datetime
 import asyncio
 import logging
 
@@ -13,7 +12,7 @@ from helper import helper_and_above, mod_and_above
 import custom_converters
 
 import discord
-from discord.ext import commands
+from discord.ext import commands, tasks
 
 
 class Moderation(commands.Cog):
@@ -21,14 +20,48 @@ class Moderation(commands.Cog):
         self.logger = logging.getLogger('Moderation')
         self.bot = bot
 
+        self.timed_action_list = helper.get_timed_actions()
+
         config_file = open('config.json', 'r')
         self.config_json = json.loads(config_file.read())
         config_file.close()
 
         self.logging_channel = self.config_json['logging']['logging_channel']
 
+    @tasks.loop(minutes=10.0)
+    async def timed_loop(self):
+        try:
+            guild = discord.utils.get(self.bot.guilds, id=414027124836532234)
+            mute_role = discord.utils.get(
+                guild.roles, id=self.config_json["roles"]["mute_role"])
+            logging_channel = discord.utils.get(
+                guild.channels, id=self.logging_channel)
+
+            for action in self.timed_action_list:
+                if action["action_end"] < datetime.datetime.utcnow():
+                    user = discord.utils.get(
+                        guild.members, id=action["user_id"])
+                    await user.remove_roles(mute_role, reason="Time Expired")
+
+                    helper.delete_timed_actions_uid(
+                        u_id=action["user_id"], action="mute")
+
+                    embed = discord.Embed(title='Timed Action', description='Time Expired', color=discord.Color.dark_blue(),
+                                          timestamp=datetime.datetime.utcnow())
+                    embed.add_field(name='User Affected', value='{} ({})'.format(action["user_name"], action["user_id"]),
+                                    inline=False)
+                    embed.add_field(
+                        name='Action', value='Un{}'.format(action['action']), inline=False)
+                    await logging_channel.send(embed=embed)
+
+            self.timed_action_list = helper.get_timed_actions()
+
+        except Exception as e:
+            self.logger.error(str(e))
+
     @commands.Cog.listener()
     async def on_ready(self):
+        self.timed_loop.start()
         self.logger.info('loaded Moderation')
 
     @commands.command(aliases=['purge', 'prune', 'clear'])
@@ -125,7 +158,8 @@ class Moderation(commands.Cog):
 
         reason = ' '.join(extra)
         if reason == '':
-            raise commands.BadArgument(message='Please provide a reason and re-run the command')
+            raise commands.BadArgument(
+                message='Please provide a reason and re-run the command')
 
         failed_ban = False
         for m in members:
@@ -139,7 +173,7 @@ class Moderation(commands.Cog):
                 members.remove(m)
                 failed_ban = True
         if failed_ban:
-            x=await ctx.send('Certain users could not be banned due to your clearance')
+            x = await ctx.send('Certain users could not be banned due to your clearance')
 
         await ctx.message.add_reaction('<:kgsYes:580164400691019826>')
         embed = helper.create_embed(author=ctx.author, users=members, action='Banned user(s)',
@@ -153,7 +187,6 @@ class Moderation(commands.Cog):
         await asyncio.sleep(6)
         await ctx.message.delete()
         await x.delete()
-
 
     @commands.command()
     @mod_and_above()
@@ -187,7 +220,6 @@ class Moderation(commands.Cog):
         await logging_channel.send(embed=embed)
         await ctx.message.add_reaction('<:kgsYes:580164400691019826>')
 
-
     @commands.command()
     @mod_and_above()
     async def kick(self, ctx, *args):
@@ -196,7 +228,8 @@ class Moderation(commands.Cog):
         members, reason = custom_converters.get_members(ctx, *args)
 
         if reason is None:
-            raise commands.BadArgument(message='Please provide a reason and re-run the command')
+            raise commands.BadArgument(
+                message='Please provide a reason and re-run the command')
             return
 
         if members is None:
@@ -206,18 +239,18 @@ class Moderation(commands.Cog):
         reason = " ".join(reason)
         logging_channel = discord.utils.get(
             ctx.guild.channels, id=self.logging_channel)
-        
+
         failed_kick = False
         for i in members:
             if i.top_role < ctx.author.top_role:
                 await i.kick(reason=reason)
             else:
-                failed_kick=True
+                failed_kick = True
                 members.remove(i)
 
         await ctx.message.add_reaction('<:kgsYes:580164400691019826>')
         if failed_kick:
-            x= await ctx.send('Could not kick certain users due to your clearance')
+            x = await ctx.send('Could not kick certain users due to your clearance')
         embed = helper.create_embed(author=ctx.author, users=members, action='Kicked User(s)', reason=reason,
                                     color=discord.Color.red())
         await logging_channel.send(embed=embed)
@@ -251,8 +284,9 @@ class Moderation(commands.Cog):
         tot_time, reason, time_str = helper.calc_time(extra)
 
         if reason is None:
-            raise commands.BadArgument(message='Please provide a reason and re-run the command')
-        
+            raise commands.BadArgument(
+                message='Please provide a reason and re-run the command')
+
         failed_mute = False
         for i in members:
             if i.top_role < ctx.author.top_role:
@@ -286,12 +320,17 @@ class Moderation(commands.Cog):
                     # TIMED
                     ids = helper.create_timed_action(
                         users=members, action='mute', time=tot_time)
-                    await asyncio.sleep(tot_time)
-                    await self.unmute(ctx=ctx, members=members)
-                    # TIMED
-                    helper.delete_timed_action(ids=ids)
+
+                    self.timed_action_list = helper.get_timed_actions()
+
+                    # await asyncio.sleep(tot_time)
+
+                    # await self.unmute(ctx=ctx, members=members)
+                    # # TIMED
+                    # helper.delete_timed_action(ids=ids)
             except Exception as e:
                 self.logger.error(str(e))
+
         await asyncio.sleep(6)
         await ctx.message.delete()
         await x.delete()
@@ -310,9 +349,10 @@ class Moderation(commands.Cog):
         mute_role = discord.utils.get(
             ctx.guild.roles, id=self.config_json['roles']['mute_role'])
         for i in members:
-            await i.remove_roles(mute_role,reason=f'Unmuted by {ctx.author}')
+            await i.remove_roles(mute_role, reason=f'Unmuted by {ctx.author}')
             # TIMED
             helper.delete_timed_actions_uid(u_id=i.id, action='mute')
+            self.timed_action_list = helper.get_timed_actions()
 
         await ctx.message.add_reaction('<:kgsYes:580164400691019826>')
         embed = helper.create_embed(author=ctx.author, users=members, action='Unmuted User(s)',
@@ -341,7 +381,8 @@ class Moderation(commands.Cog):
             return await ctx.send('Role not found')
 
         if ctx.author.top_role < role:
-            raise commands.BadArgument(message='You don\'t have clearance to do that')
+            raise commands.BadArgument(
+                message='You don\'t have clearance to do that')
 
         r = discord.utils.get(member.roles, name=role.name)
         if r is None:
@@ -360,7 +401,6 @@ class Moderation(commands.Cog):
                                     color=discord.Color.purple())
         return await logging_channel.send(embed=embed)
 
-
     @commands.command()
     @helper_and_above()
     async def warn(self, ctx, *args):
@@ -373,7 +413,8 @@ class Moderation(commands.Cog):
         if members is None:
             raise commands.BadArgument(message='No members provided')
         if reason is None:
-            raise commands.BadArgument(message='No reason provided, please re-run the command with a reaso')
+            raise commands.BadArgument(
+                message='No reason provided, please re-run the command with a reaso')
 
         reason = " ".join(reason)
 
@@ -381,7 +422,7 @@ class Moderation(commands.Cog):
             author=ctx.author, users=members, action='warn', reason=reason)
 
         embed = helper.create_embed(author=ctx.author, users=members, action='Warned User(s)',
-                                    reason=reason,color=discord.Color.red())
+                                    reason=reason, color=discord.Color.red())
 
         await logging_channel.send(embed=embed)
         failed_warn = False
@@ -396,15 +437,14 @@ class Moderation(commands.Cog):
                 members.remove(m)
 
         if failed_warn:
-            x=await ctx.send('Certain members could not be warned due to your clearance')
+            x = await ctx.send('Certain members could not be warned due to your clearance')
         await ctx.message.add_reaction('<:kgsYes:580164400691019826>')
         await asyncio.sleep(6)
         await ctx.message.delete()
         if failed_warn:
             await x.delete()
 
-
-    @commands.command(aliases=['infr', 'inf','infraction'])
+    @commands.command(aliases=['infr', 'inf', 'infraction'])
     @mod_and_above()
     async def infractions(self, ctx, member: typing.Optional[discord.Member] = None,
                           mem_id: typing.Optional[int] = None, inf_type: str = None):
