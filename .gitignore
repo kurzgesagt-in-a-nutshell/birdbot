@@ -103,7 +103,7 @@ celerybeat.pid
 *.sage.py
 
 # Environments
-.env
+*.env
 .venv
 env/
 venv/
@@ -142,6 +142,7 @@ token_temp.txt
 
 # Git
 .gitconfig
+.git-credentials
 
 # No.
 prefixes.json
