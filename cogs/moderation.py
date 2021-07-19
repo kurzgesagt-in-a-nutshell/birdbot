@@ -286,13 +286,12 @@ class Moderation(commands.Cog):
             raise commands.BadArgument(message='Improper member passed')
 
         tot_time, reason = helper.calc_time(extra)
-        self.logger.info([tot_time,reason])
 
         time_str = "unspecified duration"
-        if tot_time != 0:
+        if tot_time is not None:
             time_str = helper.get_time_string(tot_time)
 
-        if reason is None or reason == '':
+        if reason is None:
             raise commands.BadArgument(
                 message='Please provide a reason and re-run the command')
 

@@ -305,6 +305,11 @@ def calc_time(args):
     try:
         try:
             default_v = int(args[0])
+            reason = ' '.join(args[1:])
+
+            if reason == '':
+                return None, None
+
             return default_v * 60, ' '.join(args[1:])
         except ValueError:
             pass
@@ -358,7 +363,7 @@ def calc_time(args):
 
     except Exception as ex:
         logging.error(str(ex))
-        return None, -1
+        return None, None
 
 
 def get_time_string(t):
