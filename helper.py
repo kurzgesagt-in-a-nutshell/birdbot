@@ -87,8 +87,6 @@ def create_embed(author, users, action, reason=None, extra=None, color=discord.C
     if link:
         embed.add_field(name="Link", value=link, inline=False)
 
-    # embed.set_footer(text=datetime.datetime.utcnow())
-
     return embed
 
 
@@ -138,8 +136,7 @@ def create_infraction(author, users, action, reason, time=None):
                 "author_id": author.id,
                 "author_name": author.name,
                 "datetime": datetime.datetime.utcnow(),
-                "reason": reason,
-                "duration": time
+                "reason": reason
             })
             inf['total_infractions']['ban'] = inf['total_infractions']['ban'] + 1
             inf['total_infractions']['total'] = inf['total_infractions']['total'] + 1
@@ -228,14 +225,12 @@ def get_infractions(member_id, inf_type):
         elif inf_type == 'ban':
             ban_str = ""
             for idx, ban in enumerate(infr["ban"]):
-                ban_str = "{0}{1}\n{2}\n{3}\n{4}\n\n".format(ban_str,
-                                                             'Author: {} ({})'.format(
-                                                                 ban['author_name'], ban['author_id']),
-                                                             'Reason: {}'.format(
-                                                                 ban['reason']),
-                                                             'Duration: {}'.format(
-                                                                 ban['duration']),
-                                                             'Date: {}'.format(ban['datetime'].replace(microsecond=0)))
+                ban_str = "{0}{1}\n{2}\n{3}\n\n".format(ban_str,
+                                                        'Author: {} ({})'.format(
+                                                            ban['author_name'], ban['author_id']),
+                                                        'Reason: {}'.format(
+                                                            ban['reason']),
+                                                        'Date: {}'.format(ban['datetime'].replace(microsecond=0)))
 
                 if (idx + 1) % 5 == 0:
                     embed.add_field(
@@ -294,13 +289,6 @@ def create_timed_action(users, action, time):
         logging.error(str(e))
 
 
-def delete_timed_action(ids):
-    try:
-        timed_actions_db.remove({"_id": {"$in": ids}})
-    except Exception as e:
-        logging.error(str(e))
-
-
 def delete_timed_actions_uid(u_id, action):
     """
         Delete timed action by user_id
@@ -311,58 +299,15 @@ def delete_timed_actions_uid(u_id, action):
         logging.error(str(e))
 
 
-async def start_timed_actions(bot):
-    try:
-
-        config_file = open('config.json', 'r')
-        config_json = json.loads(config_file.read())
-
-        guild = discord.utils.get(bot.guilds, id=414027124836532234)
-
-        logging_channel = discord.utils.get(
-            guild.channels, id=config_json['logging']['logging_channel'])
-        mute_role = discord.utils.get(
-            guild.roles, id=config_json['roles']['mute_role'])
-
-        all_actions = timed_actions_db.find().sort("action_end", 1)
-
-        for a in all_actions:
-
-            if a['action_end'] > datetime.datetime.utcnow():
-                rem_time = int(
-                    (a['action_end'] - datetime.datetime.utcnow()).total_seconds())
-                await asyncio.sleep(rem_time)
-
-            if a['action'] == 'mute':
-                user = discord.utils.get(guild.members, id=a['user_id'])
-                await user.remove_roles(mute_role, reason="Time Expired")
-
-                timed_actions_db.remove({"_id": a["_id"]})
-
-            elif a['action'] == 'ban':
-                ban_list = await guild.bans()
-                for b in ban_list:
-                    if b.user.id == a['user_id']:
-                        await guild.unban(b.user, reason="Time Expired")
-                    timed_actions_db.remove({"_id": a["_id"]})
-
-            embed = discord.Embed(title='Timed Action', description='Time Expired', color=discord.Color.dark_blue(),
-                                  timestamp=datetime.datetime.utcnow())
-            embed.add_field(name='User Affected', value='```{} ({})```'.format(a['user_name'], a['user_id']),
-                            inline=False)
-            embed.add_field(
-                name='Action', value='```Un-{}```'.format(a['action']), inline=False)
-            await logging_channel.send(embed=embed)
-
-    except Exception as e:
-        logging.error(str(e))
-
-
 def calc_time(args):
     tot_time = 0
     reason = None
-    time_str = ""
     try:
+        try:
+            default_v = int(args[0])
+            return default_v * 60, ' '.join(args[1:])
+        except ValueError:
+            pass
 
         r = 0
         for a in args:
@@ -377,14 +322,11 @@ def calc_time(args):
                 break
             else:
 
-                time_str = time_str + a + " "
                 t = 0
-                j = 0
                 for i in a:
 
                     if i.isdigit():
-                        t = t * pow(10, j) + int(i)
-                        j = j + 1
+                        t = t * 10 + int(i)
 
                     else:
                         if i == 'w' or i == 'W':
@@ -399,7 +341,6 @@ def calc_time(args):
                             tot_time = tot_time + t
 
                         t = 0
-                        j = 0
 
                 r = r + 1
 
@@ -411,16 +352,24 @@ def calc_time(args):
                     reason = reason + " " + a
 
         else:
-            return None, None, None
+            return None, None
 
-        if time_str == "":
-            time_str = tot_time.__str__()
-
-        return tot_time, reason, time_str.strip()
+        return tot_time, reason
 
     except Exception as ex:
         logging.error(str(ex))
-        return None, -1, None
+        return None, -1
+
+
+def get_time_string(t):
+    day = t // (24 * 3600)
+    t = t % (24 * 3600)
+    hour = t // 3600
+    t %= 3600
+    minutes = t // 60
+    t %= 60
+    seconds = t
+    return f'{day}days {hour}hours {minutes}mins {seconds}sec'
 
 
 def get_timed_actions():

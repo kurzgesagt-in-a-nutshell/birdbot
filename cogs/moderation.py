@@ -5,6 +5,7 @@ import typing
 import datetime
 import asyncio
 import logging
+import time
 
 import helper
 from helper import helper_and_above, mod_and_above
@@ -29,7 +30,7 @@ class Moderation(commands.Cog):
         self.logging_channel = self.config_json['logging']['logging_channel']
 
     @tasks.loop(minutes=10.0)
-    async def timed_loop(self):
+    async def timed_action_loop(self):
         try:
             guild = discord.utils.get(self.bot.guilds, id=414027124836532234)
             mute_role = discord.utils.get(
@@ -61,8 +62,11 @@ class Moderation(commands.Cog):
 
     @commands.Cog.listener()
     async def on_ready(self):
-        self.timed_loop.start()
+        self.timed_action_loop.start()
         self.logger.info('loaded Moderation')
+
+    def cog_unload(self):
+        self.timed_action_loop.cancel()
 
     @commands.command(aliases=['purge', 'prune', 'clear'])
     @mod_and_above()
@@ -146,7 +150,7 @@ class Moderation(commands.Cog):
     @commands.command(aliases=['yeet'])
     @mod_and_above()
     async def ban(self, ctx, *args):
-        """ Ban a member.\nUsage: ban @member(s) <time> reason """
+        """ Ban a member.\nUsage: ban @member(s) reason """
 
         logging_channel = discord.utils.get(
             ctx.guild.channels, id=self.logging_channel)
@@ -176,14 +180,16 @@ class Moderation(commands.Cog):
             x = await ctx.send('Certain users could not be banned due to your clearance')
 
         await ctx.message.add_reaction('<:kgsYes:580164400691019826>')
+
+        helper.create_infraction(
+            author=ctx.author, users=members, action='ban', reason=reason)
+
         embed = helper.create_embed(author=ctx.author, users=members, action='Banned user(s)',
                                     reason=reason,
                                     color=discord.Color.dark_red())
 
         await logging_channel.send(embed=embed)
 
-        helper.create_infraction(
-            author=ctx.author, users=members, action='ban', reason=reason)
         await asyncio.sleep(6)
         await ctx.message.delete()
         await x.delete()
@@ -194,7 +200,6 @@ class Moderation(commands.Cog):
         """ Unban a member. \nUsage: unban member_id <reason> """
         if member_id is None:
             raise commands.BadArgument(message='Invalid member ID provided')
-            return
 
         logging_channel = discord.utils.get(
             ctx.guild.channels, id=self.logging_channel)
@@ -230,11 +235,9 @@ class Moderation(commands.Cog):
         if reason is None:
             raise commands.BadArgument(
                 message='Please provide a reason and re-run the command')
-            return
 
         if members is None:
             raise commands.BadArgument(message='Improper members passed')
-            return
 
         reason = " ".join(reason)
         logging_channel = discord.utils.get(
@@ -265,7 +268,6 @@ class Moderation(commands.Cog):
     @commands.command()
     @helper_and_above()
     async def mute(self, ctx, *args):
-
         """ Mute member(s). \nUsage: mute @member(s) <time> reason """
 
         tot_time = 0
@@ -281,7 +283,11 @@ class Moderation(commands.Cog):
         if members is None:
             raise commands.BadArgument(message='Improper member passed')
 
-        tot_time, reason, time_str = helper.calc_time(extra)
+        tot_time, reason = helper.calc_time(extra)
+
+        time_str = "unspecified duration"
+        if tot_time != 0:
+            time_str = helper.get_time_string(tot_time)
 
         if reason is None:
             raise commands.BadArgument(
@@ -292,8 +298,9 @@ class Moderation(commands.Cog):
             if i.top_role < ctx.author.top_role:
                 await i.add_roles(mute_role, reason=reason)
                 try:
-                    await i.send(f'You have been muted for {time_str}\nGiven reason: {reason}\n'
+                    await i.send(f'You have been muted for {time_str}.\nGiven reason: {reason}\n'
                                  '(Note: Accumulation of mutes may lead to permanent removal from the server)')
+
                 except discord.Forbidden:
                     pass
             else:
@@ -318,16 +325,10 @@ class Moderation(commands.Cog):
             try:
                 if tot_time != 0:
                     # TIMED
-                    ids = helper.create_timed_action(
+                    helper.create_timed_action(
                         users=members, action='mute', time=tot_time)
 
                     self.timed_action_list = helper.get_timed_actions()
-
-                    # await asyncio.sleep(tot_time)
-
-                    # await self.unmute(ctx=ctx, members=members)
-                    # # TIMED
-                    # helper.delete_timed_action(ids=ids)
             except Exception as e:
                 self.logger.error(str(e))
 
