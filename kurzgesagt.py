@@ -3,6 +3,8 @@ import os
 import time
 import dotenv
 
+import cProfile, pstats
+
 import discord
 from discord.ext import commands
 from rich.logging import RichHandler
