@@ -7,6 +7,7 @@ Restart=always
 RestartPreventExitStatus=0
 StartLimitInterval=90
 StartLimitBurst=3
+Type=forking
 
 [Install]
 WantedBy=multi-user.target
