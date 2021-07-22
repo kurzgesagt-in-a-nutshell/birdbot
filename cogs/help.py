@@ -40,7 +40,8 @@ class Help(commands.Cog):
             embed = discord.Embed(title=command.name, description=f'```{command.help}```',
                                   color=discord.Color.green(), timestamp=datetime.datetime.utcnow())
             if command.aliases:
-                embed.add_field(name='Alias', value=f'```{", ".join(command.aliases)}```', inline=False)
+                embed.add_field(
+                    name='Alias', value=f'```{", ".join(command.aliases)}```', inline=False)
             return await ctx.send(embed=embed)
 
     @commands.command()
