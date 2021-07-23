@@ -42,11 +42,29 @@ class Fun(commands.Cog):
             await ctx.send(f'Invalid index. Min value: 0, Max value: {len(self.topics)}', delete_after=6)
             return await ctx.message.delete(delay=4)
 
-        await ctx.send(f'{index}. {self.topics[index - 1]}', delete_after=6)
+        await ctx.send(f'{index}. {self.topics[index - 1]}')
+
+    @mod_and_above()
+    @commands.command()
+    @commands.cooldown(1, 5)
+    async def add_topic(self, ctx, topic: str):
+        """
+            Add a topic to the list.
+            Usage: add_topic topic_string
+        """
+
+        self.topics.append(topic)
+
+        topic_file = open('topics.json', 'w')
+        topic_file.write(json.dumps({"topics": self.topics}, indent=4))
+        topic_file.close()
+
+        await ctx.send(f'Topic added at index {len(self.topics)}', delete_after=6)
         await ctx.message.delete(delay=4)
 
-    @commands.command(hidden=True)
     @mod_and_above()
+    @commands.command()
+    @commands.cooldown(1, 5)
     async def remove_topic(self, ctx, index: int):
         """
             Delete topic by index.
@@ -57,41 +75,12 @@ class Fun(commands.Cog):
             return await ctx.message.delete(delay=4)
 
         index = index - 1
-
-        topic_file = open('topics.json', 'r')
-        topics = json.loads(topic_file.read())["topics"]
-        topic_file.close()
-
-        del topics[index]
-
-        self.topics = topics
+        del self.topics[index]
 
         topic_file = open('topics.json', 'w')
-        topic_file.write(json.dumps({"topics": topics}, indent=4))
+        topic_file.write(json.dumps({"topics": self.topics}, indent=4))
         topic_file.close()
         await ctx.send('Topic removed.', delete_after=6)
-        await ctx.message.delete(delay=4)
-
-    @commands.command()
-    @mod_and_above()
-    async def add_topic(self, ctx, topic: str):
-        """
-            Add a topic to the list.
-            Usage: add_topic topic_string
-        """
-        topic_file = open('topics.json', 'r')
-        topics = json.loads(topic_file.read())["topics"]
-        topic_file.close()
-
-        topics.append(topic)
-
-        self.topics = topics
-
-        topic_file = open('topics.json', 'w')
-        topic_file.write(json.dumps({"topics": topics}, indent=4))
-        topic_file.close()
-
-        await ctx.send(f'Topic added at index {len(self.topics)}', delete_after=6)
         await ctx.message.delete(delay=4)
 
 
