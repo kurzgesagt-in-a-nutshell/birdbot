@@ -3,13 +3,10 @@ import os
 import time
 import dotenv
 
-import cProfile, pstats
-
 import discord
 from discord.ext import commands
 from rich.logging import RichHandler
 
-import helper
 from loglevels import setup as llsetup
 
 import argparse
@@ -27,15 +24,12 @@ logging.basicConfig(
     handlers=[RichHandler()]
 )
 
-logger = logging.getLogger(__name__)
-logger.info("Delaying bot for server creation")
-time.sleep(5)
-
 
 class Bot(commands.AutoShardedBot):
     """Main Bot"""
 
     def __init__(self):
+
         if args.beta:
             intents = discord.Intents.all()
             super().__init__(command_prefix="kt!", case_insensitive=True,
@@ -46,6 +40,8 @@ class Bot(commands.AutoShardedBot):
             super().__init__(command_prefix=["!", "k!"], case_insensitive=True,
                              owner_ids={389718094270038018, 183092910495891467}, reconnect=True, intents=intents,
                              activity=discord.Activity(type=discord.ActivityType.listening, name="Steve's voice"))
+
+        self.logger = logging.getLogger(__name__)
 
         try:
             del os.environ['FORCIBLY_KILLED']
@@ -58,25 +54,36 @@ class Bot(commands.AutoShardedBot):
         for i in cogs:
             try:
                 super().load_extension(i)
-                logger.info(f'Loading {i}')
+                self.logger.info(f'Loading {i}')
             except Exception as e:
-                logger.exception(f'Exception at {i}')
+                self.logger.exception(f'Exception at {i}')
                 fails[i] = e
 
     async def on_ready(self):
-        logger.info('Logged in as')
-        logger.info(f"\tUser: {self.user.name}")
-        logger.info(f"\tID  : {self.user.id}")
-        logger.info('------')
+        self.logger.info('Logged in as')
+        self.logger.info(f"\tUser: {self.user.name}")
+        self.logger.info(f"\tID  : {self.user.id}")
+        self.logger.info('------')
 
 
-try:
-    if args.beta:
-        logger.info('Running beta instance')
-        token = os.environ.get('BETA_BOT_TOKEN')
-    else:
-        token = os.environ.get('MAIN_BOT_TOKEN')
-except KeyError:
-    logger.error('No tokens found, check .env file')
+def main():
+    logger = logging.getLogger(__name__)
+    logger.info("Delaying bot for server creation")
+    time.sleep(5)
 
-Bot().run(token)
+    try:
+        if args.beta:
+            logger.info('Running beta instance')
+            token = os.environ.get('BETA_BOT_TOKEN')
+        else:
+            token = os.environ.get('MAIN_BOT_TOKEN')
+
+        # run the bot
+        Bot().run(token)
+
+    except KeyError:
+        logger.error('No tokens found, check .env file')
+
+
+if __name__ == '__main__':
+    main()
