@@ -155,11 +155,10 @@ class Moderation(commands.Cog):
 
         if members is None or members == []:
             raise commands.BadArgument(message='Improper members passed')
-
-        reason = ' '.join(extra)
-        if reason == '':
+        if extra is None:
             raise commands.BadArgument(
                 message='Please provide a reason and re-run the command')
+        reason = ' '.join(extra)
 
         failed_ban = False
         for m in members:
