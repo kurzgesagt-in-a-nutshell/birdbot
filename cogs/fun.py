@@ -28,8 +28,8 @@ class Fun(commands.Cog):
     @commands.cooldown(1, 60)
     async def topic(self, ctx):
         """Get a topic to talk about."""
-        random_index = random.randint(0, len(self.topics))
-        await ctx.send(f'{random_index + 1}. {self.topics[random_index]}')
+        random_index = random.randint(0, len(self.topics)-1)
+        await ctx.send(f'{self.topics[random_index]}')
 
     @commands.command()
     @mod_and_above()
