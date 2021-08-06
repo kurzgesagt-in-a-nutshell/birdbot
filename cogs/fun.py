@@ -2,6 +2,9 @@ import logging
 import os
 import json
 import random
+from re import search
+from fuzzywuzzy import process
+import asyncio
 
 import discord
 from discord.ext import commands
@@ -88,6 +91,7 @@ class Fun(commands.Cog):
 
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload):
+        #User topic suggestions
         if payload.message_id in self.suggestion_msg_ids and payload.user_id != 639508517534957599:
             if payload.emoji.id == 580164400691019826:
                 message = await self.bot.get_channel(payload.channel_id).fetch_message(payload.message_id)
@@ -118,6 +122,31 @@ class Fun(commands.Cog):
         await ctx.send('Topic removed.', delete_after=6)
         await ctx.message.delete(delay=4)
 
+    @commands.command()
+    async def find_topic(self, ctx, find: str):
+        """
+            Find a topic with fuzzy.
+            Usage: find_topic the_topic
+        """
+        search_result = process.extractOne(find, self.topics)[0]
+
+        embed = discord.Embed(title='Do you want to delete this topic?', description=search_result)
+        message = await ctx.send(embed=embed)
+        await message.add_reaction('<:kgsYes:580164400691019826>')
+        await message.add_reaction('<:kgsNo:610542174127259688>')
+
+        def check(reaction, user):
+            return user == ctx.author and str(reaction.emoji) in ('<:kgsYes:580164400691019826>','<:kgsNo:610542174127259688>')
+
+        try:
+            reaction, user = await self.bot.wait_for('reaction_add',timeout=20.0,check=check)  
+        except asyncio.TimeoutError:
+            await message.delete()
+            return
+        if str(reaction.emoji) == '<:kgsYes:580164400691019826>':
+            await ctx.send("Will delete this topic")
+        elif str(reaction.emoji) == '<:kgsNo:610542174127259688>':
+            await message.delete()
 
 def setup(bot):
     bot.add_cog(Fun(bot))
