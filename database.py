@@ -12,9 +12,8 @@ try:
     db = client.KurzBot
     infraction_db = db.Infraction
     timed_actions_db = db.TimedAction
+    topics_db = db.Topics
     logger.info('Connected to mongoDB')
 
 except KeyError:
     logger.error('Database key not found. Check your .env file')
-
-
