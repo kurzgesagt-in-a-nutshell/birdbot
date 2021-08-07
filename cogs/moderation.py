@@ -295,7 +295,7 @@ class Moderation(commands.Cog):
 
         failed_mute = False
         for i in members:
-            if i.top_role.name != 'Muted' or i.top_role < ctx.author.top_role:
+            if i.top_role < ctx.author.top_role:
                 await i.add_roles(mute_role, reason=reason)
                 try:
                     await i.send(f'You have been muted for {time_str}.\nGiven reason: {reason}\n'
@@ -423,7 +423,7 @@ class Moderation(commands.Cog):
 
         failed_warn = False
         for m in members:
-            if m.top_role.name != 'Muted' or m.top_role < ctx.author.top_role:
+            if m.top_role.name == 'Muted' or m.top_role < ctx.author.top_role:
                 try:
                     await m.send(f'You have been warned for {reason} (Note: Accumulation of warns may lead to permanent removal from the server)')
                 except discord.Forbidden:
