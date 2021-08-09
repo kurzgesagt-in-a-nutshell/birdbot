@@ -22,7 +22,6 @@ def main():
         logger = logging.getLogger("Startbot")
         dotenv.load_dotenv()
         args = parser.parse_args()
-        logger.info(args)
         bot = BirdBot.from_parseargs(args)
         bot.get_database()
         bot.load_extensions()
@@ -32,7 +31,6 @@ def main():
             token = os.environ.get("ALPHA_BOT_TOKEN")
         else:
             token = os.environ.get("MAIN_BOT_TOKEN")
-        logger.info(token)
         bot.run(token, reconnect=True)
 
 if __name__ == '__main__':

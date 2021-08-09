@@ -1,13 +1,12 @@
 import logging
 import asyncio
 import os
+import discord
+import dotenv
 import time
+
 from contextlib import contextmanager, suppress
 from logging.handlers import TimedRotatingFileHandler
-
-import discord
-from discord.utils import get
-import dotenv
 from discord.ext import commands
 from rich.logging import RichHandler
 
@@ -53,6 +52,7 @@ class BirdBot(commands.AutoShardedBot):
     @classmethod
     def from_parseargs(cls, args) -> "Bot":
         """Create and return an instance of a Bot."""
+        logger.info(args)
         allowed_mentions = discord.AllowedMentions(roles=False,
                                                    everyone=False,
                                                    users=True)
@@ -74,7 +74,7 @@ class BirdBot(commands.AutoShardedBot):
             }
             activity = discord.Activity(type=discord.ActivityType.watching,
                                         name="for bugs")
-        if args.alpha:
+        elif args.alpha:
             prefix = "a!"
             owner_ids = {
                 389718094270038018,  #FC
@@ -124,7 +124,6 @@ class BirdBot(commands.AutoShardedBot):
 
     async def close(self):
             """Close the Discord connection and the aiohttp sessions if any (future perhaps?)."""
-            # Done before super().close() to allow tasks finish before the HTTP session closes.
             for ext in list(self.extensions):
                 with suppress(Exception):
                     self.unload_extension(ext)

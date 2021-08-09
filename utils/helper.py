@@ -24,6 +24,23 @@ class NoAuthorityError(commands.CheckFailure):
     pass
 
 
+def devs_only():
+    async def predicate(ctx):
+        if not ctx.author.id in [
+            389718094270038018,  #FC
+            424843380342784011,  #Oeav
+            183092910495891467,  #Sloth
+            248790213386567680   #Austin
+        ]:
+            raise NoAuthorityError
+        return True
+    return commands.check(predicate)
+
+def mainbot_only():
+    async def predicate(ctx):
+        return ctx.me.id == 471705718957801483
+    return commands.check(predicate)
+
 def helper_and_above():
     async def predicate(ctx):
         user_role_ids = [x.id for x in ctx.author.roles]

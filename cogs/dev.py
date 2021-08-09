@@ -1,3 +1,4 @@
+from argparse import Namespace
 import io
 import asyncio
 import logging
@@ -12,7 +13,9 @@ from contextlib import redirect_stdout
 import discord
 from discord.ext import commands
 
-from utils.helper import mod_and_above
+from birdbot import BirdBot
+
+from utils.helper import mod_and_above, devs_only, mainbot_only
 
 dotenv.load_dotenv()
 
@@ -136,6 +139,7 @@ class Dev(commands.Cog):
                                                      filename='output.txt'))
                 else:
                     await ctx.send(f'```py\n{value}{ret}\n```')
+        
 
     @commands.is_owner()
     @commands.command(name='reload', hidden=True)
