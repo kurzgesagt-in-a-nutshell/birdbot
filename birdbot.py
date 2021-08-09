@@ -10,6 +10,8 @@ import dotenv
 from discord.ext import commands
 from rich.logging import RichHandler
 
+logger = logging.getLogger('BirdBot')
+
 
 class StartupError(Exception):
     """Exception class for startup errors."""
@@ -49,28 +51,9 @@ def setup():
 
 class BirdBot(commands.AutoShardedBot):
     """Main Bot"""
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
         self.db = self.get_database()
-
-        self.logger = logging.getLogger(__name__)
-
-        try:
-            del os.environ['FORCIBLY_KILLED']
-        except KeyError:
-            pass
-        self.starttime = time.time()
-        cogs = [
-            'cogs.moderation', 'cogs.dev', 'cogs.help', 'cogs.fun',
-            'cogs.global_listeners'
-        ]
-        fails = {}
-        for i in cogs:
-            try:
-                super().load_extension(i)
-                self.logger.info(f'Loading {i}')
-            except Exception as e:
-                self.logger.exception(f'Exception at {i}')
-                fails[i] = e
+        super().__init__(*args, **kwargs)
 
     @classmethod
     def from_parseargs(cls, args) -> "Bot":
@@ -120,6 +103,7 @@ class BirdBot(commands.AutoShardedBot):
                    intents=intents)
 
     def get_database(self):
+        """Return MongoClient instance to self.db"""
         from pymongo import MongoClient
         db_key = os.environ.get('DB_KEY')
         if db_key is None:
@@ -128,6 +112,19 @@ class BirdBot(commands.AutoShardedBot):
         db = client.KurzBot
         logger.info('Connected to mongoDB')
         return db
+
+    def load_extensions(self):
+        """Loads all cogs from cogs/ without the '_' prefix"""
+        for filename in os.listdir('cogs/'):
+            if not filename.startswith("_"):
+                logger.info(f"loading {f'cogs.{filename[:-3]}'}")
+                try:
+                    self.load_extension(f"cogs.{filename[:-3]}")
+                except Exception as e:
+                    logger.error(
+                        f"cogs.{filename[:-3]} cannot be loaded. [{e}]")
+                    logger.exception(
+                        f"Cannot load cog {f'cogs.{filename[:-3]}'}")
 
     async def on_ready(self):
         self.logger.info('Logged in as')
