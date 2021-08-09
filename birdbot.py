@@ -12,14 +12,6 @@ from rich.logging import RichHandler
 
 logger = logging.getLogger('BirdBot')
 
-
-class StartupError(Exception):
-    """Exception class for startup errors."""
-    def __init__(self, base: Exception):
-        super().__init__()
-        self.exception = base
-
-
 @contextmanager
 def setup():
     try:
@@ -58,6 +50,7 @@ class BirdBot(commands.AutoShardedBot):
     @classmethod
     def from_parseargs(cls, args) -> "Bot":
         """Create and return an instance of a Bot."""
+        self.args = args
         allowed_mentions = discord.AllowedMentions(roles=False,
                                                    everyone=False,
                                                    users=True)
@@ -125,6 +118,20 @@ class BirdBot(commands.AutoShardedBot):
                         f"cogs.{filename[:-3]} cannot be loaded. [{e}]")
                     logger.exception(
                         f"Cannot load cog {f'cogs.{filename[:-3]}'}")
+
+    async def close(self):
+            """Close the Discord connection and the aiohttp sessions if any (future perhaps?)."""
+            # Done before super().close() to allow tasks finish before the HTTP session closes.
+            for ext in list(self.extensions):
+                with suppress(Exception):
+                    self.unload_extension(ext)
+
+            for cog in list(self.cogs):
+                with suppress(Exception):
+                    self.remove_cog(cog)
+
+            await super().close()
+
 
     async def on_ready(self):
         self.logger.info('Logged in as')
