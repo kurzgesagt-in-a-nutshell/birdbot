@@ -10,7 +10,7 @@ import discord
 from discord.ext import commands
 from discord.ext.commands import errors
 
-from helper import NoAuthorityError
+from utils.helper import NoAuthorityError
 
 
 class Errors(commands.Cog):

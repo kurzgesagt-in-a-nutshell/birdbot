@@ -2,10 +2,11 @@ import logging
 import asyncio
 import os
 import time
-from contextlib import contextmanager
+from contextlib import contextmanager, suppress
 from logging.handlers import TimedRotatingFileHandler
 
 import discord
+from discord.utils import get
 import dotenv
 from discord.ext import commands
 from rich.logging import RichHandler
@@ -23,15 +24,16 @@ def setup():
         logger.setLevel(logging.INFO)
         dtfmt = '%Y-%m-%d %H:%M:%S'
         handlers = [
-            RichHandler(rich_tracebacks=True),
-            TimedRotatingFileHandler(filename='birdbot.log', when='1M')
+            RichHandler(),
+            TimedRotatingFileHandler(filename='logs/birdbot.log', when='d',interval=5)
         ]
         fmt = logging.Formatter(
             '[{asctime}] [{levelname:<7}] {name}: {message}', dtfmt, style='{')
 
         for handler in handlers:
+            if isinstance(handler, TimedRotatingFileHandler):
+                handler.setFormatter(fmt)
             logger.addHandler(handler)
-            handler.setFormatter(fmt)
 
         yield
     finally:
@@ -43,14 +45,14 @@ def setup():
 
 class BirdBot(commands.AutoShardedBot):
     """Main Bot"""
+    db = None
     def __init__(self, *args, **kwargs):
-        self.db = self.get_database()
+        db = self.get_database()
         super().__init__(*args, **kwargs)
 
     @classmethod
     def from_parseargs(cls, args) -> "Bot":
         """Create and return an instance of a Bot."""
-        self.args = args
         allowed_mentions = discord.AllowedMentions(roles=False,
                                                    everyone=False,
                                                    users=True)
@@ -95,7 +97,8 @@ class BirdBot(commands.AutoShardedBot):
                    allowed_mentions=allowed_mentions,
                    intents=intents)
 
-    def get_database(self):
+    @classmethod
+    def get_database(cls):
         """Return MongoClient instance to self.db"""
         from pymongo import MongoClient
         db_key = os.environ.get('DB_KEY')
@@ -104,7 +107,7 @@ class BirdBot(commands.AutoShardedBot):
         client = MongoClient(db_key)
         db = client.KurzBot
         logger.info('Connected to mongoDB')
-        return db
+        cls.db = db
 
     def load_extensions(self):
         """Loads all cogs from cogs/ without the '_' prefix"""
@@ -134,30 +137,9 @@ class BirdBot(commands.AutoShardedBot):
 
 
     async def on_ready(self):
-        self.logger.info('Logged in as')
-        self.logger.info(f"\tUser: {self.user.name}")
-        self.logger.info(f"\tID  : {self.user.id}")
-        self.logger.info('------')
+        logger.info('Logged in as')
+        logger.info(f"\tUser: {self.user.name}")
+        logger.info(f"\tID  : {self.user.id}")
+        logger.info('------')
 
 
-def main():
-    logger = logging.getLogger(__name__)
-    logger.info("Delaying bot for server creation")
-    time.sleep(5)
-
-    try:
-        if args.beta:
-            logger.info('Running beta instance')
-            token = os.environ.get('BETA_BOT_TOKEN')
-        else:
-            token = os.environ.get('MAIN_BOT_TOKEN')
-
-        # run the bot
-        Bot().run(token)
-
-    except KeyError:
-        logger.error('No tokens found, check .env file')
-
-
-if __name__ == '__main__':
-    main()

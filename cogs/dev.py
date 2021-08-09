@@ -12,8 +12,7 @@ from contextlib import redirect_stdout
 import discord
 from discord.ext import commands
 
-from kurzgesagt import args
-from helper import mod_and_above
+from utils.helper import mod_and_above
 
 dotenv.load_dotenv()
 
@@ -187,7 +186,7 @@ class Dev(commands.Cog):
 
         #if no error is found in pulling, ask if restart is needed
         #DOES NOT WORK FOR BETA INSTANCE
-        if output[1] is None and not args.beta:
+        if output[1] is None:
             m = await ctx.send('Would you like to restart the bot instance?')
             await m.add_reaction('<:kgsYes:580164400691019826>')
             await m.add_reaction('<:kgsNo:610542174127259688>')
