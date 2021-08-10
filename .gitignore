@@ -156,3 +156,6 @@ helpers.ipynb
 # Test files
 cogs/test.py
 test.py
+
+#bot logs
+logs/

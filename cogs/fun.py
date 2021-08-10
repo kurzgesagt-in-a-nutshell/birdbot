@@ -11,8 +11,7 @@ import asyncio
 import discord
 from discord.ext import commands
 
-from helper import mod_and_above
-from database import topics_db
+from utils.helper import mod_and_above
 
 
 class Fun(commands.Cog):
