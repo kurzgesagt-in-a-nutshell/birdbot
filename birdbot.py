@@ -46,11 +46,11 @@ def setup():
 
 class BirdBot(commands.AutoShardedBot):
     """Main Bot"""
-    db = None
+    
     def __init__(self, *args, **kwargs):
-        db = self.get_database()
         super().__init__(*args, **kwargs)
-
+        db = self.get_database()
+        
     @classmethod
     def from_parseargs(cls, args) -> "Bot":
         """Create and return an instance of a Bot."""
