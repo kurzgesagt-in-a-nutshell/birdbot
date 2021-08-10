@@ -164,9 +164,8 @@ class Dev(commands.Cog):
     @mod_and_above()
     async def kill(self, ctx):
         """Kill the bot"""
-        os.environ['FORCIBLY_KILLED'] = '1'
-        await ctx.send('Bravo 6 going dark')
-        await self.bot.logout()
+        await ctx.send('Bravo 6 going dark.')
+        await self.bot.close()
 
     @commands.is_owner()
     @commands.command(hidden=True)

@@ -22,6 +22,8 @@ def setup():
         logger = logging.getLogger()
         logger.setLevel(logging.INFO)
         dtfmt = '%Y-%m-%d %H:%M:%S'
+        if not os.path.isdir('logs/'):
+            os.mkdir('logs/')
         handlers = [
             RichHandler(),
             TimedRotatingFileHandler(filename='logs/birdbot.log', when='d',interval=5)
@@ -89,13 +91,16 @@ class BirdBot(commands.AutoShardedBot):
             owner_ids = {183092910495891467}  #Sloth
             activity = discord.Activity(type=discord.ActivityType.listening,
                                         name="Steve's voice")
-        return cls(loop=loop,
+        x = cls(loop=loop,
                    command_prefix=commands.when_mentioned_or(prefix),
                    owner_ids=owner_ids,
                    activity=activity,
                    case_insensitive=True,
                    allowed_mentions=allowed_mentions,
-                   intents=intents)
+                   intents=intents) 
+                  
+        x.get_database()
+        return x
 
     @classmethod
     def get_database(cls):
