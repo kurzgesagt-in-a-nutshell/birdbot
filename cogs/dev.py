@@ -167,6 +167,26 @@ class Dev(commands.Cog):
         await ctx.send('Bravo 6 going dark.')
         await self.bot.close()
 
+    @commands.command()
+    @devs_only()
+    # @mainbot_only()
+    async def launch(self, ctx, instance: str):
+        if instance not in ('alpha','beta'):
+            raise commands.BadArgument("Instance argument must be `alpha` or `beta`")
+        
+        try:
+            child = await asyncio.create_subprocess_shell('python3 startbot.py --{}'.format(instance),
+                                                    stdout=asyncio.subprocess.PIPE,
+                                                    stderr=asyncio.subprocess.STDOUT)
+            output = await child.communicate()
+            await ctx.send(output[0].decode())
+            await ctx.send(output[1].decode())
+
+        finally:
+            await child.kill()
+
+
+
     @commands.is_owner()
     @commands.command(hidden=True)
     async def pull(self,ctx):
