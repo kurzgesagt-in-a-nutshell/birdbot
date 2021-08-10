@@ -207,8 +207,8 @@ class Dev(commands.Cog):
 
         _g = Git(os.getcwd())
         _g.fetch()
-        message = _g.pull('origin', 'dev_cmds')
-        await ctx.send(message)
+        message = _g.pull('origin', 'master')
+        await ctx.send(f"```{message}```")
 
 
 def setup(bot):
