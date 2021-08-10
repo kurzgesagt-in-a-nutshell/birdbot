@@ -13,18 +13,16 @@ from discord.ext import commands
 
 from utils.helper import mod_and_above
 
-
 class Fun(commands.Cog):
     def __init__(self, bot):
         self.logger = logging.getLogger('Fun')
         self.bot = bot
 
+        topics_db = self.bot.db.Topics
         self.topics = topics_db.find_one(
             {"name": "topics_list"})["topics"]  # Use this for DB interaction
 
-        self.topics_list = self.topics  # Use this for user topics
-
-        self.suggestion_msg_ids = []
+        self.topics_list = self.topics  # This is used to stop topic repeats
 
     @commands.Cog.listener()
     async def on_ready(self):
@@ -64,6 +62,7 @@ class Fun(commands.Cog):
 
         self.topics.append(topic)
 
+        topics_db = self.bot.db.Topics
         topics_db.update_one({"name": "topics_list"}, {
             "$set": {"topics": self.topics}})
 
@@ -72,7 +71,7 @@ class Fun(commands.Cog):
 
     @commands.command()
     @commands.cooldown(1, 5)
-    async def suggest_topic(self, ctx, topic: str):
+    async def suggest_topic(self, ctx, *, topic: str):
         """
             Suggest a topic.
             Usage: suggest_topic topic_string
@@ -84,22 +83,24 @@ class Fun(commands.Cog):
         automated_channel = self.bot.get_channel(414179142020366336)
         embed = discord.Embed(
             title=f'{ctx.author.name} suggested', description=topic, color=0xff0000)
+        embed.set_footer(text='topic')
         message = await automated_channel.send(embed=embed)
-        self.suggestion_msg_ids.append(message.id)
         await message.add_reaction('<:kgsYes:580164400691019826>')
         await message.add_reaction('<:kgsNo:610542174127259688>')
 
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload):
         # User topic suggestions
-        if payload.message_id in self.suggestion_msg_ids and not payload.member.bot:
-            if payload.emoji.id == 580164400691019826:
-                message = await self.bot.get_channel(payload.channel_id).fetch_message(payload.message_id)
-                await message.edit(content='Topic added', delete_after=6)
-                # DOESNT ACTUALLY ADD THE TOPIC
-            elif payload.emoji.id == 610542174127259688:
-                message = await self.bot.get_channel(payload.channel_id).fetch_message(payload.message_id)
-                await message.edit(content='Topic removed', delete_after=6)
+        if payload.channel_id == 414179142020366336 and not payload.member.bot:
+            message = await self.bot.get_channel(payload.channel_id).fetch_message(payload.message_id)
+            if message.embeds[0].footer.text == 'topic':
+                if payload.emoji.id == 580164400691019826:
+                    topic = message.embeds[0].description
+                    self.topics.append(topic)
+                    await message.edit(content='Topic added', delete_after=6)
+                elif payload.emoji.id == 610542174127259688:
+                    message = await self.bot.get_channel(payload.channel_id).fetch_message(payload.message_id)
+                    await message.edit(content='Topic removed', delete_after=6)
 
     @mod_and_above()
     @commands.command()
@@ -109,6 +110,7 @@ class Fun(commands.Cog):
             Delete topic by index.
             Usage: remove_topic index
         """
+        topics_db = self.bot.db.Topics
         if index is not None:
             if index < 1 or index > len(self.topics):
                 await ctx.send(f'Invalid index. Min value: 0, Max value: {len(self.topics)}', delete_after=6)
@@ -160,11 +162,11 @@ class Fun(commands.Cog):
                 i = emote_list.index(str(reaction.emoji))
 
                 emb = discord.Embed(
-                    title="Success!", description=f'**{self.topics[self.topics_list.index(search_result[i][0])]}** removed', colour=discord.Colour.green())
+                    title="Success!", description=f'**{self.topics[self.topics.index(search_result[i][0])]}** removed', colour=discord.Colour.green()) #I changed this pls verify
 
                 await msg.edit(embed=emb)
 
-                del self.topics[self.topics_list.index(search_result[i][0])]
+                del self.topics[self.topics.index(search_result[i][0])] #I changed this pls verify
 
                 topics_db.update_one({"name": "topics_list"}, {
                     "$set": {"topics": self.topics}})
