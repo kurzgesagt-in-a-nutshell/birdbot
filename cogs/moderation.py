@@ -6,10 +6,10 @@ import datetime
 import asyncio
 import logging
 
-import helper
-from helper import helper_and_above, mod_and_above
+from utils import helper
+from utils.helper import helper_and_above, mod_and_above
 
-import custom_converters
+from utils import custom_converters
 
 import discord
 from discord.ext import commands, tasks
