@@ -10,7 +10,7 @@ import discord
 from discord.ext import commands
 from discord.ext.commands import errors
 
-from helper import NoAuthorityError
+from utils.helper import NoAuthorityError
 
 
 class Errors(commands.Cog):
@@ -59,6 +59,7 @@ class Errors(commands.Cog):
             await ctx.message.delete()
 
         else:
+            self.logger.exception(traceback_txt)
             await ctx.message.add_reaction('<:kgsStop:579824947959169024>')
             await ctx.send("Uh oh, an unhandled exception occured, if this issue persists please contact FC or sloth")
             description = f"An [**unhandled exception**]({ctx.message.jump_url}) occured in <#{ctx.message.channel.id}> when " \

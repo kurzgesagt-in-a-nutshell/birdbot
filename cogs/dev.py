@@ -1,3 +1,4 @@
+from argparse import Namespace
 import io
 import asyncio
 import logging
@@ -12,8 +13,9 @@ from contextlib import redirect_stdout
 import discord
 from discord.ext import commands
 
-from kurzgesagt import args
-from helper import mod_and_above
+from birdbot import BirdBot
+
+from utils.helper import mod_and_above, devs_only, mainbot_only
 
 dotenv.load_dotenv()
 
@@ -137,6 +139,7 @@ class Dev(commands.Cog):
                                                      filename='output.txt'))
                 else:
                     await ctx.send(f'```py\n{value}{ret}\n```')
+        
 
     @commands.is_owner()
     @commands.command(name='reload', hidden=True)
@@ -161,9 +164,8 @@ class Dev(commands.Cog):
     @mod_and_above()
     async def kill(self, ctx):
         """Kill the bot"""
-        os.environ['FORCIBLY_KILLED'] = '1'
-        await ctx.send('Bravo 6 going dark')
-        await self.bot.logout()
+        await ctx.send('Bravo 6 going dark.')
+        await self.bot.close()
 
     @commands.is_owner()
     @commands.command(hidden=True)
@@ -187,7 +189,7 @@ class Dev(commands.Cog):
 
         #if no error is found in pulling, ask if restart is needed
         #DOES NOT WORK FOR BETA INSTANCE
-        if output[1] is None and not args.beta:
+        if output[1] is None:
             m = await ctx.send('Would you like to restart the bot instance?')
             await m.add_reaction('<:kgsYes:580164400691019826>')
             await m.add_reaction('<:kgsNo:610542174127259688>')
