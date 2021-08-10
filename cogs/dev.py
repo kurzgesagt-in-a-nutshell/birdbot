@@ -19,6 +19,7 @@ from utils.helper import mod_and_above, devs_only, mainbot_only
 
 dotenv.load_dotenv()
 
+
 class Dev(commands.Cog):
     def __init__(self, bot):
         self.logger = logging.getLogger('Dev')
@@ -42,22 +43,23 @@ class Dev(commands.Cog):
             return f'```py\n{e.__class__.__name__}: {e}\n```'
         return f'```py\n{e.text}{"^":>{e.offset}}\n{e.__class__.__name__}: {e}```'
 
-    @commands.group(hidden=True,aliases=['presence'])
+    @commands.group(hidden=True, aliases=['presence'])
     @commands.is_owner()
     async def activity(self, ctx):
         """Sets the bots status"""
         pass
 
     async def change_activity(self, ctx, activity):
-        await ctx.bot.change_presence(status=ctx.guild.me.status, activity=activity)
+        await ctx.bot.change_presence(status=ctx.guild.me.status,
+                                      activity=activity)
         await ctx.send(' presence changed.')
 
     @activity.command(aliases=['l'])
     @commands.is_owner()
     async def listening(self, ctx, *, text):
         """Set listening activity"""
-        audio = discord.Activity(
-            name=text, type=discord.ActivityType.listening)
+        audio = discord.Activity(name=text,
+                                 type=discord.ActivityType.listening)
         await self.change_activity(ctx, audio)
 
     @activity.command(aliases=['w'])
@@ -120,11 +122,12 @@ class Dev(commands.Cog):
                 self.logger.info(f'Output chars: {len(str(value))}')
                 if value:
                     if len(str(value)) >= 2000:
-                        await ctx.send(f'Returned over 2k chars, sending as file instead.\n'
-                                       f'(first 1.5k chars for quick reference)\n'
-                                       f'```py\n{value[0:1500]}\n```',
-                                       file=discord.File(io.BytesIO(value.encode()),
-                                                         filename='output.txt'))
+                        await ctx.send(
+                            f'Returned over 2k chars, sending as file instead.\n'
+                            f'(first 1.5k chars for quick reference)\n'
+                            f'```py\n{value[0:1500]}\n```',
+                            file=discord.File(io.BytesIO(value.encode()),
+                                              filename='output.txt'))
                     else:
                         await ctx.send(f'```py\n{value}\n```')
             else:
@@ -132,14 +135,14 @@ class Dev(commands.Cog):
                     f'Output chars: {len(str(value)) + len(str(ret))}')
                 self._last_result = ret
                 if len(str(value)) + len(str(ret)) >= 2000:
-                    await ctx.send(f'Returned over 2k chars, sending as file instead.\n'
-                                   f'(first 1.5k chars for quick reference)\n'
-                                   f'```py\n{f"{value}{ret}"[0:1500]}\n```',
-                                   file=discord.File(io.BytesIO(f'{value}{ret}'.encode()),
-                                                     filename='output.txt'))
+                    await ctx.send(
+                        f'Returned over 2k chars, sending as file instead.\n'
+                        f'(first 1.5k chars for quick reference)\n'
+                        f'```py\n{f"{value}{ret}"[0:1500]}\n```',
+                        file=discord.File(io.BytesIO(f'{value}{ret}'.encode()),
+                                          filename='output.txt'))
                 else:
                     await ctx.send(f'```py\n{value}{ret}\n```')
-        
 
     @commands.is_owner()
     @commands.command(name='reload', hidden=True)
@@ -169,43 +172,51 @@ class Dev(commands.Cog):
 
     @commands.command()
     @devs_only()
-    # @mainbot_only()
+    @mainbot_only()
     async def launch(self, ctx, instance: str):
-        if instance not in ('alpha','beta'):
-            raise commands.BadArgument("Instance argument must be `alpha` or `beta`")
-        
+        if instance not in ('alpha', 'beta'):
+            raise commands.BadArgument(
+                "Instance argument must be `alpha` or `beta`")
+
         try:
-            child = await asyncio.create_subprocess_shell('python3 startbot.py --{}'.format(instance),
-                                                    stdout=asyncio.subprocess.PIPE,
-                                                    stderr=asyncio.subprocess.STDOUT)
-            output = await child.communicate()
-            await ctx.send(output[0].decode())
-            await ctx.send(output[1].decode())
+            child = await asyncio.create_subprocess_shell(
+                'python3 startbot.py --{}'.format(instance),
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.STDOUT)
+            await ctx.send(
+                f"Loaded {instance} instance. Don't forget to kill the instance once you're done to prevent memory leaks"
+            )
+            await child.wait()
 
         finally:
-            await child.kill()
-
-
+            try:
+                await ctx.send(f"{instance} instance has been terminated")
+                await child.terminate()
+            except ProcessLookupError:
+                pass
 
     @commands.is_owner()
     @commands.command(hidden=True)
-    async def pull(self,ctx):
+    async def pull(self, ctx):
         self.logger.info('pulling repository')
         await asyncio.create_subprocess_shell('git fetch')
-        proc = await asyncio.create_subprocess_shell('git pull',
-                                                     stdout=asyncio.subprocess.PIPE,
-                                                     stderr=asyncio.subprocess.STDOUT)
+        proc = await asyncio.create_subprocess_shell(
+            'git pull',
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.STDOUT)
         output = await proc.communicate()
         if len(output[0].decode()) > 2000:
             self.logger.info('Output too large, sending a file instead')
-            file = discord.File(io.BytesIO(output[0]),filename='output.txt')
-            await ctx.send('Pull output',file= file)
+            file = discord.File(io.BytesIO(output[0]), filename='output.txt')
+            await ctx.send('Pull output', file=file)
         else:
             await ctx.send(f"```{output[0].decode()}```")
 
         #check for reaction call
-        def check(reaction,user):
-            return user == ctx.author and str(reaction.emoji) in ('<:kgsYes:580164400691019826>','<:kgsNo:610542174127259688>')
+        def check(reaction, user):
+            return user == ctx.author and str(
+                reaction.emoji) in ('<:kgsYes:580164400691019826>',
+                                    '<:kgsNo:610542174127259688>')
 
         #if no error is found in pulling, ask if restart is needed
         #DOES NOT WORK FOR BETA INSTANCE
@@ -214,7 +225,9 @@ class Dev(commands.Cog):
             await m.add_reaction('<:kgsYes:580164400691019826>')
             await m.add_reaction('<:kgsNo:610542174127259688>')
             try:
-                reaction, user = await self.bot.wait_for('reaction_add',timeout=20.0,check=check)  
+                reaction, user = await self.bot.wait_for('reaction_add',
+                                                         timeout=20.0,
+                                                         check=check)
             except asyncio.TimeoutError:
                 await m.delete()
                 return
@@ -222,6 +235,7 @@ class Dev(commands.Cog):
                 await self.bot.close()
             elif str(reaction.emoji) == '<:kgsNo:610542174127259688>':
                 await m.delete()
-                    
+
+
 def setup(bot):
     bot.add_cog(Dev(bot))
