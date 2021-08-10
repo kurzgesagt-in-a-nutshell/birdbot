@@ -1,24 +1,18 @@
 from argparse import Namespace
+from git import Repo, remote.Remote
 import io
 import asyncio
 import logging
 import math
 import textwrap
 import traceback
-import subprocess
 import os
-import dotenv
 from contextlib import redirect_stdout
 
 import discord
 from discord.ext import commands
 
-from birdbot import BirdBot
-
 from utils.helper import mod_and_above, devs_only, mainbot_only
-
-dotenv.load_dotenv()
-
 
 class Dev(commands.Cog):
     def __init__(self, bot):
@@ -174,6 +168,8 @@ class Dev(commands.Cog):
     @devs_only()
     @mainbot_only()
     async def launch(self, ctx, instance: str):
+        """Spawn child process of alpha/beta bot instance on the VM, only works on main bot"""
+
         if instance not in ('alpha', 'beta'):
             raise commands.BadArgument(
                 "Instance argument must be `alpha` or `beta`")
@@ -199,18 +195,9 @@ class Dev(commands.Cog):
     @commands.command(hidden=True)
     async def pull(self, ctx):
         self.logger.info('pulling repository')
-        await asyncio.create_subprocess_shell('git fetch')
-        proc = await asyncio.create_subprocess_shell(
-            'git pull',
-            stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.STDOUT)
-        output = await proc.communicate()
-        if len(output[0].decode()) > 2000:
-            self.logger.info('Output too large, sending a file instead')
-            file = discord.File(io.BytesIO(output[0]), filename='output.txt')
-            await ctx.send('Pull output', file=file)
-        else:
-            await ctx.send(f"```{output[0].decode()}```")
+        repo = Repo(os.getcwd()) #Get git repo object
+        assert not repo.bare
+
 
         #check for reaction call
         def check(reaction, user):
