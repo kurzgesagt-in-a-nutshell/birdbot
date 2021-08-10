@@ -41,18 +41,17 @@ class Dev(commands.Cog):
         return f'```py\n{e.text}{"^":>{e.offset}}\n{e.__class__.__name__}: {e}```'
 
     @commands.group(hidden=True, aliases=['presence'])
-    @commands.is_owner()
+    @devs_only()
     async def activity(self, ctx):
         """Sets the bots status"""
         pass
 
     async def change_activity(self, ctx, activity):
-        await ctx.bot.change_presence(status=ctx.guild.me.status,
-                                      activity=activity)
+        await ctx.bot.change_presence(activity=activity)
         await ctx.send(' presence changed.')
 
     @activity.command(aliases=['l'])
-    @commands.is_owner()
+    @devs_only()
     async def listening(self, ctx, *, text):
         """Set listening activity"""
         audio = discord.Activity(name=text,
@@ -60,14 +59,14 @@ class Dev(commands.Cog):
         await self.change_activity(ctx, audio)
 
     @activity.command(aliases=['w'])
-    @commands.is_owner()
+    @devs_only()
     async def watching(self, ctx, *, text):
         """Set watching activity"""
         video = discord.Activity(name=text, type=discord.ActivityType.watching)
         await self.change_activity(ctx, video)
 
     @activity.command(aliases=['p'])
-    @commands.is_owner()
+    @devs_only()
     async def playing(self, ctx, *, text):
         """Set playing activity"""
         game = discord.Activity(name=text, type=discord.ActivityType.playing)
@@ -141,7 +140,7 @@ class Dev(commands.Cog):
                 else:
                     await ctx.send(f'```py\n{value}{ret}\n```')
 
-    @commands.is_owner()
+    @devs_only()
     @commands.command(name='reload', hidden=True)
     async def reload(self, ctx, *, module: str = None):
         ''' Reload a module '''
