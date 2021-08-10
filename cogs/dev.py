@@ -1,5 +1,3 @@
-from argparse import Namespace
-from git import Repo, remote.Remote
 import io
 import asyncio
 import logging
@@ -7,12 +5,17 @@ import math
 import textwrap
 import traceback
 import os
+
 from contextlib import redirect_stdout
+
+from git import Repo
+from git.cmd import Git
 
 import discord
 from discord.ext import commands
 
 from utils.helper import mod_and_above, devs_only, mainbot_only
+
 
 class Dev(commands.Cog):
     def __init__(self, bot):
@@ -191,37 +194,20 @@ class Dev(commands.Cog):
             except ProcessLookupError:
                 pass
 
-    @commands.is_owner()
+    @devs_only()
     @commands.command(hidden=True)
     async def pull(self, ctx):
         self.logger.info('pulling repository')
-        repo = Repo(os.getcwd()) #Get git repo object
+        repo = Repo(os.getcwd())  #Get git repo object to check changes
         assert not repo.bare
+        if repo.is_dirty():
+            return await ctx.send(
+                'There are untracked changes on the branch, please resolve them before pulling'
+            )
 
-
-        #check for reaction call
-        def check(reaction, user):
-            return user == ctx.author and str(
-                reaction.emoji) in ('<:kgsYes:580164400691019826>',
-                                    '<:kgsNo:610542174127259688>')
-
-        #if no error is found in pulling, ask if restart is needed
-        #DOES NOT WORK FOR BETA INSTANCE
-        if output[1] is None:
-            m = await ctx.send('Would you like to restart the bot instance?')
-            await m.add_reaction('<:kgsYes:580164400691019826>')
-            await m.add_reaction('<:kgsNo:610542174127259688>')
-            try:
-                reaction, user = await self.bot.wait_for('reaction_add',
-                                                         timeout=20.0,
-                                                         check=check)
-            except asyncio.TimeoutError:
-                await m.delete()
-                return
-            if str(reaction.emoji) == '<:kgsYes:580164400691019826>':
-                await self.bot.close()
-            elif str(reaction.emoji) == '<:kgsNo:610542174127259688>':
-                await m.delete()
+        _g = Git(os.getcwd())
+        message = _g.pull('origin', 'master')
+        await ctx.send(message)
 
 
 def setup(bot):
