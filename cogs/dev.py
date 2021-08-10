@@ -206,7 +206,7 @@ class Dev(commands.Cog):
             )
 
         _g = Git(os.getcwd())
-        g.fetch()
+        _g.fetch()
         message = _g.pull('origin', 'dev_cmds')
         await ctx.send(message)
 
