@@ -1,3 +1,4 @@
+GitPython==3.1.18
 aiohttp==3.7.4
 astroid==2.5.6
 async-timeout==3.0.1
