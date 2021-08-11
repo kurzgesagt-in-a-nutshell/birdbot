@@ -4,8 +4,8 @@ After=network-online.target
 
 [Service]
 Type=simple
-WorkingDirectory=~/birdbot/kurzgesagtbot
-ExecStart=/usr/bin/python3 ~/birdbot/kurzgesagtbot/startbot.py
+WorkingDirectory=/home/sloth/birdbot/kurzgesagtbot
+ExecStart=/usr/bin/python3 /home/sloth/birdbot/kurzgesagtbot/startbot.py
 Restart=on-failure
 
 [Install]
