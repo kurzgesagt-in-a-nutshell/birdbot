@@ -24,6 +24,13 @@ class Fun(commands.Cog):
 
         self.topics_list = self.topics  # This is used to stop topic repeats
 
+        
+        config_file = open('config.json', 'r')
+        self.config_json = json.loads(config_file.read())
+        config_file.close()
+
+        self.automated_channel = self.config_json['logging']['automated_channel']
+
     @commands.Cog.listener()
     async def on_ready(self):
         self.logger.info('loaded Fun')
@@ -80,7 +87,7 @@ class Fun(commands.Cog):
         await ctx.send(f'Topic suggested.', delete_after=6)
         await ctx.message.delete(delay=4)
 
-        automated_channel = self.bot.get_channel(414179142020366336)
+        automated_channel = self.bot.get_channel(self.automated_channel)
         embed = discord.Embed(
             title=f'{ctx.author.name} suggested', description=topic, color=0xff0000)
         embed.set_footer(text='topic')
@@ -91,7 +98,7 @@ class Fun(commands.Cog):
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload):
         # User topic suggestions
-        if payload.channel_id == 414179142020366336 and not payload.member.bot:
+        if payload.channel_id == self.automated_channel and not payload.member.bot:
             message = await self.bot.get_channel(payload.channel_id).fetch_message(payload.message_id)
             if message.embeds[0].footer.text == 'topic':
                 if payload.emoji.id == 580164400691019826:
@@ -116,8 +123,7 @@ class Fun(commands.Cog):
         topics_db = self.bot.db.Topics
         if index is not None:
             if index < 1 or index > len(self.topics):
-                await ctx.send(f'Invalid index. Min value: 0, Max value: {len(self.topics)}', delete_after=6)
-                return await ctx.message.delete(delay=4)
+                raise commands.BadArgument(message=f'Invalid index. Min value: 0, Max value: {len(self.topics)}')
 
             index = index - 1
             topic = self.topics[index]
