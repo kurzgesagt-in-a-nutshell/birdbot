@@ -76,7 +76,7 @@ class Errors(commands.Cog):
         elif isinstance(err, errors.BadArgument):
             await self.react_send_delete(ctx,
                                          message=f"```{err}```",
-                                         reaction='\U000023f0',
+                                         reaction='<:kgsNo:610542174127259688>',
                                          delay=4)
 
         else:
