@@ -1,5 +1,4 @@
 import logging
-import os
 import json
 import random
 from re import search
@@ -18,13 +17,12 @@ class Fun(commands.Cog):
         self.logger = logging.getLogger('Fun')
         self.bot = bot
 
-        topics_db = self.bot.db.Topics
-        self.topics = topics_db.find_one(
+        self.topics_db = self.bot.db.Topics
+        self.topics = self.topics_db.find_one(
             {"name": "topics_list"})["topics"]  # Use this for DB interaction
 
         self.topics_list = self.topics  # This is used to stop topic repeats
 
-        
         config_file = open('config.json', 'r')
         self.config_json = json.loads(config_file.read())
         config_file.close()
@@ -69,8 +67,7 @@ class Fun(commands.Cog):
 
         self.topics.append(topic)
 
-        topics_db = self.bot.db.Topics
-        topics_db.update_one({"name": "topics_list"}, {
+        self.topics_db.update_one({"name": "topics_list"}, {
             "$set": {"topics": self.topics}})
 
         await ctx.send(f'Topic added at index {len(self.topics)}', delete_after=6)
@@ -89,7 +86,7 @@ class Fun(commands.Cog):
 
         automated_channel = self.bot.get_channel(self.automated_channel)
         embed = discord.Embed(
-            title=f'{ctx.author.name} suggested', description=topic, color=0xff0000)
+            title=f'{ctx.author.name} suggested', description=f'**{topic}**', color=0xff0000)
         embed.set_footer(text='topic')
         message = await automated_channel.send(embed=embed)
         await message.add_reaction('<:kgsYes:580164400691019826>')
@@ -104,13 +101,14 @@ class Fun(commands.Cog):
                 if payload.emoji.id == 580164400691019826:
                     topic = message.embeds[0].description
                     self.topics.append(topic)
-                    topics_db = self.bot.db.Topics
-                    topics_db.update_one({"name": "topics_list"}, {
+                    self.topics_db.update_one({"name": "topics_list"}, {
                         "$set": {"topics": self.topics}})
-                    await message.edit(content='Topic added')
+                    embed = discord.Embed(title="Topic added!", description=f'**{topic}**', colour=discord.Colour.green())
+                    await message.edit(embed=embed, delete_after=6)
                 elif payload.emoji.id == 610542174127259688:
                     message = await self.bot.get_channel(payload.channel_id).fetch_message(payload.message_id)
-                    await message.edit(content='Topic removed', delete_after=6)
+                    embed = discord.Embed(title="Suggestion removed!", description=" ")
+                    await message.edit(embed=embed, delete_after=6)
 
     @mod_and_above()
     @commands.command()
@@ -120,7 +118,6 @@ class Fun(commands.Cog):
             Delete topic by index.
             Usage: remove_topic index
         """
-        topics_db = self.bot.db.Topics
         if index is not None:
             if index < 1 or index > len(self.topics):
                 raise commands.BadArgument(message=f'Invalid index. Min value: 0, Max value: {len(self.topics)}')
@@ -129,7 +126,7 @@ class Fun(commands.Cog):
             topic = self.topics[index]
             del self.topics[index]
 
-            topics_db.update_one({"name": "topics_list"}, {
+            self.topics_db.update_one({"name": "topics_list"}, {
                 "$set": {"topics": self.topics}})
 
             emb = discord.Embed(
@@ -138,8 +135,9 @@ class Fun(commands.Cog):
 
         else:
             if search_string is None:
-                await ctx.send('Invalid arguments. Please specify either index or search string.', delete_after=6)
-                return await ctx.message.delete(delay=4)
+                raise commands.BadArgument(message='Invalid arguments. Please specify either index or search string.')
+
+            await ctx.message.delete(delay=6)
 
             search_result = process.extractBests(
                 search_string, self.topics, limit=9)
@@ -147,7 +145,7 @@ class Fun(commands.Cog):
             t = [topic[0] for topic in search_result if topic[1] > 75]
 
             if t == []:
-                return await ctx.send("No match found.")
+                return await ctx.send("No match found.", delete_after=6)
 
             embed_desc = ''.join(
                 f'{index + 1}. {tp}\n' for index, tp in enumerate(t))
@@ -171,20 +169,18 @@ class Fun(commands.Cog):
                 i = emote_list.index(str(reaction.emoji))
 
                 emb = discord.Embed(
-                    title="Success!", description=f'**{self.topics[self.topics.index(search_result[i][0])]}** removed', colour=discord.Colour.green()) #I changed this pls verify
+                    title="Success!", description=f'**{search_result[i][0]}**\nremoved', colour=discord.Colour.green())
 
-                await msg.edit(embed=emb)
+                await msg.edit(embed=emb, delete_after=6)
 
-                del self.topics[self.topics.index(search_result[i][0])] #I changed this pls verify
+                self.topics.remove(search_result[i][0])
 
-                topics_db.update_one({"name": "topics_list"}, {
+                self.topics_db.update_one({"name": "topics_list"}, {
                     "$set": {"topics": self.topics}})
 
             except asyncio.TimeoutError:
-                # await msg.delete()
+                await msg.delete()
                 return
-
-        # await ctx.message.delete(delay=4)
 
 
 def setup(bot):
