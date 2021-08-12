@@ -49,7 +49,7 @@ class Bot(commands.AutoShardedBot):
             pass
         self.starttime = time.time()
         cogs = ['cogs.moderation', 'cogs.dev', 'cogs.help',
-                'cogs.fun', 'cogs.global_listeners, cogs.filter']
+                'cogs.fun', 'cogs.global_listeners', 'cogs.filter']
         fails = {}
         for i in cogs:
             try:

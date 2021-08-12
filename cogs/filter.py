@@ -6,8 +6,6 @@ from profanity_filter import ProfanityFilter
 from better_profanity import profanity
 from discord.ext import commands
 
-restricted_list=[]
-slur_list=[]
 
 class Filter(commands.Cog):
 
@@ -34,11 +32,13 @@ class Filter(commands.Cog):
         if check_message(newMessage, slur_list):
             print("filtered " + newMessage.content)
 
+
 def update_swearlist():
     with open('swearfilters/humanitiesfilter.txt') as f:
         restricted_list = f.read().splitlines()
     with open('swearfilters/generalfilter.txt') as f:
         slur_list = f.read().splitlines()
+
 
 def add_badword(word):
     with open('swearfilters/humanitiesfilter.txt', 'a') as f:
@@ -46,10 +46,27 @@ def add_badword(word):
     with open('swearfilters/generalfilter.txt', 'a') as f:
         f.write(word)
 
+
 def check_message(message, wordlist):
     profanity.load_censor_words(wordlist)
     regexlist = generate_regex(wordlist)
+    # get rid of all non ascii charcters
     message_clean = str(message.content).encode("ascii", "ignore").decode()
+    # filter out bold and italics but keep *
+    indexes = re.finditer("(\*\*.*\*\*)", message_clean)
+    if indexes:
+        for i in indexes:
+            message_clean = message_clean.replace(message_clean[i.start():i.end()],
+                                                  message_clean[i.start() + 2 : i.end() - 2])
+    indexes = re.finditer("(\*.*\*)", message_clean)
+    if indexes:
+        for i in indexes:
+            message_clean = message_clean.replace(message_clean[i.start():i.end()],
+                                                  message_clean[i.start() + 1 : i.end() - 1])
+
+    message_clean = message_clean.replace("(:.*:)", "*")
+    print(message_clean)
+
     if profanity.contains_profanity(message_clean):
         # detected swear word
         print("profanity")
@@ -64,7 +81,6 @@ def check_message(message, wordlist):
                 print(re.findall(regex, message_clean))
                 print("regex")
                 return True
-
 
 
 with open('swearfilters/humanitiesfilter.txt') as f:
@@ -121,7 +137,7 @@ def generate_regex(words):
             regex_parts.append("[" + replacement.get(c) + "]")
         regex = '\b(' + joining_chars.join(regex_parts) + ')'
 
-        #print(regex)
+        # print(regex)
         regexlist.append(regex)
 
     return regexlist
