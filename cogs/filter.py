@@ -52,7 +52,6 @@ def update_swearlist():
     with open('swearfilters/generalfilter.txt') as f:
         general_list = f.read().splitlines()
 
-
 def add_badword(word):
     with open('swearfilters/humanitiesfilter.txt', 'a') as f:
         f.write(word)
@@ -64,8 +63,10 @@ def check_message(message, wordlist):
     profanity.load_censor_words(wordlist)
     regexlist = generate_regex(wordlist)
     # get rid of all non ascii charcters
-    message_clean = str(message.content).encode("ascii", "ignore").decode()
+    message_clean = convert_regional(message.content)
+    message_clean = str(message_clean).encode("ascii", "replace").decode().lower().replace("?","*")
     # filter out bold and italics but keep *
+    message_clean = re.sub(r'(<:.*:.*>)', '*', message_clean)
     indexes = re.finditer("(\*\*.*\*\*)", message_clean)
     if indexes:
         for i in indexes:
@@ -76,22 +77,15 @@ def check_message(message, wordlist):
         for i in indexes:
             message_clean = message_clean.replace(message_clean[i.start():i.end()],
                                                   message_clean[i.start() + 1: i.end() - 1])
-
-    message_clean = message_clean.replace("(:.*:)", "*")
     if profanity.contains_profanity(message_clean):
         # detected swear word
-        print("profanity")
         return True
         # await message.add_reaction("👎")
     elif profanity.contains_profanity(str(message_clean).replace(" ", "")):
-        print("profanity")
         return True
     else:
-        print(message_clean)
         for regex in regexlist:
             if re.search(regex, message_clean):
-                print(re.findall(regex, message_clean))
-                print("regex")
                 return True
 
 
@@ -104,37 +98,78 @@ with open('swearfilters/generalfilter.txt') as f:
 def setup(bot):
     bot.add_cog(Filter(bot))
 
+def convert_regional(word):
+    replacement = {
+        '🇦' : 'a',
+        '🇧' : 'b',
+        '🇨' : 'c',
+        '🇩' : 'd',
+        '🇪' : 'e',
+        '🇫' : 'f',
+        '🇬' : 'g',
+        '🇭' : 'h',
+        '🇮' : 'i',
+        '🇯' : 'j',
+        '🇰' : 'k',
+        '🇱' : 'l',
+        '🇲' : 'm',
+        '🇳' : 'n',
+        '🇴' : 'o',
+        '🇵' : 'p',
+        '🇶' : 'q',
+        '🇷' : 'r',
+        '🇸' : 's',
+        '🇹' : 't',
+        '🇺' :'u',
+        '🇻' : 'v',
+        '🇼' : 'w',
+        '🇽' : 'x',
+        '🇾' : 'y',
+        '🇿' : 'z'
+    }
+
+    counter = 0
+    toreturn = ""
+    letterlist = list(word)
+    for letter in letterlist:
+        if replacement.get(letter) != None:
+            toreturn = toreturn + replacement.get(letter)
+        else:
+            toreturn = toreturn + letter
+        counter = counter + 1
+    return toreturn
+
 
 def generate_regex(words):
-    joining_chars = '[ \*_\-\+\.]*'
+    joining_chars = '[ _\-\+\.\*!@#$%^&():\'"]*'
     replacement = {
-        'a': 'a\@\#',
-        'b': 'b\*',
-        'c': 'c\*',
-        'd': 'd\*',
-        'e': 'e\*',
-        'f': 'f\*',
-        'g': 'g\*',
-        'h': 'h\*',
-        'i': '1il\*',
-        'j': 'j\*',
-        'k': 'k\*',
-        'l': '1i1l\*',
-        'm': 'm\*',
-        'n': 'ｎ\*',
-        'o': 'o\*',
-        'p': 'pq\*',
-        'q': 'qp\*',
-        'r': 'r\*',
-        's': 's$\*',
-        't': 't\+\*',
-        'u': 'uv\*',
-        'v': 'vu\*',
-        'w': 'w\*',
-        'x': 'x\*',
-        'y': 'y\*',
-        'z': 'z\*',
-        ' ': ' _\-\+\.\*'
+        'a': 'a\@\#!@#$%^&():',
+        'b': 'b\*!@#$%^&():',
+        'c': 'c\*!@#$%^&():',
+        'd': 'd\*!@#$%^&():',
+        'e': 'e\*!@#$%^&():',
+        'f': 'f\*!@#$%^&():',
+        'g': 'g\*!@#$%^&():',
+        'h': 'h\*!@#$%^&():',
+        'i': '1il\*!@#$%^&():',
+        'j': 'j\*!@#$%^&():',
+        'k': 'k\*!@#$%^&():',
+        'l': '1i1l\*!@#$%^&():',
+        'm': 'm\*!@#$%^&():',
+        'n': 'ｎ\*!@#$%^&():',
+        'o': 'o\*!@#$%^&():',
+        'p': 'pq\*!@#$%^&():',
+        'q': 'qp\*!@#$%^&():',
+        'r': 'r\*!@#$%^&():',
+        's': 's$\*!@#$%^&():',
+        't': 't\+\*!@#$%^&():',
+        'u': 'uv\*!@#$%^&():',
+        'v': 'vu\*!@#$%^&():',
+        'w': 'w\*!@#$%^&():',
+        'x': 'x\*!@#$%^&():',
+        'y': 'y\*!@#$%^&():',
+        'z': 'z\*!@#$%^&():',
+        ' ': ' _\-\+\.\*!@#$%^&():\'"'
     }
     regexlist = []
     for word in words:
