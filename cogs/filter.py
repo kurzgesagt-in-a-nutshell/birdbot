@@ -19,25 +19,38 @@ class Filter(commands.Cog):
 
     @commands.Cog.listener()
     async def on_message(self, message):
-        if check_message(message, slur_list):
+        if check_message(message, get_word_list(message)):
             print("filtered " + message.content)
+            await message.delete()
+            await message.channel.send("Be nice, Don't say bad things " + message.author.name, delete_after=10)
 
     @commands.Cog.listener()
     async def on_message_edit(self, oldMessage, newMessage):
-        if check_message(newMessage, slur_list):
+        if check_message(newMessage, get_word_list(newMessage)):
             print("filtered " + newMessage.content)
+            await newMessage.delete()
+            await newMessage.channel.send("Be nice, Don't say bad things " + newMessage.author.name, delete_after=10)
 
     @commands.Cog.listener()
     async def on_message_update(self, oldMessage, newMessage):
-        if check_message(newMessage, slur_list):
+        if check_message(newMessage, get_word_list(newMessage)):
             print("filtered " + newMessage.content)
+            await newMessage.delete()
+            await newMessage.channel.send("Be nice, Don't say bad things " + newMessage.author.name, delete_after=10)
+
+
+def get_word_list(message):
+    if message.channel == 546315063745839115:
+        return humanities_list
+    else:
+        return general_list
 
 
 def update_swearlist():
     with open('swearfilters/humanitiesfilter.txt') as f:
-        restricted_list = f.read().splitlines()
+        humanities_list = f.read().splitlines()
     with open('swearfilters/generalfilter.txt') as f:
-        slur_list = f.read().splitlines()
+        general_list = f.read().splitlines()
 
 
 def add_badword(word):
@@ -57,16 +70,14 @@ def check_message(message, wordlist):
     if indexes:
         for i in indexes:
             message_clean = message_clean.replace(message_clean[i.start():i.end()],
-                                                  message_clean[i.start() + 2 : i.end() - 2])
+                                                  message_clean[i.start() + 2: i.end() - 2])
     indexes = re.finditer("(\*.*\*)", message_clean)
     if indexes:
         for i in indexes:
             message_clean = message_clean.replace(message_clean[i.start():i.end()],
-                                                  message_clean[i.start() + 1 : i.end() - 1])
+                                                  message_clean[i.start() + 1: i.end() - 1])
 
     message_clean = message_clean.replace("(:.*:)", "*")
-    print(message_clean)
-
     if profanity.contains_profanity(message_clean):
         # detected swear word
         print("profanity")
@@ -76,6 +87,7 @@ def check_message(message, wordlist):
         print("profanity")
         return True
     else:
+        print(message_clean)
         for regex in regexlist:
             if re.search(regex, message_clean):
                 print(re.findall(regex, message_clean))
@@ -84,22 +96,17 @@ def check_message(message, wordlist):
 
 
 with open('swearfilters/humanitiesfilter.txt') as f:
-    restricted_list = f.read().splitlines()
+    humanities_list = f.read().splitlines()
 with open('swearfilters/generalfilter.txt') as f:
-    slur_list = f.read().splitlines()
+    general_list = f.read().splitlines()
 
 
 def setup(bot):
     bot.add_cog(Filter(bot))
 
-    with open('swearfilters/humanitiesfilter.txt') as f:
-        restricted_list = f.read().splitlines()
-    with open('swearfilters/generalfilter.txt') as f:
-        slur_list = f.read().splitlines()
-
 
 def generate_regex(words):
-    joining_chars = '[_\-\+\.]*'
+    joining_chars = '[ \*_\-\+\.]*'
     replacement = {
         'a': 'a\@\#',
         'b': 'b\*',
@@ -127,7 +134,7 @@ def generate_regex(words):
         'x': 'x\*',
         'y': 'y\*',
         'z': 'z\*',
-        ' ': ' _\-\+\.*'
+        ' ': ' _\-\+\.\*'
     }
     regexlist = []
     for word in words:
@@ -135,8 +142,7 @@ def generate_regex(words):
 
         for c in word:
             regex_parts.append("[" + replacement.get(c) + "]")
-        regex = '\b(' + joining_chars.join(regex_parts) + ')'
-
+        regex = r'\b(' + joining_chars.join(regex_parts) + ')'
         # print(regex)
         regexlist.append(regex)
 
