@@ -1,12 +1,12 @@
 [Unit]
 Description=Birdbot
+After=network-online.target
 
 [Service]
-ExecStart=/home/sloth/birdbot/kurzgesagtbot/startbot.sh
-Restart=always
-RestartPreventExitStatus=0
-StartLimitInterval=90
-StartLimitBurst=3
+Type=simple
+WorkingDirectory=/home/sloth/birdbot/kurzgesagtbot
+ExecStart=/usr/bin/python3 /home/sloth/birdbot/kurzgesagtbot/startbot.py
+Restart=on-failure
 
 [Install]
 WantedBy=multi-user.target
