@@ -6,10 +6,10 @@ import datetime
 import asyncio
 import logging
 
-import helper
-from helper import helper_and_above, mod_and_above
+from utils import helper
+from utils.helper import helper_and_above, mod_and_above
 
-import custom_converters
+from utils import custom_converters
 
 import discord
 from discord.ext import commands, tasks
@@ -155,11 +155,10 @@ class Moderation(commands.Cog):
 
         if members is None or members == []:
             raise commands.BadArgument(message='Improper members passed')
-
-        reason = ' '.join(extra)
-        if reason == '':
+        if extra is None:
             raise commands.BadArgument(
                 message='Please provide a reason and re-run the command')
+        reason = ' '.join(extra)
 
         failed_ban = False
         for m in members:
@@ -296,7 +295,7 @@ class Moderation(commands.Cog):
 
         failed_mute = False
         for i in members:
-            if i.top_role.name != 'Muted' or i.top_role < ctx.author.top_role:
+            if i.top_role < ctx.author.top_role:
                 await i.add_roles(mute_role, reason=reason)
                 try:
                     await i.send(f'You have been muted for {time_str}.\nGiven reason: {reason}\n'
@@ -424,7 +423,7 @@ class Moderation(commands.Cog):
 
         failed_warn = False
         for m in members:
-            if m.top_role.name != 'Muted' or m.top_role < ctx.author.top_role:
+            if m.top_role.name == 'Muted' or m.top_role < ctx.author.top_role:
                 try:
                     await m.send(f'You have been warned for {reason} (Note: Accumulation of warns may lead to permanent removal from the server)')
                 except discord.Forbidden:
