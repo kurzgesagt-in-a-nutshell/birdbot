@@ -97,6 +97,9 @@ class Fun(commands.Cog):
                 if payload.emoji.id == 580164400691019826:
                     topic = message.embeds[0].description
                     self.topics.append(topic)
+                    topics_db = self.bot.db.Topics
+                    topics_db.update_one({"name": "topics_list"}, {
+                        "$set": {"topics": self.topics}})
                     await message.edit(content='Topic added', delete_after=6)
                 elif payload.emoji.id == 610542174127259688:
                     message = await self.bot.get_channel(payload.channel_id).fetch_message(payload.message_id)
