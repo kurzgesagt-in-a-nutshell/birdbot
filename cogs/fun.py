@@ -106,8 +106,7 @@ class Fun(commands.Cog):
                     embed = discord.Embed(title="Topic added!", description=f'**{topic}**', colour=discord.Colour.green())
                     await message.edit(embed=embed, delete_after=6)
                 elif payload.emoji.id == 610542174127259688:
-                    message = await self.bot.get_channel(payload.channel_id).fetch_message(payload.message_id)
-                    embed = discord.Embed(title="Suggestion removed!", description=" ")
+                    embed = discord.Embed(title="Suggestion removed!")
                     await message.edit(embed=embed, delete_after=6)
 
     @mod_and_above()
