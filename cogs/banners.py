@@ -38,7 +38,24 @@ class Banners(commands.Cog):
         """Banner commands"""
         pass
     
-    #@mod_and_above()
+    async def verify_url(self, url, change=False):
+        try:
+            async with aiohttp.ClientSession() as session:
+                    async with session.get(url) as response:
+                        if response.content_type.startswith("image"):
+                            banner = await response.content.read()
+                            if len(banner)/1024 < 10240:
+                                if change:
+                                    return banner
+                                return url
+                            else:
+                                raise commands.BadArgument(message=f'Image must be less than 10240kb, yours is {int(len(banner)/1024)}kb.')
+                        else:
+                            raise commands.BadArgument(message=f'Link must be for an image file not {response.content_type}.')
+        except aiohttp.InvalidURL:
+            raise commands.BadArgument(message="You must provide a link or an attachment.")
+
+    @mod_and_above()
     @banner.command()
     async def add(self, ctx, url: typing.Optional[str]):
         """Add a banner by url or attachment"""
@@ -46,25 +63,15 @@ class Banners(commands.Cog):
             attachments = ctx.message.attachments
             if attachments != []:
                 url = attachments[0].url
-        try:
-            async with aiohttp.ClientSession() as session:
-                    async with session.get(url) as response:
-                        if response.content_type.startswith("image"):
-                            banner = await response.content.read()
-                            if len(banner)/1024 < 10240:
-                                self.banners.append(url)
-                                await ctx.send("Banner added!")
-                                banners = open('banners.json', 'w')
-                                banners.write(json.dumps({"banners": self.banners}, indent=4))
-                                banners.close()
-                            else:
-                                raise commands.BadArgument(message=f'Image must be less than 10240kb, yours is {int(len(banner)/1024)}kb.')
-                        else:
-                            raise commands.BadArgument(message=f'Link must be for an image file not {response.content_type}')
-        except aiohttp.InvalidURL:
-            raise commands.BadArgument(message="You must provide a link or an attachment")
 
-    #@mod_and_above()
+        self.banners.append(await self.verify_url(url))
+        await ctx.send("Banner added!")
+        banners = open('banners.json', 'w')
+        banners.write(json.dumps({"banners": self.banners}, indent=4))
+        banners.close()
+                            
+
+    @mod_and_above()
     @banner.command()
     async def rotate(self, ctx, time:str):
         """Command description"""
@@ -80,10 +87,10 @@ class Banners(commands.Cog):
         elif time[-1] == 'm':
             time = int(time[:-1])
         else:
-            raise commands.BadArgument(message="Time must be in the format 10d, 10h or 10m")
+            raise commands.BadArgument(message="Time must be in the format 10d, 10h or 10m.")
         if not self.timed_banner_rotation.is_running():
             self.timed_banner_rotation.start()
-        await ctx.send(f'Banners are rotating every {time} minutes', delete_after=6)
+        await ctx.send(f'Banners are rotating every {time} minutes.', delete_after=6)
         await ctx.message.delete(delay=6)
         self.timed_banner_rotation.change_interval(minutes=time)
 
@@ -99,29 +106,18 @@ class Banners(commands.Cog):
             if attachments != []:
                 url = attachments[0].url
 
-        try:            
-            async with aiohttp.ClientSession() as session:
-                    async with session.get(url) as response:
-                        if response.content_type.startswith("image"):
-                            banner = await response.content.read()
-                            if len(banner)/1024 < 10240:
-                                self.banners.append(url)
-                                banners = open('banners.json', 'w')
-                                banners.write(json.dumps({"banners": self.banners}, indent=4))
-                                banners.close()
-                                embed.set_image(url=url)
-                                embed.set_footer(text="banner")
-                                message = await automated_channel.send(embed=embed)
-                                await message.add_reaction('<:kgsYes:580164400691019826>')
-                                await message.add_reaction('<:kgsNo:610542174127259688>')
-                            else:
-                                raise commands.BadArgument(message=f'Image must be less than 10240kb, yours is {int(len(banner)/1024)}kb.')
-                        else:
-                            raise commands.BadArgument(message=f'Link must be for an image file not {response.content_type}')
-        except aiohttp.InvalidURL:
-            raise commands.BadArgument(message="You must provide a link or an attachment")
+        self.banners.append(await self.verify_url(url))
+        banners = open('banners.json', 'w')
+        banners.write(json.dumps({"banners": self.banners}, indent=4))
+        banners.close()
+        embed.set_image(url=url)
+        embed.set_footer(text="banner")
+        message = await automated_channel.send(embed=embed)
+        await message.add_reaction('<:kgsYes:580164400691019826>')
+        await message.add_reaction('<:kgsNo:610542174127259688>')
+
  
-    #@mod_and_above()
+    @mod_and_above()
     @banner.command()
     async def change(self, ctx, url: typing.Optional[str]):
         """Change the banner"""
@@ -129,16 +125,13 @@ class Banners(commands.Cog):
             attachment = ctx.message.attachments
             if attachment != []:
                 url=attachment.url
-        try:
-            async with aiohttp.ClientSession() as session:
-                    async with session.get(url) as response:
-                        banner = await response.content.read()
-                        if len(banner)/1024 < 10240:
-                            await ctx.guild.edit(banner=banner)
-                        else:
-                            raise commands.BadArgument(message=f'Image must be less than 10240kb, yours is {int(len(banner)/1024)}kb.')
-        except aiohttp.InvalidURL:
-            raise commands.BadArgument(message="You must provide a link or an attachment")
+
+        banner = await self.verify_url(url, True)
+        
+        await ctx.message.delete(delay=4)
+        await ctx.send("Server banner changed!", delete_after=4)
+        await ctx.guild.edit(banner=banner)
+
 
     @tasks.loop()
     async def timed_banner_rotation(self):
