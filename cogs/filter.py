@@ -1,11 +1,12 @@
 import logging
 import re
 import this
-import time
-from discord import role
+
+import demoji
+import discord
 from better_profanity import profanity
+from discord import guild
 from discord.ext import commands
-from utils.helper import helper_and_above, mod_and_above
 
 
 class Filter(commands.Cog):
@@ -20,31 +21,36 @@ class Filter(commands.Cog):
 
     @commands.Cog.listener()
     async def on_message(self, message):
-        moderate(message)
+        await moderate(message)
 
     @commands.Cog.listener()
     async def on_message_edit(self, oldMessage, newMessage):
-        moderate(newMessage)
+        await moderate(newMessage)
 
     @commands.Cog.listener()
     async def on_message_update(self, oldMessage, newMessage):
-        moderate(newMessage)
+        await moderate(newMessage)
 
 
-def moderate(message):
-
-    event=False;
-
-    if check_message_for_profanity(message, get_word_list(message)) and not isExcluded():
+async def moderate(message):
+    event = False;
+    # print(message.content)
+    if not isExcluded(message.author) and check_message_for_profanity(message, get_word_list(message)):
         print("filtered " + message.content)
         await message.delete()
         await message.channel.send("Be nice, Don't say bad things " + message.author.name, delete_after=10)
-        event="profanity";
-    elif not isExcluded(message.author) and check_message_for_spam(message):
-        print("Spam detected" + message.content)
+        event = "profanity";
+    elif not isExcluded(message.author) and check_message_for_text_spam(message):
+        print("text spam detected" + message.content)
         await message.delete()
         await message.channel.send("Please do not spam" + message.author.name, delete_after=20)
-        event="message spam";
+        event = "text spam";
+    elif not isExcluded(message.author) and check_message_for_emoji_spam(message):
+        print("Emoji Spam detected" + message.content)
+        await message.delete()
+        await message.channel.send("Please do not spam" + message.author.name, delete_after=20)
+        event = "emoji spam";
+
 
 def get_word_list(message):
     if message.channel == 546315063745839115:
@@ -62,15 +68,13 @@ def isExcluded(author):
         414155501518061578,  # robobird
         240254129333731328  # stealth
     ]
-
-    for roles in author.roles:
-        if role in rolelist:
+    for role in author.roles:
+        if role.id in rolelist:
             return True
-    # default case
     return False
 
 
-def update_swearlist():
+def update_swear_list():
     with open('swearfilters/humanitiesfilter.txt') as f:
         this.humanities_list = f.read().splitlines()
     with open('swearfilters/generalfilter.txt') as f:
@@ -83,14 +87,16 @@ def add_badword(word):
     with open('swearfilters/generalfilter.txt', 'a') as f:
         f.write(word)
 
+
 def check_message_for_profanity(message, wordlist):
     profanity.load_censor_words(wordlist)
     regexlist = generate_regex(wordlist)
     # get rid of all non ascii charcters
     message_clean = convert_regional(message.content)
     message_clean = str(message_clean).encode("ascii", "replace").decode().lower().replace("?", "*")
+    # sub out emojis
+    message_clean = re.sub('(<:[^\s]+:[0-9]*>)', '*', message_clean)
     # filter out bold and italics but keep *
-    message_clean = re.sub(r'(<:.*:.*>)', '*', message_clean)
     indexes = re.finditer("(\*\*.*\*\*)", message_clean)
     if indexes:
         for i in indexes:
@@ -110,9 +116,17 @@ def check_message_for_profanity(message, wordlist):
             if re.search(regex, message_clean):
                 return True
 
-def check_message_for_spam(message):
+
+def check_message_for_emoji_spam(message):
+    if len(re.findall('(<:[^\s]+:[0-9]*>)', re.sub('(>[^/s]*<)+', '> <', str(message.content).encode("ascii", "ignore")
+            .decode()))) + len(demoji.findall_list(message.content)) > 5:
+        return True
     return False
-    #will work on this later
+
+
+def check_message_for_text_spam(message):
+    return False
+
 
 def convert_regional(word):
     replacement = {
