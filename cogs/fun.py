@@ -81,7 +81,7 @@ class Fun(commands.Cog):
             Usage: suggest_topic topic_string
         """
 
-        await ctx.send(f'Topic suggested.', delete_after=6)
+        await ctx.send("Topic suggested.", delete_after=4)
         await ctx.message.delete(delay=4)
 
         automated_channel = self.bot.get_channel(self.automated_channel)

@@ -7,6 +7,7 @@ import discord
 from discord import activity
 from discord.ext import commands, tasks
 from utils.helper import mod_and_above
+from utils import helper
 
 class Banners(commands.Cog):
     def __init__(self, bot):
@@ -73,26 +74,24 @@ class Banners(commands.Cog):
 
     @mod_and_above()
     @banner.command()
-    async def rotate(self, ctx, time:str):
+    async def rotate(self, ctx, arg: str):
         """Command description"""
-        if time == 'stop':
-            self.timed_banner_rotation.stop()
+        time, reason = helper.calc_time([arg, ""])
+        
+        if reason == 'stop ':
+            self.timed_banner_rotation.cancel()
             await ctx.message.delete(delay=6)
-            await ctx.send("Banner rotation stopped", delete_after=6)
+            await ctx.send("Banner rotation stopped.", delete_after=6)
             return
-        elif time[-1] == 'd':
-            time = int(time[:-1])*60*24
-        elif time[-1] == 'h':
-            time = int(time[:-1])*60
-        elif time[-1] == 'm':
-            time = int(time[:-1])
-        else:
-            raise commands.BadArgument(message="Time must be in the format 10d, 10h or 10m.")
+        elif time == None:
+            raise commands.BadArgument(message="Wrong time syntax or did you mean to run rotate stop?")
+            return
+
         if not self.timed_banner_rotation.is_running():
             self.timed_banner_rotation.start()
-        await ctx.send(f'Banners are rotating every {time} minutes.', delete_after=6)
+        await ctx.send(f'Banners are rotating every {helper.get_time_string(time)}.', delete_after=6)
         await ctx.message.delete(delay=6)
-        self.timed_banner_rotation.change_interval(minutes=time)
+        self.timed_banner_rotation.change_interval(seconds=time)
 
     @banner.command()
     async def suggest(self, ctx, url: typing.Optional[str]):
@@ -106,10 +105,11 @@ class Banners(commands.Cog):
             if attachments != []:
                 url = attachments[0].url
 
-        self.banners.append(await self.verify_url(url))
-        banners = open('banners.json', 'w')
-        banners.write(json.dumps({"banners": self.banners}, indent=4))
-        banners.close()
+        url = await self.verify_url(url)
+
+        await ctx.send("Banner suggested.", delete_after=4)
+        await ctx.message.delete(delay=4)
+
         embed.set_image(url=url)
         embed.set_footer(text="banner")
         message = await automated_channel.send(embed=embed)
