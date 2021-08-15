@@ -1,7 +1,7 @@
 import logging
 import re
 import this
-
+import contextlib
 import demoji
 import discord
 from better_profanity import profanity
@@ -35,21 +35,21 @@ class Filter(commands.Cog):
 async def moderate(message):
     event = False;
     # print(message.content)
-    if not isExcluded(message.author) and check_message_for_profanity(message, get_word_list(message)):
-        print("filtered " + message.content)
-        await message.delete()
-        await message.channel.send("Be nice, Don't say bad things " + message.author.name, delete_after=10)
-        event = "profanity";
-    elif not isExcluded(message.author) and check_message_for_text_spam(message):
-        print("text spam detected" + message.content)
-        await message.delete()
-        await message.channel.send("Please do not spam" + message.author.name, delete_after=20)
-        event = "text spam";
-    elif not isExcluded(message.author) and check_message_for_emoji_spam(message):
-        print("Emoji Spam detected" + message.content)
-        await message.delete()
-        await message.channel.send("Please do not spam" + message.author.name, delete_after=20)
-        event = "emoji spam";
+    if not isExcluded(message.author):
+        event = check_message_for_profanity(message, get_word_list(message))
+        if event[0]:
+            if event[1] == "profanity":
+                print("filtered " + message.content)
+                await message.delete()
+                await message.channel.send("Be nice, Don't say bad things " + message.author.name, delete_after=10)
+            if event[1] == "emoji":
+                print("Emoji Spam detected" + message.content)
+                await message.delete()
+                await message.channel.send("Please do not spam emojis" + message.author.name, delete_after=20)
+            if event[1] == "text":
+                print("text spam detected" + message.content)
+                await message.delete()
+                await message.channel.send("Please do not spam" + message.author.name, delete_after=20)
 
 
 def get_word_list(message):
@@ -68,6 +68,9 @@ def isExcluded(author):
         414155501518061578,  # robobird
         240254129333731328  # stealth
     ]
+    if author.bot:
+        return True
+
     for role in author.roles:
         if role.id in rolelist:
             return True
@@ -91,11 +94,22 @@ def add_badword(word):
 def check_message_for_profanity(message, wordlist):
     profanity.load_censor_words(wordlist)
     regexlist = generate_regex(wordlist)
-    # get rid of all non ascii charcters
+    # stores all words that are aparently profanity
+    offendinglist = []
+    toReturn = [False, None]
+    # Chagnes letter emojis to normal ascii ones
     message_clean = convert_regional(message.content)
+    # find all question marks in message
+    indexes = [x.start() for x in re.finditer('\?', message_clean)]
+    # get rid of all other non ascii charcters
     message_clean = str(message_clean).encode("ascii", "replace").decode().lower().replace("?", "*")
-    # sub out emojis
-    message_clean = re.sub('(<:[^\s]+:[0-9]*>)', '*', message_clean)
+    # put back question marks
+    message_clean = list(message_clean)
+    for i in indexes:
+        message_clean[i] = "?"
+    message_clean = "".join(message_clean)
+    # sub out discord emojis
+    message_clean = re.sub('(<[A-z]*:[^\s]+:[0-9]*>)', '*', message_clean)
     # filter out bold and italics but keep *
     indexes = re.finditer("(\*\*.*\*\*)", message_clean)
     if indexes:
@@ -107,14 +121,29 @@ def check_message_for_profanity(message, wordlist):
         for i in indexes:
             message_clean = message_clean.replace(message_clean[i.start():i.end()],
                                                   message_clean[i.start() + 1: i.end() - 1])
+
     if profanity.contains_profanity(message_clean):
-        return True
+        return [True, "profanity"]
     elif profanity.contains_profanity(str(message_clean).replace(" ", "")):
-        return True
+        return [True, "profanity"]
     else:
         for regex in regexlist:
             if re.search(regex, message_clean):
-                return True
+                founditems = (re.findall(regex[:-1] + '[A-z]*)', message_clean))
+                for e in founditems:
+                    offendinglist.append(e)
+                toReturn = [True, "profanity"]
+    if toReturn[0]:
+        if exception_list_check(offendinglist):
+            print("here")
+            return toReturn
+
+    # check for emoji spam
+    if len(re.findall('(<[A-z]*:[^\s]+:[0-9]*>)', re.sub('(>[^/s]*<)+', '> <', str(message.content)
+            .encode("ascii", "ignore").decode()))) + len(demoji.findall_list(message.content)) > 5:
+        return [True, "emoji"]
+
+    return [False, None]
 
 
 def check_message_for_emoji_spam(message):
@@ -124,7 +153,13 @@ def check_message_for_emoji_spam(message):
     return False
 
 
-def check_message_for_text_spam(message):
+def exception_list_check(offendinglist):
+    for badword in offendinglist:
+        if badword in this.exceptionlist:
+            continue
+        else:
+            return True
+
     return False
 
 
@@ -186,7 +221,7 @@ def generate_regex(words):
         'k': 'k\*',
         'l': '1i1l\*',
         'm': 'm\*',
-        'n': 'ｎ\*',
+        'n': 'n\*',
         'o': 'o\*',
         'p': 'pq\*',
         'q': 'qp\*',
@@ -199,7 +234,7 @@ def generate_regex(words):
         'x': 'x\*',
         'y': 'y\*',
         'z': 'z\*',
-        ' ': ' _\-\+\.\*'
+        ' ': ' _\-\+\.*'
     }
     regexlist = []
     for word in words:
@@ -221,3 +256,5 @@ def setup(bot):
         this.humanitieslist = f.read().splitlines()
     with open('swearfilters/generalfilter.txt') as f:
         this.generallist = f.read().splitlines()
+    with open('swearfilters/exceptionfilter.txt') as f:
+        this.exceptionlist = f.read().splitlines()
