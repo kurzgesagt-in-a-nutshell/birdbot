@@ -174,7 +174,7 @@ class Filter(commands.Cog):
         else:
             for regex in regex_list:
                 if re.search(regex, message_clean):
-                    found_items = (re.findall(regex[:-1] + '[A-z]*\)', message_clean))
+                    found_items = (re.findall(regex[:-1] + '[A-z]*)', message_clean))
                     for e in found_items:
                         offending_list.append(e)
                     toReturn = [True, "profanity"]
