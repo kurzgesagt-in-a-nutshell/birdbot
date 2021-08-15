@@ -1,11 +1,8 @@
 import logging
 import re
 import this
-import contextlib
 import demoji
-import discord
 from better_profanity import profanity
-from discord import guild
 from discord.ext import commands
 
 
