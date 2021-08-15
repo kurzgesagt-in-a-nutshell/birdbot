@@ -121,39 +121,44 @@ class Filter(commands.Cog):
         with open('swearfilters/filter.txt', 'a') as f:
             self.white_list = f.read().splitlines()
 
-    @staticmethod
+
     def add_to_general(self, word):
         with open('swearfilters/humanitiesfilter.txt', 'a') as f:
             f.write(word)
 
-    @staticmethod
+
     def add_to_humanities(self, word):
         with open('swearfilters/generalfilter.txt', 'a') as f:
             f.write(word)
 
-    @staticmethod
+
     def add_to_whitelist(self, word):
         with open('swearfilters/filter.txt', 'a') as f:
             f.write(word)
 
-    def check_message_for_profanity(self, message, wordlist):
-        profanity.load_censor_words(wordlist)
-        regex_list = self.generate_regex(wordlist)
+    def check_message_for_profanity(self, message, word_list):
+        profanity.load_censor_words(word_list)
+        regex_list = self.generate_regex(word_list)
         # stores all words that are aparently profanity
         offending_list = []
         toReturn = [False, None]
         # filter out bold and italics but keep *
         message_clean = str(message.content)
-        indexes = re.finditer(r'(\*\*.*\*\*)', message_clean)
+        indexes = re.finditer('(\*\*.*\*\*)', message_clean)
         if indexes:
+            tracker=0
             for i in indexes:
-                message_clean = message_clean.replace(message_clean[i.start():i.end()],
-                                                      message_clean[i.start() + 2: i.end() - 2])
+                message_clean = message_clean.replace(message_clean[i.start() - tracker:i.end() - tracker],
+                                                      message_clean[i.start() + 2 - tracker: i.end() - 2 - tracker])
+                tracker = tracker+4
+                print(message_clean)
         indexes = re.finditer(r'(\*.*\*)', message_clean)
         if indexes:
+            tracker = 0
             for i in indexes:
-                message_clean = message_clean.replace(message_clean[i.start():i.end()],
-                                                      message_clean[i.start() + 1: i.end() - 1])
+                message_clean = message_clean.replace(message_clean[i.start() - tracker:i.end() - tracker],
+                                                      message_clean[i.start() + 1 - - tracker: i.end() - 1 - tracker])
+                tracker = tracker + 2
 
         # Chagnes letter emojis to normal ascii ones
         message_clean = self.convert_regional(message_clean)
@@ -191,7 +196,7 @@ class Filter(commands.Cog):
 
         return [False, None]
 
-    @staticmethod
+
     def check_message_for_emoji_spam(self, message):
         if len(re.findall(r'(<:[^\s]+:[0-9]*>)',
                           re.sub(r'(>[^/s]*<)+', '> <', str(message.content).encode("ascii", "ignore")
@@ -208,7 +213,7 @@ class Filter(commands.Cog):
 
         return False
 
-    @staticmethod
+
     def convert_regional(self, word):
         replacement = {
             '🇦': 'a',
@@ -250,8 +255,8 @@ class Filter(commands.Cog):
             counter = counter + 1
         return to_return
 
-    @staticmethod
-    def generate_regex(words):
+
+    def generate_regex(self, words):
         joining_chars = r'[ _\-\+\.\*!@#$%^&():\'"]*'
         replacement = {
             'a': r'a\@\#',
