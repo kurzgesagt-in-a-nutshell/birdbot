@@ -50,8 +50,7 @@ class Topic(commands.Cog):
             Usage: get_topic index
         """
         if index < 1 or index > len(self.topics):
-            await ctx.send(f'Invalid index. Min value: 0, Max value: {len(self.topics)}', delete_after=6)
-            return await ctx.message.delete(delay=4)
+            raise commands.BadArgument(message=f'Invalid index. Min value: 0, Max value: {len(self.topics)}')
 
         await ctx.send(f'{index}. {self.topics[index - 1]}')
 
@@ -80,12 +79,6 @@ class Topic(commands.Cog):
             Usage: suggest_topic topic_string
         """
 
-<<<<<<< HEAD:cogs/fun.py
-        await ctx.send("Topic suggested.", delete_after=4)
-        await ctx.message.delete(delay=4)
-
-=======
->>>>>>> origin:cogs/topic.py
         automated_channel = self.bot.get_channel(self.automated_channel)
         embed = discord.Embed(
             title=f'{ctx.author.name} suggested', description=f'**{topic}**', color=0xff0000)
@@ -95,7 +88,7 @@ class Topic(commands.Cog):
         await message.add_reaction('<:kgsYes:580164400691019826>')
         await message.add_reaction('<:kgsNo:610542174127259688>')
 
-        await ctx.send(f'Topic suggested.', delete_after=6)
+        await ctx.send("Topic suggested.", delete_after=6)
         await ctx.message.delete(delay=4)
 
     @commands.Cog.listener()
@@ -114,13 +107,9 @@ class Topic(commands.Cog):
                         title="Topic added!", description=f'**{topic}**', colour=discord.Colour.green())
                     await message.edit(embed=embed)
                 elif payload.emoji.id == 610542174127259688:
-<<<<<<< HEAD:cogs/fun.py
-                    embed = discord.Embed(title="Suggestion removed!")
-=======
                     message = await self.bot.get_channel(payload.channel_id).fetch_message(payload.message_id)
                     embed = discord.Embed(
-                        title="Suggestion removed!", description=" ")
->>>>>>> origin:cogs/topic.py
+                        title="Suggestion removed!")
                     await message.edit(embed=embed, delete_after=6)
 
     @mod_and_above()
