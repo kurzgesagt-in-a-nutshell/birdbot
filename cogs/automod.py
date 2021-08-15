@@ -146,12 +146,11 @@ class Filter(commands.Cog):
         message_clean = str(message.content)
         indexes = re.finditer('(\*\*.*\*\*)', message_clean)
         if indexes:
-            tracker=0
+            tracker = 0
             for i in indexes:
                 message_clean = message_clean.replace(message_clean[i.start() - tracker:i.end() - tracker],
                                                       message_clean[i.start() + 2 - tracker: i.end() - 2 - tracker])
                 tracker = tracker+4
-                print(message_clean)
         indexes = re.finditer(r'(\*.*\*)', message_clean)
         if indexes:
             tracker = 0
@@ -165,6 +164,7 @@ class Filter(commands.Cog):
         # find all question marks in message
         indexes = [x.start() for x in re.finditer(r'\?', message_clean)]
         # get rid of all other non ascii charcters
+        message_clean = demoji.replace(message_clean,'*')
         message_clean = str(message_clean).encode("ascii", "replace").decode().lower().replace("?", "*")
         # put back question marks
         message_clean = list(message_clean)
@@ -173,7 +173,7 @@ class Filter(commands.Cog):
         message_clean = "".join(message_clean)
         # sub out discord emojis
         message_clean = re.sub(r'(<[A-z]*:[^\s]+:[0-9]*>)', '*', message_clean)
-
+        print(message_clean)
         if profanity.contains_profanity(message_clean):
             return [True, "profanity"]
         elif profanity.contains_profanity(str(message_clean).replace(" ", "")):
@@ -257,7 +257,7 @@ class Filter(commands.Cog):
 
 
     def generate_regex(self, words):
-        joining_chars = r'[ _\-\+\.\*!@#$%^&():\'"]*'
+        joining_chars = r'[ _\-\+\.*!@#$%^&():\'"]*'
         replacement = {
             'a': r'a\@\#',
             'b': r'b\*',
