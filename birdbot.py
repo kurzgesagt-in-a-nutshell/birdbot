@@ -3,7 +3,6 @@ import asyncio
 import os
 import discord
 import dotenv
-import time
 
 from contextlib import contextmanager, suppress
 from logging.handlers import TimedRotatingFileHandler
@@ -11,6 +10,7 @@ from discord.ext import commands
 from rich.logging import RichHandler
 
 logger = logging.getLogger('BirdBot')
+
 
 @contextmanager
 def setup():
@@ -26,7 +26,8 @@ def setup():
             os.mkdir('logs/')
         handlers = [
             RichHandler(),
-            TimedRotatingFileHandler(filename='logs/birdbot.log', when='d',interval=5)
+            TimedRotatingFileHandler(
+                filename='logs/birdbot.log', when='d', interval=5)
         ]
         fmt = logging.Formatter(
             '[{asctime}] [{levelname:<7}] {name}: {message}', dtfmt, style='{')
@@ -46,11 +47,11 @@ def setup():
 
 class BirdBot(commands.AutoShardedBot):
     """Main Bot"""
-    
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         db = self.get_database()
-        
+
     @classmethod
     def from_parseargs(cls, args) -> "Bot":
         """Create and return an instance of a Bot."""
@@ -69,36 +70,36 @@ class BirdBot(commands.AutoShardedBot):
         if args.beta:
             prefix = "b!"
             owner_ids = {
-                389718094270038018,  #FC
-                424843380342784011,  #Oeav
-                248790213386567680,  #Austin
-                183092910495891467  #Sloth
+                389718094270038018,  # FC
+                424843380342784011,  # Oeav
+                248790213386567680,  # Austin
+                183092910495891467  # Sloth
             }
             activity = discord.Activity(type=discord.ActivityType.watching,
                                         name="for bugs")
         elif args.alpha:
             prefix = "a!"
             owner_ids = {
-                389718094270038018,  #FC
-                424843380342784011,  #Oeav
-                248790213386567680,  #Austin
-                183092910495891467  #Sloth
+                389718094270038018,  # FC
+                424843380342784011,  # Oeav
+                248790213386567680,  # Austin
+                183092910495891467  # Sloth
             }
             activity = discord.Activity(type=discord.ActivityType.playing,
                                         name="imagine being a beta")
         else:
             prefix = "!"
-            owner_ids = {183092910495891467}  #Sloth
+            owner_ids = {183092910495891467}  # Sloth
             activity = discord.Activity(type=discord.ActivityType.listening,
                                         name="Steve's voice")
         x = cls(loop=loop,
-                   command_prefix=commands.when_mentioned_or(prefix),
-                   owner_ids=owner_ids,
-                   activity=activity,
-                   case_insensitive=True,
-                   allowed_mentions=allowed_mentions,
-                   intents=intents) 
-                  
+                command_prefix=commands.when_mentioned_or(prefix),
+                owner_ids=owner_ids,
+                activity=activity,
+                case_insensitive=True,
+                allowed_mentions=allowed_mentions,
+                intents=intents)
+
         x.get_database()
         return x
 
@@ -128,22 +129,19 @@ class BirdBot(commands.AutoShardedBot):
                         f"Cannot load cog {f'cogs.{filename[:-3]}'}")
 
     async def close(self):
-            """Close the Discord connection and the aiohttp sessions if any (future perhaps?)."""
-            for ext in list(self.extensions):
-                with suppress(Exception):
-                    self.unload_extension(ext)
+        """Close the Discord connection and the aiohttp sessions if any (future perhaps?)."""
+        for ext in list(self.extensions):
+            with suppress(Exception):
+                self.unload_extension(ext)
 
-            for cog in list(self.cogs):
-                with suppress(Exception):
-                    self.remove_cog(cog)
+        for cog in list(self.cogs):
+            with suppress(Exception):
+                self.remove_cog(cog)
 
-            await super().close()
-
+        await super().close()
 
     async def on_ready(self):
         logger.info('Logged in as')
         logger.info(f"\tUser: {self.user.name}")
         logger.info(f"\tID  : {self.user.id}")
         logger.info('------')
-
-
