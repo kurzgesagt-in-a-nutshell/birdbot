@@ -2,17 +2,19 @@ import logging
 import json
 import random
 import typing
-from discord import colour
+from discord.ext.commands.core import is_owner
 from fuzzywuzzy import process
 import asyncio
 
 import discord
 from discord.ext import commands
 
+import rich
+
 from utils.helper import mod_and_above
 
 
-class Fun(commands.Cog):
+class Topic(commands.Cog):
     def __init__(self, bot):
         self.logger = logging.getLogger('Fun')
         self.bot = bot
@@ -31,7 +33,7 @@ class Fun(commands.Cog):
 
     @commands.Cog.listener()
     async def on_ready(self):
-        self.logger.info('loaded Fun')
+        self.logger.info('loaded Topic')
 
     @commands.command()
     @commands.cooldown(1, 60)
@@ -81,31 +83,33 @@ class Fun(commands.Cog):
             Usage: suggest_topic topic_string
         """
 
-        await ctx.send(f'Topic suggested.', delete_after=6)
-        await ctx.message.delete(delay=4)
-
         automated_channel = self.bot.get_channel(self.automated_channel)
         embed = discord.Embed(
             title=f'{ctx.author.name} suggested', description=f'**{topic}**', color=0xff0000)
         embed.set_footer(text='topic')
         message = await automated_channel.send(embed=embed)
+
         await message.add_reaction('<:kgsYes:580164400691019826>')
         await message.add_reaction('<:kgsNo:610542174127259688>')
+
+        await ctx.send(f'Topic suggested.', delete_after=6)
+        await ctx.message.delete(delay=4)
 
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload):
         # User topic suggestions
+        # TODO: Make so that only mods+ reactions are accepted
         if payload.channel_id == self.automated_channel and not payload.member.bot:
             message = await self.bot.get_channel(payload.channel_id).fetch_message(payload.message_id)
             if message.embeds[0].footer.text == 'topic':
                 if payload.emoji.id == 580164400691019826:
                     topic = message.embeds[0].description
-                    self.topics.append(topic)
+                    self.topics.append(topic.strip("*"))
                     self.topics_db.update_one({"name": "topics_list"}, {
                         "$set": {"topics": self.topics}})
                     embed = discord.Embed(
                         title="Topic added!", description=f'**{topic}**', colour=discord.Colour.green())
-                    await message.edit(embed=embed, delete_after=6)
+                    await message.edit(embed=embed)
                 elif payload.emoji.id == 610542174127259688:
                     message = await self.bot.get_channel(payload.channel_id).fetch_message(payload.message_id)
                     embed = discord.Embed(
@@ -117,7 +121,7 @@ class Fun(commands.Cog):
     @commands.cooldown(1, 5)
     async def remove_topic(self, ctx, index: typing.Optional[int] = None, *, search_string: str = None):
         """
-            Delete topic by index.
+            Delete topic by index or search string.
             Usage: remove_topic index
         """
         if index is not None:
@@ -188,4 +192,4 @@ class Fun(commands.Cog):
 
 
 def setup(bot):
-    bot.add_cog(Fun(bot))
+    bot.add_cog(Topic(bot))
