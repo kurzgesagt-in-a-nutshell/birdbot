@@ -15,6 +15,7 @@ from utils.helper import NoAuthorityError, DevBotOnly
 
 class Errors(commands.Cog):
     """Catches all exceptions coming in through commands"""
+
     def __init__(self, bot):
         with open('config.json', 'r') as config_file:
             self.config_json = json.loads(config_file.read())
@@ -49,8 +50,8 @@ class Errors(commands.Cog):
         channel = await self.bot.fetch_channel(self.dev_logging_channel)
 
         if isinstance(
-                err,
-            (errors.MissingPermissions, NoAuthorityError, errors.NotOwner)):
+            err,
+                (errors.MissingPermissions, NoAuthorityError, errors.NotOwner)):
             await self.react_send_delete(
                 ctx, reaction='<:kgsNo:610542174127259688>')
 
@@ -63,8 +64,7 @@ class Errors(commands.Cog):
         elif isinstance(err, commands.MissingRequiredArgument):
             await self.react_send_delete(
                 ctx,
-                message=
-                f"You're missing the {err.param.name} argument. Please check syntax using the help command.",
+                message=f"You're missing the {err.param.name} argument. Please check syntax using the help command.",
                 reaction='<:kgsNo:610542174127259688>')
 
         elif isinstance(err, commands.CommandNotFound):

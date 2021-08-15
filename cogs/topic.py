@@ -1,9 +1,7 @@
 import logging
 import json
 import random
-from re import search
 import typing
-from discord import colour
 from fuzzywuzzy import process
 import asyncio
 
@@ -12,7 +10,8 @@ from discord.ext import commands
 
 from utils.helper import mod_and_above
 
-class Fun(commands.Cog):
+
+class Topic(commands.Cog):
     def __init__(self, bot):
         self.logger = logging.getLogger('Fun')
         self.bot = bot
@@ -31,7 +30,7 @@ class Fun(commands.Cog):
 
     @commands.Cog.listener()
     async def on_ready(self):
-        self.logger.info('loaded Fun')
+        self.logger.info('loaded Topic')
 
     @commands.command()
     @commands.cooldown(1, 60)
@@ -81,32 +80,47 @@ class Fun(commands.Cog):
             Usage: suggest_topic topic_string
         """
 
+<<<<<<< HEAD:cogs/fun.py
         await ctx.send("Topic suggested.", delete_after=4)
         await ctx.message.delete(delay=4)
 
+=======
+>>>>>>> origin:cogs/topic.py
         automated_channel = self.bot.get_channel(self.automated_channel)
         embed = discord.Embed(
             title=f'{ctx.author.name} suggested', description=f'**{topic}**', color=0xff0000)
         embed.set_footer(text='topic')
         message = await automated_channel.send(embed=embed)
+
         await message.add_reaction('<:kgsYes:580164400691019826>')
         await message.add_reaction('<:kgsNo:610542174127259688>')
+
+        await ctx.send(f'Topic suggested.', delete_after=6)
+        await ctx.message.delete(delay=4)
 
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload):
         # User topic suggestions
+        # TODO: Make so that only mods+ reactions are accepted
         if payload.channel_id == self.automated_channel and not payload.member.bot:
             message = await self.bot.get_channel(payload.channel_id).fetch_message(payload.message_id)
-            if message.embeds[0].footer.text == 'topic':
+            if message.embeds and message.embeds[0].footer.text == 'topic':
                 if payload.emoji.id == 580164400691019826:
                     topic = message.embeds[0].description
-                    self.topics.append(topic)
+                    self.topics.append(topic.strip("*"))
                     self.topics_db.update_one({"name": "topics_list"}, {
                         "$set": {"topics": self.topics}})
-                    embed = discord.Embed(title="Topic added!", description=f'**{topic}**', colour=discord.Colour.green())
-                    await message.edit(embed=embed, delete_after=6)
+                    embed = discord.Embed(
+                        title="Topic added!", description=f'**{topic}**', colour=discord.Colour.green())
+                    await message.edit(embed=embed)
                 elif payload.emoji.id == 610542174127259688:
+<<<<<<< HEAD:cogs/fun.py
                     embed = discord.Embed(title="Suggestion removed!")
+=======
+                    message = await self.bot.get_channel(payload.channel_id).fetch_message(payload.message_id)
+                    embed = discord.Embed(
+                        title="Suggestion removed!", description=" ")
+>>>>>>> origin:cogs/topic.py
                     await message.edit(embed=embed, delete_after=6)
 
     @mod_and_above()
@@ -114,12 +128,13 @@ class Fun(commands.Cog):
     @commands.cooldown(1, 5)
     async def remove_topic(self, ctx, index: typing.Optional[int] = None, *, search_string: str = None):
         """
-            Delete topic by index.
+            Delete topic by index or search string.
             Usage: remove_topic index
         """
         if index is not None:
             if index < 1 or index > len(self.topics):
-                raise commands.BadArgument(message=f'Invalid index. Min value: 0, Max value: {len(self.topics)}')
+                raise commands.BadArgument(
+                    message=f'Invalid index. Min value: 0, Max value: {len(self.topics)}')
 
             index = index - 1
             topic = self.topics[index]
@@ -134,7 +149,8 @@ class Fun(commands.Cog):
 
         else:
             if search_string is None:
-                raise commands.BadArgument(message='Invalid arguments. Please specify either index or search string.')
+                raise commands.BadArgument(
+                    message='Invalid arguments. Please specify either index or search string.')
 
             await ctx.message.delete(delay=6)
 
@@ -183,4 +199,4 @@ class Fun(commands.Cog):
 
 
 def setup(bot):
-    bot.add_cog(Fun(bot))
+    bot.add_cog(Topic(bot))

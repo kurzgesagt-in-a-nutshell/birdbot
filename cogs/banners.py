@@ -4,10 +4,8 @@ import typing
 import aiohttp
 
 import discord
-from discord import activity
 from discord.ext import commands, tasks
-from utils.helper import mod_and_above
-from utils import helper
+from utils.helper import mod_and_above, calc_time, get_time_string
 
 
 class Banners(commands.Cog):
@@ -36,7 +34,10 @@ class Banners(commands.Cog):
 
     @commands.group()
     async def banner(self, ctx):
-        """Banner commands"""
+        """
+            Banner commands
+            Usage: banner subcommand
+        """
         pass
 
     async def verify_url(self, url, change=False):
@@ -62,7 +63,10 @@ class Banners(commands.Cog):
     @mod_and_above()
     @banner.command()
     async def add(self, ctx, url: typing.Optional[str] = None):
-        """Add a banner by url or attachment"""
+        """
+            Add a banner by url or attachment
+            Usage: add url or attachment
+        """
         if url == None:
             attachments = ctx.message.attachments
             if attachments != []:
@@ -77,8 +81,11 @@ class Banners(commands.Cog):
     @mod_and_above()
     @banner.command()
     async def rotate(self, ctx, arg: str):
-        """Command description"""
-        time, reason = helper.calc_time([arg, ""])
+        """
+            Change server banner rotation time or stop the rotation
+            Usage: rotate time or stop
+        """
+        time, reason = calc_time([arg, ""])
 
         if reason == 'stop ':
             self.timed_banner_rotation.cancel()
@@ -93,11 +100,14 @@ class Banners(commands.Cog):
             self.timed_banner_rotation.start()
         await ctx.message.delete(delay=6)
         self.timed_banner_rotation.change_interval(seconds=time)
-        await ctx.send(f'Banners are rotating every {helper.get_time_string(time)}.', delete_after=6)
+        await ctx.send(f'Banners are rotating every {get_time_string(time)}.', delete_after=6)
 
     @banner.command()
     async def suggest(self, ctx, url: typing.Optional[str]):
-        """Members can suggest banners to be reviewed by staff"""
+        """
+            Members can suggest banners to be reviewed by staff
+            Usage: suggest url or attachment
+        """
         automated_channel = self.bot.get_channel(self.automated_channel)
 
         embed = discord.Embed(title=f'{ctx.author.name} suggested')
@@ -121,7 +131,10 @@ class Banners(commands.Cog):
     @mod_and_above()
     @banner.command()
     async def change(self, ctx, url: typing.Optional[str]):
-        """Change the banner"""
+        """
+            Change the banner
+            Usage: change url or attachment
+        """
         if url == None:
             attachment = ctx.message.attachments
             if attachment != []:

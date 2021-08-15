@@ -67,8 +67,8 @@ class Moderation(commands.Cog):
     def cog_unload(self):
         self.timed_action_loop.cancel()
 
-    @commands.command(aliases=['purge', 'prune', 'clear'])
     @mod_and_above()
+    @commands.command(aliases=['purge', 'prune', 'clear'])
     async def clean(self, ctx, member: commands.Greedy[discord.Member] = None,
                     msg_count: int = None, channel: discord.TextChannel = None):
         """ Clean messages. \nUsage: clean <@member(s)/ id(s)> number_of_messages <#channel>"""
@@ -101,9 +101,10 @@ class Moderation(commands.Cog):
 
         await ctx.send(f"Deleted {len(deleted_messages) - 1} message(s)", delete_after=3.0)
 
+        logging_channel = discord.utils.get(
+            ctx.guild.channels, id=self.logging_channel)
+
         if msg_count == 1:
-            logging_channel = discord.utils.get(
-                ctx.guild.channels, id=self.logging_channel)
 
             embed = helper.create_embed(author=ctx.author, users=None, action='1 message deleted',
                                         extra=f"""Message Content: {deleted_messages[-1].content} 
@@ -130,16 +131,13 @@ class Moderation(commands.Cog):
                 if msg.attachments:
                     content = "Attachment(s): "
                     for a in msg.attachments:
-                        content = content + f'{a.filename}' + ", "
+                        content = f'{content} {a.filename} '
 
-                log_str = log_str + author + " | " + time + " | " + content + "\n"
-
-            logging_channel = discord.utils.get(
-                ctx.guild.channels, id=self.logging_channel)
+                log_str = f'{log_str} {author} | {time} | {content} \n'
 
             await logging_channel.send(f'{len(deleted_messages)} messages deleted in {channel.mention}',
                                        file=discord.File(io.BytesIO(f'{log_str}'.encode()),
-                                                         filename=f'{len(deleted_messages)} messages deleted in {channel.name}'))
+                                                         filename=f'{len(deleted_messages)} messages deleted in {channel.name}.txt'))
 
         await ctx.message.delete(delay=4)
 
