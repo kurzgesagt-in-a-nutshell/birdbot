@@ -1,7 +1,6 @@
 import logging
 import json
 import random
-from re import search
 import typing
 from discord import colour
 from fuzzywuzzy import process
@@ -11,6 +10,7 @@ import discord
 from discord.ext import commands
 
 from utils.helper import mod_and_above
+
 
 class Fun(commands.Cog):
     def __init__(self, bot):
@@ -103,11 +103,13 @@ class Fun(commands.Cog):
                     self.topics.append(topic)
                     self.topics_db.update_one({"name": "topics_list"}, {
                         "$set": {"topics": self.topics}})
-                    embed = discord.Embed(title="Topic added!", description=f'**{topic}**', colour=discord.Colour.green())
+                    embed = discord.Embed(
+                        title="Topic added!", description=f'**{topic}**', colour=discord.Colour.green())
                     await message.edit(embed=embed, delete_after=6)
                 elif payload.emoji.id == 610542174127259688:
                     message = await self.bot.get_channel(payload.channel_id).fetch_message(payload.message_id)
-                    embed = discord.Embed(title="Suggestion removed!", description=" ")
+                    embed = discord.Embed(
+                        title="Suggestion removed!", description=" ")
                     await message.edit(embed=embed, delete_after=6)
 
     @mod_and_above()
@@ -120,7 +122,8 @@ class Fun(commands.Cog):
         """
         if index is not None:
             if index < 1 or index > len(self.topics):
-                raise commands.BadArgument(message=f'Invalid index. Min value: 0, Max value: {len(self.topics)}')
+                raise commands.BadArgument(
+                    message=f'Invalid index. Min value: 0, Max value: {len(self.topics)}')
 
             index = index - 1
             topic = self.topics[index]
@@ -135,7 +138,8 @@ class Fun(commands.Cog):
 
         else:
             if search_string is None:
-                raise commands.BadArgument(message='Invalid arguments. Please specify either index or search string.')
+                raise commands.BadArgument(
+                    message='Invalid arguments. Please specify either index or search string.')
 
             await ctx.message.delete(delay=6)
 

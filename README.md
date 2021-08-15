@@ -1,2 +1,3 @@
-# kurzgesagtbot
-Very rudimentary bot structure for the  kurzgesagt discord server 
+# Kurzgesagtbot
+
+A multi-purpose discord bot for [Kurzgesagt Discord](https://discord.gg/kurzgesagt).

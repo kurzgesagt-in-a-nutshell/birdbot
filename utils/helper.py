@@ -23,20 +23,23 @@ class NoAuthorityError(commands.CheckFailure):
     """Raised when user has no clearance to run a command"""
     pass
 
+
 class DevBotOnly(commands.CheckFailure):
     """Raised when trying to run commands meant for dev bots"""
+
 
 def devs_only():
     async def predicate(ctx):
         if not ctx.author.id in [
-            389718094270038018,  #FC
-            424843380342784011,  #Oeav
-            183092910495891467,  #Sloth
-            248790213386567680   #Austin
+            389718094270038018,  # FC
+            424843380342784011,  # Oeav
+            183092910495891467,  # Sloth
+            248790213386567680  # Austin
         ]:
             raise NoAuthorityError
         return True
     return commands.check(predicate)
+
 
 def mainbot_only():
     async def predicate(ctx):
@@ -44,6 +47,7 @@ def mainbot_only():
             raise DevBotOnly
         return True
     return commands.check(predicate)
+
 
 def helper_and_above():
     async def predicate(ctx):
