@@ -95,6 +95,7 @@ class Filter(commands.Cog):
         else:
             return self.general_list
 
+
     def isExcluded(self, author):
         rolelist = [
             # 849423379706150946,  # helper
@@ -120,52 +121,53 @@ class Filter(commands.Cog):
         with open('swearfilters/filter.txt', 'a') as f:
             self.white_list = f.read().splitlines()
 
+    @staticmethod
     def add_to_general(self, word):
         with open('swearfilters/humanitiesfilter.txt', 'a') as f:
             f.write(word)
 
+    @staticmethod
     def add_to_humanities(self, word):
         with open('swearfilters/generalfilter.txt', 'a') as f:
             f.write(word)
 
+    @staticmethod
     def add_to_whitelist(self, word):
         with open('swearfilters/filter.txt', 'a') as f:
             f.write(word)
 
     def check_message_for_profanity(self, message, wordlist):
-        print("Orginal: " + message.content)
         profanity.load_censor_words(wordlist)
         regex_list = self.generate_regex(wordlist)
         # stores all words that are aparently profanity
         offending_list = []
         toReturn = [False, None]
+        # filter out bold and italics but keep *
+        message_clean = str(message.content)
+        indexes = re.finditer(r'(\*\*.*\*\*)', message_clean)
+        if indexes:
+            for i in indexes:
+                message_clean = message_clean.replace(message_clean[i.start():i.end()],
+                                                      message_clean[i.start() + 2: i.end() - 2])
+        indexes = re.finditer(r'(\*.*\*)', message_clean)
+        if indexes:
+            for i in indexes:
+                message_clean = message_clean.replace(message_clean[i.start():i.end()],
+                                                      message_clean[i.start() + 1: i.end() - 1])
+
         # Chagnes letter emojis to normal ascii ones
-        message_clean = self.convert_regional(message.content)
-        print("Regional:" + message_clean)
+        message_clean = self.convert_regional(message_clean)
         # find all question marks in message
-        indexes = [x.start() for x in re.finditer('\?', message_clean)]
+        indexes = [x.start() for x in re.finditer(r'\?', message_clean)]
         # get rid of all other non ascii charcters
         message_clean = str(message_clean).encode("ascii", "replace").decode().lower().replace("?", "*")
-        print("ASCII:" + message_clean)
         # put back question marks
         message_clean = list(message_clean)
         for i in indexes:
             message_clean[i] = "?"
         message_clean = "".join(message_clean)
-        print("Cleaned: " + message_clean)
         # sub out discord emojis
-        message_clean = re.sub('(<[A-z]*:[^\s]+:[0-9]*>)', '*', message_clean)
-        # filter out bold and italics but keep *
-        indexes = re.finditer("(\*\*.*\*\*)", message_clean)
-        if indexes:
-            for i in indexes:
-                message_clean = message_clean.replace(message_clean[i.start():i.end()],
-                                                      message_clean[i.start() + 2: i.end() - 2])
-        indexes = re.finditer("(\*.*\*)", message_clean)
-        if indexes:
-            for i in indexes:
-                message_clean = message_clean.replace(message_clean[i.start():i.end()],
-                                                      message_clean[i.start() + 1: i.end() - 1])
+        message_clean = re.sub(r'(<[A-z]*:[^\s]+:[0-9]*>)', '*', message_clean)
 
         if profanity.contains_profanity(message_clean):
             return [True, "profanity"]
@@ -183,15 +185,16 @@ class Filter(commands.Cog):
                 return toReturn
 
         # check for emoji spam
-        if len(re.findall('(<[A-z]*:[^\s]+:[0-9]*>)', re.sub('(>[^/s]*<)+', '> <', str(message.content)
+        if len(re.findall(r'(<[A-z]*:[^\s]+:[0-9]*>)', re.sub('(>[^/s]*<)+', '> <', str(message.content)
                 .encode("ascii", "ignore").decode()))) + len(demoji.findall_list(message.content)) > 5:
             return [True, "emoji"]
 
         return [False, None]
 
+    @staticmethod
     def check_message_for_emoji_spam(self, message):
-        if len(re.findall('(<:[^\s]+:[0-9]*>)',
-                          re.sub('(>[^/s]*<)+', '> <', str(message.content).encode("ascii", "ignore")
+        if len(re.findall(r'(<:[^\s]+:[0-9]*>)',
+                          re.sub(r'(>[^/s]*<)+', '> <', str(message.content).encode("ascii", "ignore")
                                   .decode()))) + len(demoji.findall_list(message.content)) > 5:
             return True
         return False
@@ -205,6 +208,7 @@ class Filter(commands.Cog):
 
         return False
 
+    @staticmethod
     def convert_regional(self, word):
         replacement = {
             '🇦': 'a',
@@ -246,37 +250,37 @@ class Filter(commands.Cog):
             counter = counter + 1
         return to_return
 
-
-    def generate_regex(self, words):
-        joining_chars = '[ _\-\+\.\*!@#$%^&():\'"]*'
+    @staticmethod
+    def generate_regex(words):
+        joining_chars = r'[ _\-\+\.\*!@#$%^&():\'"]*'
         replacement = {
-            'a': 'a\@\#',
-            'b': 'b\*',
-            'c': 'c\*',
-            'd': 'd\*',
-            'e': 'e\*',
-            'f': 'f\*',
-            'g': 'g\*',
-            'h': 'h\*',
-            'i': '1il\*',
-            'j': 'j\*',
-            'k': 'k\*',
-            'l': '1i1l\*',
-            'm': 'm\*',
-            'n': 'n\*',
-            'o': 'o\*',
-            'p': 'pq\*',
-            'q': 'qp\*',
-            'r': 'r\*',
-            's': 's$\*',
-            't': 't\+\*',
-            'u': 'uv\*',
-            'v': 'vu\*',
-            'w': 'w\*',
-            'x': 'x\*',
-            'y': 'y\*',
-            'z': 'z\*',
-            ' ': ' _\-\+\.*'
+            'a': r'a\@\#',
+            'b': r'b\*',
+            'c': r'c\*',
+            'd': r'd\*',
+            'e': r'e\*',
+            'f': r'f\*',
+            'g': r'g\*',
+            'h': r'h\*',
+            'i': r'1il\*',
+            'j': r'j\*',
+            'k': r'k\*',
+            'l': r'1i1l\*',
+            'm': r'm\*',
+            'n': r'n\*',
+            'o': r'o\*',
+            'p': r'pq\*',
+            'q': r'qp\*',
+            'r': r'r\*',
+            's': r's$\*',
+            't': r't\+\*',
+            'u': r'uv\*',
+            'v': r'vu\*',
+            'w': r'w\*',
+            'x': r'x\*',
+            'y': r'y\*',
+            'z': r'z\*',
+            ' ': r' _\-\+\.*'
         }
         regexlist = []
         for word in words:
@@ -289,6 +293,7 @@ class Filter(commands.Cog):
             regexlist.append(regex)
 
         return regexlist
+
 
 def setup(bot):
     bot.add_cog(Filter(bot))
