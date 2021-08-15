@@ -197,7 +197,7 @@ class Dev(commands.Cog):
     @commands.command(hidden=True)
     async def pull(self, ctx):
         self.logger.info('pulling repository')
-        repo = Repo(os.getcwd())  #Get git repo object to check changes
+        repo = Repo(os.getcwd())  # Get git repo object to check changes
         assert not repo.bare
         if repo.is_dirty():
             return await ctx.send(
