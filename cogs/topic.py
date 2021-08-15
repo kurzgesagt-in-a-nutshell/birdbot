@@ -2,14 +2,11 @@ import logging
 import json
 import random
 import typing
-from discord.ext.commands.core import is_owner
 from fuzzywuzzy import process
 import asyncio
 
 import discord
 from discord.ext import commands
-
-import rich
 
 from utils.helper import mod_and_above
 
@@ -101,7 +98,7 @@ class Topic(commands.Cog):
         # TODO: Make so that only mods+ reactions are accepted
         if payload.channel_id == self.automated_channel and not payload.member.bot:
             message = await self.bot.get_channel(payload.channel_id).fetch_message(payload.message_id)
-            if message.embeds[0].footer.text == 'topic':
+            if message.embeds and message.embeds[0].footer.text == 'topic':
                 if payload.emoji.id == 580164400691019826:
                     topic = message.embeds[0].description
                     self.topics.append(topic.strip("*"))
