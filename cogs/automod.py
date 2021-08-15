@@ -73,6 +73,7 @@ class Filter(commands.Cog):
         if not self.isExcluded(message.author):
             wordlist = self.get_word_list(message)
             event = self.check_message_for_profanity(message, wordlist)
+            print(event)
             if event[0]:
                 if event[1] == "profanity":
                     print("filtered " + message.content)
@@ -132,6 +133,7 @@ class Filter(commands.Cog):
             f.write(word)
 
     def check_message_for_profanity(self, message, wordlist):
+        print("Orginal: " + message.content)
         profanity.load_censor_words(wordlist)
         regex_list = self.generate_regex(wordlist)
         # stores all words that are aparently profanity
@@ -139,15 +141,18 @@ class Filter(commands.Cog):
         toReturn = [False, None]
         # Chagnes letter emojis to normal ascii ones
         message_clean = self.convert_regional(message.content)
+        print("Regional:" + message_clean)
         # find all question marks in message
         indexes = [x.start() for x in re.finditer('\?', message_clean)]
         # get rid of all other non ascii charcters
         message_clean = str(message_clean).encode("ascii", "replace").decode().lower().replace("?", "*")
+        print("ASCII:" + message_clean)
         # put back question marks
         message_clean = list(message_clean)
         for i in indexes:
             message_clean[i] = "?"
         message_clean = "".join(message_clean)
+        print("Cleaned: " + message_clean)
         # sub out discord emojis
         message_clean = re.sub('(<[A-z]*:[^\s]+:[0-9]*>)', '*', message_clean)
         # filter out bold and italics but keep *
@@ -202,44 +207,45 @@ class Filter(commands.Cog):
 
     def convert_regional(self, word):
         replacement = {
-            '?': 'a',
-            '?': 'b',
-            '?': 'c',
-            '?': 'd',
-            '?': 'e',
-            '?': 'f',
-            '?': 'g',
-            '?': 'h',
-            '?': 'i',
-            '?': 'j',
-            '?': 'k',
-            '?': 'l',
-            '?': 'm',
-            '?': 'n',
-            '?': 'o',
-            '?': 'p',
-            '?': 'q',
-            '?': 'r',
-            '?': 's',
-            '?': 't',
-            '?': 'u',
-            '?': 'v',
-            '?': 'w',
-            '?': 'x',
-            '?': 'y',
-            '?': 'z'
+            '🇦': 'a',
+            '🇧': 'b',
+            '🇨': 'c',
+            '🇩': 'd',
+            '🇪': 'e',
+            '🇫': 'f',
+            '🇬': 'g',
+            '🇭': 'h',
+            '🇮': 'i',
+            '🇯': 'j',
+            '🇰': 'k',
+            '🇱': 'l',
+            '🇲': 'm',
+            '🇳': 'n',
+            '🇴': 'o',
+            '🇵': 'p',
+            '🇶': 'q',
+            '🇷': 'r',
+            '🇸': 's',
+            '🇹': 't',
+            '🇺': 'u',
+            '🇻': 'v',
+            '🇼': 'w',
+            '🇽': 'x',
+            '🇾': 'y',
+            '🇿': 'z'
         }
 
         counter = 0
-        toreturn = ""
-        letterlist = list(word)
-        for letter in letterlist:
+        to_return = ""
+        letter_list = list(word)
+        for letter in letter_list:
             if replacement.get(letter) is not None:
-                to_return = toreturn + replacement.get(letter)
+                to_return = to_return + replacement.get(letter)
             else:
-                to_return = toreturn + letter
+                to_return = to_return + letter
             counter = counter + 1
-        return toreturn
+        return to_return
+
 
     def generate_regex(self, words):
         joining_chars = '[ _\-\+\.\*!@#$%^&():\'"]*'
