@@ -179,7 +179,7 @@ class Filter(commands.Cog):
                         offending_list.append(e)
                     toReturn = [True, "profanity"]
         if toReturn[0]:
-            if self.exception_list_check(self, offending_list):
+            if self.exception_list_check(offending_list):
                 return toReturn
 
         # check for emoji spam
@@ -198,7 +198,7 @@ class Filter(commands.Cog):
 
     def exception_list_check(self, offending_list):
         for bad_word in offending_list:
-            if bad_word in self.whitelist:
+            if bad_word in self.white_list:
                 continue
             else:
                 return True
