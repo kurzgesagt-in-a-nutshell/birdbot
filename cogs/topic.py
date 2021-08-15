@@ -23,10 +23,11 @@ class Topic(commands.Cog):
         self.topics_list = self.topics  # This is used to stop topic repeats
 
         config_file = open('config.json', 'r')
-        self.config_json = json.loads(config_file.read())
+        config_json = json.loads(config_file.read())
         config_file.close()
 
-        self.automated_channel = self.config_json['logging']['automated_channel']
+        self.mod_role = config_json['roles']['mod_role']
+        self.automated_channel = config_json['logging']['automated_channel']
 
     @commands.Cog.listener()
     async def on_ready(self):
@@ -94,23 +95,25 @@ class Topic(commands.Cog):
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload):
         # User topic suggestions
-        # TODO: Make so that only mods+ reactions are accepted
         if payload.channel_id == self.automated_channel and not payload.member.bot:
-            message = await self.bot.get_channel(payload.channel_id).fetch_message(payload.message_id)
-            if message.embeds and message.embeds[0].footer.text == 'topic':
-                if payload.emoji.id == 580164400691019826:
-                    topic = message.embeds[0].description
-                    self.topics.append(topic.strip("*"))
-                    self.topics_db.update_one({"name": "topics_list"}, {
-                        "$set": {"topics": self.topics}})
-                    embed = discord.Embed(
-                        title="Topic added!", description=f'**{topic}**', colour=discord.Colour.green())
-                    await message.edit(embed=embed)
-                elif payload.emoji.id == 610542174127259688:
-                    message = await self.bot.get_channel(payload.channel_id).fetch_message(payload.message_id)
-                    embed = discord.Embed(
-                        title="Suggestion removed!")
-                    await message.edit(embed=embed, delete_after=6)
+            guild = discord.utils.get(self.bot.guilds, id=414027124836532234)
+            mod_role = guild.get_role(self.mod_role)
+            if payload.member.top_role > mod_role:
+                message = await self.bot.get_channel(payload.channel_id).fetch_message(payload.message_id)
+                if message.embeds and message.embeds[0].footer.text == 'topic':
+                    if payload.emoji.id == 580164400691019826:
+                        topic = message.embeds[0].description
+                        self.topics.append(topic.strip("*"))
+                        self.topics_db.update_one({"name": "topics_list"}, {
+                            "$set": {"topics": self.topics}})
+                        embed = discord.Embed(
+                            title="Topic added!", description=f'**{topic}**', colour=discord.Colour.green())
+                        await message.edit(embed=embed)
+                    elif payload.emoji.id == 610542174127259688:
+                        message = await self.bot.get_channel(payload.channel_id).fetch_message(payload.message_id)
+                        embed = discord.Embed(
+                            title="Suggestion removed!")
+                        await message.edit(embed=embed, delete_after=6)
 
     @mod_and_above()
     @commands.command()

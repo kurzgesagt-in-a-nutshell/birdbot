@@ -18,10 +18,11 @@ class Banners(commands.Cog):
         banners.close()
 
         config_file = open('config.json', 'r')
-        self.config_json = json.loads(config_file.read())
+        config_json = json.loads(config_file.read())
         config_file.close()
 
-        self.automated_channel = self.config_json['logging']['automated_channel']
+        self.mod_role = config_json['roles']['mod_role']
+        self.automated_channel = config_json['logging']['automated_channel']
 
         self.index = 0
 
@@ -123,10 +124,10 @@ class Banners(commands.Cog):
         await ctx.message.delete(delay=4)
 
         embed.set_image(url=url)
+        embed.set_footer(text="banner")
         message = await automated_channel.send(embed=embed)
         await message.add_reaction('<:kgsYes:580164400691019826>')
         await message.add_reaction('<:kgsNo:610542174127259688>')
-        embed.set_footer(text="banner")
 
     @mod_and_above()
     @banner.command()
@@ -149,34 +150,37 @@ class Banners(commands.Cog):
     @tasks.loop()
     async def timed_banner_rotation(self):
         guild = discord.utils.get(self.bot.guilds, id=414027124836532234)
-        if self.index == len(self.banners):
+        if self.index >= len(self.banners):
             self.index = 0
         async with aiohttp.ClientSession() as session:
             async with session.get(self.banners[self.index]) as response:
                 banner = await response.content.read()
                 await guild.edit(banner=banner)
                 self.index += 1
-
+    
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload):
         # User banner suggestions
         if payload.channel_id == self.automated_channel and not payload.member.bot:
-            message = await self.bot.get_channel(payload.channel_id).fetch_message(payload.message_id)
-            if message.embeds and message.embeds[0].footer.text == 'banner':
-                if payload.emoji.id == 580164400691019826:
-                    url = message.embeds[0].image.url
-                    self.banners.append(url)
-                    banners = open('banners.json', 'w')
-                    banners.write(json.dumps(
-                        {"banners": self.banners}, indent=4))
-                    banners.close()
-                    embed = discord.Embed(
-                        title="Banner added!", colour=discord.Colour.green())
-                    embed.set_image(url=url)
-                    await message.edit(embed=embed, delete_after=6)
-                elif payload.emoji.id == 610542174127259688:
-                    embed = discord.Embed(title="Banner suggestion removed!")
-                    await message.edit(embed=embed, delete_after=6)
+            guild = discord.utils.get(self.bot.guilds, id=414027124836532234)
+            mod_role = guild.get_role(self.mod_role)
+            if payload.member.top_role > mod_role:
+                message = await self.bot.get_channel(payload.channel_id).fetch_message(payload.message_id)
+                if message.embeds and message.embeds[0].footer.text == 'banner':
+                    if payload.emoji.id == 580164400691019826:
+                        url = message.embeds[0].image.url
+                        self.banners.append(url)
+                        banners = open('banners.json', 'w')
+                        banners.write(json.dumps(
+                            {"banners": self.banners}, indent=4))
+                        banners.close()
+                        embed = discord.Embed(
+                            title="Banner added!", colour=discord.Colour.green())
+                        embed.set_image(url=url)
+                        await message.edit(embed=embed, delete_after=6)
+                    elif payload.emoji.id == 610542174127259688:
+                        embed = discord.Embed(title="Banner suggestion removed!")
+                        await message.edit(embed=embed, delete_after=6)
 
 
 def setup(bot):
