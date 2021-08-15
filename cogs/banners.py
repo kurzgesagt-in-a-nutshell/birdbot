@@ -63,14 +63,14 @@ class Banners(commands.Cog):
 
     @mod_and_above()
     @banner.command()
-    async def add(self, ctx, url: typing.Optional[str] = None):
+    async def add(self, ctx, url: typing.Optional[str]):
         """
             Add a banner by url or attachment
             Usage: add url or attachment
         """
         if url == None:
             attachments = ctx.message.attachments
-            if attachments != []:
+            if attachments:
                 url = attachments[0].url
 
         self.banners.append(await self.verify_url(url))
@@ -115,7 +115,7 @@ class Banners(commands.Cog):
 
         if url == None:
             attachments = ctx.message.attachments
-            if attachments != []:
+            if attachments:
                 url = attachments[0].url
 
         url = await self.verify_url(url)
@@ -137,9 +137,9 @@ class Banners(commands.Cog):
             Usage: change url or attachment
         """
         if url == None:
-            attachment = ctx.message.attachments
-            if attachment != []:
-                url = attachment.url
+            attachments = ctx.message.attachments
+            if attachments:
+                url = attachments[0].url
 
         banner = await self.verify_url(url, True)
 
