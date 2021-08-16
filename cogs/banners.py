@@ -8,7 +8,7 @@ from discord.ext import commands, tasks
 from utils.helper import mod_and_above, calc_time, get_time_string
 
 
-class Banners(commands.Cog):
+class Banner(commands.Cog):
     def __init__(self, bot):
         self.logger = logging.getLogger('Banners')
         self.bot = bot
@@ -63,15 +63,19 @@ class Banners(commands.Cog):
 
     @mod_and_above()
     @banner.command()
-    async def add(self, ctx, url: typing.Optional[str]):
+    async def add(self, ctx, url: typing.Optional[str] = None):
         """
             Add a banner by url or attachment
             Usage: add url or attachment
         """
-        if url == None:
+        if url is None:
             attachments = ctx.message.attachments
             if attachments:
                 url = attachments[0].url
+            else:
+                raise commands.BadArgument(
+                    message=f'You must provide a url or attachment.'
+                )
 
         self.banners.append(await self.verify_url(url))
         await ctx.send("Banner added!")
@@ -81,11 +85,17 @@ class Banners(commands.Cog):
 
     @mod_and_above()
     @banner.command()
-    async def rotate(self, ctx, arg: str):
+    async def rotate(self, ctx, arg: str = None):
         """
             Change server banner rotation time or stop the rotation
             Usage: rotate time or stop
         """
+
+        if arg is None:
+            raise commands.BadArgument(
+                message=f'You must provide rotation period or "stop" to stop rotation'
+            )
+
         time, reason = calc_time([arg, ""])
 
         if reason == 'stop ':
@@ -104,7 +114,7 @@ class Banners(commands.Cog):
         await ctx.send(f'Banners are rotating every {get_time_string(time)}.', delete_after=6)
 
     @banner.command()
-    async def suggest(self, ctx, url: typing.Optional[str]):
+    async def suggest(self, ctx, url: typing.Optional[str] = None):
         """
             Members can suggest banners to be reviewed by staff
             Usage: suggest url or attachment
@@ -113,10 +123,14 @@ class Banners(commands.Cog):
 
         embed = discord.Embed(title=f'{ctx.author.name} suggested')
 
-        if url == None:
+        if url is None:
             attachments = ctx.message.attachments
             if attachments:
                 url = attachments[0].url
+            else:
+                raise commands.BadArgument(
+                    message="You must provide a url or attachment."
+                )
 
         url = await self.verify_url(url)
 
@@ -131,15 +145,19 @@ class Banners(commands.Cog):
 
     @mod_and_above()
     @banner.command()
-    async def change(self, ctx, url: typing.Optional[str]):
+    async def change(self, ctx, url: typing.Optional[str] = None):
         """
             Change the banner
             Usage: change url or attachment
         """
-        if url == None:
+        if url is None:
             attachments = ctx.message.attachments
             if attachments:
                 url = attachments[0].url
+            else:
+                raise commands.BadArgument(
+                    message="You must provide a url or attachment."
+                )
 
         banner = await self.verify_url(url, True)
 
@@ -185,4 +203,4 @@ class Banners(commands.Cog):
 
 
 def setup(bot):
-    bot.add_cog(Banners(bot))
+    bot.add_cog(Banner(bot))
