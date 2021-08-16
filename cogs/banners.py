@@ -157,14 +157,14 @@ class Banners(commands.Cog):
                 banner = await response.content.read()
                 await guild.edit(banner=banner)
                 self.index += 1
-    
+
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload):
         # User banner suggestions
         if payload.channel_id == self.automated_channel and not payload.member.bot:
             guild = discord.utils.get(self.bot.guilds, id=414027124836532234)
             mod_role = guild.get_role(self.mod_role)
-            if payload.member.top_role > mod_role:
+            if payload.member.top_role >= mod_role:
                 message = await self.bot.get_channel(payload.channel_id).fetch_message(payload.message_id)
                 if message.embeds and message.embeds[0].footer.text == 'banner':
                     if payload.emoji.id == 580164400691019826:
@@ -179,7 +179,8 @@ class Banners(commands.Cog):
                         embed.set_image(url=url)
                         await message.edit(embed=embed, delete_after=6)
                     elif payload.emoji.id == 610542174127259688:
-                        embed = discord.Embed(title="Banner suggestion removed!")
+                        embed = discord.Embed(
+                            title="Banner suggestion removed!")
                         await message.edit(embed=embed, delete_after=6)
 
 

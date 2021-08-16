@@ -51,7 +51,8 @@ class Topic(commands.Cog):
             Usage: get_topic index
         """
         if index < 1 or index > len(self.topics):
-            raise commands.BadArgument(message=f'Invalid index. Min value: 0, Max value: {len(self.topics)}')
+            raise commands.BadArgument(
+                message=f'Invalid index. Min value: 0, Max value: {len(self.topics)}')
 
         await ctx.send(f'{index}. {self.topics[index - 1]}')
 
@@ -98,7 +99,7 @@ class Topic(commands.Cog):
         if payload.channel_id == self.automated_channel and not payload.member.bot:
             guild = discord.utils.get(self.bot.guilds, id=414027124836532234)
             mod_role = guild.get_role(self.mod_role)
-            if payload.member.top_role > mod_role:
+            if payload.member.top_role >= mod_role:
                 message = await self.bot.get_channel(payload.channel_id).fetch_message(payload.message_id)
                 if message.embeds and message.embeds[0].footer.text == 'topic':
                     if payload.emoji.id == 580164400691019826:
