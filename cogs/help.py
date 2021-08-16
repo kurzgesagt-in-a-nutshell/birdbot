@@ -44,14 +44,16 @@ class Help(commands.Cog):
 
             return await ctx.send(embed=embed)
 
-        elif self.bot.get_command(cmnd).cog_name in cogs:
-            command = self.bot.get_command(cmnd)
-            embed = discord.Embed(title=command.name, description=f'```{command.help}```',
-                                  color=discord.Color.green(), timestamp=datetime.datetime.utcnow())
-            if command.aliases:
-                embed.add_field(
-                    name='Alias', value=f'```{", ".join(command.aliases)}```', inline=False)
-            return await ctx.send(embed=embed)
+        else:
+            c = self.bot.get_command(cmnd)
+            if c is not None and c.cog_name in cogs:
+                command = self.bot.get_command(cmnd)
+                embed = discord.Embed(title=command.name, description=f'```{command.help}```',
+                                      color=discord.Color.green(), timestamp=datetime.datetime.utcnow())
+                if command.aliases:
+                    embed.add_field(
+                        name='Alias', value=f'```{", ".join(command.aliases)}```', inline=False)
+                return await ctx.send(embed=embed)
 
     @commands.command()
     async def ping(self, ctx):
