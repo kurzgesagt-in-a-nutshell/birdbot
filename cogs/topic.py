@@ -33,7 +33,7 @@ class Topic(commands.Cog):
     async def on_ready(self):
         self.logger.info('loaded Topic')
 
-    @commands.command()
+    @commands.group(invoke_without_command=True)
     @commands.cooldown(1, 60)
     async def topic(self, ctx):
         """Get a topic to talk about."""
@@ -44,11 +44,11 @@ class Topic(commands.Cog):
         await ctx.send(f'{self.topics_list.pop(random_index)}')
 
     @mod_and_above()
-    @commands.command()
-    async def get_topic(self, ctx, index: int):
+    @topic.command()
+    async def get(self, ctx, index: int):
         """
             Get a topic by index.
-            Usage: get_topic index
+            Usage: topic get index
         """
         if index < 1 or index > len(self.topics):
             raise commands.BadArgument(
@@ -57,12 +57,12 @@ class Topic(commands.Cog):
         await ctx.send(f'{index}. {self.topics[index - 1]}')
 
     @mod_and_above()
-    @commands.command()
+    @topic.command()
     @commands.cooldown(1, 5)
-    async def add_topic(self, ctx, *, topic: str):
+    async def add(self, ctx, *, topic: str):
         """
             Add a topic to the list.
-            Usage: add_topic topic_string
+            Usage: topic add topic_string
         """
 
         self.topics.append(topic)
@@ -73,12 +73,12 @@ class Topic(commands.Cog):
         await ctx.send(f'Topic added at index {len(self.topics)}', delete_after=6)
         await ctx.message.delete(delay=4)
 
-    @commands.command()
+    @topic.command()
     @commands.cooldown(1, 5)
-    async def suggest_topic(self, ctx, *, topic: str):
+    async def suggest(self, ctx, *, topic: str):
         """
             Suggest a topic.
-            Usage: suggest_topic topic_string
+            Usage: topic suggest topic_string
         """
 
         automated_channel = self.bot.get_channel(self.automated_channel)
@@ -117,12 +117,12 @@ class Topic(commands.Cog):
                         await message.edit(embed=embed, delete_after=6)
 
     @mod_and_above()
-    @commands.command()
+    @topic.command()
     @commands.cooldown(1, 5)
-    async def remove_topic(self, ctx, index: typing.Optional[int] = None, *, search_string: str = None):
+    async def remove(self, ctx, index: typing.Optional[int] = None, *, search_string: str = None):
         """
             Delete topic by index or search string.
-            Usage: remove_topic index
+            Usage: topic remove index
         """
         if index is not None:
             if index < 1 or index > len(self.topics):
@@ -163,8 +163,10 @@ class Topic(commands.Cog):
 
             msg = await ctx.send(embed=embed)
 
-            emote_list = ["\u0031\uFE0F\u20E3", "\u0032\uFE0F\u20E3", "\u0033\uFE0F\u20E3", "\u0034\uFE0F\u20E3",
-                          "\u0035\uFE0F\u20E3", "\u0036\uFE0F\u20E3", "\u0037\uFE0F\u20E3", "\u0038\uFE0F\u20E3", "\u0039\uFE0F\u20E3"]
+            emote_list = [
+                "\u0031\uFE0F\u20E3", "\u0032\uFE0F\u20E3", "\u0033\uFE0F\u20E3",
+                "\u0034\uFE0F\u20E3", "\u0035\uFE0F\u20E3", "\u0036\uFE0F\u20E3",
+                "\u0037\uFE0F\u20E3", "\u0038\uFE0F\u20E3", "\u0039\uFE0F\u20E3"]
 
             for emote in emote_list[:len(t)]:
                 await msg.add_reaction(emote)
