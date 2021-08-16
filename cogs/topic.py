@@ -122,7 +122,7 @@ class Topic(commands.Cog):
     async def remove(self, ctx, index: typing.Optional[int] = None, *, search_string: str = None):
         """
             Delete topic by index or search string.
-            Usage: topic remove index
+            Usage: topic remove index/search_string
         """
         if index is not None:
             if index < 1 or index > len(self.topics):

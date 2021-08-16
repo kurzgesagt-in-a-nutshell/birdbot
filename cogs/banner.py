@@ -33,7 +33,7 @@ class Banner(commands.Cog):
     async def on_ready(self):
         self.logger.info('loaded Banners')
 
-    @commands.group(invoke_without_command=True)
+    @commands.group(hidden=True)
     async def banner(self, ctx):
         """
             Banner commands
@@ -66,7 +66,7 @@ class Banner(commands.Cog):
     async def add(self, ctx, url: typing.Optional[str] = None):
         """
             Add a banner by url or attachment
-            Usage: banner add url or attachment
+            Usage: banner add url/attachment
         """
         if url is None:
             attachments = ctx.message.attachments
@@ -88,7 +88,7 @@ class Banner(commands.Cog):
     async def rotate(self, ctx, arg: str = None):
         """
             Change server banner rotation time or stop the rotation
-            Usage: banner rotate time or stop
+            Usage: banner rotate time/stop
         """
 
         if arg is None:
@@ -117,7 +117,7 @@ class Banner(commands.Cog):
     async def suggest(self, ctx, url: typing.Optional[str] = None):
         """
             Members can suggest banners to be reviewed by staff
-            Usage: banner suggest url or attachment
+            Usage: banner suggest url/attachment
         """
         automated_channel = self.bot.get_channel(self.automated_channel)
 
@@ -148,7 +148,7 @@ class Banner(commands.Cog):
     async def change(self, ctx, url: typing.Optional[str] = None):
         """
             Change the banner
-            Usage: banner change url or attachment
+            Usage: banner change url/attachment
         """
         if url is None:
             attachments = ctx.message.attachments

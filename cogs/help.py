@@ -16,7 +16,7 @@ class Help(commands.Cog):
         self.logger.info('loaded Help')
 
     @commands.command(aliases=['h'])
-    async def help(self, ctx, cmnd=None):
+    async def help(self, ctx, *, cmnd=None):
         """
             Display help. \nUsage: help command_name
         """
@@ -24,14 +24,23 @@ class Help(commands.Cog):
         cogs = list(self.bot.cogs)
         cogs.remove('Dev')
         cogs.remove('Errors')
+
         if cmnd is None:
             embed = discord.Embed(title="Kurzbot Help", description=f'To see more info do help [command].',
                                   color=discord.Color.green(), timestamp=datetime.datetime.utcnow())
             for i in cogs:
                 cog = self.bot.get_cog(i)
-                commands = cog.get_commands()
-                commands = ['`' + c.name + '`' for c in commands]
-                embed.add_field(name=i, value='\n'.join(commands))
+                cmd_list = []
+                for command in cog.walk_commands():
+                    if not command.hidden:
+                        if command.parent is None:
+                            cmd_list.append(f"`{command.name}`")
+                        else:
+                            cmd_list.append(
+                                f"`{command.parent.name} {command.name}`"
+                            )
+
+                embed.add_field(name=i, value='\n'.join(cmd_list))
 
             return await ctx.send(embed=embed)
 
