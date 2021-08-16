@@ -67,7 +67,8 @@ class Banner(commands.Cog):
         except aiohttp.InvalidURL:
             raise commands.BadArgument(
                 message="You must provide a link or an attachment.")
-
+    
+    @mod_and_above()
     @banner.command()
     async def add(self, ctx, *, url = None):
         """
