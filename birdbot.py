@@ -25,7 +25,7 @@ def setup():
         if not os.path.isdir('logs/'):
             os.mkdir('logs/')
         handlers = [
-            RichHandler(),
+            RichHandler(rich_tracebacks=True),
             TimedRotatingFileHandler(
                 filename='logs/birdbot.log', when='d', interval=5)
         ]

@@ -2,14 +2,11 @@ import logging
 import json
 import random
 import typing
-from discord.ext.commands.core import is_owner
 from fuzzywuzzy import process
 import asyncio
 
 import discord
 from discord.ext import commands
-
-import rich
 
 from utils.helper import mod_and_above
 
@@ -26,16 +23,17 @@ class Topic(commands.Cog):
         self.topics_list = self.topics  # This is used to stop topic repeats
 
         config_file = open('config.json', 'r')
-        self.config_json = json.loads(config_file.read())
+        config_json = json.loads(config_file.read())
         config_file.close()
 
-        self.automated_channel = self.config_json['logging']['automated_channel']
+        self.mod_role = config_json['roles']['mod_role']
+        self.automated_channel = config_json['logging']['automated_channel']
 
     @commands.Cog.listener()
     async def on_ready(self):
         self.logger.info('loaded Topic')
 
-    @commands.command()
+    @commands.group(invoke_without_command=True)
     @commands.cooldown(1, 60)
     async def topic(self, ctx):
         """Get a topic to talk about."""
@@ -46,25 +44,25 @@ class Topic(commands.Cog):
         await ctx.send(f'{self.topics_list.pop(random_index)}')
 
     @mod_and_above()
-    @commands.command()
-    async def get_topic(self, ctx, index: int):
+    @topic.command()
+    async def get(self, ctx, index: int):
         """
             Get a topic by index.
-            Usage: get_topic index
+            Usage: topic get index
         """
         if index < 1 or index > len(self.topics):
-            await ctx.send(f'Invalid index. Min value: 0, Max value: {len(self.topics)}', delete_after=6)
-            return await ctx.message.delete(delay=4)
+            raise commands.BadArgument(
+                message=f'Invalid index. Min value: 0, Max value: {len(self.topics)}')
 
         await ctx.send(f'{index}. {self.topics[index - 1]}')
 
     @mod_and_above()
-    @commands.command()
+    @topic.command()
     @commands.cooldown(1, 5)
-    async def add_topic(self, ctx, *, topic: str):
+    async def add(self, ctx, *, topic: str):
         """
             Add a topic to the list.
-            Usage: add_topic topic_string
+            Usage: topic add topic_string
         """
 
         self.topics.append(topic)
@@ -75,12 +73,12 @@ class Topic(commands.Cog):
         await ctx.send(f'Topic added at index {len(self.topics)}', delete_after=6)
         await ctx.message.delete(delay=4)
 
-    @commands.command()
+    @topic.command()
     @commands.cooldown(1, 5)
-    async def suggest_topic(self, ctx, *, topic: str):
+    async def suggest(self, ctx, *, topic: str):
         """
             Suggest a topic.
-            Usage: suggest_topic topic_string
+            Usage: topic suggest topic_string
         """
 
         automated_channel = self.bot.get_channel(self.automated_channel)
@@ -92,37 +90,39 @@ class Topic(commands.Cog):
         await message.add_reaction('<:kgsYes:580164400691019826>')
         await message.add_reaction('<:kgsNo:610542174127259688>')
 
-        await ctx.send(f'Topic suggested.', delete_after=6)
+        await ctx.send("Topic suggested.", delete_after=6)
         await ctx.message.delete(delay=4)
 
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload):
         # User topic suggestions
-        # TODO: Make so that only mods+ reactions are accepted
         if payload.channel_id == self.automated_channel and not payload.member.bot:
-            message = await self.bot.get_channel(payload.channel_id).fetch_message(payload.message_id)
-            if message.embeds[0].footer.text == 'topic':
-                if payload.emoji.id == 580164400691019826:
-                    topic = message.embeds[0].description
-                    self.topics.append(topic.strip("*"))
-                    self.topics_db.update_one({"name": "topics_list"}, {
-                        "$set": {"topics": self.topics}})
-                    embed = discord.Embed(
-                        title="Topic added!", description=f'**{topic}**', colour=discord.Colour.green())
-                    await message.edit(embed=embed)
-                elif payload.emoji.id == 610542174127259688:
-                    message = await self.bot.get_channel(payload.channel_id).fetch_message(payload.message_id)
-                    embed = discord.Embed(
-                        title="Suggestion removed!", description=" ")
-                    await message.edit(embed=embed, delete_after=6)
+            guild = discord.utils.get(self.bot.guilds, id=414027124836532234)
+            mod_role = guild.get_role(self.mod_role)
+            if payload.member.top_role >= mod_role:
+                message = await self.bot.get_channel(payload.channel_id).fetch_message(payload.message_id)
+                if message.embeds and message.embeds[0].footer.text == 'topic':
+                    if payload.emoji.id == 580164400691019826:
+                        topic = message.embeds[0].description
+                        self.topics.append(topic.strip("*"))
+                        self.topics_db.update_one({"name": "topics_list"}, {
+                            "$set": {"topics": self.topics}})
+                        embed = discord.Embed(
+                            title="Topic added!", description=f'**{topic}**', colour=discord.Colour.green())
+                        await message.edit(embed=embed)
+                    elif payload.emoji.id == 610542174127259688:
+                        message = await self.bot.get_channel(payload.channel_id).fetch_message(payload.message_id)
+                        embed = discord.Embed(
+                            title="Suggestion removed!")
+                        await message.edit(embed=embed, delete_after=6)
 
     @mod_and_above()
-    @commands.command()
+    @topic.command()
     @commands.cooldown(1, 5)
-    async def remove_topic(self, ctx, index: typing.Optional[int] = None, *, search_string: str = None):
+    async def remove(self, ctx, index: typing.Optional[int] = None, *, search_string: str = None):
         """
             Delete topic by index or search string.
-            Usage: remove_topic index
+            Usage: topic remove index/search_string
         """
         if index is not None:
             if index < 1 or index > len(self.topics):
@@ -163,8 +163,10 @@ class Topic(commands.Cog):
 
             msg = await ctx.send(embed=embed)
 
-            emote_list = ["\u0031\uFE0F\u20E3", "\u0032\uFE0F\u20E3", "\u0033\uFE0F\u20E3", "\u0034\uFE0F\u20E3",
-                          "\u0035\uFE0F\u20E3", "\u0036\uFE0F\u20E3", "\u0037\uFE0F\u20E3", "\u0038\uFE0F\u20E3", "\u0039\uFE0F\u20E3"]
+            emote_list = [
+                "\u0031\uFE0F\u20E3", "\u0032\uFE0F\u20E3", "\u0033\uFE0F\u20E3",
+                "\u0034\uFE0F\u20E3", "\u0035\uFE0F\u20E3", "\u0036\uFE0F\u20E3",
+                "\u0037\uFE0F\u20E3", "\u0038\uFE0F\u20E3", "\u0039\uFE0F\u20E3"]
 
             for emote in emote_list[:len(t)]:
                 await msg.add_reaction(emote)

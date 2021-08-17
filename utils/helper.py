@@ -21,8 +21,6 @@ logger = logging.getLogger('Helper')
 
 class NoAuthorityError(commands.CheckFailure):
     """Raised when user has no clearance to run a command"""
-    pass
-
 
 class DevBotOnly(commands.CheckFailure):
     """Raised when trying to run commands meant for dev bots"""
