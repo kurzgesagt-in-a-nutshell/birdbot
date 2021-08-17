@@ -8,7 +8,7 @@ from discord.ext import commands
 
 from birdbot import BirdBot
 
-infraction_db = BirdBot.db.Infractions
+infraction_db = BirdBot.db.Infraction
 timed_actions_db = BirdBot.db.TimedAction
 
 config_json = json.load(open('config.json'))
