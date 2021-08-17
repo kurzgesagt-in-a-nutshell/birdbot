@@ -10,7 +10,7 @@ import discord
 from discord.ext import commands
 from discord.ext.commands import errors
 
-from utils.helper import NoAuthorityError, DevBotOnly
+from utils.helper import NoAuthorityError, DevBotOnly, WrongChannel
 
 
 class Errors(commands.Cog):
@@ -68,10 +68,10 @@ class Errors(commands.Cog):
         elif isinstance(err, errors.CommandOnCooldown):
             await self.react_send_delete(ctx, reaction="\U000023f0", delay=4)
 
-        elif isinstance(err, errors.BadArgument):
+        elif isinstance(err, (WrongChannel, errors.BadArgument)):
             await self.react_send_delete(
                 ctx,
-                message=f"```{err}```",
+                message=err,
                 reaction="<:kgsNo:610542174127259688>",
                 delay=4,
             )
