@@ -8,7 +8,7 @@ import asyncio
 import discord
 from discord.ext import commands
 
-from utils.helper import mod_and_above
+from utils.helper import mod_and_above, general_only, bot_commands_only
 
 
 class Topic(commands.Cog):
@@ -35,6 +35,7 @@ class Topic(commands.Cog):
         self.logger.info("loaded Topic")
 
     @commands.group(invoke_without_command=True)
+    @general_only()
     @commands.cooldown(1, 60)
     async def topic(self, ctx):
         """Get a topic to talk about."""
@@ -77,6 +78,7 @@ class Topic(commands.Cog):
         await ctx.message.delete(delay=4)
 
     @topic.command()
+    @bot_commands_only()
     @commands.cooldown(1, 5)
     async def suggest(self, ctx, *, topic: str):
         """

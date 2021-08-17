@@ -5,7 +5,7 @@ import aiohttp
 
 import discord
 from discord.ext import commands, tasks
-from utils.helper import mod_and_above, calc_time, get_time_string
+from utils.helper import mod_and_above, calc_time, get_time_string, bot_commands_only
 
 
 class Banner(commands.Cog):
@@ -127,6 +127,7 @@ class Banner(commands.Cog):
         )
 
     @banner.command()
+    @bot_commands_only()
     async def suggest(self, ctx, url: typing.Optional[str] = None):
         """
         Members can suggest banners to be reviewed by staff

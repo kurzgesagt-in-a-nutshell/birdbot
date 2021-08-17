@@ -14,8 +14,6 @@ timed_actions_db = BirdBot.db.TimedAction
 config_json = json.load(open("config.json"))
 config_roles = config_json["roles"]
 
-# Custom checks
-
 logger = logging.getLogger("Helper")
 
 
@@ -23,8 +21,42 @@ class NoAuthorityError(commands.CheckFailure):
     """Raised when user has no clearance to run a command"""
 
 
+class WrongChannel(commands.CheckFailure):
+    """Raised when trying to run a command in the wrong channel"""
+
+    def __init__(self, id):
+        super().__init__(f"This command can only be run in <#{id}>")
+
+
 class DevBotOnly(commands.CheckFailure):
     """Raised when trying to run commands meant for dev bots"""
+
+
+# Custom checks
+
+
+def general_only():
+    async def predicate(ctx):
+        if (
+            ctx.channel.category_id != 414095379156434945  # Mod channel category
+            and ctx.channel.id != 414027124836532236  # general id
+        ):
+            raise WrongChannel(414027124836532236)
+        return True
+
+    return commands.check(predicate)
+
+
+def bot_commands_only():
+    async def predicate(ctx):
+        if (
+            ctx.channel.category_id != 414095379156434945  # Mod channel category
+            and ctx.channel.id != 414452106129571842  # bot commands id
+        ):
+            raise WrongChannel(414452106129571842)
+        return True
+
+    return commands.check(predicate)
 
 
 def devs_only():

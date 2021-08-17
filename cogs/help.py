@@ -4,6 +4,7 @@ import logging
 import discord
 from discord.ext import commands
 
+from utils.helper import bot_commands_only
 
 class Help(commands.Cog):
     def __init__(self, bot):
@@ -16,6 +17,7 @@ class Help(commands.Cog):
         self.logger.info("loaded Help")
 
     @commands.command(aliases=["h"])
+    @bot_commands_only()
     async def help(self, ctx, *, cmnd=None):
         """
         Display help. \nUsage: help command_name
