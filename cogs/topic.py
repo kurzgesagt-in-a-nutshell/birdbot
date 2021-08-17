@@ -18,7 +18,7 @@ class Topic(commands.Cog):
 
         self.topics_db = self.bot.db.Topics
         self.topics = self.topics_db.find_one(
-            {"name": "topics_list"})["topics"]  # Use this for DB interaction
+            {"name": "topics"})["topics"]  # Use this for DB interaction
 
         self.topics_list = self.topics  # This is used to stop topic repeats
 
