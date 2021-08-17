@@ -7,14 +7,12 @@ from birdbot import BirdBot
 from birdbot import setup
 
 parser = argparse.ArgumentParser()
-parser.add_argument("-b",
-                    "--beta",
-                    help="Run the beta instance of the bot",
-                    action="store_true")
-parser.add_argument("-a",
-                    "--alpha",
-                    help="Run the alpha instance of the bot",
-                    action="store_true")
+parser.add_argument(
+    "-b", "--beta", help="Run the beta instance of the bot", action="store_true"
+)
+parser.add_argument(
+    "-a", "--alpha", help="Run the alpha instance of the bot", action="store_true"
+)
 
 
 def main():
@@ -33,5 +31,5 @@ def main():
         bot.run(token, reconnect=True)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

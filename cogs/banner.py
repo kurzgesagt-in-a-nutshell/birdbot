@@ -10,17 +10,17 @@ from utils.helper import mod_and_above, calc_time, get_time_string
 
 class Banner(commands.Cog):
     def __init__(self, bot):
-        self.logger = logging.getLogger('Banners')
+        self.logger = logging.getLogger("Banners")
         self.bot = bot
 
-        with open('banners.json', 'r') as banners:
-            self.banners = json.loads(banners.read())['banners']
+        with open("banners.json", "r") as banners:
+            self.banners = json.loads(banners.read())["banners"]
 
-        with open('config.json', 'r') as config_file:
+        with open("config.json", "r") as config_file:
             config_json = json.loads(config_file.read())
 
-        self.mod_role = config_json['roles']['mod_role']
-        self.automated_channel = config_json['logging']['automated_channel']
+        self.mod_role = config_json["roles"]["mod_role"]
+        self.automated_channel = config_json["logging"]["automated_channel"]
 
         self.index = 0
 
@@ -29,13 +29,13 @@ class Banner(commands.Cog):
 
     @commands.Cog.listener()
     async def on_ready(self):
-        self.logger.info('loaded Banners')
+        self.logger.info("loaded Banners")
 
     @commands.group(hidden=True)
     async def banner(self, ctx):
         """
-            Banner commands
-            Usage: banner < add | suggest | rotate | change >
+        Banner commands
+        Usage: banner < add | suggest | rotate | change >
         """
 
     async def verify_url(self, url, change=False):
@@ -55,59 +55,59 @@ class Banner(commands.Cog):
                                 return banner
                             return url
                         raise commands.BadArgument(
-                            message=
-                            f'Image must be less than 10240kb, yours is {int(len(banner)/1024)}kb.'
+                            message=f"Image must be less than 10240kb, yours is {int(len(banner)/1024)}kb."
                         )
 
                     raise commands.BadArgument(
-                        message=
-                        f'Link must be for an image file not {response.content_type}.'
+                        message=f"Link must be for an image file not {response.content_type}."
                     )
 
         except aiohttp.InvalidURL:
             raise commands.BadArgument(
-                message="You must provide a link or an attachment.")
-    
+                message="You must provide a link or an attachment."
+            )
+
     @mod_and_above()
     @banner.command()
-    async def add(self, ctx, *, url = None):
+    async def add(self, ctx, *, url=None):
         """
-            Add a banner by url or attachment
-            Usage: banner add url/attachment
+        Add a banner by url or attachment
+        Usage: banner add url/attachment
         """
         if url is None:
             attachments = ctx.message.attachments
             if attachments:
-                url = [attachments[n].url for n,_ in enumerate(attachments)]
+                url = [attachments[n].url for n, _ in enumerate(attachments)]
             else:
                 raise commands.BadArgument(
-                    message='You must provide a url or attachment.')
+                    message="You must provide a url or attachment."
+                )
         else:
-            url = url.split(' ')
+            url = url.split(" ")
 
         for i in url:
             self.banners.append(await self.verify_url(i))
 
         await ctx.send("Banner added!")
-        with open('banners.json', 'w') as banners:
+        with open("banners.json", "w") as banners:
             banners.write(json.dumps({"banners": self.banners}, indent=4))
 
     @mod_and_above()
     @banner.command()
     async def rotate(self, ctx, arg: str = None):
         """
-            Change server banner rotation time or stop the rotation
-            Usage: banner rotate time/stop
+        Change server banner rotation time or stop the rotation
+        Usage: banner rotate time/stop
         """
 
         if arg is None:
             raise commands.BadArgument(
-                message=
-                'You must provide rotation period or "stop" to stop rotation')
+                message='You must provide rotation period or "stop" to stop rotation'
+            )
 
         time, reason = calc_time([arg, ""])
 
-        if reason == 'stop ':
+        if reason == "stop ":
             self.timed_banner_rotation.cancel()
             await ctx.message.delete(delay=6)
             await ctx.send("Banner rotation stopped.", delete_after=6)
@@ -122,18 +122,19 @@ class Banner(commands.Cog):
 
         await ctx.message.delete(delay=6)
         self.timed_banner_rotation.change_interval(seconds=time)
-        await ctx.send(f'Banners are rotating every {get_time_string(time)}.',
-                       delete_after=6)
+        await ctx.send(
+            f"Banners are rotating every {get_time_string(time)}.", delete_after=6
+        )
 
     @banner.command()
     async def suggest(self, ctx, url: typing.Optional[str] = None):
         """
-            Members can suggest banners to be reviewed by staff
-            Usage: banner suggest url/attachment
+        Members can suggest banners to be reviewed by staff
+        Usage: banner suggest url/attachment
         """
         automated_channel = self.bot.get_channel(self.automated_channel)
 
-        embed = discord.Embed(title=f'{ctx.author.name} suggested')
+        embed = discord.Embed(title=f"{ctx.author.name} suggested")
 
         if url is None:
             attachments = ctx.message.attachments
@@ -141,7 +142,8 @@ class Banner(commands.Cog):
                 url = attachments[0].url
             else:
                 raise commands.BadArgument(
-                    message="You must provide a url or attachment.")
+                    message="You must provide a url or attachment."
+                )
 
         url = await self.verify_url(url)
 
@@ -151,15 +153,15 @@ class Banner(commands.Cog):
         embed.set_image(url=url)
         embed.set_footer(text="banner")
         message = await automated_channel.send(embed=embed)
-        await message.add_reaction('<:kgsYes:580164400691019826>')
-        await message.add_reaction('<:kgsNo:610542174127259688>')
+        await message.add_reaction("<:kgsYes:580164400691019826>")
+        await message.add_reaction("<:kgsNo:610542174127259688>")
 
     @mod_and_above()
     @banner.command()
     async def change(self, ctx, url: typing.Optional[str] = None):
         """
-            Change the banner
-            Usage: banner change url/attachment
+        Change the banner
+        Usage: banner change url/attachment
         """
         if url is None:
             attachments = ctx.message.attachments
@@ -167,7 +169,8 @@ class Banner(commands.Cog):
                 url = attachments[0].url
             else:
                 raise commands.BadArgument(
-                    message="You must provide a url or attachment.")
+                    message="You must provide a url or attachment."
+                )
 
         banner = await self.verify_url(url, True)
 
@@ -199,25 +202,26 @@ class Banner(commands.Cog):
             mod_role = guild.get_role(self.mod_role)
 
             if payload.member.top_role >= mod_role:
-                message = await self.bot.get_channel(
-                    payload.channel_id).fetch_message(payload.message_id)
+                message = await self.bot.get_channel(payload.channel_id).fetch_message(
+                    payload.message_id
+                )
 
-                if message.embeds and message.embeds[0].footer.text == 'banner':
-                    if payload.emoji.id == 580164400691019826:  #kgsYes emote
+                if message.embeds and message.embeds[0].footer.text == "banner":
+                    if payload.emoji.id == 580164400691019826:  # kgsYes emote
                         url = message.embeds[0].image.url
                         self.banners.append(url)
-                        with open('banners.json', 'w') as banners:
+                        with open("banners.json", "w") as banners:
                             banners.write(
-                                json.dumps({"banners": self.banners},
-                                           indent=4))
-                        embed = discord.Embed(title="Banner added!",
-                                              colour=discord.Colour.green())
+                                json.dumps({"banners": self.banners}, indent=4)
+                            )
+                        embed = discord.Embed(
+                            title="Banner added!", colour=discord.Colour.green()
+                        )
                         embed.set_image(url=url)
                         await message.edit(embed=embed, delete_after=6)
 
-                    elif payload.emoji.id == 610542174127259688:  #kgsNo emoji
-                        embed = discord.Embed(
-                            title="Banner suggestion removed!")
+                    elif payload.emoji.id == 610542174127259688:  # kgsNo emoji
+                        embed = discord.Embed(title="Banner suggestion removed!")
                         await message.edit(embed=embed, delete_after=6)
 
 
