@@ -3,6 +3,8 @@ import json
 import typing
 import aiohttp
 
+import io
+
 import discord
 from discord.ext import commands, tasks
 from utils.helper import mod_and_above, calc_time, get_time_string, bot_commands_only
@@ -135,8 +137,6 @@ class Banner(commands.Cog):
         """
         automated_channel = self.bot.get_channel(self.automated_channel)
 
-        embed = discord.Embed(title=f"{ctx.author.name} suggested")
-
         if url is None:
             attachments = ctx.message.attachments
             if attachments:
@@ -146,16 +146,28 @@ class Banner(commands.Cog):
                     message="You must provide a url or attachment."
                 )
 
-        url = await self.verify_url(url)
+        url = await self.verify_url(url, change=True)
 
-        await ctx.send("Banner suggested.", delete_after=4)
-        await ctx.message.delete(delay=4)
+        channel = self.bot.get_channel(414179142020366336)
+        file = discord.File(io.BytesIO(url), filename="banner.png")
 
+        message = await channel.send(file=file)
+
+        url = message.attachments[0].url
+
+        embed = discord.Embed(color=0xC8A2C8)
+        embed.set_author(
+            name=ctx.author.name + "#" + ctx.author.discriminator,
+            icon_url=ctx.author.avatar_url,
+        )
         embed.set_image(url=url)
         embed.set_footer(text="banner")
         message = await automated_channel.send(embed=embed)
         await message.add_reaction("<:kgsYes:580164400691019826>")
         await message.add_reaction("<:kgsNo:610542174127259688>")
+
+        await ctx.send("Banner suggested.", delete_after=4)
+        await ctx.message.delete(delay=4)
 
     @mod_and_above()
     @banner.command()
@@ -210,16 +222,23 @@ class Banner(commands.Cog):
                 if message.embeds and message.embeds[0].footer.text == "banner":
                     if payload.emoji.id == 580164400691019826:  # kgsYes emote
                         url = message.embeds[0].image.url
+                        author = message.embeds[0].author
                         self.banners.append(url)
                         with open("banners.json", "w") as banners:
                             banners.write(
                                 json.dumps({"banners": self.banners}, indent=4)
                             )
-                        embed = discord.Embed(
-                            title="Banner added!", colour=discord.Colour.green()
-                        )
+                        embed = discord.Embed(colour=discord.Colour.green())
                         embed.set_image(url=url)
+                        embed.set_author(name=author.name, icon_url=author.icon_url)
                         await message.edit(embed=embed, delete_after=6)
+                        member = guild.get_member_named(author.name)
+                        try:
+                            await member.send(
+                                f"Your banner suggestion was accepted {url}"
+                            )
+                        except discord.Forbidden:
+                            pass
 
                     elif payload.emoji.id == 610542174127259688:  # kgsNo emoji
                         embed = discord.Embed(title="Banner suggestion removed!")
