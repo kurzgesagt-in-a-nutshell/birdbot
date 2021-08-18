@@ -7,8 +7,9 @@ import traceback
 import os
 
 from contextlib import redirect_stdout
+from discord.ext.commands.errors import ExtensionNotFound
 
-from git import Repo
+from git import Repo, exc
 from git.cmd import Git
 
 import discord
@@ -152,11 +153,16 @@ class Dev(commands.Cog):
             try:
                 self.bot.unload_extension(module)
             except discord.ext.commands.errors.ExtensionNotLoaded as enl:
-                self.logger.exception("Module not loaded.")
+                await ctx.send(f"Module not loaded. Trying to load it.", delete_after=6)
 
             self.bot.load_extension(module)
             await ctx.send("Module Loaded")
 
+        except ExtensionNotFound as enf:
+            await ctx.send(
+                f"Module not found. Possibly, wrong module name provided.",
+                delete_after=10,
+            )
         except Exception as e:
             self.logger.error("Unable to load module.")
             self.logger.error("{}: {}".format(type(e).__name__, e))
@@ -167,6 +173,25 @@ class Dev(commands.Cog):
         """Kill the bot"""
         await ctx.send("Bravo 6 going dark.")
         await self.bot.close()
+
+    @devs_only()
+    @commands.command(aliases=["logs"], hidden=True)
+    async def log(self, ctx, lines: int = 10):
+        """View the bot's logs"""
+        with open("logs/birdbot.log", "r") as f:
+            log = f.readlines()[-lines:]
+
+        log = "".join(log)
+
+        if len(log) > 2000:
+            await ctx.send(
+                f"Returned over 2k chars, sending as file instead.\n"
+                f"(first 1k chars for quick reference)\n"
+                f'```py\n{f"{log}"[0:1000]}\n```',
+                file=discord.File(io.BytesIO(f"{log}".encode()), filename="log.txt"),
+            )
+        else:
+            await ctx.send(f"```\n{log}\n```")
 
     @commands.command()
     @devs_only()
