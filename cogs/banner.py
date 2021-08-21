@@ -40,10 +40,10 @@ class Banner(commands.Cog):
         Usage: banner < add | suggest | rotate | change >
         """
 
-    async def verify_url(self, url, change=False):
+    async def verify_url(self, url, bytes=False):
         """
         returns url after verifyng size and content_type
-        returns bytes object if change is set to True
+        returns bytes object if bytes is set to True
         """
         self.logger.info(f"Running verify_url with {url}")
         try:
@@ -53,7 +53,7 @@ class Banner(commands.Cog):
                         banner = await response.content.read()
 
                         if len(banner) / 1024 < 10240:
-                            if change:
+                            if bytes:
                                 return banner
                             return url
                         raise commands.BadArgument(
@@ -146,23 +146,18 @@ class Banner(commands.Cog):
                     message="You must provide a url or attachment."
                 )
 
-        url = await self.verify_url(url, change=True)
+        url = await self.verify_url(url, bytes=True)
 
-        channel = self.bot.get_channel(414179142020366336)
         file = discord.File(io.BytesIO(url), filename="banner.png")
-
-        message = await channel.send(file=file)
-
-        url = message.attachments[0].url
 
         embed = discord.Embed(color=0xC8A2C8)
         embed.set_author(
             name=ctx.author.name + "#" + ctx.author.discriminator,
             icon_url=ctx.author.avatar_url,
         )
-        embed.set_image(url=url)
+        embed.set_image(url="attachment://banner.png")
         embed.set_footer(text="banner")
-        message = await automated_channel.send(embed=embed)
+        message = await automated_channel.send(embed=embed, file=file)
         await message.add_reaction("<:kgsYes:580164400691019826>")
         await message.add_reaction("<:kgsNo:610542174127259688>")
 
@@ -223,14 +218,20 @@ class Banner(commands.Cog):
                     if payload.emoji.id == 580164400691019826:  # kgsYes emote
                         url = message.embeds[0].image.url
                         author = message.embeds[0].author
+                        embed = discord.Embed(colour=discord.Colour.green())
+                        embed.set_image(url=url)
+                        embed.set_author(name=author.name, icon_url=author.icon_url)
+
+                        image = await self.verify_url(url, bytes)
+                        channel = self.bot.get_channel(414179142020366336)
+                        file = discord.File(io.BytesIO(image), filename="banner.png")
+                        banner = await channel.send(file=file)
+                        url = banner.attachments[0].url
                         self.banners.append(url)
                         with open("banners.json", "w") as banners:
                             banners.write(
                                 json.dumps({"banners": self.banners}, indent=4)
                             )
-                        embed = discord.Embed(colour=discord.Colour.green())
-                        embed.set_image(url=url)
-                        embed.set_author(name=author.name, icon_url=author.icon_url)
                         await message.edit(embed=embed, delete_after=6)
                         member = guild.get_member_named(author.name)
                         try:
