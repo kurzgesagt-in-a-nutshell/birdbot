@@ -24,7 +24,13 @@ class Errors(commands.Cog):
         self.logger = logging.getLogger("Listeners")
         self.bot = bot
 
-    async def react_send_delete(self, ctx, reaction=None, message=None, delay=6):
+    async def react_send_delete(
+        self,
+        ctx: commands.Context,
+        reaction: str = None,
+        message: str = None,
+        delay: int = 6,
+    ):
         """React to the command, send a message and delete later"""
         if reaction is not None:
             await ctx.message.add_reaction(reaction)
@@ -38,7 +44,7 @@ class Errors(commands.Cog):
         self.logger.info("loaded Error listener")
 
     @commands.Cog.listener()
-    async def on_command_error(self, ctx, err):
+    async def on_command_error(self, ctx: commands.Context, err):
 
         traceback_txt = "".join(TracebackException.from_exception(err).format())
         channel = await self.bot.fetch_channel(self.dev_logging_channel)

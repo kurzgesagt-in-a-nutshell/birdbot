@@ -2,6 +2,7 @@ import asyncio
 import datetime
 import json
 import logging
+from typing import List, Tuple, Union
 
 import discord
 from discord.ext import commands
@@ -36,7 +37,7 @@ class DevBotOnly(commands.CheckFailure):
 
 
 def general_only():
-    async def predicate(ctx):
+    async def predicate(ctx: commands.Context):
         if (
             ctx.channel.category_id != 414095379156434945  # Mod channel category
             and ctx.channel.id != 414027124836532236  # general id
@@ -48,7 +49,7 @@ def general_only():
 
 
 def bot_commands_only():
-    async def predicate(ctx):
+    async def predicate(ctx: commands.Context):
         if (
             ctx.channel.category_id != 414095379156434945  # Mod channel category
             and ctx.channel.id != 414452106129571842  # bot commands id
@@ -60,7 +61,7 @@ def bot_commands_only():
 
 
 def devs_only():
-    async def predicate(ctx):
+    async def predicate(ctx: commands.Context):
         if not ctx.author.id in [
             389718094270038018,  # FC
             424843380342784011,  # Oeav
@@ -74,7 +75,7 @@ def devs_only():
 
 
 def mainbot_only():
-    async def predicate(ctx):
+    async def predicate(ctx: commands.Context):
         if not ctx.me.id == 471705718957801483:
             raise DevBotOnly
         return True
@@ -83,7 +84,7 @@ def mainbot_only():
 
 
 def helper_and_above():
-    async def predicate(ctx):
+    async def predicate(ctx: commands.Context):
         user_role_ids = [x.id for x in ctx.author.roles]
         check_role_ids = [
             config_roles["helper_role"],
@@ -100,7 +101,7 @@ def helper_and_above():
 
 
 def mod_and_above():
-    async def predicate(ctx):
+    async def predicate(ctx: commands.Context):
         user_role_ids = [x.id for x in ctx.author.roles]
         check_role_ids = [
             config_roles["mod_role"],
@@ -115,7 +116,7 @@ def mod_and_above():
 
 
 def admin_and_above():
-    async def predicate(ctx):
+    async def predicate(ctx: commands.Context):
         user_role_ids = [x.id for x in ctx.author.roles]
         check_role_ids = [config_roles["admin_role"], config_roles["kgsofficial_role"]]
         if not any(x in user_role_ids for x in check_role_ids):
@@ -126,29 +127,34 @@ def admin_and_above():
 
 
 def create_embed(
-    author,
-    users,
-    action,
+    author: Union[discord.User, discord.Member],
+    action: str,
+    users: List[Union[discord.User, discord.Member]] = None,
     reason=None,
     extra=None,
     color=discord.Color.blurple,
     link=None,
-):
+) -> discord.Embed:
     """
-    Author: Message sender. (eg: ctx.author)
-    Users: List of users affected (Pass None if no users)
-    Action: Action/Command
-    Reason: Reason
-    Extra: Additional Info
-    Color: Color of the embed
-    """
+    Creates an embed
 
+    Args:
+        author (discord.User or discord.Member): The author of the action (eg ctx.author)
+        action (str): Action/Command Performed
+        users (list(discord.User or discord.Member)): List of users affected. Defaults to None
+        reason (str, optional): Reason. Defaults to None.
+        extra (str, optional): Any additional info. Defaults to None.
+        color (discord.Color, optional): Embed color. Defaults to discord.Color.blurple.
+        link (str, optional): Link, if any. Defaults to None.
+
+    Returns:
+        discord.Embed: An embed with provided information.
+    """
     user_str = "None"
     if users is not None:
         user_str = ""
-
         for u in users:
-            user_str = user_str + f"{u.mention}  ({u.id})" + "\n"
+            user_str = f"{user_str} {u.mention}  ({u.id}) \n"
 
     embed = discord.Embed(
         title=f"{action}",
@@ -170,7 +176,12 @@ def create_embed(
     return embed
 
 
-def create_user_infraction(user):
+def create_user_infraction(user: Union[discord.User, discord.Member]):
+    """Create a base infraction entry for an user
+
+    Args:
+        user (Union[discord.User, discord.Member]): The user
+    """
     u = {
         "user_id": user.id,
         "user_name": user.name,
@@ -184,7 +195,22 @@ def create_user_infraction(user):
     infraction_db.insert_one(u)
 
 
-def create_infraction(author, users, action, reason, time=None):
+def create_infraction(
+    author: Union[discord.User, discord.Member],
+    users: List[Union[discord.User, discord.Member]],
+    action: str,
+    reason: str,
+    time: str = None,
+):
+    """Create infraction for list of users
+
+    Args:
+        author (Union[discord.User, discord.Member]): The author of the action (eg. ctx.author)
+        users (List[Union[discord.User, discord.Member]]): List of affected users
+        action (str): Action ("mute", "ban", "warn", "kick")
+        reason (str): Reasen
+        time (str, optional): Time strirng (applies for mutes). Defaults to None.
+    """
     for u in users:
 
         inf = infraction_db.find_one({"user_id": u.id})
@@ -247,7 +273,16 @@ def create_infraction(author, users, action, reason, time=None):
         infraction_db.update_one({"user_id": u.id}, {"$set": inf})
 
 
-def get_infractions(member_id, inf_type):
+def get_infractions(member_id: int, inf_type: str) -> discord.Embed:
+    """Get infraction for a user
+
+    Args:
+        member_id (int): The id of the user
+        inf_type (str): Infraction type ("mute", "ban", "warn", "kick")
+
+    Returns:
+        discord.Embed: An embed with infraction data
+    """
 
     infr = infraction_db.find_one({"user_id": member_id})
 
@@ -357,46 +392,60 @@ def get_infractions(member_id, inf_type):
     return embed
 
 
-def create_timed_action(users, action, time):
-    try:
-        data = []
-        for u in users:
-            data.append(
-                {
-                    "user_id": u.id,
-                    "user_name": u.name,
-                    "action": action,
-                    "action_start": datetime.datetime.utcnow(),
-                    "duration": time,
-                    "action_end": datetime.datetime.utcnow()
-                    + datetime.timedelta(seconds=time),
-                }
-            )
-        ids = timed_actions_db.insert_many(data)
-        return ids.inserted_ids
-    except Exception as e:
-        logging.error(str(e))
+def create_timed_action(
+    users: List[Union[discord.User, discord.Member]], action: str, time: int
+):
+    """Creates a database entry for timed action
 
-
-def delete_timed_actions_uid(u_id, action):
+    Args:
+        users (List[Union[discord.User, discord.Member]]): List of affected users
+        action (str): Action ("mute")
+        time (int): Duration for which action will last
     """
-    Delete timed action by user_id
+    data = []
+    for u in users:
+        data.append(
+            {
+                "user_id": u.id,
+                "user_name": u.name,
+                "action": action,
+                "action_start": datetime.datetime.utcnow(),
+                "duration": time,
+                "action_end": datetime.datetime.utcnow()
+                + datetime.timedelta(seconds=time),
+            }
+        )
+    ids = timed_actions_db.insert_many(data)
+
+
+def delete_timed_actions_uid(u_id: int):
+    """delete timed action by user_id
+
+    Args:
+        u_id (int): user's id
     """
-    try:
-        timed_actions_db.remove({"user_id": u_id, "action": action})
-    except Exception as e:
-        logging.error(str(e))
+    timed_actions_db.remove({"user_id": u_id})
 
 
-def calc_time(args):
+def calc_time(args: List[str]) -> Tuple[int, str]:
+    """Parses time from given list.
+    Example:
+    ["1hr", "12m30s", "extra", "string"] => (4350, "extra string")
+
+    Args:
+        args (List[str]): List of strings that needs to be parsed
+
+    Returns:
+        Tuple[int, str]: Returns parsed time (in seconds) and extra string.
+    """
     tot_time = 0
-    reason = None
+    extra = None
     try:
         try:
             default_v = int(args[0])
-            reason = " ".join(args[1:])
+            extra = " ".join(args[1:])
 
-            if reason == "":
+            if extra == "":
                 return None, None
 
             return default_v * 60, " ".join(args[1:])
@@ -440,22 +489,30 @@ def calc_time(args):
 
         if r < len(args):
             for a in args[r:]:
-                if reason is None:
-                    reason = a
+                if extra is None:
+                    extra = a
                 else:
-                    reason = reason + " " + a
+                    extra = extra + " " + a
 
         else:
             return None, None
 
-        return tot_time, reason
+        return tot_time, extra
 
     except Exception as ex:
         logging.error(str(ex))
         return None, None
 
 
-def get_time_string(t):
+def get_time_string(t: int) -> str:
+    """Convert provided time input (seconds) to Day-Hours-Mins-Second string
+
+    Args:
+        t (int): Time in seconds
+
+    Returns:
+        str: Time string (Format: D-days H-hours M-mins S-seconds)
+    """
     day = t // (24 * 3600)
     t = t % (24 * 3600)
     hour = t // 3600
@@ -467,8 +524,5 @@ def get_time_string(t):
 
 
 def get_timed_actions():
-    try:
-        return timed_actions_db.find().sort("action_end", 1)
-
-    except Exception as e:
-        logging.exception(e)
+    """Fetch all timed action from db"""
+    return timed_actions_db.find().sort("action_end", 1)

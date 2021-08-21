@@ -27,7 +27,7 @@ class Dev(commands.Cog):
     async def on_ready(self):
         self.logger.info("loaded Dev")
 
-    def cleanup_code(self, content):
+    def cleanup_code(self, content: str):
         """
         Remove code-block from eval
         """
@@ -43,38 +43,38 @@ class Dev(commands.Cog):
 
     @commands.group(hidden=True, aliases=["presence"])
     @devs_only()
-    async def activity(self, ctx):
+    async def activity(self, ctx: commands.Context):
         """Sets the bots status"""
         pass
 
-    async def change_activity(self, ctx, activity):
+    async def change_activity(self, ctx: commands.Context, activity: discord.Activity):
         await ctx.bot.change_presence(activity=activity)
-        await ctx.send(" presence changed.")
+        await ctx.send("presence changed.")
 
     @activity.command(aliases=["l"])
     @devs_only()
-    async def listening(self, ctx, *, text):
+    async def listening(self, ctx: commands.Context, *, text: str):
         """Set listening activity"""
         audio = discord.Activity(name=text, type=discord.ActivityType.listening)
         await self.change_activity(ctx, audio)
 
     @activity.command(aliases=["w"])
     @devs_only()
-    async def watching(self, ctx, *, text):
+    async def watching(self, ctx: commands.Context, *, text: str):
         """Set watching activity"""
         video = discord.Activity(name=text, type=discord.ActivityType.watching)
         await self.change_activity(ctx, video)
 
     @activity.command(aliases=["p"])
     @devs_only()
-    async def playing(self, ctx, *, text):
+    async def playing(self, ctx: commands.Context, *, text: str):
         """Set playing activity"""
         game = discord.Activity(name=text, type=discord.ActivityType.playing)
         await self.change_activity(ctx, game)
 
     @commands.is_owner()
     @commands.command(pass_context=True, name="eval")
-    async def eval(self, ctx, *, body: str):
+    async def eval(self, ctx: commands.Context, *, body: str):
         """Evaluates a code"""
         env = {
             "bot": self.bot,
@@ -145,17 +145,15 @@ class Dev(commands.Cog):
 
     @devs_only()
     @commands.command(name="reload", hidden=True)
-    async def reload(self, ctx, *, module: str = None):
+    async def reload(self, ctx: commands.Context, *, module_name: str):
         """Reload a module"""
         try:
-            if module is None:
-                return await ctx.send("**Usage:** `reload module_name`")
             try:
-                self.bot.unload_extension(module)
+                self.bot.unload_extension(module_name)
             except discord.ext.commands.errors.ExtensionNotLoaded as enl:
                 await ctx.send(f"Module not loaded. Trying to load it.", delete_after=6)
 
-            self.bot.load_extension(module)
+            self.bot.load_extension(module_name)
             await ctx.send("Module Loaded")
 
         except ExtensionNotFound as enf:
@@ -169,14 +167,14 @@ class Dev(commands.Cog):
 
     @commands.command(hidden=True)
     @mod_and_above()
-    async def kill(self, ctx):
+    async def kill(self, ctx: commands.Context):
         """Kill the bot"""
         await ctx.send("Bravo 6 going dark.")
         await self.bot.close()
 
     @devs_only()
     @commands.command(aliases=["logs"], hidden=True)
-    async def log(self, ctx, lines: int = 10):
+    async def log(self, ctx: commands.Context, lines: int = 10):
         """View the bot's logs"""
         with open("logs/birdbot.log", "r") as f:
             log = f.readlines()[-lines:]
@@ -196,7 +194,7 @@ class Dev(commands.Cog):
     @commands.command()
     @devs_only()
     @mainbot_only()
-    async def launch(self, ctx, instance: str):
+    async def launch(self, ctx: commands.Context, instance: str):
         """Spawn child process of alpha/beta bot instance on the VM, only works on main bot"""
 
         if instance not in ("alpha", "beta"):
@@ -222,7 +220,7 @@ class Dev(commands.Cog):
 
     @devs_only()
     @commands.command(hidden=True)
-    async def pull(self, ctx):
+    async def pull(self, ctx: commands.Context):
         self.logger.info("pulling repository")
         repo = Repo(os.getcwd())  # Get git repo object to check changes
         assert not repo.bare

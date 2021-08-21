@@ -6,6 +6,7 @@ from discord.ext import commands
 
 from utils.helper import bot_commands_only
 
+
 class Help(commands.Cog):
     def __init__(self, bot):
         self.logger = logging.getLogger("Help")
@@ -18,7 +19,7 @@ class Help(commands.Cog):
 
     @commands.command(aliases=["h"])
     @bot_commands_only()
-    async def help(self, ctx, *, cmnd=None):
+    async def help(self, ctx: commands.Context, *, cmnd: str = None):
         """
         Display help. \nUsage: help command_name
         """
@@ -67,7 +68,7 @@ class Help(commands.Cog):
                 return await ctx.send(embed=embed)
 
     @commands.command()
-    async def ping(self, ctx):
+    async def ping(self, ctx: commands.Context):
         """
         Ping Pong
         """
