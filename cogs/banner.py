@@ -40,10 +40,10 @@ class Banner(commands.Cog):
         Usage: banner < add | suggest | rotate | change >
         """
 
-    async def verify_url(self, url, bytes=False):
+    async def verify_url(self, url, byte=False):
         """
         returns url after verifyng size and content_type
-        returns bytes object if bytes is set to True
+        returns bytes object if byte is set to True
         """
         self.logger.info(f"Running verify_url with {url}")
         try:
@@ -53,7 +53,7 @@ class Banner(commands.Cog):
                         banner = await response.content.read()
 
                         if len(banner) / 1024 < 10240:
-                            if bytes:
+                            if byte:
                                 return banner
                             return url
                         raise commands.BadArgument(
@@ -146,7 +146,7 @@ class Banner(commands.Cog):
                     message="You must provide a url or attachment."
                 )
 
-        url = await self.verify_url(url, bytes=True)
+        url = await self.verify_url(url, byte=True)
 
         file = discord.File(io.BytesIO(url), filename="banner.png")
 
@@ -180,7 +180,7 @@ class Banner(commands.Cog):
                     message="You must provide a url or attachment."
                 )
 
-        banner = await self.verify_url(url, True)
+        banner = await self.verify_url(url, byte=True)
 
         await ctx.message.delete(delay=4)
         await ctx.guild.edit(banner=banner)
@@ -222,7 +222,7 @@ class Banner(commands.Cog):
                         embed.set_image(url=url)
                         embed.set_author(name=author.name, icon_url=author.icon_url)
 
-                        image = await self.verify_url(url, bytes)
+                        image = await self.verify_url(url, byte=True)
                         channel = self.bot.get_channel(414179142020366336)
                         file = discord.File(io.BytesIO(image), filename="banner.png")
                         banner = await channel.send(file=file)
