@@ -87,10 +87,10 @@ class Topic(commands.Cog):
         """
 
         automated_channel = self.bot.get_channel(self.automated_channel)
-        embed = discord.Embed(
-            title=f"{ctx.author.name} suggested",
-            description=f"**{topic}**",
-            color=0xFF0000,
+        embed = discord.Embed(description=f"**{topic}**", color=0xC8A2C8)
+        embed.set_author(
+            name=ctx.author.name + "#" + ctx.author.discriminator,
+            icon_url=ctx.author.avatar_url,
         )
         embed.set_footer(text="topic")
         message = await automated_channel.send(embed=embed)
@@ -98,7 +98,7 @@ class Topic(commands.Cog):
         await message.add_reaction("<:kgsYes:580164400691019826>")
         await message.add_reaction("<:kgsNo:610542174127259688>")
 
-        await ctx.send("Topic suggested.", delete_after=6)
+        await ctx.send("Topic suggested.", delete_after=4)
         await ctx.message.delete(delay=4)
 
     @commands.Cog.listener()
@@ -114,16 +114,25 @@ class Topic(commands.Cog):
                 if message.embeds and message.embeds[0].footer.text == "topic":
                     if payload.emoji.id == 580164400691019826:
                         topic = message.embeds[0].description
+                        author = message.embeds[0].author
                         self.topics.append(topic.strip("*"))
                         self.topics_db.update_one(
                             {"name": "topics_list"}, {"$set": {"topics": self.topics}}
                         )
                         embed = discord.Embed(
-                            title="Topic added!",
-                            description=f"**{topic}**",
-                            colour=discord.Colour.green(),
+                            description=f"**{topic}**", colour=discord.Colour.green()
                         )
-                        await message.edit(embed=embed)
+                        embed.set_author(name=author.name, icon_url=author.icon_url)
+                        await message.edit(embed=embed, delete_after=6)
+
+                        member = guild.get_member_named(author.name)
+                        try:
+                            await member.send(
+                                f"Your topic suggestion was accepted: **{topic}**"
+                            )
+                        except discord.Forbidden:
+                            pass
+
                     elif payload.emoji.id == 610542174127259688:
                         message = await self.bot.get_channel(
                             payload.channel_id
