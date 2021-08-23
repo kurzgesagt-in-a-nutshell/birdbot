@@ -3,6 +3,7 @@ import asyncio
 import os
 import discord
 import dotenv
+import certifi
 
 from contextlib import contextmanager, suppress
 from logging.handlers import TimedRotatingFileHandler
@@ -118,7 +119,7 @@ class BirdBot(commands.AutoShardedBot):
         db_key = os.environ.get("DB_KEY")
         if db_key is None:
             logger.critical("NO DB KEY FOUND, USING LOCAL DB INSTEAD")
-        client = MongoClient(db_key)
+        client = MongoClient(db_key, tlsCAFile=certifi.where())
         db = client.KurzBot
         logger.info("Connected to mongoDB")
         cls.db = db
