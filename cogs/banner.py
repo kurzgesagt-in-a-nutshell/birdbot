@@ -34,18 +34,17 @@ class Banner(commands.Cog):
         self.logger.info("loaded Banners")
 
     @commands.group(hidden=True)
-    async def banner(self, ctx):
+    async def banner(self, ctx: commands.Context):
         """
         Banner commands
         Usage: banner < add | suggest | rotate | change >
         """
 
-    async def verify_url(self, url, byte=False):
+    async def verify_url(self, url: str, byte: bool = False):
         """
         returns url after verifyng size and content_type
         returns bytes object if byte is set to True
         """
-        self.logger.info(f"Running verify_url with {url}")
         try:
             async with aiohttp.ClientSession() as session:
                 async with session.get(url) as response:
@@ -71,7 +70,7 @@ class Banner(commands.Cog):
 
     @mod_and_above()
     @banner.command()
-    async def add(self, ctx, *, url=None):
+    async def add(self, ctx: commands.context, *, url: str = None):
         """
         Add a banner by url or attachment
         Usage: banner add url/attachment
@@ -96,7 +95,7 @@ class Banner(commands.Cog):
 
     @mod_and_above()
     @banner.command()
-    async def rotate(self, ctx, arg: str = None):
+    async def rotate(self, ctx: commands.Context, arg: str = None):
         """
         Change server banner rotation time or stop the rotation
         Usage: banner rotate time/stop
@@ -130,7 +129,7 @@ class Banner(commands.Cog):
 
     @banner.command()
     @bot_commands_only()
-    async def suggest(self, ctx, url: typing.Optional[str] = None):
+    async def suggest(self, ctx: commands.Context, url: typing.Optional[str] = None):
         """
         Members can suggest banners to be reviewed by staff
         Usage: banner suggest url/attachment
@@ -166,7 +165,7 @@ class Banner(commands.Cog):
 
     @mod_and_above()
     @banner.command()
-    async def change(self, ctx, url: typing.Optional[str] = None):
+    async def change(self, ctx: commands.Context, url: typing.Optional[str] = None):
         """
         Change the banner
         Usage: banner change url/attachment
@@ -201,7 +200,7 @@ class Banner(commands.Cog):
                 self.index += 1
 
     @commands.Cog.listener()
-    async def on_raw_reaction_add(self, payload):
+    async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent):
         """
         Check if reaction added is by mod+ and approve/deny banner accordingly
         """

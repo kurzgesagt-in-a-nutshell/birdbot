@@ -50,10 +50,10 @@ class BirdBot(commands.AutoShardedBot):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        db = self.get_database()
+        self.get_database()
 
     @classmethod
-    def from_parseargs(cls, args) -> "Bot":
+    def from_parseargs(cls, args):
         """Create and return an instance of a Bot."""
         logger.info(args)
         allowed_mentions = discord.AllowedMentions(

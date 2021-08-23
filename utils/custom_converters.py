@@ -1,6 +1,7 @@
 import logging
 import re
 
+from discord.ext import commands
 from discord.ext.commands.converter import _get_from_guilds, _utils_get
 
 logger = logging.getLogger("CustomConverters")
@@ -11,7 +12,7 @@ def _get_id_match(argument):
     return _id_regex.match(argument)
 
 
-def member_converter(ctx, argument):
+def member_converter(ctx: commands.Context, argument):
     try:
         bot = ctx.bot
         guild = ctx.guild
@@ -33,7 +34,7 @@ def member_converter(ctx, argument):
         return None
 
 
-def get_members(ctx, *args):
+def get_members(ctx: commands.Context, *args):
     try:
         members = []
         extra = []

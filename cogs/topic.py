@@ -37,7 +37,7 @@ class Topic(commands.Cog):
     @commands.group(invoke_without_command=True)
     @general_only()
     @commands.cooldown(1, 60)
-    async def topic(self, ctx):
+    async def topic(self, ctx: commands.Context):
         """Get a topic to talk about."""
         if self.topics_list == []:
             self.topics_list = self.topics
@@ -47,7 +47,7 @@ class Topic(commands.Cog):
 
     @mod_and_above()
     @topic.command()
-    async def get(self, ctx, index: int):
+    async def get(self, ctx: commands.Context, index: int):
         """
         Get a topic by index.
         Usage: topic get index
@@ -62,7 +62,7 @@ class Topic(commands.Cog):
     @mod_and_above()
     @topic.command()
     @commands.cooldown(1, 5)
-    async def add(self, ctx, *, topic: str):
+    async def add(self, ctx: commands.Context, *, topic: str):
         """
         Add a topic to the list.
         Usage: topic add topic_string
@@ -80,7 +80,7 @@ class Topic(commands.Cog):
     @topic.command()
     @bot_commands_only()
     @commands.cooldown(1, 5)
-    async def suggest(self, ctx, *, topic: str):
+    async def suggest(self, ctx: commands.Context, *, topic: str):
         """
         Suggest a topic.
         Usage: topic suggest topic_string
@@ -102,7 +102,7 @@ class Topic(commands.Cog):
         await ctx.message.delete(delay=4)
 
     @commands.Cog.listener()
-    async def on_raw_reaction_add(self, payload):
+    async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent):
         # User topic suggestions
         if payload.channel_id == self.automated_channel and not payload.member.bot:
             guild = discord.utils.get(self.bot.guilds, id=414027124836532234)
@@ -144,7 +144,11 @@ class Topic(commands.Cog):
     @topic.command()
     @commands.cooldown(1, 5)
     async def remove(
-        self, ctx, index: typing.Optional[int] = None, *, search_string: str = None
+        self,
+        ctx: commands.Context,
+        index: typing.Optional[int] = None,
+        *,
+        search_string: str = None,
     ):
         """
         Delete topic by index or search string.

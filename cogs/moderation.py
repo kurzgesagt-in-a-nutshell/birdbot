@@ -30,44 +30,38 @@ class Moderation(commands.Cog):
 
     @tasks.loop(minutes=10.0)
     async def timed_action_loop(self):
-        try:
-            guild = discord.utils.get(self.bot.guilds, id=414027124836532234)
-            mute_role = discord.utils.get(
-                guild.roles, id=self.config_json["roles"]["mute_role"]
-            )
-            logging_channel = discord.utils.get(guild.channels, id=self.logging_channel)
+        guild = discord.utils.get(self.bot.guilds, id=414027124836532234)
+        mute_role = discord.utils.get(
+            guild.roles, id=self.config_json["roles"]["mute_role"]
+        )
+        logging_channel = discord.utils.get(guild.channels, id=self.logging_channel)
 
-            for action in self.timed_action_list:
-                if action["action_end"] < datetime.datetime.utcnow():
-                    user = discord.utils.get(guild.members, id=action["user_id"])
-                    await user.remove_roles(mute_role, reason="Time Expired")
+        for action in self.timed_action_list:
+            if action["action_end"] < datetime.datetime.utcnow():
+                user = discord.utils.get(guild.members, id=action["user_id"])
+                await user.remove_roles(mute_role, reason="Time Expired")
 
-                    helper.delete_timed_actions_uid(
-                        u_id=action["user_id"], action="mute"
-                    )
+                helper.delete_timed_actions_uid(u_id=action["user_id"])
 
-                    embed = discord.Embed(
-                        title="Timed Action",
-                        description="Time Expired",
-                        color=discord.Color.dark_blue(),
-                        timestamp=datetime.datetime.utcnow(),
-                    )
-                    embed.add_field(
-                        name="User Affected",
-                        value="{} ({})".format(action["user_name"], action["user_id"]),
-                        inline=False,
-                    )
-                    embed.add_field(
-                        name="Action",
-                        value="Un{}".format(action["action"]),
-                        inline=False,
-                    )
-                    await logging_channel.send(embed=embed)
+                embed = discord.Embed(
+                    title="Timed Action",
+                    description="Time Expired",
+                    color=discord.Color.dark_blue(),
+                    timestamp=datetime.datetime.utcnow(),
+                )
+                embed.add_field(
+                    name="User Affected",
+                    value="{} ({})".format(action["user_name"], action["user_id"]),
+                    inline=False,
+                )
+                embed.add_field(
+                    name="Action",
+                    value="Un{}".format(action["action"]),
+                    inline=False,
+                )
+                await logging_channel.send(embed=embed)
 
-            self.timed_action_list = helper.get_timed_actions()
-
-        except Exception as e:
-            self.logger.error(str(e))
+        self.timed_action_list = helper.get_timed_actions()
 
     @commands.Cog.listener()
     async def on_ready(self):
@@ -81,7 +75,7 @@ class Moderation(commands.Cog):
     @commands.command(aliases=["purge", "prune", "clear"])
     async def clean(
         self,
-        ctx,
+        ctx: commands.Context,
         member: commands.Greedy[discord.Member] = None,
         msg_count: int = None,
         channel: discord.TextChannel = None,
@@ -126,8 +120,8 @@ class Moderation(commands.Cog):
 
             embed = helper.create_embed(
                 author=ctx.author,
-                users=None,
                 action="1 message deleted",
+                users=None,
                 extra=f"""Message Content: {deleted_messages[-1].content} 
                                               \nSender: {deleted_messages[-1].author.mention} 
                                               \nTime: {deleted_messages[-1].created_at.replace(microsecond=0)} 
@@ -176,7 +170,7 @@ class Moderation(commands.Cog):
 
     @commands.command(aliases=["yeet"])
     @mod_and_above()
-    async def ban(self, ctx, *args):
+    async def ban(self, ctx: commands.Context, *args):
         """Ban a member.\nUsage: ban @member(s) reason"""
 
         logging_channel = discord.utils.get(ctx.guild.channels, id=self.logging_channel)
@@ -219,8 +213,8 @@ class Moderation(commands.Cog):
 
         embed = helper.create_embed(
             author=ctx.author,
-            users=members,
             action="Banned user(s)",
+            users=members,
             reason=reason,
             color=discord.Color.dark_red(),
         )
@@ -234,7 +228,11 @@ class Moderation(commands.Cog):
     @commands.command()
     @mod_and_above()
     async def unban(
-        self, ctx, member_id: commands.Greedy[int] = None, *, reason: str = None
+        self,
+        ctx: commands.Context,
+        member_id: commands.Greedy[int] = None,
+        *,
+        reason: str = None,
     ):
         """Unban a member. \nUsage: unban member_id <reason>"""
         if member_id is None:
@@ -260,8 +258,8 @@ class Moderation(commands.Cog):
 
         embed = helper.create_embed(
             author=ctx.author,
-            users=mem,
             action="Unbanned user(s)",
+            users=mem,
             reason=reason,
             color=discord.Color.dark_red(),
         )
@@ -270,7 +268,7 @@ class Moderation(commands.Cog):
 
     @commands.command()
     @mod_and_above()
-    async def kick(self, ctx, *args):
+    async def kick(self, ctx: commands.Context, *args):
         """Kick member(s).\nUsage: kick @member(s) reason"""
 
         members, reason = custom_converters.get_members(ctx, *args)
@@ -302,8 +300,8 @@ class Moderation(commands.Cog):
 
         embed = helper.create_embed(
             author=ctx.author,
-            users=members,
             action="Kicked User(s)",
+            users=members,
             reason=reason,
             color=discord.Color.red(),
         )
@@ -319,7 +317,7 @@ class Moderation(commands.Cog):
 
     @commands.command()
     @helper_and_above()
-    async def mute(self, ctx, *args):
+    async def mute(self, ctx: commands.Context, *args):
         """Mute member(s). \nUsage: mute @member(s) <time> reason"""
 
         tot_time = 0
@@ -374,8 +372,8 @@ class Moderation(commands.Cog):
 
         embed = helper.create_embed(
             author=ctx.author,
-            users=members,
             action="Muted User(s)",
+            users=members,
             reason=reason,
             extra=f"Mute Duration: {time_str} or {tot_time} seconds",
             color=discord.Color.red(),
@@ -391,16 +389,11 @@ class Moderation(commands.Cog):
         )
 
         if is_muted:
-            try:
-                if tot_time != 0:
-                    # TIMED
-                    helper.create_timed_action(
-                        users=members, action="mute", time=tot_time
-                    )
+            if tot_time != 0:
+                # TIMED
+                helper.create_timed_action(users=members, action="mute", time=tot_time)
 
-                    self.timed_action_list = helper.get_timed_actions()
-            except Exception as e:
-                self.logger.error(str(e))
+                self.timed_action_list = helper.get_timed_actions()
 
         await asyncio.sleep(6)
         await ctx.message.delete()
@@ -408,7 +401,9 @@ class Moderation(commands.Cog):
 
     @commands.command()
     @helper_and_above()
-    async def unmute(self, ctx, members: commands.Greedy[discord.Member]):
+    async def unmute(
+        self, ctx: commands.Context, members: commands.Greedy[discord.Member]
+    ):
         """Unmute member(s). \nUsage: unmute @member(s) <reason>"""
 
         logging_channel = discord.utils.get(ctx.guild.channels, id=self.logging_channel)
@@ -422,14 +417,14 @@ class Moderation(commands.Cog):
         for i in members:
             await i.remove_roles(mute_role, reason=f"Unmuted by {ctx.author}")
             # TIMED
-            helper.delete_timed_actions_uid(u_id=i.id, action="mute")
+            helper.delete_timed_actions_uid(u_id=i.id)
             self.timed_action_list = helper.get_timed_actions()
 
         await ctx.message.add_reaction("<:kgsYes:580164400691019826>")
         embed = helper.create_embed(
             author=ctx.author,
-            users=members,
             action="Unmuted User(s)",
+            users=members,
             color=discord.Color.red(),
         )
 
@@ -439,7 +434,13 @@ class Moderation(commands.Cog):
 
     @commands.command()
     @mod_and_above()
-    async def role(self, ctx, member: discord.Member = None, *, role_name: str = None):
+    async def role(
+        self,
+        ctx: commands.Context,
+        member: discord.Member = None,
+        *,
+        role_name: str = None,
+    ):
         """Add/Remove a role from a member. \nUsage: role @member role_name"""
 
         logging_channel = discord.utils.get(ctx.guild.channels, id=self.logging_channel)
@@ -464,8 +465,8 @@ class Moderation(commands.Cog):
 
             embed = helper.create_embed(
                 author=ctx.author,
-                users=[member],
                 action="Gave role",
+                users=[member],
                 extra=f"Role: {role.mention}",
                 color=discord.Color.purple(),
             )
@@ -475,8 +476,8 @@ class Moderation(commands.Cog):
         await ctx.send(f"Removed role {role.name} from {member.name}")
         embed = helper.create_embed(
             author=ctx.author,
-            users=[member],
             action="Removed role",
+            users=[member],
             extra=f"Role: {role.mention}",
             color=discord.Color.purple(),
         )
@@ -484,7 +485,7 @@ class Moderation(commands.Cog):
 
     @commands.command()
     @helper_and_above()
-    async def warn(self, ctx, *args):
+    async def warn(self, ctx: commands.Context, *args):
         """Warn user(s) \nUsage: warn @member(s) reason"""
         logging_channel = discord.utils.get(ctx.guild.channels, id=self.logging_channel)
 
@@ -525,8 +526,8 @@ class Moderation(commands.Cog):
 
         embed = helper.create_embed(
             author=ctx.author,
-            users=members,
             action="Warned User(s)",
+            users=members,
             reason=reason,
             color=discord.Color.red(),
         )
@@ -542,7 +543,7 @@ class Moderation(commands.Cog):
     @mod_and_above()
     async def infractions(
         self,
-        ctx,
+        ctx: commands.Context,
         member: typing.Optional[discord.Member] = None,
         mem_id: typing.Optional[int] = None,
         inf_type: str = None,
@@ -662,7 +663,7 @@ class Moderation(commands.Cog):
     @mod_and_above()
     async def slowmode(
         self,
-        ctx,
+        ctx: commands.Context,
         time: typing.Optional[int] = None,
         channel: typing.Optional[discord.TextChannel] = None,
         *,
@@ -686,8 +687,8 @@ class Moderation(commands.Cog):
         logging_channel = discord.utils.get(ctx.guild.channels, id=self.logging_channel)
         embed = helper.create_embed(
             author=ctx.author,
-            users=None,
             action="Added slow mode.",
+            users=None,
             reason=reason,
             extra=f"Channel: {ch.mention}\nSlowmode Duration: {time} seconds",
             color=discord.Color.orange(),
