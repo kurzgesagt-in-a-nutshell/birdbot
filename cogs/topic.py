@@ -39,7 +39,7 @@ class Topic(commands.Cog):
 
     @commands.group(invoke_without_command=True)
     @general_only()
-    # @commands.cooldown(1, 60)
+    @commands.cooldown(1, 60)
     async def topic(self, ctx: commands.Context):
         """Get a topic to talk about."""
 
