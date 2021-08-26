@@ -4,6 +4,7 @@ import random
 import typing
 from fuzzywuzzy import process
 import asyncio
+import copy
 
 import discord
 from discord.ext import commands
@@ -21,7 +22,9 @@ class Topic(commands.Cog):
             "topics"
         ]  # Use this for DB interaction
 
-        self.topics_list = self.topics  # This is used to stop topic repeats
+        self.topics_list = copy.deepcopy(
+            self.topics
+        )  # This is used to stop topic repeats
 
         config_file = open("config.json", "r")
         config_json = json.loads(config_file.read())
@@ -36,14 +39,15 @@ class Topic(commands.Cog):
 
     @commands.group(invoke_without_command=True)
     @general_only()
-    @commands.cooldown(1, 60)
+    # @commands.cooldown(1, 60)
     async def topic(self, ctx: commands.Context):
         """Get a topic to talk about."""
-        if self.topics_list == []:
-            self.topics_list = self.topics
 
         random_index = random.randint(0, len(self.topics_list) - 1)
         await ctx.send(f"{self.topics_list.pop(random_index)}")
+
+        if self.topics_list == []:
+            self.topics_list = copy.deepcopy(self.topics)
 
     @mod_and_above()
     @topic.command()
