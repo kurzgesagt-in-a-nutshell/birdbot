@@ -23,6 +23,6 @@ python-Levenshtein==0.12.2
 rich==10.7.0
 smmap==4.0.0
 toml==0.10.2
-typing-extensions==3.10.0.0
+typing-extensions==3.10.0.2
 yarg==0.1.9
 yarl==1.6.3
