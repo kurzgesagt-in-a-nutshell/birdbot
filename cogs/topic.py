@@ -51,17 +51,31 @@ class Topic(commands.Cog):
 
     @mod_and_above()
     @topic.command()
-    async def get(self, ctx: commands.Context, index: int):
+    async def get(self, ctx: commands.Context, *, search_string: str):
         """
-        Get a topic by index.
-        Usage: topic get index
+        Get a topic by search string.
+        Usage: topic get search_string
         """
-        if index < 1 or index > len(self.topics):
-            raise commands.BadArgument(
-                message=f"Invalid index. Min value: 0, Max value: {len(self.topics)}"
-            )
 
-        await ctx.send(f"{index}. {self.topics[index - 1]}")
+        await ctx.message.delete(delay=6)
+
+        search_result = process.extractBests(search_string, self.topics, limit=9)
+
+        t = [topic[0] for topic in search_result if topic[1] > 75]
+
+        if t == []:
+            return await ctx.send("No match found.", delete_after=6)
+
+        embed_desc = "".join(
+            f"{self.topics.index(tp) + 1}. {tp}\n" for index, tp in enumerate(t)
+        )
+
+        embed = discord.Embed(
+            title="Best matches for search: ",
+            description=embed_desc,
+        )
+
+        await ctx.send(embed=embed, delete_after=20)
 
     @mod_and_above()
     @topic.command()
@@ -74,9 +88,7 @@ class Topic(commands.Cog):
 
         self.topics.append(topic)
 
-        self.topics_db.update_one(
-            {"name": "topics_list"}, {"$set": {"topics": self.topics}}
-        )
+        self.topics_db.update_one({"name": "topics"}, {"$set": {"topics": self.topics}})
 
         await ctx.send(f"Topic added at index {len(self.topics)}", delete_after=6)
         await ctx.message.delete(delay=4)
@@ -121,7 +133,7 @@ class Topic(commands.Cog):
                         author = message.embeds[0].author
                         self.topics.append(topic.strip("*"))
                         self.topics_db.update_one(
-                            {"name": "topics_list"}, {"$set": {"topics": self.topics}}
+                            {"name": "topics"}, {"$set": {"topics": self.topics}}
                         )
                         embed = discord.Embed(
                             description=f"**{topic}**", colour=discord.Colour.green()
@@ -169,7 +181,7 @@ class Topic(commands.Cog):
             del self.topics[index]
 
             self.topics_db.update_one(
-                {"name": "topics_list"}, {"$set": {"topics": self.topics}}
+                {"name": "topics"}, {"$set": {"topics": self.topics}}
             )
 
             emb = discord.Embed(
@@ -238,7 +250,7 @@ class Topic(commands.Cog):
                 self.topics.remove(search_result[i][0])
 
                 self.topics_db.update_one(
-                    {"name": "topics_list"}, {"$set": {"topics": self.topics}}
+                    {"name": "topics"}, {"$set": {"topics": self.topics}}
                 )
 
             except asyncio.TimeoutError:
