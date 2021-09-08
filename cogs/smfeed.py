@@ -78,7 +78,7 @@ class Smfeed(commands.Cog):
                     ]
                 )
 
-    @mod_and_above
+    @mod_and_above()
     @commands.command()
     async def en_video(self, ctx, tim: typing.Optional[int] = 5):
         """
