@@ -1,10 +1,19 @@
+import asyncio
 import logging
 import re
+import threading
+
 import demoji
 from better_profanity import profanity
 import discord
 from discord.ext import commands
 from utils.helper import mod_and_above, helper_and_above
+from difflib import SequenceMatcher
+
+
+def add_to_general(word):
+    with open('swearfilters/generalfilter.txt', 'a') as f:
+        f.write(word)
 
 
 class Filter(commands.Cog):
@@ -16,6 +25,8 @@ class Filter(commands.Cog):
         self.humanities_list = []
         self.general_list = []
         self.white_list = []
+        self.message_history_list = {}
+        self.message_history_lock = threading.RLock()
         with open('swearfilters/humanitiesfilter.txt') as f:
             self.humanities_list = f.read().splitlines()
         with open('swearfilters/generalfilter.txt') as f:
@@ -36,7 +47,7 @@ class Filter(commands.Cog):
                 await self.add_to_humanities(word)
         else:
             for word in words:
-                await self.add_to_general(word)
+                await add_to_general(word)
         self.update_lists()
         await ctx.message.add_reaction('<:kgsYes:580164400691019826>')
 
@@ -73,7 +84,7 @@ class Filter(commands.Cog):
         event = False
         if str(message.channel.type) == "private":
             wordlist = self.general_list
-            event = self.check_message_for_profanity(message.content, wordlist)
+            event = await self.check_message(message, wordlist)
             if event[0]:
                 if event[1] == "profanity":
                     print("filtered " + message.content)
@@ -93,10 +104,16 @@ class Filter(commands.Cog):
                     # await message.delete()
                     await message.channel.send(f"Please do not spam {message.author.mention}", delete_after=20)
                     await message.add_reaction('<:kgsYes:580164400691019826>')
-
-        elif not self.isExcluded(message.author):
+                if event[1] == "bypass":
+                    print("bypass detected" + message.content)
+                    # await message.delete()
+                    await message.channel.send(f"Please do post gifs/videos in general {message.author.mention}",
+                                               delete_after=20)
+                    await message.add_reaction('<:kgsYes:580164400691019826>')
+        elif message.channel.id == 414179142020366336:
+            # elif not self.isExcluded(message.author):
             wordlist = self.get_word_list(message)
-            event = self.check_message_for_profanity(message.content, wordlist)
+            event = await self.check_message(message, wordlist)
             if event[0]:
                 if event[1] == "profanity":
                     print("filtered " + message.content)
@@ -110,9 +127,14 @@ class Filter(commands.Cog):
                     await message.delete()
                     await message.channel.send(f"Please do not spam emojis {message.author.mention}", delete_after=20)
                 if event[1] == "text":
-                    print("text spam detected {message.content}")
+                    print(f"text spam detected {message.content}")
                     await message.delete()
                     await message.channel.send("Please do not spam {message.author.mention}", delete_after=20)
+                if event[1] == "bypass":
+                    print(f"bypass detected {message.content}")
+                    await message.delete()
+                    await message.channel.send(f"Please do not post gifs/videos in general {message.author.mention}",
+                                               delete_after=20)
 
     def get_word_list(self, message):
         if message.channel == 546315063745839115:
@@ -145,10 +167,6 @@ class Filter(commands.Cog):
         with open('swearfilters/whitelist.txt', 'a') as f:
             self.white_list = f.read().splitlines()
 
-    def add_to_general(self, word):
-        with open('swearfilters/generalfilter.txt', 'a') as f:
-            f.write(word)
-
     def add_to_humanities(self, word):
         with open('swearfilters/humanitiesfilter.txt', 'a') as f:
             f.write(word)
@@ -157,76 +175,151 @@ class Filter(commands.Cog):
         with open('swearfilters/filter.txt', 'a') as f:
             f.write(word)
 
-    def check_message_for_profanity(self, message_content, word_list):
-        profanity.load_censor_words(word_list)
-        regex_list = self.generate_regex(word_list)
-        # stores all words that are aparently profanity
-        offending_list = []
-        toReturn = [False, None]
-        # filter out bold and italics but keep *
-        message_clean = message_content
-        indexes = re.finditer('(\*\*.*\*\*)', message_content)
-        if indexes:
-            tracker = 0
-            for i in indexes:
-                message_clean = message_clean.replace(
-                    message_clean[i.start() - tracker:i.end() - tracker],
-                    message_clean[
-                        i.start() + 2 - tracker: i.end() - 2 - tracker
-                    ]
-                )
-                tracker = tracker+4
-        indexes = re.finditer(r'(\*.*\*)', message_clean)
-        if indexes:
-            tracker = 0
-            for i in indexes:
-                message_clean = message_clean.replace(message_clean[i.start() - tracker:i.end() - tracker],
-                                                      message_clean[i.start() + 1 - tracker: i.end() - 1 - tracker])
-                tracker = tracker + 2
+    async def check_message(self, message, word_list):
 
-        # Chagnes letter emojis to normal ascii ones
-        message_clean = self.convert_regional(message_clean)
-        # find all question marks in message
-        indexes = [x.start() for x in re.finditer(r'\?', message_clean)]
-        # get rid of all other non ascii charcters
-        message_clean = demoji.replace(message_clean, '*')
-        message_clean = str(message_clean).encode(
-            "ascii", "replace").decode().lower().replace("?", "*")
-        # put back question marks
-        message_clean = list(message_clean)
-        for i in indexes:
-            message_clean[i] = "?"
-        message_clean = "".join(message_clean)
-        # sub out discord emojis
-        message_clean = re.sub(r'(<[A-z]*:[^\s]+:[0-9]*>)', '*', message_clean)
-        if profanity.contains_profanity(message_clean):
-            return [True, "profanity"]
-        elif profanity.contains_profanity(str(message_clean).replace(" ", "")):
-            return [True, "profanity"]
-        else:
-            for regex in regex_list:
-                if re.search(regex, message_clean):
-                    found_items = (re.findall(
-                        regex[:-1] + '[A-z]*)', message_clean))
-                    for e in found_items:
-                        offending_list.append(e)
-                    toReturn = [True, "profanity"]
-        if toReturn[0]:
-            if self.exception_list_check(offending_list):
-                return toReturn
+        # check for profanity
+        def check_profanity(word_list, message):
+            profanity.load_censor_words(word_list)
+            regex_list = self.generate_regex(word_list)
+            # stores all words that are aparently profanity
+            offending_list = []
+            toReturn = False
+            # filter out bold and italics but keep *
+            message_clean = message.content
+            indexes = re.finditer('(\*\*.*\*\*)', message.content)
+            if indexes:
+                tracker = 0
+                for i in indexes:
+                    message_clean = message_clean.replace(
+                        message_clean[i.start() - tracker:i.end() - tracker],
+                        message_clean[
+                        i.start() + 2 - tracker: i.end() - 2 - tracker
+                        ]
+                    )
+                    tracker = tracker + 4
+            indexes = re.finditer(r'(\*.*\*)', message_clean)
+            if indexes:
+                tracker = 0
+                for i in indexes:
+                    message_clean = message_clean.replace(message_clean[i.start() - tracker:i.end() - tracker],
+                                                          message_clean[i.start() + 1 - tracker: i.end() - 1 - tracker])
+                    tracker = tracker + 2
+            # Chagnes letter emojis to normal ascii ones
+            message_clean = self.convert_regional(message_clean)
+            # find all question marks in message
+            indexes = [x.start() for x in re.finditer(r'\?', message_clean)]
+            # get rid of all other non ascii charcters
+            message_clean = demoji.replace(message_clean, '*')
+            message_clean = str(message_clean).encode(
+                "ascii", "replace").decode().lower().replace("?", "*")
+            # put back question marks
+            message_clean = list(message_clean)
+            for i in indexes:
+                message_clean[i] = "?"
+            message_clean = "".join(message_clean)
+            # sub out discord emojis
+            message_clean = re.sub(r'(<[A-z]*:[^\s]+:[0-9]*>)', '*', message_clean)
+            print(message_clean)
+            if profanity.contains_profanity(message_clean):
+                return True
+            elif profanity.contains_profanity(str(message_clean).replace(" ", "")):
+                return True
+            else:
+                for regex in regex_list:
+                    if re.search(regex, message_clean):
+                        print(regex)
+                        found_items = (re.findall(
+                            regex[:-3] + '[A-z]*)', message_clean))
+                        for e in found_items:
+                            offending_list.append(e)
+                        toReturn = True
+
+                print(offending_list)
+            if toReturn:
+                if self.exception_list_check(offending_list):
+                    return toReturn
+
+            return False
 
         # check for emoji spam
-        if len(re.findall(r'(<[A-z]*:[^\s]+:[0-9]*>)', re.sub('(>[^/s]*<)+', '> <', str(message_content)
-                                                              .encode("ascii", "ignore").decode()))) + len(demoji.findall_list(message_content)) > 5:
-            return [True, "emoji"]
-        return [False, None]
+        def check_emoji_spam(message):
+            if len(re.findall(r'(<:[^\s]+:[0-9]*>)',
+                              re.sub(r'(>[^/s]*<)+', '> <', str(message.content).encode("ascii", "ignore")
+                                      .decode()))) + len(demoji.findall_list(message.content)) > 5:
+                return True
+            return False
 
-    def check_message_for_emoji_spam(self, message):
-        if len(re.findall(r'(<:[^\s]+:[0-9]*>)',
-                          re.sub(r'(>[^/s]*<)+', '> <', str(message.content).encode("ascii", "ignore")
-                                 .decode()))) + len(demoji.findall_list(message.content)) > 5:
-            return True
-        return False
+        # check for text spam
+        def check_text_spam(self, message):
+            # if the user has past messages
+            if message.author.id in self.message_history_list:
+                user_past_messages = self.message_history_list[message.author.id]
+                adv = 0
+                count = len(user_past_messages)
+                # atleast 3 prior messages
+                if count > 3:
+                    for m in user_past_messages:
+                        adv = adv + SequenceMatcher(None, m, message.cotnet).ratio()
+                    # if the passed x message are similar with a 75% threshold
+                    if (adv / count > 0.75):
+                        return True
+            if message.channel.id in self.message_history_list:
+                channel_past_messages = self.message_history_list[message.channel.id]
+                adv = 0
+                count = len(channel_past_messages)
+                # atleast 3 prior messages
+                if count > 5:
+                    for m in channel_past_messages:
+                        adv = adv + SequenceMatcher(None, m, message.cotnet).ratio()
+                    # if the passed x message are similar with a 90% threshold
+                    if (adv / count > 0.90):
+                        return True
+
+        # check for mass ping
+        # def check_ping_spam(message):
+
+        # check for gif bypass
+        def check_gif_bypass(message):
+            filetypes = ["mp4", "gif", "webm", "gifv"]
+            if message.channel.id == 414027124836532236 or message.channel.id == 414179142020366336:
+                if message.embeds:
+                    for e in message.embeds:
+                        for t in filetypes:
+                            if e.url.endswith(t):
+                                return True
+            return False
+
+        # run checks
+        if check_profanity(word_list, message):
+            return [True, "profanity"]
+        if check_emoji_spam(message):
+            return [True, "emoji"]
+        if check_gif_bypass(message):
+            return [True, "bypass"]
+
+        # this one goes last due to lock
+        with self.message_history_lock:
+
+            if check_text_spam(self, message):
+                return [True, "spam"]
+            if message.author.id in self.message_history_list:
+                self.message_history_list[message.author.id] = \
+                    self.message_history_list[message.author.id].append(message.content)
+            else:
+                self.message_history_list[message.author.id] = [message.content]
+                print("user")
+                print(self.message_history_list[message.author.id])
+
+            if message.channel.id in self.message_history_list:
+                self.message_history_list[message.channel.id] = \
+                    self.message_history_list[message.channel.id].append(message.content)
+            else:
+                self.message_history_list[message.channel.id] = [message.content]
+                print("channel")
+                print(self.message_history_list[message.channel.id])
+            # if getting past this point we write to message history and pop if to many messages
+
+        return [False, "none"]
 
     def exception_list_check(self, offending_list):
         for bad_word in offending_list:
@@ -283,16 +376,16 @@ class Filter(commands.Cog):
         replacement = {
             'a': r'a\@\#',
             'b': r'b\*',
-            'c': r'c\*',
+            'c': r'c¢\*',
             'd': r'd\*',
             'e': r'e\*',
             'f': r'f\*',
             'g': r'g\*',
             'h': r'h\*',
-            'i': r'1il\*',
-            'j': r'j\*',
+            'i': r'!1il\*',
+            'j': r'!j\*',
             'k': r'k\*',
-            'l': r'1i1l\*',
+            'l': r'!1il\*',
             'm': r'm\*',
             'n': r'n\*',
             'o': r'o\*',
@@ -312,12 +405,10 @@ class Filter(commands.Cog):
         regexlist = []
         for word in words:
             regex_parts = []
-
             for c in word:
-                regex_parts.append(f"[ {replacement.get(c)} ]")
-            regex = r'\b(' + joining_chars.join(regex_parts) + ')'
+                regex_parts.append(f"[{replacement.get(c)}]")
+            regex = r'\b(' + joining_chars.join(regex_parts) + r')\b'
             regexlist.append(regex)
-
         return regexlist
 
 
