@@ -110,8 +110,8 @@ class Filter(commands.Cog):
                     await message.channel.send(f"Please do post gifs/videos in general {message.author.mention}",
                                                delete_after=20)
                     await message.add_reaction('<:kgsYes:580164400691019826>')
-        elif message.channel.id == 414179142020366336:
-            # elif not self.isExcluded(message.author):
+        #elif message.channel.id == 414179142020366336:
+        elif not self.isExcluded(message.author):
             wordlist = self.get_word_list(message)
             event = await self.check_message(message, wordlist)
             if event[0]:
@@ -129,7 +129,7 @@ class Filter(commands.Cog):
                 if event[1] == "text":
                     print(f"text spam detected {message.content}")
                     await message.delete()
-                    await message.channel.send("Please do not spam {message.author.mention}", delete_after=20)
+                    await message.channel.send(f"Please do not spam {message.author.mention}", delete_after=20)
                 if event[1] == "bypass":
                     print(f"bypass detected {message.content}")
                     await message.delete()
@@ -219,7 +219,6 @@ class Filter(commands.Cog):
             message_clean = "".join(message_clean)
             # sub out discord emojis
             message_clean = re.sub(r'(<[A-z]*:[^\s]+:[0-9]*>)', '*', message_clean)
-            print(message_clean)
             if profanity.contains_profanity(message_clean):
                 return True
             elif profanity.contains_profanity(str(message_clean).replace(" ", "")):
@@ -233,8 +232,6 @@ class Filter(commands.Cog):
                         for e in found_items:
                             offending_list.append(e)
                         toReturn = True
-
-                print(offending_list)
             if toReturn:
                 if self.exception_list_check(offending_list):
                     return toReturn
@@ -253,28 +250,25 @@ class Filter(commands.Cog):
         def check_text_spam(self, message):
             # if the user has past messages
             if message.author.id in self.message_history_list:
-                user_past_messages = self.message_history_list[message.author.id]
                 adv = 0
-                count = len(user_past_messages)
+                count = len(self.message_history_list[message.author.id])
                 # atleast 3 prior messages
                 if count > 3:
-                    for m in user_past_messages:
-                        adv = adv + SequenceMatcher(None, m, message.cotnet).ratio()
+                    for m in self.message_history_list[message.author.id]:
+                        adv = adv + SequenceMatcher(None, m, message.content).ratio()
                     # if the passed x message are similar with a 75% threshold
                     if (adv / count > 0.75):
                         return True
             if message.channel.id in self.message_history_list:
-                channel_past_messages = self.message_history_list[message.channel.id]
                 adv = 0
-                count = len(channel_past_messages)
+                count = len(self.message_history_list[message.channel.id])
                 # atleast 3 prior messages
                 if count > 5:
-                    for m in channel_past_messages:
-                        adv = adv + SequenceMatcher(None, m, message.cotnet).ratio()
+                    for m in self.message_history_list[message.channel.id]:
+                        adv = adv + SequenceMatcher(None, m, message.content).ratio()
                     # if the passed x message are similar with a 90% threshold
                     if (adv / count > 0.90):
                         return True
-
         # check for mass ping
         # def check_ping_spam(message):
 
@@ -301,22 +295,15 @@ class Filter(commands.Cog):
         with self.message_history_lock:
 
             if check_text_spam(self, message):
-                return [True, "spam"]
+                return [True, "text"]
             if message.author.id in self.message_history_list:
-                self.message_history_list[message.author.id] = \
-                    self.message_history_list[message.author.id].append(message.content)
+                self.message_history_list[message.author.id].append(message.content)
             else:
                 self.message_history_list[message.author.id] = [message.content]
-                print("user")
-                print(self.message_history_list[message.author.id])
-
             if message.channel.id in self.message_history_list:
-                self.message_history_list[message.channel.id] = \
-                    self.message_history_list[message.channel.id].append(message.content)
+                self.message_history_list[message.channel.id].append(message.content)
             else:
                 self.message_history_list[message.channel.id] = [message.content]
-                print("channel")
-                print(self.message_history_list[message.channel.id])
             # if getting past this point we write to message history and pop if to many messages
 
         return [False, "none"]
