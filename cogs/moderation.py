@@ -39,7 +39,9 @@ class Moderation(commands.Cog):
         for action in self.timed_action_list:
             if action["action_end"] < datetime.datetime.utcnow():
                 user = discord.utils.get(guild.members, id=action["user_id"])
-                await user.remove_roles(mute_role, reason="Time Expired")
+
+                if user is not None:
+                    await user.remove_roles(mute_role, reason="Time Expired")
 
                 helper.delete_timed_actions_uid(u_id=action["user_id"])
 
