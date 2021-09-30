@@ -1,4 +1,4 @@
-name = input('Cog Name: ')
+name = input("Cog Name: ")
 text = f"""import logging
 
 import discord
@@ -24,7 +24,7 @@ def setup(bot):
     bot.add_cog({''.join(name.title().split())}(bot))
 
 """
-f = open(f"cogs/{'_'.join(name.casefold().split())}.py", 'w+')
+f = open(f"cogs/{'_'.join(name.casefold().split())}.py", "w+")
 f.write(text)
 f.close()
 print(f"Created cog with name {'_'.join(name.casefold().split())}.py in cogs directory")
