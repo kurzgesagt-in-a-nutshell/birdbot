@@ -594,10 +594,10 @@ class Moderation(commands.Cog):
 
             msg = None
             msg = await ctx.send(embed=infs_embed)
-            await msg.add_reaction("\u26A0")
-            await msg.add_reaction("\U0001F507")
-            await msg.add_reaction("\U0001F528")
-            await msg.add_reaction("\U0001F3CC")
+            await msg.add_reaction("\U0001F1FC")
+            await msg.add_reaction("\U0001F1F2")
+            await msg.add_reaction("\U0001F1E7")
+            await msg.add_reaction("\U0001F1F0")
 
             while True:
                 try:
@@ -605,22 +605,24 @@ class Moderation(commands.Cog):
                         "reaction_add",
                         check=lambda reaction, user: user == ctx.author
                         and reaction.emoji
-                        in ["\u26A0", "\U0001F528", "\U0001F507", "\U0001F3CC"],
+                        in [
+                            "\U0001F1FC",
+                            "\U0001F1F2",
+                            "\U0001F1E7",
+                            "\U0001F1F0",
+                        ],
                         timeout=20.0,
                     )
 
                 except asyncio.exceptions.TimeoutError:
                     await ctx.send("Embed Timed Out.", delete_after=3.0)
                     if msg:
-                        await msg.clear_reaction("\u26A0")
-                        await msg.clear_reaction("\U0001F528")
-                        await msg.clear_reaction("\U0001F507")
-                        await msg.clear_reaction("\U0001F3CC")
+                        await msg.clear_reactions()
                     break
 
                 else:
                     em = reaction.emoji
-                    if em == "\u26A0":
+                    if em == "\U0001F1FC":
                         inf_type = "warn"
                         infs_embed = helper.get_infractions(
                             member_id=mem_id, inf_type=inf_type
@@ -628,15 +630,7 @@ class Moderation(commands.Cog):
                         await msg.edit(embed=infs_embed)
                         await msg.remove_reaction(emoji=em, member=user)
 
-                    elif em == "\U0001F528":
-                        inf_type = "ban"
-                        infs_embed = helper.get_infractions(
-                            member_id=mem_id, inf_type=inf_type
-                        )
-                        await msg.edit(embed=infs_embed)
-                        await msg.remove_reaction(emoji=em, member=user)
-
-                    elif em == "\U0001F507":
+                    elif em == "\U0001F1F2":
                         inf_type = "mute"
                         infs_embed = helper.get_infractions(
                             member_id=mem_id, inf_type=inf_type
@@ -644,7 +638,15 @@ class Moderation(commands.Cog):
                         await msg.edit(embed=infs_embed)
                         await msg.remove_reaction(emoji=em, member=user)
 
-                    elif em == "\U0001F3CC":
+                    elif em == "\U0001F1E7":
+                        inf_type = "ban"
+                        infs_embed = helper.get_infractions(
+                            member_id=mem_id, inf_type=inf_type
+                        )
+                        await msg.edit(embed=infs_embed)
+                        await msg.remove_reaction(emoji=em, member=user)
+
+                    elif em == "\U0001F1F0":
                         inf_type = "kick"
                         infs_embed = helper.get_infractions(
                             member_id=mem_id, inf_type=inf_type
@@ -655,11 +657,7 @@ class Moderation(commands.Cog):
         except asyncio.exceptions.TimeoutError:
             await ctx.send("Embed Timed Out.", delete_after=3.0)
             if msg:
-                await msg.clear_reaction("\u26A0")
-                await msg.clear_reaction("\U0001F528")
-                await msg.clear_reaction("\U0001F507")
-                await msg.clear_reaction("\U0001F3CC")
-                await msg.clear_reaction("\U0001F3CC")
+                await msg.clear_reactions()
 
     @commands.command(aliases=["slothmode"])
     @mod_and_above()
