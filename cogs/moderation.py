@@ -541,6 +541,175 @@ class Moderation(commands.Cog):
         if failed_warn:
             await x.delete()
 
+    @commands.command(aliases=["unwarn", "removewarn"])
+    @mod_and_above()
+    async def delwarn(self, ctx: commands.context, member: discord.Member):
+        """Remove warn for a user.\nUsage: delwarn @member/id"""
+        warns = helper.get_warns(member_id=member.id)
+
+        if warns is None:
+            return await ctx.send("User has no warns.")
+
+        embed = discord.Embed(
+            title=f"Warns for {member.name}",
+            description=f"Showing atmost 5 warns at a time. (Total warns: {len(warns)})",
+            color=discord.Colour.magenta(),
+            timestamp=datetime.datetime.utcnow(),
+        )
+
+        warn_len = len(warns)
+        page = 0
+        start = 0
+        end = start + 5 if start + 5 < warn_len else warn_len
+        delete_warn_idx = -1
+
+        for idx, warn in enumerate(warns[start:end]):
+            embed.add_field(
+                name=f"ID: {idx}",
+                value="```{0}\n{1}\n{2}```".format(
+                    "Author: {} ({})".format(warn["author_name"], warn["author_id"]),
+                    "Reason: {}".format(warn["reason"]),
+                    "Date: {}".format(warn["datetime"].replace(microsecond=0)),
+                ),
+                inline=False,
+            )
+
+        msg = await ctx.send(embed=embed)
+
+        emote_list = [
+            "\u0030\uFE0F\u20E3",
+            "\u0031\uFE0F\u20E3",
+            "\u0032\uFE0F\u20E3",
+            "\u0033\uFE0F\u20E3",
+            "\u0034\uFE0F\u20E3",
+        ]
+        left_arrow = "\u2B05\uFE0F"
+        right_arrow = "\u27A1\uFE0F"
+        cross = "\u274C"
+        yes = "\u2705"
+
+        await msg.add_reaction(left_arrow)
+        for i in emote_list[0 : end - start]:
+            await msg.add_reaction(i)
+        await msg.add_reaction(right_arrow)
+        await msg.add_reaction(cross)
+
+        def check(reaction, user):
+            return user == ctx.author and (
+                str(reaction.emoji) in emote_list
+                or str(reaction.emoji) == right_arrow
+                or str(reaction.emoji) == left_arrow
+                or str(reaction.emoji) == cross
+                or str(reaction.emoji) == yes
+            )
+
+        try:
+            while True:
+                reaction, user = await self.bot.wait_for(
+                    "reaction_add", timeout=30.0, check=check
+                )
+
+                if str(reaction.emoji) in emote_list:
+                    await msg.clear_reactions()
+
+                    delete_warn_idx = (page * 5) + emote_list.index(str(reaction.emoji))
+
+                    embed = discord.Embed(
+                        title=f"Warns for {member.name}",
+                        description=f"Confirm removal of warn",
+                        color=discord.Colour.magenta(),
+                        timestamp=datetime.datetime.utcnow(),
+                    )
+
+                    embed.add_field(
+                        name="Delete Warn?",
+                        value="```{0}\n{1}\n{2}```".format(
+                            "Author: {} ({})".format(
+                                warns[delete_warn_idx]["author_name"],
+                                warns[delete_warn_idx]["author_id"],
+                            ),
+                            "Reason: {}".format(warns[delete_warn_idx]["reason"]),
+                            "Date: {}".format(
+                                warns[delete_warn_idx]["datetime"].replace(
+                                    microsecond=0
+                                )
+                            ),
+                        ),
+                    )
+
+                    await msg.edit(embed=embed)
+                    await msg.add_reaction(yes)
+                    await msg.add_reaction(cross)
+
+                elif str(reaction.emoji) == yes:
+                    if delete_warn_idx != -1:
+
+                        del warns[delete_warn_idx]
+                        helper.update_warns(member.id, warns)
+
+                        await msg.edit(
+                            content="Warning deleted successfully.",
+                            embed=None,
+                            delete_after=5,
+                        )
+                        # await msg.delete(delay=5)
+                        break
+
+                elif str(reaction.emoji) == cross:
+                    await msg.edit(content="Exited!!!", embed=None, delete_after=5)
+                    # await msg.delete(delay=5)
+                    break
+
+                else:
+                    await msg.clear_reactions()
+
+                    if str(reaction.emoji) == left_arrow:
+                        if page >= 1:
+                            page -= 1
+
+                    elif str(reaction.emoji) == right_arrow:
+                        if page < (warn_len - 1) // 5:
+                            page += 1
+
+                    start = page * 5
+                    end = start + 5 if start + 5 < warn_len else warn_len
+
+                    embed = discord.Embed(
+                        title=f"Warns for {member.name}",
+                        description=f"Showing atmost 5 warns at a time",
+                        color=discord.Colour.magenta(),
+                        timestamp=datetime.datetime.utcnow(),
+                    )
+                    for idx, warn in enumerate(warns[start:end]):
+                        embed.add_field(
+                            name=f"ID: {idx}",
+                            value="```{0}\n{1}\n{2}```".format(
+                                "Author: {} ({})".format(
+                                    warn["author_name"], warn["author_id"]
+                                ),
+                                "Reason: {}".format(warn["reason"]),
+                                "Date: {}".format(
+                                    warn["datetime"].replace(microsecond=0)
+                                ),
+                            ),
+                            inline=False,
+                        )
+
+                    await msg.edit(embed=embed)
+
+                    await msg.add_reaction(left_arrow)
+                    for i in emote_list[0 : end - start]:
+                        await msg.add_reaction(i)
+                    await msg.add_reaction(right_arrow)
+                    await msg.add_reaction(cross)
+
+        except asyncio.TimeoutError:
+            await msg.clear_reactions()
+            await ctx.message.delete(delay=5)
+            return
+
+        await ctx.message.delete(delay=5)
+
     @commands.command(aliases=["infr", "inf", "infraction"])
     @mod_and_above()
     async def infractions(
