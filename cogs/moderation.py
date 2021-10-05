@@ -1,6 +1,5 @@
 import json
 import io
-from os import name
 import re
 import typing
 import datetime
@@ -8,7 +7,7 @@ import asyncio
 import logging
 
 from utils import helper
-from utils.helper import devs_only, helper_and_above, mod_and_above
+from utils.helper import helper_and_above, mod_and_above
 
 from utils import custom_converters
 
