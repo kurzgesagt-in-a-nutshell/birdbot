@@ -3,6 +3,7 @@ import datetime
 import json
 import logging
 from typing import List, Tuple, Union
+import typing
 
 import discord
 from discord.ext import commands
@@ -390,6 +391,34 @@ def get_infractions(member_id: int, inf_type: str) -> discord.Embed:
         embed.add_field(name="No infraction found.", value="```User is clean.```")
 
     return embed
+
+
+def get_warns(member_id: int):
+    """Get only warns of a user
+
+    Args:
+        member_id (int): member id
+
+    Returns:
+        Union[List, None]: List of warns or None
+    """
+    warns = infraction_db.find_one({"user_id": member_id})
+
+    if warns:
+        return warns["warn"]
+
+    else:
+        None
+
+
+def update_warns(member_id: int, new_warns: typing.List):
+    """Updates warn list with new one
+
+    Args:
+        member_id (int): ID of user
+        new_warns (typing.List): List of warns
+    """
+    infraction_db.update_one({"user_id": member_id}, {"$set": {"warn": new_warns}})
 
 
 def create_timed_action(
