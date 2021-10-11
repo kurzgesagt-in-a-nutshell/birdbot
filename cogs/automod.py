@@ -1,4 +1,5 @@
 import asyncio
+import json
 import logging
 import re
 import threading
@@ -7,7 +8,12 @@ import demoji
 from better_profanity import profanity
 import discord
 from discord.ext import commands
-from utils.helper import mod_and_above, helper_and_above
+from utils.helper import (
+    create_automod_embed,
+    create_embed,
+    mod_and_above,
+    helper_and_above,
+)
 from difflib import SequenceMatcher
 
 
@@ -20,6 +26,13 @@ class Filter(commands.Cog):
     def __init__(self, bot):
         self.logger = logging.getLogger("Automod")
         self.bot = bot
+
+        config_file = open("config.json", "r")
+        self.config_json = json.loads(config_file.read())
+        config_file.close()
+
+        self.logging_channel_id = self.config_json["logging"]["logging_channel"]
+        self.logging_channel = None
 
         self.humanities_list = []
         self.general_list = []
@@ -36,6 +49,11 @@ class Filter(commands.Cog):
     @commands.Cog.listener()
     async def on_ready(self):
         self.logger.info("loaded Automod")
+        # FIXME: self.logging_channel sets to None on cog reload.
+        kurz_guild = self.bot.get_guild(414027124836532234)
+        self.logging_channel = discord.utils.get(
+            kurz_guild.text_channels, id=self.logging_channel_id
+        )
 
     @commands.command()
     @helper_and_above()
@@ -129,32 +147,45 @@ class Filter(commands.Cog):
             event = await self.check_message(message, wordlist)
             if event[0]:
                 if event[1] == "profanity":
-                    print(f"{message.author} profanity detected {message.content}")
+
                     await message.delete()
                     await message.channel.send(
                         f"Be nice, Don't say bad things {message.author.mention}",
                         delete_after=30,
                     )
+                    embed = create_automod_embed(
+                        message=message, automod_type="Profanity"
+                    )
+                    await self.logging_channel.send(embed=embed)
                 if event[1] == "emoji":
-                    print(f"{message.author} Emoji Spam detected {message.content}")
                     await message.delete()
                     await message.channel.send(
                         f"Please do not spam emojis {message.author.mention}",
                         delete_after=20,
                     )
+                    embed = create_automod_embed(
+                        message=message, automod_type="Emoji Spam"
+                    )
+                    await self.logging_channel.send(embed=embed)
                 if event[1] == "text":
-                    print(f"{message.author} text spam detected {message.content}")
                     await message.delete()
                     await message.channel.send(
                         f"Please do not spam {message.author.mention}", delete_after=20
                     )
+                    embed = create_automod_embed(
+                        message=message, automod_type="Text Spam"
+                    )
+                    await self.logging_channel.send(embed=embed)
                 if event[1] == "bypass":
-                    print(f"{message.author} bypass detected {message.content}")
                     await message.delete()
                     await message.channel.send(
                         f"Please do not post gifs/videos in general {message.author.mention}",
                         delete_after=20,
                     )
+                    embed = create_automod_embed(
+                        message=message, automod_type="Media in #general"
+                    )
+                    await self.logging_channel.send(embed=embed)
 
     def get_word_list(self, message):
         if message.channel == 546315063745839115:
