@@ -91,15 +91,18 @@ class Filter(commands.Cog):
 
     @commands.Cog.listener()
     async def on_message(self, message):
-        await self.moderate(message)
+        if not str(message.channel.type) == "private":
+            await self.moderate(message)
 
     @commands.Cog.listener()
     async def on_message_edit(self, oldMessage, newMessage):
-        await self.moderate(newMessage)
+        if not str(newMessage.channel.type) == "private":
+            await self.moderate(newMessage)
 
     @commands.Cog.listener()
     async def on_message_update(self, oldMessage, newMessage):
-        await self.moderate(newMessage)
+        if not str(newMessage.channel.type) == "private":
+            await self.moderate(newMessage)
 
     async def moderate(self, message):
         # TODO: This section is just for testing filter in DMs, to be removed for stable.
@@ -142,7 +145,7 @@ class Filter(commands.Cog):
         # elif message.channel.id == 414179142020366336:
         # elif not self.isExcluded(message.author):
 
-        if not self.isExcluded(message.author):
+        if not self.is_member_excluded(message.author):
             wordlist = self.get_word_list(message)
             event = await self.check_message(message, wordlist)
             if event[0]:
@@ -193,7 +196,7 @@ class Filter(commands.Cog):
         else:
             return self.general_list
 
-    def isExcluded(self, author):
+    def is_member_excluded(self, author):
         rolelist = [
             # 849423379706150946,  # helper
             414092550031278091,  # mod
