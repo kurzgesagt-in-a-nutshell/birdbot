@@ -150,45 +150,64 @@ class Filter(commands.Cog):
             event = await self.check_message(message, wordlist)
             if event[0]:
                 if event[1] == "profanity":
-
-                    await message.delete()
-                    await message.channel.send(
-                        f"Be nice, Don't say bad things {message.author.mention}",
-                        delete_after=30,
-                    )
-                    embed = create_automod_embed(
-                        message=message, automod_type="Profanity"
-                    )
-                    await self.logging_channel.send(embed=embed)
+                    await self.excute_action_on_message(message, dict({
+                        "ping": "Be nice, Don't say bad things"
+                        , "delete_after": 30
+                        , "delete_message": ""
+                        , "log": "profanity"}
+                    ))
                 if event[1] == "emoji":
-                    await message.delete()
-                    await message.channel.send(
-                        f"Please do not spam emojis {message.author.mention}",
-                        delete_after=20,
-                    )
-                    embed = create_automod_embed(
-                        message=message, automod_type="Emoji Spam"
-                    )
-                    await self.logging_channel.send(embed=embed)
+                    await self.excute_action_on_message(message, dict({
+                        "ping": "Please do not spam emojis"
+                        , "delete_after": 15
+                        , "delete_message": ""
+                        , "log": "Emoji Spam"}
+                    ))
                 if event[1] == "text":
-                    await message.delete()
-                    await message.channel.send(
-                        f"Please do not spam {message.author.mention}", delete_after=20
-                    )
-                    embed = create_automod_embed(
-                        message=message, automod_type="Text Spam"
-                    )
-                    await self.logging_channel.send(embed=embed)
+                    await self.excute_action_on_message(message, dict({
+                        "ping": "Please do not spam emojis"
+                        , "delete_after": 15
+                        , "delete_message": ""
+                        , "log": "Text Spam"}
+                    ))
                 if event[1] == "bypass":
-                    await message.delete()
-                    await message.channel.send(
-                        f"Please do not post gifs/videos in general {message.author.mention}",
-                        delete_after=20,
-                    )
-                    embed = create_automod_embed(
-                        message=message, automod_type="Media in #general"
-                    )
-                    await self.logging_channel.send(embed=embed)
+                    await self.excute_action_on_message(message, dict({
+                        "ping": "Please do not post gifs/videos in general"
+                        , "delete_after": 15
+                        , "delete_message": ""
+                        , "log": "Media in #general"}
+                    ))
+
+
+
+    async def excute_action_on_message(self, message, actions):
+        if "ping" in actions:
+            if "delete_after" in actions:
+                await message.channel.send(
+                    f"{actions.get('ping') } {message.author.mention}",
+                    delete_after=actions.get("delete_after"),
+                )
+            else:
+                await message.channel.send(
+                    f"{actions.get('ping')} {message.author.mention}",
+                    delete_after=30,
+                )
+        if "delete_message" in actions:
+            await message.delete()
+
+        #if "warn" in actions:
+            #logic for warn here
+
+        #if "mute" in actions:
+            #logic for mute here
+        #if "message" in actions:
+            #logic for messaging the user
+
+        if "log" in actions:
+            embed = create_automod_embed(
+                message=message, automod_type=actions.get('log')
+            )
+            await self.logging_channel.send(embed=embed)
 
     def get_word_list(self, message):
         if message.channel == 546315063745839115:
@@ -355,6 +374,9 @@ class Filter(commands.Cog):
 
         # check for mass ping
         # def check_ping_spam(message):
+
+        # check for ping offical
+        # def chec_ping_offical(message):
 
         # check for gif bypass
         def check_gif_bypass(message):
