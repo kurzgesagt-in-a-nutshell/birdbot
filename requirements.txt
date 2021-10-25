@@ -1,7 +1,7 @@
 aiohttp==3.7.4.post0
 async-timeout==3.0.1
 attrs==21.2.0
-autopep8==1.5.7
+autopep8==1.6.0
 chardet==4.0.0
 colorama==0.4.4
 commonmark==0.9.1
