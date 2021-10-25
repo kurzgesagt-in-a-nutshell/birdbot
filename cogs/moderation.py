@@ -27,6 +27,9 @@ class Moderation(commands.Cog):
         config_file.close()
 
         self.logging_channel = self.config_json["logging"]["logging_channel"]
+        self.mod_role = self.config_json["roles"]["mod_role"]
+        self.admin_role = self.config_json["roles"]["admin_role"]
+
 
     @tasks.loop(minutes=10.0)
     async def timed_action_loop(self):
@@ -73,6 +76,19 @@ class Moderation(commands.Cog):
     def cog_unload(self):
         self.timed_action_loop.cancel()
 
+    
+    @commands.Cog.listener()
+    async def on_message(self, message):
+        guild = discord.utils.get(self.bot.guilds, id=414027124836532234)
+        mod_role = discord.utils.get(guild.roles, id = self.mod_role)
+        admin_role = discord.utils.get(guild.roles, id = self.admin_role)
+
+
+        if not any(role in message.author.roles for role in (mod_role,admin_role)):
+            return
+        if re.match("^-(kick|ban|mute)", message.content):
+            await message.channel.send(f'ahem.. {message.author.mention}')
+        
     @mod_and_above()
     @commands.command(aliases=["purge", "prune", "clear"])
     async def clean(
