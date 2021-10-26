@@ -1,13 +1,13 @@
-import asyncio
+
 import json
 import logging
 import re
 import threading
-
 import demoji
 from better_profanity import profanity
 import discord
 from discord.ext import commands
+
 from utils.helper import (
     create_automod_embed,
     create_embed,
@@ -56,7 +56,7 @@ class Filter(commands.Cog):
         )
 
     @commands.command()
-    @helper_and_above()
+    @mod_and_above()
     async def blacklistword(self, ctx, channel, *, words):
         words = words.split(" ")
         if channel.id == 546315063745839115:
@@ -69,8 +69,8 @@ class Filter(commands.Cog):
         await ctx.message.add_reaction("<:kgsYes:580164400691019826>")
 
     @commands.command()
-    @helper_and_above()
-    async def whitelistword(self, ctx, *, words):
+    @mod_and_above()
+    async def white_list_word(self, ctx, *, words):
         words = words.split(" ")
         for word in words:
             await self.add_to_whitelist(word)
@@ -78,8 +78,8 @@ class Filter(commands.Cog):
         await ctx.message.add_reaction("<:kgsYes:580164400691019826>")
 
     @commands.command()
-    @helper_and_above()
-    async def filtercheck(self, ctx, channel: discord.TextChannel, *, words):
+    @mod_and_above()
+    async def filter_check(self, ctx, channel: discord.TextChannel, *, words):
         if channel.id == 546315063745839115:
             await ctx.send(
                 self.check_message_for_profanity(words, self.humanities_list)
@@ -150,28 +150,28 @@ class Filter(commands.Cog):
             event = await self.check_message(message, wordlist)
             if event[0]:
                 if event[1] == "profanity":
-                    await self.excute_action_on_message(message, dict({
+                    await self.execute_action_on_message(message, dict({
                         "ping": "Be nice, Don't say bad things"
                         , "delete_after": 30
                         , "delete_message": ""
                         , "log": "profanity"}
                     ))
                 if event[1] == "emoji":
-                    await self.excute_action_on_message(message, dict({
+                    await self.execute_action_on_message(message, dict({
                         "ping": "Please do not spam emojis"
                         , "delete_after": 15
                         , "delete_message": ""
                         , "log": "Emoji Spam"}
                     ))
                 if event[1] == "text":
-                    await self.excute_action_on_message(message, dict({
+                    await self.execute_action_on_message(message, dict({
                         "ping": "Please do not spam emojis"
                         , "delete_after": 15
                         , "delete_message": ""
                         , "log": "Text Spam"}
                     ))
                 if event[1] == "bypass":
-                    await self.excute_action_on_message(message, dict({
+                    await self.execute_action_on_message(message, dict({
                         "ping": "Please do not post gifs/videos in general"
                         , "delete_after": 15
                         , "delete_message": ""
@@ -180,7 +180,7 @@ class Filter(commands.Cog):
 
 
 
-    async def excute_action_on_message(self, message, actions):
+    async def execute_action_on_message(self, message, actions):
         if "ping" in actions:
             if "delete_after" in actions:
                 await message.channel.send(
@@ -192,6 +192,7 @@ class Filter(commands.Cog):
                     f"{actions.get('ping')} {message.author.mention}",
                     delete_after=30,
                 )
+
         if "delete_message" in actions:
             await message.delete()
 
@@ -297,6 +298,8 @@ class Filter(commands.Cog):
             message_clean = "".join(message_clean)
             # sub out discord emojis
             message_clean = re.sub(r"(<[A-z]*:[^\s]+:[0-9]*>)", "*", message_clean)
+            if re.search(r"\B[* ].*\B",message_clean):
+                return True
             if profanity.contains_profanity(message_clean):
                 return True
             elif profanity.contains_profanity(str(message_clean).replace(" ", "")):
@@ -304,7 +307,6 @@ class Filter(commands.Cog):
             else:
                 for regex in regex_list:
                     if re.search(regex, message_clean):
-                        print(regex)
                         found_items = re.findall(regex[:-3] + "[A-z]*)", message_clean)
                         for e in found_items:
                             offending_list.append(e)
@@ -337,8 +339,9 @@ class Filter(commands.Cog):
                 return True
             return False
 
-        def check_sticker_spam(self, message):
-            print("test")
+        # check for sticker spam
+        # def check_sticker_spam(self, message):
+
 
         # check for text spam
         def check_text_spam(self, message):
@@ -431,9 +434,6 @@ class Filter(commands.Cog):
             else:
                 self.message_history_list[message.channel.id] = [message]
 
-            # print(f"{message.author.id} {len(self.message_history_list[message.author.id])}")
-            # print(f"{message.channel.id} {len(self.message_history_list[message.channel.id])}")
-
             if len(self.message_history_list[message.author.id]) > 5:
                 self.message_history_list[message.author.id].pop()
 
@@ -495,7 +495,7 @@ class Filter(commands.Cog):
     def generate_regex(self, words):
         joining_chars = r'[ _\-\+\.*!@#$%^&():\'"]*'
         replacement = {
-            "a": r"a\@\#",
+            "a": r"4a\@\#",
             "b": r"b\*",
             "c": r"c¢\*",
             "d": r"d\*",
