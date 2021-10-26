@@ -1,4 +1,3 @@
-
 import json
 import logging
 import re
@@ -298,8 +297,6 @@ class Filter(commands.Cog):
             message_clean = "".join(message_clean)
             # sub out discord emojis
             message_clean = re.sub(r"(<[A-z]*:[^\s]+:[0-9]*>)", "*", message_clean)
-            if re.search(r"\B[* ].*\B",message_clean):
-                return True
             if profanity.contains_profanity(message_clean):
                 return True
             elif profanity.contains_profanity(str(message_clean).replace(" ", "")):
