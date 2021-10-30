@@ -84,6 +84,18 @@ def mainbot_only():
     return commands.check(predicate)
 
 
+def role_and_above(id: int):
+    """Check if user has role above or equal to passed role"""
+
+    async def predicate(ctx: commands.Context):
+        check_role = ctx.guild.get_role(id)
+        if not ctx.author.top_role >= check_role:
+            raise NoAuthorityError
+        return True
+
+    return commands.check(predicate)
+
+
 def helper_and_above():
     async def predicate(ctx: commands.Context):
         user_role_ids = [x.id for x in ctx.author.roles]
