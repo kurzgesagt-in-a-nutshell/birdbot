@@ -89,9 +89,9 @@ class Moderation(commands.Cog):
             try:
                 embed = discord.Embed(
                     title="Hey there patron! Annoyed about auto-joining the server?",
-                    description="Unfortunately Patreon doesn't natively support a way to disable this,"
-                    "However you have the choice of getting volutarily banned from the server "
-                    "to prevent your account from rejoining. To do so simply type ```!unenroll```"
+                    description="Unfortunately Patreon doesn't natively support a way to disable this- "
+                    "but you have the choice of getting volutarily banned from the server "
+                    "therby preventing your account from rejoining. To do so simply type ```!unenroll```"
                     "If you change your mind in the future just fill out [this form!](https://forms.gle/m4KPj2Szk1FKGE6F8)",
                     color=0xFFFFFF,
                 )
@@ -122,7 +122,7 @@ class Moderation(commands.Cog):
         embed = discord.Embed(
             title="We're sorry to see you go",
             description="Are you sure you want to get banned from the server?"
-            "If you change your mind in the future you can simply fill out [this form.](https://forms.gle/m4KPj2Szk1FKGE6F8)",
+            " If you change your mind in the future you can simply fill out [this form.](https://forms.gle/m4KPj2Szk1FKGE6F8)",
             color=0xFFCB00,
         )
         embed.set_thumbnail(
