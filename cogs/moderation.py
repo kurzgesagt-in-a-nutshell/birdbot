@@ -7,7 +7,7 @@ import asyncio
 import logging
 
 from utils import helper
-from utils.helper import helper_and_above, mod_and_above
+from utils.helper import helper_and_above, mod_and_above, patreon_only
 
 from utils import custom_converters
 
@@ -29,7 +29,11 @@ class Moderation(commands.Cog):
         self.logging_channel = self.config_json["logging"]["logging_channel"]
         self.mod_role = self.config_json["roles"]["mod_role"]
         self.admin_role = self.config_json["roles"]["admin_role"]
-
+        self.patreon_roles = [
+            self.config_json["roles"]["patreon_blue_role"],
+            self.config_json["roles"]["patreon_green_role"],
+            self.config_json["roles"]["patreon_orange_role"],
+        ]
 
     @tasks.loop(minutes=10.0)
     async def timed_action_loop(self):
@@ -76,19 +80,92 @@ class Moderation(commands.Cog):
     def cog_unload(self):
         self.timed_action_loop.cancel()
 
-    
+    # Listen for new patreons
+    @commands.Cog.listener()
+    async def on_member_join(self, member):
+        diff_roles = [role.id for role in member.roles]
+        if any(x in diff_roles for x in self.patreon_roles):
+
+            try:
+                embed = discord.Embed(
+                    title="Hey there patron! Annoyed about auto-joining the server?",
+                    description="Unfortunately Patreon doesn't natively support a way to disable this,"
+                    "However you have the choice of getting volutarily banned from the server "
+                    "to prevent your account from rejoining. To do so simply type ```!unenroll```"
+                    "If you change your mind in the future just fill out [this form!](https://forms.gle/m4KPj2Szk1FKGE6F8)",
+                    color=0xFFFFFF,
+                )
+                embed.set_thumbnail(
+                    url="https://cdn.discordapp.com/emojis/824253681443536896.png?size=96"
+                )
+
+                await member.send(embed=embed)
+            except discord.Forbidden:
+                return
+
+    # Remind mods to use the correct prefix
     @commands.Cog.listener()
     async def on_message(self, message):
         guild = discord.utils.get(self.bot.guilds, id=414027124836532234)
-        mod_role = discord.utils.get(guild.roles, id = self.mod_role)
-        admin_role = discord.utils.get(guild.roles, id = self.admin_role)
+        mod_role = discord.utils.get(guild.roles, id=self.mod_role)
+        admin_role = discord.utils.get(guild.roles, id=self.admin_role)
 
-
-        if not any(role in message.author.roles for role in (mod_role,admin_role)):
+        if not any(role in message.author.roles for role in (mod_role, admin_role)):
             return
         if re.match("^-(kick|ban|mute)", message.content):
-            await message.channel.send(f'ahem.. {message.author.mention}')
-        
+            await message.channel.send(f"ahem.. {message.author.mention}")
+
+    @patreon_only()
+    @commands.command()
+    async def unenroll(self, ctx):
+        self.logger.info("Command called")
+        embed = discord.Embed(
+            title="We're sorry to see you go",
+            description="Are you sure you want to get banned from the server?"
+            "If you change your mind in the future you can simply fill out [this form.](https://forms.gle/m4KPj2Szk1FKGE6F8)",
+            color=0xFFCB00,
+        )
+        embed.set_thumbnail(
+            url="https://cdn.discordapp.com/emojis/736621027093774467.png?size=96"
+        )
+
+        def check(reaction, user):
+            return user == ctx.author
+
+        fallback_embed = discord.Embed(
+            title="Action Cancelled",
+            description="Phew, That was close.",
+            color=0x00FFA9,
+        )
+
+        try:
+            confirm_msg = await ctx.author.send(embed=embed)
+            await confirm_msg.add_reaction("<:kgsYes:580164400691019826>")
+            await confirm_msg.add_reaction(":kgsNo:610542174127259688>")
+            reaction, user = await self.bot.wait_for(
+                "reaction_add", timeout=120, check=check
+            )
+
+            if reaction.emoji.id == 580164400691019826:
+
+                member = discord.utils.get(
+                    self.bot.guilds, id=414027124836532234
+                ).get_member(ctx.author.id)
+                await ctx.author.send("Success! You've been banned from the server.")
+                await member.ban(reason="Patron Voluntary Removal")
+                return
+            if reaction.emoji.id == 610542174127259688:
+                await confirm_msg.edit(embed=fallback_embed)
+                return
+
+        except discord.Forbidden:
+            await ctx.send(
+                "I can't seem to DM you. please check your privacy settings and try again"
+            )
+
+        except asyncio.TimeoutError:
+            await confirm_msg.edit(embed=fallback_embed)
+
     @mod_and_above()
     @commands.command(aliases=["purge", "prune", "clear"])
     async def clean(

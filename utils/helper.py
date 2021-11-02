@@ -95,6 +95,22 @@ def role_and_above(id: int):
 
     return commands.check(predicate)
 
+def patreon_only():
+    async def predicate(ctx: commands.Context):
+
+        guild = discord.utils.get(ctx.bot.guilds, id=414027124836532234)
+        user = guild.get_member(ctx.author.id)
+        user_role_ids = [x.id for x in user.roles]
+        check_role_ids = [
+            config_roles["patreon_blue_role"],
+            config_roles["patreon_green_role"],
+            config_roles["patreon_orange_role"]
+        ]
+        if not any(x in user_role_ids for x in check_role_ids):
+            raise NoAuthorityError
+        return True
+
+    return commands.check(predicate)
 
 def helper_and_above():
     async def predicate(ctx: commands.Context):
