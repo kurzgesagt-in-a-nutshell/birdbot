@@ -215,6 +215,7 @@ def create_user_infraction(user: Union[discord.User, discord.Member]):
         "user_id": user.id,
         "user_name": user.name,
         "last_updated": datetime.datetime.utcnow(),
+        "banned_patron": False,
         "total_infractions": {"ban": 0, "kick": 0, "mute": 0, "warn": 0, "total": 0},
         "mute": [],
         "warn": [],

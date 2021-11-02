@@ -7,8 +7,9 @@ import asyncio
 import logging
 
 from utils import helper
-from utils.helper import helper_and_above, mod_and_above, patreon_only
+from utils.helper import create_user_infraction, helper_and_above, mod_and_above, patreon_only
 
+from birdbot import BirdBot
 from utils import custom_converters
 
 import discord
@@ -151,6 +152,17 @@ class Moderation(commands.Cog):
                 member = discord.utils.get(
                     self.bot.guilds, id=414027124836532234
                 ).get_member(ctx.author.id)
+
+
+                infraction_db = BirdBot.db.Infraction
+
+                inf = infraction_db.find_one({"user_id": ctx.author.id})
+                if inf is None:
+                    create_user_infraction(ctx.author)
+
+                    inf = infraction_db.find_one({"user_id": ctx.author.id})
+                infraction_db.update_one({"user_id": ctx.author.id}, {"$set": {"banned_patron": True}})
+
                 await ctx.author.send("Success! You've been banned from the server.")
                 await member.ban(reason="Patron Voluntary Removal")
                 return
