@@ -111,9 +111,9 @@ class Moderation(commands.Cog):
         mod_role = discord.utils.get(guild.roles, id=self.mod_role)
         admin_role = discord.utils.get(guild.roles, id=self.admin_role)
 
-        if not any(role in message.author.roles for role in (mod_role, admin_role)):
+        if not( (mod_role in message.author.roles) or (admin_role in message.author.roles)): 
             return
-        if re.match("^-(kick|ban|mute)", message.content):
+        if re.match("^-(kick|ban|mute|warn)", message.content):
             await message.channel.send(f"ahem.. {message.author.mention}")
 
     @patreon_only()
