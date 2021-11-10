@@ -118,7 +118,7 @@ def helper_and_above():
         check_role_ids = [
             config_roles["helper_role"],
             config_roles["mod_role"],
-            config_roles["mod_role"],
+            config_roles["trainee_mod_role"],
             config_roles["admin_role"],
             config_roles["kgsofficial_role"],
         ]
