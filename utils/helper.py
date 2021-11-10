@@ -136,6 +136,7 @@ def mod_and_above():
             config_roles["mod_role"],
             config_roles["admin_role"],
             config_roles["kgsofficial_role"],
+            config_roles["trainee_mod_role"]
         ]
         if not any(x in user_role_ids for x in check_role_ids):
             raise NoAuthorityError
