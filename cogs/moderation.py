@@ -7,7 +7,12 @@ import asyncio
 import logging
 
 from utils import helper
-from utils.helper import create_user_infraction, helper_and_above, mod_and_above, patreon_only
+from utils.helper import (
+    create_user_infraction,
+    helper_and_above,
+    mod_and_above,
+    patreon_only,
+)
 
 from birdbot import BirdBot
 from utils import custom_converters
@@ -107,14 +112,18 @@ class Moderation(commands.Cog):
     # Remind mods to use the correct prefix
     @commands.Cog.listener()
     async def on_message(self, message):
-        guild = discord.utils.get(self.bot.guilds, id=414027124836532234)
-        mod_role = discord.utils.get(guild.roles, id=self.mod_role)
-        admin_role = discord.utils.get(guild.roles, id=self.admin_role)
+        if not message.author.bot:
+            guild = discord.utils.get(self.bot.guilds, id=414027124836532234)
+            mod_role = discord.utils.get(guild.roles, id=self.mod_role)
+            admin_role = discord.utils.get(guild.roles, id=self.admin_role)
 
-        if not( (mod_role in message.author.roles) or (admin_role in message.author.roles)): 
-            return
-        if re.match("^-(kick|ban|mute|warn)", message.content):
-            await message.channel.send(f"ahem.. {message.author.mention}")
+            if not (
+                (mod_role in message.author.roles)
+                or (admin_role in message.author.roles)
+            ):
+                return
+            if re.match("^-(kick|ban|mute|warn)", message.content):
+                await message.channel.send(f"ahem.. {message.author.mention}")
 
     @patreon_only()
     @commands.command()
@@ -153,7 +162,6 @@ class Moderation(commands.Cog):
                     self.bot.guilds, id=414027124836532234
                 ).get_member(ctx.author.id)
 
-
                 infraction_db = BirdBot.db.Infraction
 
                 inf = infraction_db.find_one({"user_id": ctx.author.id})
@@ -161,7 +169,9 @@ class Moderation(commands.Cog):
                     create_user_infraction(ctx.author)
 
                     inf = infraction_db.find_one({"user_id": ctx.author.id})
-                infraction_db.update_one({"user_id": ctx.author.id}, {"$set": {"banned_patron": True}})
+                infraction_db.update_one(
+                    {"user_id": ctx.author.id}, {"$set": {"banned_patron": True}}
+                )
 
                 await ctx.author.send("Success! You've been banned from the server.")
                 await member.ban(reason="Patron Voluntary Removal")
