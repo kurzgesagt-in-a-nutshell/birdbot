@@ -18,7 +18,7 @@ Pillow==8.4.0
 pycodestyle==2.8.0
 Pygments==2.10.0
 pymongo==3.12.1
-python-dotenv==0.19.1
+python-dotenv==0.19.2
 python-Levenshtein==0.12.2
 rich==10.13.0
 smmap==5.0.0
