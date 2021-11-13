@@ -10,7 +10,13 @@ import discord
 from discord.ext import commands
 from discord.ext.commands import errors
 
-from utils.helper import NoAuthorityError, DevBotOnly, WrongChannel, patreon_only
+from utils.helper import (
+    NoAuthorityError,
+    DevBotOnly,
+    WrongChannel,
+    patreon_only,
+    create_user_infraction,
+)
 
 
 class GuildChores(commands.Cog):
@@ -51,6 +57,19 @@ class GuildChores(commands.Cog):
             if re.match("^-(kick|ban|mute|warn)", message.content):
                 await message.channel.send(f"ahem.. {message.author.mention}")
 
+    @commands.Cog.listener()
+    async def on_member_update(self, before, after):
+        """Grant roles upon passing membership screening"""
+
+        self.logger.info(f'Updated {before.name}')
+
+        if before.pending and (not after.pending):
+            guild = discord.utils.get(self.bot.guilds, id=414027124836532234)
+            await after.add_roles(
+                    guild.get_role(542343829785804811),  # Verified
+                    guild.get_role(901136119863844864), # English
+                reason="Membership screening passed"
+            )
 
     @commands.Cog.listener()
     async def on_member_join(self, member):
@@ -231,3 +250,4 @@ class Errors(commands.Cog):
 
 def setup(bot):
     bot.add_cog(Errors(bot))
+    bot.add_cog(GuildChores(bot))

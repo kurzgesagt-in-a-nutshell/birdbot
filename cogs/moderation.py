@@ -6,6 +6,8 @@ import datetime
 import asyncio
 import logging
 
+
+from utils import custom_converters
 from utils import helper
 from utils.helper import (
     create_user_infraction,
@@ -13,9 +15,6 @@ from utils.helper import (
     helper_and_above,
     mod_and_above
 )
-
-from birdbot import BirdBot
-from utils import custom_converters
 
 import discord
 from discord.ext import commands, tasks
