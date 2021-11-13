@@ -116,7 +116,7 @@ class GuildChores(commands.Cog):
                 )
                 await hook.send(
                     f"Welcome hatchling {member.mention}!\n"
-                    "Make sure to read the #rules and say hello to our <@&584461501109108738>s",
+                    "Make sure to read the <#414268041787080708> and say hello to our <@&584461501109108738>s",
                     avatar_url=random.choice(self.pfp_list),
                     allowed_mentions=discord.AllowedMentions(users=True, roles=True)
                 )
