@@ -10,7 +10,135 @@ import discord
 from discord.ext import commands
 from discord.ext.commands import errors
 
-from utils.helper import NoAuthorityError, DevBotOnly, WrongChannel
+from utils.helper import NoAuthorityError, DevBotOnly, WrongChannel, patreon_only
+
+
+class GuildChores(commands.Cog):
+    """Chores that need to performed during guild events"""
+
+    def __init__(self, bot):
+        self.logger = logging.getLogger("Guild Chores")
+        self.bot = bot
+
+        with open("config.json", "r") as config_file:
+            self.config_json = json.loads(config_file.read())
+
+        self.mod_role = self.config_json["roles"]["mod_role"]
+        self.admin_role = self.config_json["roles"]["admin_role"]
+        self.patreon_roles = [
+            self.config_json["roles"]["patreon_blue_role"],
+            self.config_json["roles"]["patreon_green_role"],
+            self.config_json["roles"]["patreon_orange_role"],
+        ]
+
+    @commands.Cog.listener()
+    async def on_ready(self):
+        self.logger.info("Loaded Guild Chores")
+
+    @commands.Cog.listener()
+    async def on_message(self, message):
+        """Remind mods to use correct prefix"""
+        if not message.author.bot:
+            guild = discord.utils.get(self.bot.guilds, id=414027124836532234)
+            mod_role = discord.utils.get(guild.roles, id=self.mod_role)
+            admin_role = discord.utils.get(guild.roles, id=self.admin_role)
+
+            if not (
+                (mod_role in message.author.roles)
+                or (admin_role in message.author.roles)
+            ):
+                return
+            if re.match("^-(kick|ban|mute|warn)", message.content):
+                await message.channel.send(f"ahem.. {message.author.mention}")
+
+
+    @commands.Cog.listener()
+    async def on_member_join(self, member):
+        """Listen for new patrons and provide
+        them the option to unenroll from autojoining"""
+
+        diff_roles = [role.id for role in member.roles]
+        if any(x in diff_roles for x in self.patreon_roles):
+
+            try:
+                embed = discord.Embed(
+                    title="Hey there patron! Annoyed about auto-joining the server?",
+                    description="Unfortunately Patreon doesn't natively support a way to disable this- "
+                    "but you have the choice of getting volutarily banned from the server "
+                    "therby preventing your account from rejoining. To do so simply type ```!unenroll```"
+                    "If you change your mind in the future just fill out [this form!](https://forms.gle/m4KPj2Szk1FKGE6F8)",
+                    color=0xFFFFFF,
+                )
+                embed.set_thumbnail(
+                    url="https://cdn.discordapp.com/emojis/824253681443536896.png?size=96"
+                )
+
+                await member.send(embed=embed)
+            except discord.Forbidden:
+                return
+
+    @patreon_only()
+    @commands.command()
+    async def unenroll(self, ctx):
+        self.logger.info("Command called")
+        embed = discord.Embed(
+            title="We're sorry to see you go",
+            description="Are you sure you want to get banned from the server?"
+            " If you change your mind in the future you can simply fill out [this form.](https://forms.gle/m4KPj2Szk1FKGE6F8)",
+            color=0xFFCB00,
+        )
+        embed.set_thumbnail(
+            url="https://cdn.discordapp.com/emojis/736621027093774467.png?size=96"
+        )
+
+        def check(reaction, user):
+            return user == ctx.author
+
+        fallback_embed = discord.Embed(
+            title="Action Cancelled",
+            description="Phew, That was close.",
+            color=0x00FFA9,
+        )
+
+        try:
+            confirm_msg = await ctx.author.send(embed=embed)
+            await confirm_msg.add_reaction("<:kgsYes:580164400691019826>")
+            await confirm_msg.add_reaction(":kgsNo:610542174127259688>")
+            reaction, user = await self.bot.wait_for(
+                "reaction_add", timeout=120, check=check
+            )
+
+            if reaction.emoji.id == 580164400691019826:
+
+                member = discord.utils.get(
+                    self.bot.guilds, id=414027124836532234
+                ).get_member(ctx.author.id)
+
+                infraction_db = BirdBot.db.Infraction
+
+                inf = infraction_db.find_one({"user_id": ctx.author.id})
+                if inf is None:
+                    create_user_infraction(ctx.author)
+
+                    inf = infraction_db.find_one({"user_id": ctx.author.id})
+                infraction_db.update_one(
+                    {"user_id": ctx.author.id}, {"$set": {"banned_patron": True}}
+                )
+
+                await ctx.author.send("Success! You've been banned from the server.")
+                await member.ban(reason="Patron Voluntary Removal")
+                return
+            if reaction.emoji.id == 610542174127259688:
+                await confirm_msg.edit(embed=fallback_embed)
+                return
+
+        except discord.Forbidden:
+            await ctx.send(
+                "I can't seem to DM you. please check your privacy settings and try again"
+            )
+
+        except asyncio.TimeoutError:
+            await confirm_msg.edit(embed=fallback_embed)
 
 
 class Errors(commands.Cog):
