@@ -69,12 +69,9 @@ class GuildChores(commands.Cog):
             if re.match("^-(kick|ban|mute|warn)", message.content):
                 await message.channel.send(f"ahem.. {message.author.mention}")
 
-
-
     @commands.Cog.listener()
     async def on_member_update(self, before, after):
         """Grant roles upon passing membership screening"""
-
 
         if before.pending and (not after.pending):
             guild = discord.utils.get(self.bot.guilds, id=414027124836532234)
@@ -92,6 +89,12 @@ class GuildChores(commands.Cog):
 
         diff_roles = [role.id for role in member.roles]
         if any(x in diff_roles for x in self.patreon_roles):
+
+            guild = discord.utils.get(self.bot.guilds, id=414027124836532234)
+            await member.add_roles(
+                guild.get_role(542343829785804811),  # Verified
+                guild.get_role(901136119863844864),  # English
+            )
 
             try:
                 embed = discord.Embed(
@@ -112,15 +115,15 @@ class GuildChores(commands.Cog):
         else:
             async with aiohttp.ClientSession() as session:
                 hook = discord.Webhook.from_url(
-                    self.greeting_webhook_url, adapter=discord.AsyncWebhookAdapter(session)
+                    self.greeting_webhook_url,
+                    adapter=discord.AsyncWebhookAdapter(session),
                 )
                 await hook.send(
                     f"Welcome hatchling {member.mention}!\n"
                     "Make sure to read the <#414268041787080708> and say hello to our <@&584461501109108738>s",
                     avatar_url=random.choice(self.pfp_list),
-                    allowed_mentions=discord.AllowedMentions(users=True, roles=True)
+                    allowed_mentions=discord.AllowedMentions(users=True, roles=True),
                 )
-
 
     @patreon_only()
     @commands.command()
