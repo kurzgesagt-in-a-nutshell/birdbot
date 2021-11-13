@@ -1,8 +1,10 @@
 import io
 import asyncio
 import json
-
+import aiohttp
 import logging
+import random
+import re
 
 from traceback import TracebackException
 
@@ -36,6 +38,16 @@ class GuildChores(commands.Cog):
             self.config_json["roles"]["patreon_green_role"],
             self.config_json["roles"]["patreon_orange_role"],
         ]
+        self.pfp_list = [
+            "https://cdn.discordapp.com/emojis/909046850630328330.png?size=256",
+            "https://cdn.discordapp.com/emojis/909046927365136444.png?size=256",
+            "https://cdn.discordapp.com/emojis/909047588160942140.png?size=256",
+            "https://cdn.discordapp.com/emojis/909046952417710110.png?size=256",
+            "https://cdn.discordapp.com/emojis/909047567030059038.png?size=256",
+            "https://cdn.discordapp.com/emojis/909046980599250964.png?size=256",
+            "https://cdn.discordapp.com/emojis/909047000253734922.png?size=256",
+        ]
+        self.greeting_webhook_url = "https://discord.com/api/webhooks/909052135864410172/5Fky0bSJMC3vh3Pz69nYc2PfEV3W2IAwAsSFinBFuUXXzDc08X5dv085XlLDGz3MmQvt"
 
     @commands.Cog.listener()
     async def on_ready(self):
@@ -57,24 +69,26 @@ class GuildChores(commands.Cog):
             if re.match("^-(kick|ban|mute|warn)", message.content):
                 await message.channel.send(f"ahem.. {message.author.mention}")
 
+
+
     @commands.Cog.listener()
     async def on_member_update(self, before, after):
         """Grant roles upon passing membership screening"""
 
-        self.logger.info(f'Updated {before.name}')
 
         if before.pending and (not after.pending):
             guild = discord.utils.get(self.bot.guilds, id=414027124836532234)
             await after.add_roles(
-                    guild.get_role(542343829785804811),  # Verified
-                    guild.get_role(901136119863844864), # English
-                reason="Membership screening passed"
+                guild.get_role(542343829785804811),  # Verified
+                guild.get_role(901136119863844864),  # English
+                reason="Membership screening passed",
             )
 
     @commands.Cog.listener()
     async def on_member_join(self, member):
         """Listen for new patrons and provide
-        them the option to unenroll from autojoining"""
+        them the option to unenroll from autojoining
+        Listen for new members and fire webhook for greeting"""
 
         diff_roles = [role.id for role in member.roles]
         if any(x in diff_roles for x in self.patreon_roles):
@@ -89,12 +103,24 @@ class GuildChores(commands.Cog):
                     color=0xFFFFFF,
                 )
                 embed.set_thumbnail(
-                    url="https://cdn.discordapp.com/emojis/824253681443536896.png?size=96"
+                    url="https://cdn.discordapp.com/emojis/824253681443536896.png?size=256"
                 )
 
                 await member.send(embed=embed)
             except discord.Forbidden:
                 return
+        else:
+            async with aiohttp.ClientSession() as session:
+                hook = discord.Webhook.from_url(
+                    self.greeting_webhook_url, adapter=discord.AsyncWebhookAdapter(session)
+                )
+                await hook.send(
+                    f"Welcome hatchling {member.mention}!\n"
+                    "Make sure to read the #rules and say hello to our <@&584461501109108738>s",
+                    avatar_url=random.choice(self.pfp_list),
+                    allowed_mentions=discord.AllowedMentions(users=True, roles=True)
+                )
+
 
     @patreon_only()
     @commands.command()
