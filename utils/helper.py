@@ -95,6 +95,7 @@ def role_and_above(id: int):
 
     return commands.check(predicate)
 
+
 def patreon_only():
     async def predicate(ctx: commands.Context):
 
@@ -104,13 +105,14 @@ def patreon_only():
         check_role_ids = [
             config_roles["patreon_blue_role"],
             config_roles["patreon_green_role"],
-            config_roles["patreon_orange_role"]
+            config_roles["patreon_orange_role"],
         ]
         if not any(x in user_role_ids for x in check_role_ids):
             raise NoAuthorityError
         return True
 
     return commands.check(predicate)
+
 
 def helper_and_above():
     async def predicate(ctx: commands.Context):
@@ -136,7 +138,7 @@ def mod_and_above():
             config_roles["mod_role"],
             config_roles["admin_role"],
             config_roles["kgsofficial_role"],
-            config_roles["trainee_mod_role"]
+            config_roles["trainee_mod_role"],
         ]
         if not any(x in user_role_ids for x in check_role_ids):
             raise NoAuthorityError
@@ -217,7 +219,6 @@ def create_user_infraction(user: Union[discord.User, discord.Member]):
         "user_name": user.name,
         "last_updated": datetime.datetime.utcnow(),
         "banned_patron": False,
-        "total_infractions": {"ban": 0, "kick": 0, "mute": 0, "warn": 0, "total": 0},
         "mute": [],
         "warn": [],
         "kick": [],
@@ -260,8 +261,6 @@ def create_infraction(
                     "duration": time,
                 }
             )
-            inf["total_infractions"]["mute"] = inf["total_infractions"]["mute"] + 1
-            inf["total_infractions"]["total"] = inf["total_infractions"]["total"] + 1
 
         elif action == "ban":
             inf["ban"].append(
@@ -272,8 +271,6 @@ def create_infraction(
                     "reason": reason,
                 }
             )
-            inf["total_infractions"]["ban"] = inf["total_infractions"]["ban"] + 1
-            inf["total_infractions"]["total"] = inf["total_infractions"]["total"] + 1
 
         elif action == "kick":
             inf["kick"].append(
@@ -284,8 +281,6 @@ def create_infraction(
                     "reason": reason,
                 }
             )
-            inf["total_infractions"]["kick"] = inf["total_infractions"]["kick"] + 1
-            inf["total_infractions"]["total"] = inf["total_infractions"]["total"] + 1
 
         elif action == "warn":
             inf["warn"].append(
@@ -296,8 +291,6 @@ def create_infraction(
                     "reason": reason,
                 }
             )
-            inf["total_infractions"]["warn"] = inf["total_infractions"]["warn"] + 1
-            inf["total_infractions"]["total"] = inf["total_infractions"]["total"] + 1
 
         inf["last_updated"] = datetime.datetime.utcnow()
 
@@ -329,7 +322,10 @@ def get_infractions(member_id: int, inf_type: str) -> discord.Embed:
         embed.add_field(
             name="{} ({})".format(infr["user_name"], infr["user_id"]),
             value="```Total Infractions: {}```".format(
-                infr["total_infractions"]["total"]
+                len(infr["warn"])
+                + len(infr["mute"])
+                + len(infr["ban"])
+                + len(infr["kick"])
             ),
             inline=False,
         )

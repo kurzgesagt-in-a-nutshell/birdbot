@@ -9,6 +9,7 @@ import logging
 from utils import helper
 from utils.helper import (
     create_user_infraction,
+    devs_only,
     helper_and_above,
     mod_and_above,
     patreon_only,
@@ -663,7 +664,7 @@ class Moderation(commands.Cog):
         warns = helper.get_warns(member_id=member.id)
 
         if warns is None:
-            return await ctx.send("User has no warns.")
+            return await ctx.reply("User has no warns.", delete_after=10)
 
         embed = discord.Embed(
             title=f"Warns for {member.name}",
@@ -767,12 +768,10 @@ class Moderation(commands.Cog):
                             embed=None,
                             delete_after=5,
                         )
-                        # await msg.delete(delay=5)
                         break
 
                 elif str(reaction.emoji) == cross:
                     await msg.edit(content="Exited!!!", embed=None, delete_after=5)
-                    # await msg.delete(delay=5)
                     break
 
                 else:
