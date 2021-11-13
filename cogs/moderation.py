@@ -7,8 +7,15 @@ import asyncio
 import logging
 
 from utils import helper
-from utils.helper import helper_and_above, mod_and_above
+from utils.helper import (
+    create_user_infraction,
+    devs_only,
+    helper_and_above,
+    mod_and_above,
+    patreon_only,
+)
 
+from birdbot import BirdBot
 from utils import custom_converters
 
 import discord
@@ -27,6 +34,13 @@ class Moderation(commands.Cog):
         config_file.close()
 
         self.logging_channel = self.config_json["logging"]["logging_channel"]
+        self.mod_role = self.config_json["roles"]["mod_role"]
+        self.admin_role = self.config_json["roles"]["admin_role"]
+        self.patreon_roles = [
+            self.config_json["roles"]["patreon_blue_role"],
+            self.config_json["roles"]["patreon_green_role"],
+            self.config_json["roles"]["patreon_orange_role"],
+        ]
 
     @tasks.loop(minutes=10.0)
     async def timed_action_loop(self):
@@ -39,7 +53,9 @@ class Moderation(commands.Cog):
         for action in self.timed_action_list:
             if action["action_end"] < datetime.datetime.utcnow():
                 user = discord.utils.get(guild.members, id=action["user_id"])
-                await user.remove_roles(mute_role, reason="Time Expired")
+
+                if user is not None:
+                    await user.remove_roles(mute_role, reason="Time Expired")
 
                 helper.delete_timed_actions_uid(u_id=action["user_id"])
 
@@ -70,6 +86,108 @@ class Moderation(commands.Cog):
 
     def cog_unload(self):
         self.timed_action_loop.cancel()
+
+    # Listen for new patreons
+    @commands.Cog.listener()
+    async def on_member_join(self, member):
+        diff_roles = [role.id for role in member.roles]
+        if any(x in diff_roles for x in self.patreon_roles):
+
+            try:
+                embed = discord.Embed(
+                    title="Hey there patron! Annoyed about auto-joining the server?",
+                    description="Unfortunately Patreon doesn't natively support a way to disable this- "
+                    "but you have the choice of getting volutarily banned from the server "
+                    "therby preventing your account from rejoining. To do so simply type ```!unenroll```"
+                    "If you change your mind in the future just fill out [this form!](https://forms.gle/m4KPj2Szk1FKGE6F8)",
+                    color=0xFFFFFF,
+                )
+                embed.set_thumbnail(
+                    url="https://cdn.discordapp.com/emojis/824253681443536896.png?size=96"
+                )
+
+                await member.send(embed=embed)
+            except discord.Forbidden:
+                return
+
+    # Remind mods to use the correct prefix
+    @commands.Cog.listener()
+    async def on_message(self, message):
+        if not message.author.bot:
+            guild = discord.utils.get(self.bot.guilds, id=414027124836532234)
+            mod_role = discord.utils.get(guild.roles, id=self.mod_role)
+            admin_role = discord.utils.get(guild.roles, id=self.admin_role)
+
+            if not (
+                (mod_role in message.author.roles)
+                or (admin_role in message.author.roles)
+            ):
+                return
+            if re.match("^-(kick|ban|mute|warn)", message.content):
+                await message.channel.send(f"ahem.. {message.author.mention}")
+
+    @patreon_only()
+    @commands.command()
+    async def unenroll(self, ctx):
+        self.logger.info("Command called")
+        embed = discord.Embed(
+            title="We're sorry to see you go",
+            description="Are you sure you want to get banned from the server?"
+            " If you change your mind in the future you can simply fill out [this form.](https://forms.gle/m4KPj2Szk1FKGE6F8)",
+            color=0xFFCB00,
+        )
+        embed.set_thumbnail(
+            url="https://cdn.discordapp.com/emojis/736621027093774467.png?size=96"
+        )
+
+        def check(reaction, user):
+            return user == ctx.author
+
+        fallback_embed = discord.Embed(
+            title="Action Cancelled",
+            description="Phew, That was close.",
+            color=0x00FFA9,
+        )
+
+        try:
+            confirm_msg = await ctx.author.send(embed=embed)
+            await confirm_msg.add_reaction("<:kgsYes:580164400691019826>")
+            await confirm_msg.add_reaction(":kgsNo:610542174127259688>")
+            reaction, user = await self.bot.wait_for(
+                "reaction_add", timeout=120, check=check
+            )
+
+            if reaction.emoji.id == 580164400691019826:
+
+                member = discord.utils.get(
+                    self.bot.guilds, id=414027124836532234
+                ).get_member(ctx.author.id)
+
+                infraction_db = BirdBot.db.Infraction
+
+                inf = infraction_db.find_one({"user_id": ctx.author.id})
+                if inf is None:
+                    create_user_infraction(ctx.author)
+
+                    inf = infraction_db.find_one({"user_id": ctx.author.id})
+                infraction_db.update_one(
+                    {"user_id": ctx.author.id}, {"$set": {"banned_patron": True}}
+                )
+
+                await ctx.author.send("Success! You've been banned from the server.")
+                await member.ban(reason="Patron Voluntary Removal")
+                return
+            if reaction.emoji.id == 610542174127259688:
+                await confirm_msg.edit(embed=fallback_embed)
+                return
+
+        except discord.Forbidden:
+            await ctx.send(
+                "I can't seem to DM you. please check your privacy settings and try again"
+            )
+
+        except asyncio.TimeoutError:
+            await confirm_msg.edit(embed=fallback_embed)
 
     @mod_and_above()
     @commands.command(aliases=["purge", "prune", "clear"])
@@ -539,6 +657,173 @@ class Moderation(commands.Cog):
         if failed_warn:
             await x.delete()
 
+    @commands.command(aliases=["unwarn", "removewarn"])
+    @mod_and_above()
+    async def delwarn(self, ctx: commands.context, member: discord.Member):
+        """Remove warn for a user.\nUsage: delwarn @member/id"""
+        warns = helper.get_warns(member_id=member.id)
+
+        if warns is None:
+            return await ctx.reply("User has no warns.", delete_after=10)
+
+        embed = discord.Embed(
+            title=f"Warns for {member.name}",
+            description=f"Showing atmost 5 warns at a time. (Total warns: {len(warns)})",
+            color=discord.Colour.magenta(),
+            timestamp=datetime.datetime.utcnow(),
+        )
+
+        warn_len = len(warns)
+        page = 0
+        start = 0
+        end = start + 5 if start + 5 < warn_len else warn_len
+        delete_warn_idx = -1
+
+        for idx, warn in enumerate(warns[start:end]):
+            embed.add_field(
+                name=f"ID: {idx}",
+                value="```{0}\n{1}\n{2}```".format(
+                    "Author: {} ({})".format(warn["author_name"], warn["author_id"]),
+                    "Reason: {}".format(warn["reason"]),
+                    "Date: {}".format(warn["datetime"].replace(microsecond=0)),
+                ),
+                inline=False,
+            )
+
+        msg = await ctx.send(embed=embed)
+
+        emote_list = [
+            "\u0030\uFE0F\u20E3",
+            "\u0031\uFE0F\u20E3",
+            "\u0032\uFE0F\u20E3",
+            "\u0033\uFE0F\u20E3",
+            "\u0034\uFE0F\u20E3",
+        ]
+        left_arrow = "\u2B05\uFE0F"
+        right_arrow = "\u27A1\uFE0F"
+        cross = "\u274C"
+        yes = "\u2705"
+
+        await msg.add_reaction(left_arrow)
+        for i in emote_list[0 : end - start]:
+            await msg.add_reaction(i)
+        await msg.add_reaction(right_arrow)
+        await msg.add_reaction(cross)
+
+        def check(reaction, user):
+            return user == ctx.author and (
+                str(reaction.emoji) in emote_list
+                or str(reaction.emoji) == right_arrow
+                or str(reaction.emoji) == left_arrow
+                or str(reaction.emoji) == cross
+                or str(reaction.emoji) == yes
+            )
+
+        try:
+            while True:
+                reaction, user = await self.bot.wait_for(
+                    "reaction_add", timeout=30.0, check=check
+                )
+
+                if str(reaction.emoji) in emote_list:
+                    await msg.clear_reactions()
+
+                    delete_warn_idx = (page * 5) + emote_list.index(str(reaction.emoji))
+
+                    embed = discord.Embed(
+                        title=f"Warns for {member.name}",
+                        description=f"Confirm removal of warn",
+                        color=discord.Colour.magenta(),
+                        timestamp=datetime.datetime.utcnow(),
+                    )
+
+                    embed.add_field(
+                        name="Delete Warn?",
+                        value="```{0}\n{1}\n{2}```".format(
+                            "Author: {} ({})".format(
+                                warns[delete_warn_idx]["author_name"],
+                                warns[delete_warn_idx]["author_id"],
+                            ),
+                            "Reason: {}".format(warns[delete_warn_idx]["reason"]),
+                            "Date: {}".format(
+                                warns[delete_warn_idx]["datetime"].replace(
+                                    microsecond=0
+                                )
+                            ),
+                        ),
+                    )
+
+                    await msg.edit(embed=embed)
+                    await msg.add_reaction(yes)
+                    await msg.add_reaction(cross)
+
+                elif str(reaction.emoji) == yes:
+                    if delete_warn_idx != -1:
+
+                        del warns[delete_warn_idx]
+                        helper.update_warns(member.id, warns)
+
+                        await msg.edit(
+                            content="Warning deleted successfully.",
+                            embed=None,
+                            delete_after=5,
+                        )
+                        break
+
+                elif str(reaction.emoji) == cross:
+                    await msg.edit(content="Exited!!!", embed=None, delete_after=5)
+                    break
+
+                else:
+                    await msg.clear_reactions()
+
+                    if str(reaction.emoji) == left_arrow:
+                        if page >= 1:
+                            page -= 1
+
+                    elif str(reaction.emoji) == right_arrow:
+                        if page < (warn_len - 1) // 5:
+                            page += 1
+
+                    start = page * 5
+                    end = start + 5 if start + 5 < warn_len else warn_len
+
+                    embed = discord.Embed(
+                        title=f"Warns for {member.name}",
+                        description=f"Showing atmost 5 warns at a time",
+                        color=discord.Colour.magenta(),
+                        timestamp=datetime.datetime.utcnow(),
+                    )
+                    for idx, warn in enumerate(warns[start:end]):
+                        embed.add_field(
+                            name=f"ID: {idx}",
+                            value="```{0}\n{1}\n{2}```".format(
+                                "Author: {} ({})".format(
+                                    warn["author_name"], warn["author_id"]
+                                ),
+                                "Reason: {}".format(warn["reason"]),
+                                "Date: {}".format(
+                                    warn["datetime"].replace(microsecond=0)
+                                ),
+                            ),
+                            inline=False,
+                        )
+
+                    await msg.edit(embed=embed)
+
+                    await msg.add_reaction(left_arrow)
+                    for i in emote_list[0 : end - start]:
+                        await msg.add_reaction(i)
+                    await msg.add_reaction(right_arrow)
+                    await msg.add_reaction(cross)
+
+        except asyncio.TimeoutError:
+            await msg.clear_reactions()
+            await ctx.message.delete(delay=5)
+            return
+
+        await ctx.message.delete(delay=5)
+
     @commands.command(aliases=["infr", "inf", "infraction"])
     @mod_and_above()
     async def infractions(
@@ -592,10 +877,10 @@ class Moderation(commands.Cog):
 
             msg = None
             msg = await ctx.send(embed=infs_embed)
-            await msg.add_reaction("\u26A0")
-            await msg.add_reaction("\U0001F507")
-            await msg.add_reaction("\U0001F528")
-            await msg.add_reaction("\U0001F3CC")
+            await msg.add_reaction("\U0001F1FC")
+            await msg.add_reaction("\U0001F1F2")
+            await msg.add_reaction("\U0001F1E7")
+            await msg.add_reaction("\U0001F1F0")
 
             while True:
                 try:
@@ -603,22 +888,24 @@ class Moderation(commands.Cog):
                         "reaction_add",
                         check=lambda reaction, user: user == ctx.author
                         and reaction.emoji
-                        in ["\u26A0", "\U0001F528", "\U0001F507", "\U0001F3CC"],
+                        in [
+                            "\U0001F1FC",
+                            "\U0001F1F2",
+                            "\U0001F1E7",
+                            "\U0001F1F0",
+                        ],
                         timeout=20.0,
                     )
 
                 except asyncio.exceptions.TimeoutError:
                     await ctx.send("Embed Timed Out.", delete_after=3.0)
                     if msg:
-                        await msg.clear_reaction("\u26A0")
-                        await msg.clear_reaction("\U0001F528")
-                        await msg.clear_reaction("\U0001F507")
-                        await msg.clear_reaction("\U0001F3CC")
+                        await msg.clear_reactions()
                     break
 
                 else:
                     em = reaction.emoji
-                    if em == "\u26A0":
+                    if em == "\U0001F1FC":
                         inf_type = "warn"
                         infs_embed = helper.get_infractions(
                             member_id=mem_id, inf_type=inf_type
@@ -626,15 +913,7 @@ class Moderation(commands.Cog):
                         await msg.edit(embed=infs_embed)
                         await msg.remove_reaction(emoji=em, member=user)
 
-                    elif em == "\U0001F528":
-                        inf_type = "ban"
-                        infs_embed = helper.get_infractions(
-                            member_id=mem_id, inf_type=inf_type
-                        )
-                        await msg.edit(embed=infs_embed)
-                        await msg.remove_reaction(emoji=em, member=user)
-
-                    elif em == "\U0001F507":
+                    elif em == "\U0001F1F2":
                         inf_type = "mute"
                         infs_embed = helper.get_infractions(
                             member_id=mem_id, inf_type=inf_type
@@ -642,7 +921,15 @@ class Moderation(commands.Cog):
                         await msg.edit(embed=infs_embed)
                         await msg.remove_reaction(emoji=em, member=user)
 
-                    elif em == "\U0001F3CC":
+                    elif em == "\U0001F1E7":
+                        inf_type = "ban"
+                        infs_embed = helper.get_infractions(
+                            member_id=mem_id, inf_type=inf_type
+                        )
+                        await msg.edit(embed=infs_embed)
+                        await msg.remove_reaction(emoji=em, member=user)
+
+                    elif em == "\U0001F1F0":
                         inf_type = "kick"
                         infs_embed = helper.get_infractions(
                             member_id=mem_id, inf_type=inf_type
@@ -653,11 +940,7 @@ class Moderation(commands.Cog):
         except asyncio.exceptions.TimeoutError:
             await ctx.send("Embed Timed Out.", delete_after=3.0)
             if msg:
-                await msg.clear_reaction("\u26A0")
-                await msg.clear_reaction("\U0001F528")
-                await msg.clear_reaction("\U0001F507")
-                await msg.clear_reaction("\U0001F3CC")
-                await msg.clear_reaction("\U0001F3CC")
+                await msg.clear_reactions()
 
     @commands.command(aliases=["slothmode"])
     @mod_and_above()

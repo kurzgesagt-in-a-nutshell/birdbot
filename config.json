@@ -9,6 +9,10 @@
         "helper_role": 849423379706150946,
         "mod_role": 414092550031278091,
         "admin_role": 414029841101225985,
-        "kgsofficial_role": 414954904382210049
+        "kgsofficial_role": 414954904382210049,
+        "patreon_blue_role":753258289185161248,
+        "patreon_green_role":415154206970740737,
+        "patreon_orange_role":753268671107039274,
+        "trainee_mod_role":905510680763969536
     }
 }
