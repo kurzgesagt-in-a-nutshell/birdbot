@@ -1,5 +1,5 @@
 aiohttp==3.8.0
-async-timeout==4.0.0
+async-timeout==4.0.1
 attrs==21.2.0
 autopep8==1.6.0
 chardet==4.0.0
@@ -18,7 +18,7 @@ Pillow==8.4.0
 pycodestyle==2.8.0
 Pygments==2.10.0
 pymongo==3.12.1
-python-dotenv==0.19.1
+python-dotenv==0.19.2
 python-Levenshtein==0.12.2
 rich==10.13.0
 smmap==5.0.0
