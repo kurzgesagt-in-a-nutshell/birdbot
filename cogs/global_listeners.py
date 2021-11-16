@@ -39,10 +39,7 @@ class GuildChores(commands.Cog):
             self.config_json["roles"]["patreon_orange_role"],
         ]
         self.pfp_list = [
-            "https://cdn.discordapp.com/emojis/909046850630328330.png?size=256",
-            "https://cdn.discordapp.com/emojis/909046927365136444.png?size=256",
             "https://cdn.discordapp.com/emojis/909047588160942140.png?size=256",
-            "https://cdn.discordapp.com/emojis/909046952417710110.png?size=256",
             "https://cdn.discordapp.com/emojis/909047567030059038.png?size=256",
             "https://cdn.discordapp.com/emojis/909046980599250964.png?size=256",
             "https://cdn.discordapp.com/emojis/909047000253734922.png?size=256",
