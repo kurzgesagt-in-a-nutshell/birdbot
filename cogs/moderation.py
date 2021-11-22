@@ -82,11 +82,8 @@ class Moderation(commands.Cog):
 
     @commands.Cog.listener()
     async def on_message_edit(self, before, after):
-        self.logger.info("Got update event")
         if after.embeds:
             for e in after.embeds:
-                self.logger.info(e)
-                self.logger.info(e.url)
                 if any(s in e.type for s in ["mp4", "gif", "webm", "gifv"]):
                     self.logger.info("match")
                     await after.delete()
