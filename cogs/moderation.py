@@ -85,7 +85,6 @@ class Moderation(commands.Cog):
         if after.embeds:
             for e in after.embeds:
                 if any(s in e.type for s in ["mp4", "gif", "webm", "gifv"]):
-                    self.logger.info("match")
                     await after.delete()
 
 
