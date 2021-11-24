@@ -185,6 +185,34 @@ class Moderation(commands.Cog):
 
         await ctx.message.delete(delay=4)
 
+    @commands.command(aliases=["forceban"])
+    @mod_and_above()
+    async def fban(self, ctx, member: int,*,reason: str):
+        """Force ban a member who is not in the server.\nUsage: fban user_id reason"""
+        if reason is None:
+            raise commands.BadArgument("Provide a reason and re-run the command")
+
+        logging_channel = discord.utils.get(ctx.guild.channels, id=self.logging_channel)
+
+        #TODO Make helper.create_infraction compatible with IDs
+        await ctx.guild.ban(discord.Object(member))
+
+        embed = discord.Embed(
+            title="Force Ban",
+            description=f"Action By: {ctx.author.mention}",
+            color=0xff0000,
+            timestamp=datetime.datetime.utcnow(),
+        )
+        embed.add_field(name="User(s) Affected ", value=f"{member}", inline=False)
+        embed.add_field(name="Reason", value=f"{reason}", inline=False)
+
+        await logging_channel.send(embed=embed)
+        await ctx.message.add_reaction("<:kgsYes:580164400691019826>")
+
+        await asyncio.sleep(6)
+        await ctx.message.delete()
+
+
     @commands.command(aliases=["yeet"])
     @mod_and_above()
     async def ban(self, ctx: commands.Context, *args):
