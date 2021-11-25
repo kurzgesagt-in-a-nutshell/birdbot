@@ -3,6 +3,7 @@ import datetime
 import json
 import logging
 from typing import List, Tuple, Union
+import typing
 
 import discord
 from discord.ext import commands
@@ -83,13 +84,43 @@ def mainbot_only():
     return commands.check(predicate)
 
 
+def role_and_above(id: int):
+    """Check if user has role above or equal to passed role"""
+
+    async def predicate(ctx: commands.Context):
+        check_role = ctx.guild.get_role(id)
+        if not ctx.author.top_role >= check_role:
+            raise NoAuthorityError
+        return True
+
+    return commands.check(predicate)
+
+
+def patreon_only():
+    async def predicate(ctx: commands.Context):
+
+        guild = discord.utils.get(ctx.bot.guilds, id=414027124836532234)
+        user = guild.get_member(ctx.author.id)
+        user_role_ids = [x.id for x in user.roles]
+        check_role_ids = [
+            config_roles["patreon_blue_role"],
+            config_roles["patreon_green_role"],
+            config_roles["patreon_orange_role"],
+        ]
+        if not any(x in user_role_ids for x in check_role_ids):
+            raise NoAuthorityError
+        return True
+
+    return commands.check(predicate)
+
+
 def helper_and_above():
     async def predicate(ctx: commands.Context):
         user_role_ids = [x.id for x in ctx.author.roles]
         check_role_ids = [
             config_roles["helper_role"],
             config_roles["mod_role"],
-            config_roles["mod_role"],
+            config_roles["trainee_mod_role"],
             config_roles["admin_role"],
             config_roles["kgsofficial_role"],
         ]
@@ -107,6 +138,7 @@ def mod_and_above():
             config_roles["mod_role"],
             config_roles["admin_role"],
             config_roles["kgsofficial_role"],
+            config_roles["trainee_mod_role"],
         ]
         if not any(x in user_role_ids for x in check_role_ids):
             raise NoAuthorityError
@@ -186,7 +218,7 @@ def create_user_infraction(user: Union[discord.User, discord.Member]):
         "user_id": user.id,
         "user_name": user.name,
         "last_updated": datetime.datetime.utcnow(),
-        "total_infractions": {"ban": 0, "kick": 0, "mute": 0, "warn": 0, "total": 0},
+        "banned_patron": False,
         "mute": [],
         "warn": [],
         "kick": [],
@@ -229,8 +261,6 @@ def create_infraction(
                     "duration": time,
                 }
             )
-            inf["total_infractions"]["mute"] = inf["total_infractions"]["mute"] + 1
-            inf["total_infractions"]["total"] = inf["total_infractions"]["total"] + 1
 
         elif action == "ban":
             inf["ban"].append(
@@ -241,8 +271,6 @@ def create_infraction(
                     "reason": reason,
                 }
             )
-            inf["total_infractions"]["ban"] = inf["total_infractions"]["ban"] + 1
-            inf["total_infractions"]["total"] = inf["total_infractions"]["total"] + 1
 
         elif action == "kick":
             inf["kick"].append(
@@ -253,8 +281,6 @@ def create_infraction(
                     "reason": reason,
                 }
             )
-            inf["total_infractions"]["kick"] = inf["total_infractions"]["kick"] + 1
-            inf["total_infractions"]["total"] = inf["total_infractions"]["total"] + 1
 
         elif action == "warn":
             inf["warn"].append(
@@ -265,8 +291,6 @@ def create_infraction(
                     "reason": reason,
                 }
             )
-            inf["total_infractions"]["warn"] = inf["total_infractions"]["warn"] + 1
-            inf["total_infractions"]["total"] = inf["total_infractions"]["total"] + 1
 
         inf["last_updated"] = datetime.datetime.utcnow()
 
@@ -298,7 +322,10 @@ def get_infractions(member_id: int, inf_type: str) -> discord.Embed:
         embed.add_field(
             name="{} ({})".format(infr["user_name"], infr["user_id"]),
             value="```Total Infractions: {}```".format(
-                infr["total_infractions"]["total"]
+                len(infr["warn"])
+                + len(infr["mute"])
+                + len(infr["ban"])
+                + len(infr["kick"])
             ),
             inline=False,
         )
@@ -390,6 +417,34 @@ def get_infractions(member_id: int, inf_type: str) -> discord.Embed:
         embed.add_field(name="No infraction found.", value="```User is clean.```")
 
     return embed
+
+
+def get_warns(member_id: int):
+    """Get only warns of a user
+
+    Args:
+        member_id (int): member id
+
+    Returns:
+        Union[List, None]: List of warns or None
+    """
+    warns = infraction_db.find_one({"user_id": member_id})
+
+    if warns:
+        return warns["warn"]
+
+    else:
+        None
+
+
+def update_warns(member_id: int, new_warns: typing.List):
+    """Updates warn list with new one
+
+    Args:
+        member_id (int): ID of user
+        new_warns (typing.List): List of warns
+    """
+    infraction_db.update_one({"user_id": member_id}, {"$set": {"warn": new_warns}})
 
 
 def create_timed_action(
