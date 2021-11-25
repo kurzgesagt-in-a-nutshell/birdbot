@@ -82,6 +82,8 @@ class Moderation(commands.Cog):
 
     @commands.Cog.listener()
     async def on_message_edit(self, before, after):
+        if not after.channel.id == 414027124836532236:
+            return
         if after.embeds:
             for e in after.embeds:
                 if any(s in e.type for s in ["mp4", "gif", "webm", "gifv"]):
