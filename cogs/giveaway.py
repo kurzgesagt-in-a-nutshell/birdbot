@@ -1,6 +1,6 @@
 import logging
 import asyncio
-from time import time as gettime
+from datetime import datetime, timedelta, timezone
 import numpy as np
 import json
 
@@ -9,34 +9,38 @@ from discord.ext import commands
 from utils.helper import calc_time
 from utils.custom_converters import member_converter
 
+import typing
+
 
 class Giveaway(commands.Cog):
     def __init__(self, bot):
-        self.logger = logging.getLogger('Giveaway')
+        self.logger = logging.getLogger("Giveaway")
         self.bot = bot
-    
+
     @commands.Cog.listener()
     async def on_ready(self):
-        self.logger.info('loaded Giveaway')
+        self.logger.info("loaded Giveaway")
 
         with open("config.json", "r") as config_file:
             config_json = json.loads(config_file.read())
 
-        self.giveaway_tasks = {}
+        self.giveaway_tasks = []
 
         self.giveaway_bias = config_json["giveaway"]
 
-        self.active_giveaways = {} #get from mongodb
+        self.active_giveaways = []
 
-        #self.active_giveaways = self.bot.db.Giveaways
+        self.giveaway_db = self.bot.db.Giveaways
 
-        for active_giveaway in self.active_giveaways:
-            time = active_giveaway["time"] - gettime()
-            if time < 0:
-                time = 1
-            giveaway = asyncio.create_task(self.start_giveaway(time, active_giveaway["message"], active_giveaway["winners"]))
-            self.active_giveaways.append(giveaway)
-            await giveaway
+        for giveaway in self.giveaway_db.find():
+            if giveaway["giveaway_over"] == False:
+                self.active_giveaways.append(giveaway)
+                time = giveaway["end_time"] - datetime.utcnow().timestamp()
+                if time < 0:
+                    time = 1
+                giveaway_task = asyncio.create_task(self.start_giveaway(giveaway))
+                self.giveaway_tasks.append((giveaway["message_id"], giveaway_task))
+                await giveaway_task
 
     @commands.group(hidden=True)
     async def giveaway(self, ctx: commands.Context):
@@ -45,61 +49,77 @@ class Giveaway(commands.Cog):
         Usage: giveaway < start | end | cancel | reroll | list>
         """
 
-    async def choose_winner(self, message, winners):
+    async def choose_winner(self, giveaway):
 
-        message = await message.channel.fetch_message(message.id)
-        old_embed = message.embeds[0]
+        channel = await self.bot.fetch_channel(giveaway["channel_id"])
+        message = await channel.fetch_message(giveaway["message_id"])
 
-        embed = discord.Embed(title="Giveaway ended", description=old_embed.description)
-        for i in old_embed.fields:
-            if i.name == "sponsored by":
-                embed.add_field(name=i.name, value=i.value, inline=False)
+        embed = message.embeds[0].to_dict()
+
+        embed["title"] = "Giveaway ended"
+        embed["color"] = 15158332  # red
+        embed["footer"]["text"] = f'ID: {giveaway["pin"]} | GiveAway Ended'
 
         for reaction in message.reactions:
-            if reaction.emoji == '🎉':
+            if reaction.emoji == "🎉":
                 users = await reaction.users().flatten()
                 users = [user.id for user in users]
                 users.remove(self.bot.user.id)
 
-        if users == []:
-            await message.channel.send("No participants")
-            embed.add_field(name="winners:", value="nobody participated :(", inline=False)
-            await message.edit(embed=embed)
-            return
+        if users != []:
+            weights = []
+            for user in users:
+                bias = self.giveaway_bias["default"]
+                member = await message.guild.fetch_member(user)
+                roles = [role.id for role in member.roles]
+                for role in self.giveaway_bias["roles"]:
+                    if role["id"] in roles:
+                        bias = role["bias"]
+                        break
+                weights.append(bias)
 
-        weights = []
-        for user in users:
-            bias = self.giveaway_bias["default"]
-            member = await message.guild.fetch_member(user)
-            roles = [role.id for role in member.roles]
-            for role in self.giveaway_bias["roles"]:
-                if role["id"] in roles:
-                    bias = role["bias"]
-                    break
-            weights.append(bias)
+            total = sum(weights)
+            probabilities = [w / total for w in weights]
+            prob = np.array(probabilities)
 
-        total = sum(weights)
-        probabilities = [w/total for w in weights]
-        prob = np.array(probabilities)
+            if giveaway["rigged"] == False:
+                prob = None
 
-        choice = np.random.choice(users, size=winners, replace=True, p=prob)
-        winners = ""
-        for i in choice:
-            winner = await message.guild.fetch_member(i)
-            await message.channel.send(f'{winner.mention} won')
-            winners += winner.mention + "\n"
-        embed.add_field(name="winners:", value=winners, inline=False)
+            size = giveaway["winners_no"]
+            if len(users) < size:
+                size = len(users)
+
+            choice = np.random.choice(users, size=size, replace=False, p=prob)
+            winners = ""
+            for i in choice:
+                winner = await message.guild.fetch_member(i)
+                await message.channel.send(f"{winner.mention} won")
+                winners += winner.mention + "\n"
+        else:
+            winners = "Nobody participated :("
+
+        for i in embed["fields"]:
+            if i["name"].startswith("winners"):
+                i["value"] = winners
+
+        embed = discord.Embed.from_dict(embed)
         await message.edit(embed=embed)
 
-        if message.id in self.active_giveaways:
-            del self.active_giveaways[message.id]
-            del self.giveaway_tasks[message.id]
+        if giveaway in self.active_giveaways:
+            self.active_giveaways.remove(giveaway)
 
-    async def start_giveaway(self, time, message, winners):
+            self.giveaway_db.update_one(giveaway, {"$set": {"giveaway_over": True}})
+
+        for i in self.giveaway_tasks:
+            if i[0] == message.id:
+                self.giveaway_tasks.remove(i)
+                break
+
+    async def start_giveaway(self, giveaway):
         """Sets up giveaway task to finish it"""
+        time = giveaway["end_time"] - datetime.utcnow().timestamp()
         await asyncio.sleep(time)
-        await self.choose_winner(message, winners)
-
+        await self.choose_winner(giveaway)
 
     @giveaway.command()
     async def start(self, ctx, time, *, giveaway_msg):
@@ -107,90 +127,154 @@ class Giveaway(commands.Cog):
 
         time, giveaway_msg = calc_time([time, giveaway_msg])
         winners = 1
+        rigged = True
+        sponsor = ctx.author.id
 
         arguments = giveaway_msg.split(" ")
         dash_args = []
 
         for i in range(len(arguments)):
             if arguments[i].startswith("-"):
-                dash_args.append([arguments[i], arguments[i+1]])
+                dash_args.append([arguments[i], arguments[i + 1]])
 
         fields = []
 
-        for a in dash_args:
-            if a[0] == "-w":
-                fields.append({"name":f"winners: {a[1]}", "value":" ​"})
-                winners = int(a[1])
-            elif a[0] == "-s":
-                sponsor = member_converter(ctx, a[1]).mention
-                fields.append({"name":"sponsored by", "value": sponsor})
+        try:
+            for a in dash_args:
+                if a[0] == "-w":
+                    fields.append({"name": f"winners: {a[1]}", "value": " ​"})
+                    winners = int(a[1])
+                elif a[0] == "-s":
+                    sponsor = member_converter(ctx, a[1]).mention
+                    fields.append({"name": "sponsored by", "value": sponsor})
+                    sponsor = member_converter(ctx, a[1]).id
+                elif a[0] == "-r":
+                    if a[1].lower() == "true":
+                        rigged = True
+                    elif a[1].lower() == "false":
+                        rigged = False
 
             arguments.remove(a[0])
             arguments.remove(a[1])
+        except:
+            raise commands.BadArgument(
+                message="Something went wrong with dash arguments."
+            )
+
+        if not dash_args:
+            fields.append({"name": f"winners: 1", "value": " ​"})
 
         giveaway_msg = " ".join(arguments)
 
         if time is None:
-            raise commands.BadArgument(
-                message="Wrong time syntax"
-            )
+            raise commands.BadArgument(message="Wrong time syntax")
 
-        embed = discord.Embed(title="Giveaway started!", description=giveaway_msg)
+        embed = discord.Embed(
+            title="Giveaway started!",
+            description=giveaway_msg,
+            timestamp=datetime.now(timezone.utc) + timedelta(seconds=time),
+            colour=discord.Colour.green(),
+        )
         for field in fields:
-            #embed.add_field(name=field, value=" ​")
             embed.add_field(name=field["name"], value=field["value"], inline=False)
+
+        uid = str(datetime.utcnow().timestamp())[-3:]
+        c = 0
+        for i in self.active_giveaways:
+            if list(i)[:3] == uid:
+                c += 1
+        uid += str(c)
+
+        embed.set_footer(text=f"ID: {uid} | GiveAway Ends")
+
         message = await ctx.send(embed=embed)
-        await message.add_reaction('🎉')
+        await message.add_reaction("🎉")
 
-        giveaway = asyncio.create_task(self.start_giveaway(time, message, winners))
+        doc = {
+            "pin": uid,
+            "prize": giveaway_msg,
+            "end_time": datetime.utcnow().timestamp() + time,
+            "message_id": message.id,
+            "channel_id": message.channel.id,
+            "winners_no": winners,
+            "rigged": rigged,
+            "host": ctx.author.id,
+            "sponsor": sponsor,
+            "giveaway_over": False,
+        }
 
-        self.active_giveaways[message.id] = {"time":gettime() + time, "message": message, "winners": winners}
-        self.giveaway_tasks[message.id] = giveaway
+        giveaway = asyncio.create_task(self.start_giveaway(doc))
+
+        self.active_giveaways.append(doc)
+        self.giveaway_db.insert_one(doc)
+        self.giveaway_tasks.append((message.id, giveaway))
 
         await giveaway
 
     @giveaway.command()
-    async def end(self, ctx, giveaway: int):
+    async def end(self, ctx, giveaway: str):
         """Ends the giveaway early"""
-        if int(giveaway) in self.active_giveaways:
-            self.giveaway_tasks[giveaway].cancel()
-            message = await self.active_giveaways[giveaway]["message"].channel.fetch_message(giveaway)
-            winners = self.active_giveaways[giveaway]["winners"]
-            await self.choose_winner(message, winners)
-        
-
+        for i in self.active_giveaways:
+            if i["pin"] == giveaway:
+                message_id = i["message_id"]
+                await self.choose_winner(i)
+                break
+        for i in self.giveaway_tasks:
+            if i[0] == message_id:
+                i[1].cancel()
+                self.giveaway_tasks.remove(i)
+                break
 
     @giveaway.command()
-    async def cancel(self, ctx, giveaway: int):
+    async def cancel(self, ctx, giveaway: str):
         """Deletes a giveaway"""
-        if int(giveaway) in self.active_giveaways:
-            self.giveaway_tasks[giveaway].cancel()
-            message = await self.active_giveaways[giveaway]["message"].channel.fetch_message(giveaway)
-            await message.delete()
-            del self.active_giveaways[giveaway]
+        for i in self.active_giveaways:
+            if i["pin"] == giveaway:
+                message = await ctx.guild.get_channel(i["channel_id"]).fetch_message(
+                    i["message_id"]
+                )
+                await message.delete()
+                self.active_giveaways.remove(i)
+                self.giveaway_db.delete_one(i)
+                break
+        for i in self.giveaway_tasks:
+            if i[0] == message.id:
+                i[1].cancel()
+                self.giveaway_tasks.remove(i)
+                break
 
         await ctx.send("Giveaway cancelled", delete_after=6)
 
-
     @giveaway.command()
-    async def reroll(self, ctx, giveaway, winners: int):
-        """Pick a new winner, only works in the giveaway channel"""
-        message = await ctx.channel.fetch_message(giveaway)
-        await self.choose_winner(message, winners)
+    async def reroll(
+        self,
+        ctx,
+        giveaway: int,
+        winners: typing.Optional[int] = None,
+        rigged: typing.Optional[bool] = None,
+    ):
+        """Pick a new winner"""
+        for i in self.giveaway_db.find():
+            if i["message_id"] == giveaway:
+                doc = i
+                if winners != None:
+                    doc["winners_no"] = winners
+                if rigged != None:
+                    doc["rigged"] = rigged
+                await self.choose_winner(doc)
 
     @giveaway.command()
     async def list(self, ctx):
         """Lists all active giveaways"""
         giveaways = []
         for i in self.active_giveaways:
-            msg = str(self.active_giveaways[i]["message"].embeds[0].description) + " in " + str(round(self.active_giveaways[i]["time"] - gettime())) + "s id:" + str(self.active_giveaways[i]["message"].id)
+            msg = f'{i["prize"]} | {round(i["end_time"] - datetime.utcnow().timestamp())}s left | id: {i["pin"]}'
             giveaways.append(msg)
 
         giveaways = "\n".join(giveaways)
         embed = discord.Embed(title="Active giveaways:", description=giveaways)
         await ctx.send(embed=embed)
 
-        
 
 def setup(bot):
     bot.add_cog(Giveaway(bot))
