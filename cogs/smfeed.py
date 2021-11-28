@@ -43,7 +43,7 @@ class Smfeed(commands.Cog):
                         if reaction.emoji.id == 580164400691019826:
                             if reaction.count < 3:
                                 channel = guild.get_channel(
-                                    414179142020366336
+                                    489450008643502080
                                 )  # social-media-feed
                                 await channel.send(message.content)
                                 break
