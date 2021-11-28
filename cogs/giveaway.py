@@ -50,15 +50,16 @@ class Giveaway(commands.Cog):
         """
 
     async def choose_winner(self, giveaway):
+        """does the giveaway logic"""
 
         channel = await self.bot.fetch_channel(giveaway["channel_id"])
         message = await channel.fetch_message(giveaway["message_id"])
 
         embed = message.embeds[0].to_dict()
 
-        embed["title"] = "Giveaway ended"
+        embed["title"] = "GiveAway ended"
         embed["color"] = 15158332  # red
-        embed["footer"]["text"] = f'ID: {giveaway["pin"]} | GiveAway Ended'
+        embed["footer"]["text"] = "GiveAway Ended"
 
         for reaction in message.reactions:
             if reaction.emoji == "🎉":
@@ -116,53 +117,61 @@ class Giveaway(commands.Cog):
                 break
 
     async def start_giveaway(self, giveaway):
-        """Sets up giveaway task to finish it"""
+        """Sets up a giveaway task"""
         time = giveaway["end_time"] - datetime.utcnow().timestamp()
         await asyncio.sleep(time)
         await self.choose_winner(giveaway)
 
     @giveaway.command()
     async def start(self, ctx, time, *, giveaway_msg):
-        """Command description"""
+        """Starts a new giveaway
+        Usage: giveaway start time (dash arguments) prize \n dash args: -w no_of_winners -s sponsor -r rigged"""
 
         time, giveaway_msg = calc_time([time, giveaway_msg])
         winners = 1
         rigged = True
         sponsor = ctx.author.id
-
+        if giveaway_msg == None:
+            raise commands.BadArgument(
+                message="Calculating time went wrong (did you follow it up with a number?)"
+            )
         arguments = giveaway_msg.split(" ")
         dash_args = []
 
-        for i in range(len(arguments)):
+        for i in range(len(arguments) - 1):
             if arguments[i].startswith("-"):
                 dash_args.append([arguments[i], arguments[i + 1]])
 
-        fields = []
+        fields = {
+            "winners": {"name": "winners: 1", "value": " ​"},
+            "sponsor": {"name": "hosted by", "value": ctx.author.mention},
+        }
 
-        try:
-            for a in dash_args:
-                if a[0] == "-w":
-                    fields.append({"name": f"winners: {a[1]}", "value": " ​"})
+        for a in dash_args:
+            if a[0] == "-w":
+                fields["winners"] = {"name": f"winners: {a[1]}", "value": " ​"}
+                try:
                     winners = int(a[1])
-                elif a[0] == "-s":
+                except:
+                    raise commands.BadArgument(
+                        message="No of winners must be an integer"
+                    )
+            elif a[0] == "-s":
+                try:
                     sponsor = member_converter(ctx, a[1]).mention
-                    fields.append({"name": "sponsored by", "value": sponsor})
-                    sponsor = member_converter(ctx, a[1]).id
-                elif a[0] == "-r":
-                    if a[1].lower() == "true":
-                        rigged = True
-                    elif a[1].lower() == "false":
-                        rigged = False
-
+                except:
+                    raise commands.BadArgument(message="Improper mention of user")
+                fields["sponsor"] = {"name": "sponsored by", "value": sponsor}
+                sponsor = member_converter(ctx, a[1]).id
+            elif a[0] == "-r":
+                if a[1].lower() == "y" or a[1].lower() == "yes":
+                    rigged = True
+                elif a[1].lower() == "n" or a[1].lower() == "no":
+                    rigged = False
+                else:
+                    raise commands.BadArgument(message="Argument must be y/n")
             arguments.remove(a[0])
             arguments.remove(a[1])
-        except:
-            raise commands.BadArgument(
-                message="Something went wrong with dash arguments."
-            )
-
-        if not dash_args:
-            fields.append({"name": f"winners: 1", "value": " ​"})
 
         giveaway_msg = " ".join(arguments)
 
@@ -170,13 +179,15 @@ class Giveaway(commands.Cog):
             raise commands.BadArgument(message="Wrong time syntax")
 
         embed = discord.Embed(
-            title="Giveaway started!",
-            description=giveaway_msg,
+            title="GiveAway started!",
+            description=f"**{giveaway_msg}**",
             timestamp=datetime.now(timezone.utc) + timedelta(seconds=time),
             colour=discord.Colour.green(),
         )
         for field in fields:
-            embed.add_field(name=field["name"], value=field["value"], inline=False)
+            embed.add_field(
+                name=fields[field]["name"], value=fields[field]["value"], inline=False
+            )
 
         uid = str(datetime.utcnow().timestamp())[-3:]
         c = 0
@@ -185,7 +196,7 @@ class Giveaway(commands.Cog):
                 c += 1
         uid += str(c)
 
-        embed.set_footer(text=f"ID: {uid} | GiveAway Ends")
+        embed.set_footer(text=f"PIN: {uid} | GiveAway Ends")
 
         message = await ctx.send(embed=embed)
         await message.add_reaction("🎉")
@@ -213,7 +224,8 @@ class Giveaway(commands.Cog):
 
     @giveaway.command()
     async def end(self, ctx, giveaway: str):
-        """Ends the giveaway early"""
+        """Ends the giveaway early
+        Usage: giveaway end pin"""
         for i in self.active_giveaways:
             if i["pin"] == giveaway:
                 message_id = i["message_id"]
@@ -227,7 +239,8 @@ class Giveaway(commands.Cog):
 
     @giveaway.command()
     async def cancel(self, ctx, giveaway: str):
-        """Deletes a giveaway"""
+        """Deletes a giveaway
+        Usage: giveaway delete pin"""
         for i in self.active_giveaways:
             if i["pin"] == giveaway:
                 message = await ctx.guild.get_channel(i["channel_id"]).fetch_message(
@@ -265,10 +278,11 @@ class Giveaway(commands.Cog):
 
     @giveaway.command()
     async def list(self, ctx):
-        """Lists all active giveaways"""
+        """Lists all active giveaways
+        Usage: giveaway list"""
         giveaways = []
         for i in self.active_giveaways:
-            msg = f'{i["prize"]} | {round(i["end_time"] - datetime.utcnow().timestamp())}s left | id: {i["pin"]}'
+            msg = f'{i["prize"]} | {round(i["end_time"] - datetime.utcnow().timestamp())}s left | PIN: {i["pin"]}'
             giveaways.append(msg)
 
         giveaways = "\n".join(giveaways)
