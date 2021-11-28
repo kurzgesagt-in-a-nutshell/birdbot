@@ -36,10 +36,17 @@ class Smfeed(commands.Cog):
             guild = discord.utils.get(self.bot.guilds, id=414027124836532234)
             trainee_mod_role = guild.get_role(self.trainee_mod_role)
             if payload.member.top_role >= trainee_mod_role:
-                channel = guild.get_channel(580354435302031360) #twitter posts
+                channel = guild.get_channel(580354435302031360)  # twitter posts
                 message = await channel.fetch_message(payload.message_id)
-                channel = guild.get_channel(489450008643502080)  # social-media-feed
-                await channel.send(message.content)
+                for reaction in message.reactions:
+                    if type(reaction.emoji) != type(""):
+                        if reaction.emoji.id == 580164400691019826:
+                            if reaction.count < 3:
+                                channel = guild.get_channel(
+                                    414179142020366336
+                                )  # social-media-feed
+                                await channel.send(message.content)
+                                break
 
 
 def setup(bot):
