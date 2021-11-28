@@ -23,7 +23,7 @@ class Smfeed(commands.Cog):
     async def on_message(self, message):
         """React to the twitter webhooks"""
         if message.channel.id == 580354435302031360:
-            await message.add_reaction("<:kgsThis:567150184853798912>")
+            await message.add_reaction("<:kgsYes:580164400691019826>")
 
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload):
@@ -31,13 +31,14 @@ class Smfeed(commands.Cog):
         if (
             payload.channel_id == 580354435302031360
             and not payload.member.bot
-            and payload.emoji.id == 567150184853798912
+            and payload.emoji.id == 580164400691019826
         ):
             guild = discord.utils.get(self.bot.guilds, id=414027124836532234)
             trainee_mod_role = guild.get_role(self.trainee_mod_role)
             if payload.member.top_role >= trainee_mod_role:
-                channel = self.bot.get_channel(489450008643502080)  # social-media-feed
+                channel = guild.get_channel(580354435302031360) #twitter posts
                 message = await channel.fetch_message(payload.message_id)
+                channel = guild.get_channel(489450008643502080)  # social-media-feed
                 await channel.send(message.content)
 
 
