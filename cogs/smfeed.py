@@ -4,6 +4,7 @@ import json
 import discord
 from discord.ext import commands
 
+
 class Smfeed(commands.Cog):
     def __init__(self, bot):
         self.logger = logging.getLogger("Smfeed")
@@ -35,7 +36,7 @@ class Smfeed(commands.Cog):
             guild = discord.utils.get(self.bot.guilds, id=414027124836532234)
             trainee_mod_role = guild.get_role(self.trainee_mod_role)
             if payload.member.top_role >= trainee_mod_role:
-                channel = self.bot.get_channel(489450008643502080) #social-media-feed
+                channel = self.bot.get_channel(489450008643502080)  # social-media-feed
                 message = await channel.fetch_message(payload.message_id)
                 await channel.send(message.content)
 
