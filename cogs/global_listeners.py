@@ -12,6 +12,8 @@ import discord
 from discord.ext import commands
 from discord.ext.commands import errors
 
+from birdbot import BirdBot
+
 from utils.helper import (
     NoAuthorityError,
     DevBotOnly,
