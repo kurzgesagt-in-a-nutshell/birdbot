@@ -91,6 +91,7 @@ class GuildChores(commands.Cog):
             await member.add_roles(
                 guild.get_role(542343829785804811),  # Verified
                 guild.get_role(901136119863844864),  # English
+                reason="Patron auto join"
             )
 
             try:
@@ -125,7 +126,6 @@ class GuildChores(commands.Cog):
     @patreon_only()
     @commands.command()
     async def unenroll(self, ctx):
-        self.logger.info("Command called")
         embed = discord.Embed(
             title="We're sorry to see you go",
             description="Are you sure you want to get banned from the server?"
