@@ -56,67 +56,70 @@ class Giveaway(commands.Cog):
     async def choose_winner(self, giveaway):
         """does the giveaway logic"""
 
-        channel = await self.bot.fetch_channel(giveaway["channel_id"])
-        message = await channel.fetch_message(giveaway["message_id"])
+        try:
+            channel = await self.bot.fetch_channel(giveaway["channel_id"])
+            message = await channel.fetch_message(giveaway["message_id"])
 
-        embed = message.embeds[0].to_dict()
+            embed = message.embeds[0].to_dict()
 
-        embed["title"] = "GiveAway ended"
-        embed["color"] = 15158332  # red
-        embed["footer"]["text"] = "GiveAway Ended"
+            embed["title"] = "GiveAway ended"
+            embed["color"] = 15158332  # red
+            embed["footer"]["text"] = "GiveAway Ended"
 
-        for reaction in message.reactions:
-            if reaction.emoji == "🎉":
-                users = await reaction.users().flatten()
-                users = [user.id for user in users]
-                users.remove(self.bot.user.id)
+            for reaction in message.reactions:
+                if reaction.emoji == "🎉":
+                    users = await reaction.users().flatten()
+                    users = [user.id for user in users]
+                    users.remove(self.bot.user.id)
 
-        if users != []:
-            weights = []
-            for user in users:
-                bias = self.giveaway_bias["default"]
-                member = await message.guild.fetch_member(user)
-                roles = [role.id for role in member.roles]
-                for role in self.giveaway_bias["roles"]:
-                    if role["id"] in roles:
-                        bias = role["bias"]
-                        break
-                weights.append(bias)
+            if users != []:
+                weights = []
+                for user in users:
+                    bias = self.giveaway_bias["default"]
+                    member = await message.guild.fetch_member(user)
+                    roles = [role.id for role in member.roles]
+                    for role in self.giveaway_bias["roles"]:
+                        if role["id"] in roles:
+                            bias = role["bias"]
+                            break
+                    weights.append(bias)
 
-            total = sum(weights)
-            probabilities = [w / total for w in weights]
-            prob = np.array(probabilities)
+                total = sum(weights)
+                probabilities = [w / total for w in weights]
+                prob = np.array(probabilities)
 
-            if giveaway["rigged"] == False:
-                prob = None
+                if giveaway["rigged"] == False:
+                    prob = None
 
-            size = giveaway["winners_no"]
-            if len(users) < size:
-                size = len(users)
+                size = giveaway["winners_no"]
+                if len(users) < size:
+                    size = len(users)
 
-            choice = np.random.choice(users, size=size, replace=False, p=prob)
-            winners = ""
-            for i in choice:
-                winner = await message.guild.fetch_member(i)
-                await message.channel.send(f"{winner.mention} won")
-                winners += winner.mention + "\n"
-        else:
-            winners = "Nobody participated :("
+                choice = np.random.choice(users, size=size, replace=False, p=prob)
+                winners = ""
+                for i in choice:
+                    winner = await message.guild.fetch_member(i)
+                    await message.channel.send(f"{winner.mention} won")
+                    winners += winner.mention + "\n"
+            else:
+                winners = "Nobody participated :("
 
-        for i in embed["fields"]:
-            if i["name"].startswith("winners"):
-                i["value"] = winners
+            for i in embed["fields"]:
+                if i["name"].startswith("winners"):
+                    i["value"] = winners
 
-        embed = discord.Embed.from_dict(embed)
-        await message.edit(embed=embed)
+            embed = discord.Embed.from_dict(embed)
+            await message.edit(embed=embed)
+
+        except:
+            pass
 
         if giveaway in self.active_giveaways:
             self.active_giveaways.remove(giveaway)
-
             self.giveaway_db.update_one(giveaway, {"$set": {"giveaway_over": True}})
 
         for i in self.giveaway_tasks:
-            if i[0] == message.id:
+            if i[0] == giveaway["message_id"]:
                 self.giveaway_tasks.remove(i)
                 break
 
@@ -242,7 +245,8 @@ class Giveaway(commands.Cog):
                 i[1].cancel()
                 self.giveaway_tasks.remove(i)
                 break
-    
+        await ctx.send("Giveaway ended!", delete_after=6)
+
     @mod_and_above()
     @giveaway.command()
     async def cancel(self, ctx, giveaway: str):
