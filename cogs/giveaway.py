@@ -6,7 +6,11 @@ import json
 
 import discord
 from discord.ext import commands
-from utils.helper import calc_time
+
+from utils.helper import (
+    calc_time,
+    mod_and_above,
+)
 from utils.custom_converters import member_converter
 
 import typing
@@ -122,6 +126,7 @@ class Giveaway(commands.Cog):
         await asyncio.sleep(time)
         await self.choose_winner(giveaway)
 
+    @mod_and_above()
     @giveaway.command()
     async def start(self, ctx, time, *, giveaway_msg):
         """Starts a new giveaway
@@ -222,6 +227,7 @@ class Giveaway(commands.Cog):
 
         await giveaway
 
+    @mod_and_above()
     @giveaway.command()
     async def end(self, ctx, giveaway: str):
         """Ends the giveaway early
@@ -236,7 +242,8 @@ class Giveaway(commands.Cog):
                 i[1].cancel()
                 self.giveaway_tasks.remove(i)
                 break
-
+    
+    @mod_and_above()
     @giveaway.command()
     async def cancel(self, ctx, giveaway: str):
         """Deletes a giveaway
@@ -258,6 +265,7 @@ class Giveaway(commands.Cog):
 
         await ctx.send("Giveaway cancelled", delete_after=6)
 
+    @mod_and_above()
     @giveaway.command()
     async def reroll(
         self,
@@ -276,6 +284,7 @@ class Giveaway(commands.Cog):
                     doc["rigged"] = rigged
                 await self.choose_winner(doc)
 
+    @mod_and_above()
     @giveaway.command()
     async def list(self, ctx):
         """Lists all active giveaways
