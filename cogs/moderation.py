@@ -98,6 +98,7 @@ class Moderation(commands.Cog):
                         if s in e.image.url:
                             await after.delete()
 
+
     @commands.Cog.listener()
     async def on_message_edit(self, before, after):
         if not (after.channel.id == 414027124836532236 or after.channel.id == 414179142020366336):
@@ -114,7 +115,7 @@ class Moderation(commands.Cog):
                     for s in ["mp4", "gif", "webm", "gifv"]:
                         if s in e.image.url:
                             await after.delete()
-                print(after)
+
 
     @commands.Cog.listener()
     async def on_message_update(self, before, after):
@@ -132,8 +133,6 @@ class Moderation(commands.Cog):
                     for s in ["mp4", "gif", "webm", "gifv"]:
                         if s in e.image.url:
                             await after.delete()
-
-                print(after)
 
 
     @mod_and_above()
