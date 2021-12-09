@@ -80,14 +80,60 @@ class Moderation(commands.Cog):
     def cog_unload(self):
         self.timed_action_loop.cancel()
 
+
     @commands.Cog.listener()
-    async def on_message_edit(self, before, after):
-        if not after.channel.id == 414027124836532236:
+    async def on_message(self, after):
+        if not (after.channel.id == 414027124836532236 or after.channel.id == 414179142020366336):
             return
         if after.embeds:
             for e in after.embeds:
                 if any(s in e.type for s in ["mp4", "gif", "webm", "gifv"]):
                     await after.delete()
+                elif e.thumbnail:
+                    for s in ["mp4", "gif", "webm", "gifv"]:
+                        if s in e.thumbnail.url:
+                            await after.delete()
+                elif e.image:
+                    for s in ["mp4", "gif", "webm", "gifv"]:
+                        if s in e.image.url:
+                            await after.delete()
+
+    @commands.Cog.listener()
+    async def on_message_edit(self, before, after):
+        if not (after.channel.id == 414027124836532236 or after.channel.id == 414179142020366336):
+            return
+        if after.embeds:
+            for e in after.embeds:
+                if any(s in e.type for s in ["mp4", "gif", "webm", "gifv"]):
+                    await after.delete()
+                elif e.thumbnail:
+                    for s in ["mp4", "gif", "webm", "gifv"]:
+                        if s in e.thumbnail.url:
+                            await after.delete()
+                elif e.image:
+                    for s in ["mp4", "gif", "webm", "gifv"]:
+                        if s in e.image.url:
+                            await after.delete()
+                print(after)
+
+    @commands.Cog.listener()
+    async def on_message_update(self, before, after):
+        if not (after.channel.id == 414027124836532236 or after.channel.id == 414179142020366336):
+            return
+        if after.embeds:
+            for e in after.embeds:
+                if any(s in e.type for s in ["mp4", "gif", "webm", "gifv"]):
+                    await after.delete()
+                elif e.thumbnail:
+                    for s in ["mp4", "gif", "webm", "gifv"]:
+                        if s in e.thumbnail.url:
+                            await after.delete()
+                elif e.image:
+                    for s in ["mp4", "gif", "webm", "gifv"]:
+                        if s in e.image.url:
+                            await after.delete()
+
+                print(after)
 
 
     @mod_and_above()
