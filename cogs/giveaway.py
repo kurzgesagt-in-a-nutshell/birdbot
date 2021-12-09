@@ -41,7 +41,9 @@ class Giveaway(commands.Cog):
                 time = giveaway["end_time"] - datetime.utcnow().timestamp()
                 if time < 0:
                     time = 1
-                giveaway_task = asyncio.create_task(self.start_giveaway(giveaway), name = giveaway["pin"])
+                giveaway_task = asyncio.create_task(
+                    self.start_giveaway(giveaway), name=giveaway["pin"]
+                )
                 await giveaway_task
 
     @commands.group(hidden=True)
@@ -218,7 +220,7 @@ class Giveaway(commands.Cog):
             "giveaway_over": False,
         }
 
-        giveaway = asyncio.create_task(self.start_giveaway(doc), name = uid)
+        giveaway = asyncio.create_task(self.start_giveaway(doc), name=uid)
 
         self.active_giveaways[uid] = doc
         self.giveaway_db.insert_one(doc)
@@ -240,6 +242,7 @@ class Giveaway(commands.Cog):
                     break
         else:
             await ctx.send("Giveaway not found!", delete_after=6)
+            await ctx.message.delete(delay=6)
 
     @devs_only()
     @giveaway.command()
@@ -261,8 +264,9 @@ class Giveaway(commands.Cog):
                     break
 
             await ctx.send("Giveaway cancelled!", delete_after=6)
-        else:    
+        else:
             await ctx.send("Giveaway not found!", delete_after=6)
+            await ctx.message.delete(delay=6)
 
     @devs_only()
     @giveaway.command()
@@ -298,7 +302,7 @@ class Giveaway(commands.Cog):
         giveaways = "\n".join(giveaways)
         embed = discord.Embed(title="Active giveaways:", description=giveaways)
         await ctx.send(embed=embed)
-        
+
 
 def setup(bot):
     bot.add_cog(Giveaway(bot))
