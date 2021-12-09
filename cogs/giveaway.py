@@ -126,7 +126,7 @@ class Giveaway(commands.Cog):
         await asyncio.sleep(time)
         await self.choose_winner(giveaway)
 
-    @devs_only()
+    @mod_and_above()
     @giveaway.command()
     async def start(self, ctx, time, *, giveaway_msg):
         """Starts a new giveaway
@@ -227,7 +227,7 @@ class Giveaway(commands.Cog):
 
         await giveaway
 
-    @devs_only()
+    @mod_and_above()
     @giveaway.command()
     async def end(self, ctx, pin: str):
         """Ends the giveaway early
@@ -244,7 +244,7 @@ class Giveaway(commands.Cog):
             await ctx.send("Giveaway not found!", delete_after=6)
             await ctx.message.delete(delay=6)
 
-    @devs_only()
+    @mod_and_above()
     @giveaway.command()
     async def cancel(self, ctx, pin: str):
         """Deletes a giveaway
@@ -268,7 +268,7 @@ class Giveaway(commands.Cog):
             await ctx.send("Giveaway not found!", delete_after=6)
             await ctx.message.delete(delay=6)
 
-    @devs_only()
+    @mod_and_above()
     @giveaway.command()
     async def reroll(
         self,
@@ -288,7 +288,7 @@ class Giveaway(commands.Cog):
                 await self.choose_winner(doc)
                 break
 
-    @devs_only()
+    @mod_and_above()
     @giveaway.command()
     async def list(self, ctx):
         """Lists all active giveaways
