@@ -54,20 +54,7 @@ class GuildChores(commands.Cog):
 
     @commands.Cog.listener()
     async def on_message(self, message):
-        """Remind mods to use correct prefix"""
-        if not message.author.bot:
-            guild = discord.utils.get(self.bot.guilds, id=414027124836532234)
-            mod_role = discord.utils.get(guild.roles, id=self.mod_role)
-            admin_role = discord.utils.get(guild.roles, id=self.admin_role)
-
-            if not (
-                (mod_role in message.author.roles)
-                or (admin_role in message.author.roles)
-            ):
-                return
-            if re.match("^-(kick|ban|mute|warn)", message.content):
-                await message.channel.send(f"ahem.. {message.author.mention}")
-
+        """Remind mods to use correct prefix, alert mod pings etc"""
         if any(
             x in message.raw_role_mentions
             for x in [414092550031278091, 905510680763969536]
@@ -99,6 +86,20 @@ class GuildChores(commands.Cog):
                 embed=embed,
                 file=discord.File(io.BytesIO(to_file.encode()),filename="history.txt")
             )
+        if not message.author.bot:
+            guild = discord.utils.get(self.bot.guilds, id=414027124836532234)
+            mod_role = discord.utils.get(guild.roles, id=self.mod_role)
+            admin_role = discord.utils.get(guild.roles, id=self.admin_role)
+
+            if not (
+                (mod_role in message.author.roles)
+                or (admin_role in message.author.roles)
+            ):
+                return
+            if re.match("^-(kick|ban|mute|warn)", message.content):
+                await message.channel.send(f"ahem.. {message.author.mention}")
+
+
 
     @commands.Cog.listener()
     async def on_member_update(self, before, after):
