@@ -61,13 +61,12 @@ class GuildChores(commands.Cog):
             for x in [414092550031278091, 905510680763969536]
         ):
 
-            self.logger.info("detected mod ping")
             role_names = [
                 discord.utils.get(message.guild.roles, id=role).name
                 for role in message.raw_role_mentions
             ]
-            # mod_channel = self.bot.get_channel(414095428573986816)
-            mod_channel = self.bot.get_channel(414179142020366336)
+            mod_channel = self.bot.get_channel(414095428573986816)
+            # mod_channel = self.bot.get_channel(414179142020366336)
             
             embed = discord.Embed(
                 title="Mod ping alert!",
@@ -80,13 +79,11 @@ class GuildChores(commands.Cog):
             embed.set_footer(
                 text="Last 50 messages in the channel are attached for reference"
             )
-            self.logger.info("made embed")
 
             to_file = ""
             async for msg in message.channel.history(oldest_first=True,limit=50):
                 to_file += f"{msg.author.display_name}: {msg.content}\n"
 
-            self.logger.info("went through channel history")
 
             await mod_channel.send(
                 embed=embed,
