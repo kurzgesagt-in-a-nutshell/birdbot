@@ -55,7 +55,6 @@ class GuildChores(commands.Cog):
     @commands.Cog.listener()
     async def on_message(self, message):
         """Remind mods to use correct prefix, alert mod pings etc"""
-        self.logger.info("fired on_message")
         if any(
             x in message.raw_role_mentions
             for x in [414092550031278091, 905510680763969536]
