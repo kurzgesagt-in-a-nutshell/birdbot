@@ -52,8 +52,8 @@ class GuildChores(commands.Cog):
     async def on_ready(self):
         self.logger.info("Loaded Guild Chores")
 
-    @commands.Cog.listener()
-    async def on_message(self, message):
+    @commands.Cog.listener('on_message')
+    async def msg(self, message):
         """Remind mods to use correct prefix, alert mod pings etc"""
         if any(
             x in message.raw_role_mentions
@@ -63,8 +63,8 @@ class GuildChores(commands.Cog):
                 discord.utils.get(message.guild.roles, id=role).name
                 for role in message.raw_role_mentions
             ]
-            mod_channel = self.bot.get_channel(414095428573986816)
-            # mod_channel = self.bot.get_channel(414179142020366336)
+            # mod_channel = self.bot.get_channel(414095428573986816)
+            mod_channel = self.bot.get_channel(414179142020366336)
             
             embed = discord.Embed(
                 title="Mod ping alert!",
