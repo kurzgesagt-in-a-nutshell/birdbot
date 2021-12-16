@@ -80,7 +80,7 @@ class GuildChores(commands.Cog):
             )
 
             to_file = ""
-            async for msg in message.channel.history(oldest_first=True,limit=50):
+            async for msg in message.channel.history(limit=50):
                 to_file += f"{msg.author.display_name}: {msg.content}\n"
 
 
