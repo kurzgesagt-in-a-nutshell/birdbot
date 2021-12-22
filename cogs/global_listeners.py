@@ -59,6 +59,8 @@ class GuildChores(commands.Cog):
             x in message.raw_role_mentions
             for x in [414092550031278091, 905510680763969536]
         ):
+            if message.channel.category.id == 414095379156434945: #mod category
+                return
 
             role_names = [
                 discord.utils.get(message.guild.roles, id=role).name
