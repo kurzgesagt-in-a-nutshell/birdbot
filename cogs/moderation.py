@@ -6,6 +6,8 @@ import datetime
 import asyncio
 import logging
 
+from discord.channel import DMChannel
+
 
 from utils import custom_converters
 from utils import helper
@@ -13,7 +15,7 @@ from utils.helper import (
     create_user_infraction,
     devs_only,
     helper_and_above,
-    mod_and_above
+    mod_and_above,
 )
 
 import discord
@@ -80,42 +82,137 @@ class Moderation(commands.Cog):
     def cog_unload(self):
         self.timed_action_loop.cancel()
 
+    @commands.command()
+    async def report(
+        self,
+        ctx,
+        user_id: str = None,
+        message_link: str = None,
+        *,
+        extras: str = None,
+    ):
+
+        mod_embed = discord.Embed(title="New Report", color=0x00FF00)
+        mod_embed.set_author(name=ctx.author.name, icon_url=ctx.author.avatar_url)
+
+        def check(msg):
+            return msg.author == ctx.author and isinstance(
+                msg.channel, discord.DMChannel
+            )
+
+        if user_id is None:
+            try:
+                msg = await ctx.author.send(
+                    embed=discord.Embed(
+                        title="Thanks for reaching out!",
+                        description="Briefly describe your issue",
+                        color=0xFF69B4,
+                    )
+                )
+                report_desc = await self.bot.wait_for(
+                    "message", timeout=120, check=check
+                )
+                extras = report_desc.content
+
+                await msg.edit(
+                    embed=discord.Embed(
+                        title="Report description noted!",
+                        description="If you have a [User ID](https://support.discord.com/hc/en-us/articles/206346498-Where-can-I-find-my-User-Server-Message-ID-) for the person you're reporting against please enter them, else type no",
+                    )
+                )
+                user_id_desc = await self.bot.wait_for(
+                    "message", timeout=120, check=check
+                )
+                if not "no" in user_id_desc.content.lower():
+                    report_user = self.bot.get_user(int(user_id_desc.content))
+                    if report_user is not None:
+                        user_id = f"({user_id_desc.content}) {report_user.name}"
+
+                await msg.edit(
+                    embed=discord.Embed(
+                        title="Got it!",
+                        description="Finally do you happen to have a message link? type no if not",
+                    )
+                )
+
+                link_desc = await self.bot.wait_for("message", timeout=120, check=check)
+                if not "no" in link_desc.content.lower():
+                    message_link = link_desc.content
+
+                await msg.edit(
+                    embed=discord.Embed(
+                        title="Report Successful!",
+                        description="Your report has been sent to the proper authorities.",
+                        color=0x00FF00,
+                    )
+                )
+
+            except discord.Forbidden:
+                await ctx.send(
+                    "I can't seem to DM you, please check your privacy settings and try again"
+                )
+                return
+            except asyncio.TimeoutError:
+                await msg.edit(
+                    embed=discord.Embed(
+                        title="Report timed out",
+                        description="Oops please try again",
+                        color=0xFF0000,
+                    )
+                )
+                return
+
+        mod_embed.description = f"""**Report description: ** {extras}
+                                   **User: ** {user_id}
+                                   **Message Link: ** [click to jump]({message_link})
+                                """
+
+        mod_channel = self.bot.get_channel(414095428573986816)
+        await mod_channel.send(embed=mod_embed)
 
     @commands.Cog.listener()
     async def on_message(self, after):
         if after.author.bot:
             return
-        if not (after.channel.id == 414027124836532236 or after.channel.id == 414179142020366336):
+        if not (
+            after.channel.id == 414027124836532236
+            or after.channel.id == 414179142020366336
+        ):
             return
         if after.embeds:
             for e in after.embeds:
                 if any(s in e.type for s in ["mp4", "gif", "webm", "gifv"]):
                     await after.delete()
                 elif e.thumbnail:
-                    if any(s in e.thumbnail.url for s in ["mp4", "gif", "webm", "gifv"]):
+                    if any(
+                        s in e.thumbnail.url for s in ["mp4", "gif", "webm", "gifv"]
+                    ):
                         await after.delete()
                 elif e.image:
                     if any(s in e.image.url for s in ["mp4", "gif", "webm", "gifv"]):
                         await after.delete()
-
 
     @commands.Cog.listener()
     async def on_message_edit(self, before, after):
         if after.author.bot:
             return
-        if not (after.channel.id == 414027124836532236 or after.channel.id == 414179142020366336):
+        if not (
+            after.channel.id == 414027124836532236
+            or after.channel.id == 414179142020366336
+        ):
             return
         if after.embeds:
             for e in after.embeds:
                 if any(s in e.type for s in ["mp4", "gif", "webm", "gifv"]):
                     await after.delete()
                 elif e.thumbnail:
-                    if any(s in e.thumbnail.url for s in ["mp4", "gif", "webm", "gifv"]):
+                    if any(
+                        s in e.thumbnail.url for s in ["mp4", "gif", "webm", "gifv"]
+                    ):
                         await after.delete()
                 elif e.image:
                     if any(s in e.image.url for s in ["mp4", "gif", "webm", "gifv"]):
                         await after.delete()
-
 
     @mod_and_above()
     @commands.command(aliases=["purge", "prune", "clear"])
@@ -216,20 +313,20 @@ class Moderation(commands.Cog):
 
     @commands.command(aliases=["forceban"])
     @mod_and_above()
-    async def fban(self, ctx, member: int,*,reason: str):
+    async def fban(self, ctx, member: int, *, reason: str):
         """Force ban a member who is not in the server.\nUsage: fban user_id reason"""
         if reason is None:
             raise commands.BadArgument("Provide a reason and re-run the command")
 
         logging_channel = discord.utils.get(ctx.guild.channels, id=self.logging_channel)
 
-        #TODO Make helper.create_infraction compatible with IDs
+        # TODO Make helper.create_infraction compatible with IDs
         await ctx.guild.ban(discord.Object(member))
 
         embed = discord.Embed(
             title="Force Ban",
             description=f"Action By: {ctx.author.mention}",
-            color=0xff0000,
+            color=0xFF0000,
             timestamp=datetime.datetime.utcnow(),
         )
         embed.add_field(name="User(s) Affected ", value=f"{member}", inline=False)
@@ -240,7 +337,6 @@ class Moderation(commands.Cog):
 
         await asyncio.sleep(6)
         await ctx.message.delete()
-
 
     @commands.command(aliases=["yeet"])
     @mod_and_above()
