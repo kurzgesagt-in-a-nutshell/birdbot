@@ -91,6 +91,7 @@ class Moderation(commands.Cog):
         *,
         extras: str = None,
     ):
+        """Report an issue to the authorites\n Usage: report\nreport user_ID message_link description_of_issue"""
 
         mod_embed = discord.Embed(title="New Report", color=0x00FF00)
         mod_embed.set_author(name=ctx.author.name, icon_url=ctx.author.avatar_url)
