@@ -163,10 +163,7 @@ class Moderation(commands.Cog):
                 )
                 return
 
-        mod_embed.description = f"""**Report description: ** {extras}
-                                   **User: ** {user_id}
-                                   **Message Link: ** [click to jump]({message_link})
-                                """
+        mod_embed.description = f"**Report description: ** {extras}\n**User: ** {user_id}\n**Message Link: ** [click to jump]({message_link})"
 
         mod_channel = self.bot.get_channel(414095428573986816)
         await mod_channel.send(embed=mod_embed)
