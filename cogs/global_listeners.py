@@ -127,7 +127,7 @@ class GuildChores(commands.Cog):
         #temp fix to remove clonex bots
         if "clonex" in str(member.name).lower():
             guild = discord.utils.get(self.bot.guilds, id=414027124836532234)
-            guild.kick(member)
+            await guild.kick(member)
             return
 
         diff_roles = [role.id for role in member.roles]
