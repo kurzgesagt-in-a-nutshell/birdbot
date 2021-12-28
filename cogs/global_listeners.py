@@ -124,6 +124,12 @@ class GuildChores(commands.Cog):
         them the option to unenroll from autojoining
         Listen for new members and fire webhook for greeting"""
 
+        #temp fix to remove clonex bots
+        if "clonex" in str(member.name).lower():
+            guild = discord.utils.get(self.bot.guilds, id=414027124836532234)
+            guild.kick(member)
+            return
+
         diff_roles = [role.id for role in member.roles]
         if any(x in diff_roles for x in self.patreon_roles):
 
