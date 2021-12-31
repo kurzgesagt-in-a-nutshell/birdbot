@@ -168,9 +168,13 @@ class Moderation(commands.Cog):
         mod_channel = self.bot.get_channel(414095428573986816)
         await mod_channel.send(embed=mod_embed)
 
+
     @commands.Cog.listener()
     async def on_message(self, after):
         if after.author.bot:
+            return
+        check_role = after.guild.get_role(414092550031278091)
+        if after.author.top_role >= check_role:
             return
         if not (
             after.channel.id == 414027124836532236
@@ -190,9 +194,13 @@ class Moderation(commands.Cog):
                     if any(s in e.image.url for s in ["mp4", "gif", "webm", "gifv"]):
                         await after.delete()
 
+
     @commands.Cog.listener()
     async def on_message_edit(self, before, after):
         if after.author.bot:
+            return
+        check_role = after.guild.get_role(414092550031278091)
+        if after.author.top_role >= check_role:
             return
         if not (
             after.channel.id == 414027124836532236
