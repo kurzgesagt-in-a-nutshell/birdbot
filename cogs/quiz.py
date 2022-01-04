@@ -22,7 +22,7 @@ class Quiz(commands.Cog):
 
     @commands.command()
     async def tickets(self, ctx):
-        if ctx.channel != 414452106129571842:
+        if ctx.channel.id != 414452106129571842:
             return;
         try:
             user = self.quiz_db.find_one({"id": str(ctx.author.id)})
