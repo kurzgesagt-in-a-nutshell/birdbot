@@ -22,6 +22,8 @@ class Quiz(commands.Cog):
 
     @commands.command()
     async def tickets(self, ctx):
+        if ctx.channel != 414452106129571842:
+            return;
         try:
             user = self.quiz_db.find_one({"id": str(ctx.author.id)})
             if user:
@@ -29,7 +31,7 @@ class Quiz(commands.Cog):
                 total_tickets = list(self.quiz_db.aggregate(pipeline=pipe))[0]["total"]
                 percentage = round((user["tickets"] / total_tickets) * 100, 3)
 
-                await ctx.send(f'You have {user["tickets"]} tickets ( {percentage}% chance of winning ).')
+                await ctx.send(f'You have {user["tickets"]} tickets of { total_tickets } tickets ( {percentage}% chance of winning ).')
             else:
                 await ctx.send(f"You have not participated. To participate please vist `https://quiz.birdbot.xyz`")
 
