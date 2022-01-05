@@ -39,7 +39,7 @@ class Topic(commands.Cog):
 
     @commands.group(invoke_without_command=True)
     @general_only()
-    @role_and_above(637114897544511488) #duck role id
+    @role_and_above(637114897544511488)  # duck role id
     @commands.cooldown(1, 60)
     async def topic(self, ctx: commands.Context):
         """Get a topic to talk about."""

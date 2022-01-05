@@ -59,7 +59,7 @@ class GuildChores(commands.Cog):
             x in message.raw_role_mentions
             for x in [414092550031278091, 905510680763969536]
         ):
-            if message.channel.category.id == 414095379156434945: #mod category
+            if message.channel.category.id == 414095379156434945:  # mod category
                 return
 
             role_names = [
@@ -68,7 +68,7 @@ class GuildChores(commands.Cog):
             ]
             mod_channel = self.bot.get_channel(414095428573986816)
             # mod_channel = self.bot.get_channel(414179142020366336)
-            
+
             embed = discord.Embed(
                 title="Mod ping alert!",
                 description=f"{' and '.join(role_names)} got pinged in {message.channel.mention} - [view message]({message.jump_url})",
@@ -85,10 +85,9 @@ class GuildChores(commands.Cog):
             async for msg in message.channel.history(limit=50):
                 to_file += f"{msg.author.display_name}: {msg.content}\n"
 
-
             await mod_channel.send(
                 embed=embed,
-                file=discord.File(io.BytesIO(to_file.encode()),filename="history.txt")
+                file=discord.File(io.BytesIO(to_file.encode()), filename="history.txt"),
             )
 
         if not message.author.bot:
@@ -103,8 +102,6 @@ class GuildChores(commands.Cog):
                 return
             if re.match("^-(kick|ban|mute|warn)", message.content):
                 await message.channel.send(f"ahem.. {message.author.mention}")
-
-
 
     @commands.Cog.listener()
     async def on_member_update(self, before, after):
@@ -124,7 +121,7 @@ class GuildChores(commands.Cog):
         them the option to unenroll from autojoining
         Listen for new members and fire webhook for greeting"""
 
-        #temp fix to remove clonex bots
+        # temp fix to remove clonex bots
         if "clonex" in str(member.name).lower():
             guild = discord.utils.get(self.bot.guilds, id=414027124836532234)
             await guild.kick(member)
@@ -255,8 +252,7 @@ class Errors(commands.Cog):
             await ctx.message.add_reaction(reaction)
         if message is not None:
             await ctx.send(message, delete_after=delay)
-        await asyncio.sleep(delay)
-        await ctx.message.delete()
+        await ctx.message.delete(delay=delay)
 
     @commands.Cog.listener()
     async def on_ready(self):

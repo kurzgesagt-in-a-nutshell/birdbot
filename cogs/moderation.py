@@ -168,7 +168,6 @@ class Moderation(commands.Cog):
         mod_channel = self.bot.get_channel(414095428573986816)
         await mod_channel.send(embed=mod_embed)
 
-
     @commands.Cog.listener()
     async def on_message(self, after):
         if after.author.bot:
@@ -193,7 +192,6 @@ class Moderation(commands.Cog):
                 elif e.image:
                     if any(s in e.image.url for s in ["mp4", "gif", "webm", "gifv"]):
                         await after.delete()
-
 
     @commands.Cog.listener()
     async def on_message_edit(self, before, after):
@@ -341,8 +339,7 @@ class Moderation(commands.Cog):
         await logging_channel.send(embed=embed)
         await ctx.message.add_reaction("<:kgsYes:580164400691019826>")
 
-        await asyncio.sleep(6)
-        await ctx.message.delete()
+        await ctx.message.delete(delay=6)
 
     @commands.command(aliases=["yeet"])
     @mod_and_above()
@@ -375,8 +372,9 @@ class Moderation(commands.Cog):
                 members.remove(m)
                 failed_ban = True
         if failed_ban:
-            x = await ctx.send(
-                "Certain users could not be banned due to your clearance"
+            await ctx.send(
+                "Certain users could not be banned due to your clearance",
+                delete_after=6,
             )
         if len(members) == 0:
             return
@@ -397,9 +395,7 @@ class Moderation(commands.Cog):
 
         await logging_channel.send(embed=embed)
 
-        await asyncio.sleep(6)
-        await ctx.message.delete()
-        await x.delete()
+        await ctx.message.delete(delay=6)
 
     @commands.command()
     @mod_and_above()
@@ -470,7 +466,9 @@ class Moderation(commands.Cog):
 
         await ctx.message.add_reaction("<:kgsYes:580164400691019826>")
         if failed_kick:
-            x = await ctx.send("Could not kick certain users due to your clearance")
+            await ctx.send(
+                "Could not kick certain users due to your clearance", delete_after=6
+            )
         if len(members) == 0:
             return
 
@@ -487,9 +485,7 @@ class Moderation(commands.Cog):
             author=ctx.author, users=members, action="kick", reason=reason
         )
 
-        await asyncio.sleep(6)
-        await ctx.message.delete()
-        await x.delete()
+        await ctx.message.delete(delay=6)
 
     @commands.command()
     @helper_and_above()
@@ -538,8 +534,9 @@ class Moderation(commands.Cog):
 
         await ctx.message.add_reaction("<:kgsYes:580164400691019826>")
         if failed_mute:
-            x = await ctx.send(
-                "Certain members could not be muted due to your clearance"
+            await ctx.send(
+                "Certain members could not be muted due to your clearance",
+                delete_after=6,
             )
         if len(members) == 0:
             return
@@ -571,9 +568,7 @@ class Moderation(commands.Cog):
 
                 self.timed_action_list = helper.get_timed_actions()
 
-        await asyncio.sleep(6)
-        await ctx.message.delete()
-        await x.delete()
+        await ctx.message.delete(delay=6)
 
     @commands.command()
     @helper_and_above()
@@ -605,8 +600,7 @@ class Moderation(commands.Cog):
         )
 
         await logging_channel.send(embed=embed)
-        await asyncio.sleep(6)
-        await ctx.message.delete()
+        await ctx.message.delete(delay=6)
 
     @commands.command()
     @mod_and_above()
@@ -690,8 +684,9 @@ class Moderation(commands.Cog):
                 members.remove(m)
 
         if failed_warn:
-            x = await ctx.send(
-                "Certain members could not be warned due to your clearance"
+            await ctx.send(
+                "Certain members could not be warned due to your clearance",
+                delete_after=6,
             )
         if len(members) == 0:
             return
@@ -710,10 +705,7 @@ class Moderation(commands.Cog):
         await logging_channel.send(embed=embed)
 
         await ctx.message.add_reaction("<:kgsYes:580164400691019826>")
-        await asyncio.sleep(6)
-        await ctx.message.delete()
-        if failed_warn:
-            await x.delete()
+        await ctx.message.delete(delay=6)
 
     @commands.command(aliases=["unwarn", "removewarn"])
     @mod_and_above()
