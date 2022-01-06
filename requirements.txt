@@ -1,6 +1,6 @@
 aiohttp
 async-timeout
-attrs==21.2.0
+attrs==21.4.0
 autopep8==1.6.0
 chardet==4.0.0
 colorama==0.4.4
