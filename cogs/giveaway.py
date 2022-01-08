@@ -62,9 +62,9 @@ class Giveaway(commands.Cog):
 
             embed = message.embeds[0].to_dict()
 
-            embed["title"] = "GiveAway ended"
+            embed["title"] = "Giveaway ended"
             embed["color"] = 15158332  # red
-            embed["footer"]["text"] = "GiveAway Ended"
+            embed["footer"]["text"] = "Giveaway Ended"
 
             for reaction in message.reactions:
                 if reaction.emoji == "🎉":
@@ -150,13 +150,13 @@ class Giveaway(commands.Cog):
                 dash_args.append([arguments[i], arguments[i + 1]])
 
         fields = {
-            "winners": {"name": "winners: 1", "value": " ​"},
+            "winners": {"name": "winners: 1", "value": " "},
             "sponsor": {"name": "hosted by", "value": ctx.author.mention},
         }
 
         for a in dash_args:
             if a[0] == "-w":
-                fields["winners"] = {"name": f"winners: {a[1]}", "value": " ​"}
+                fields["winners"] = {"name": f"winners: {a[1]}", "value": " "}
                 try:
                     winners = int(a[1])
                 except:
@@ -186,7 +186,7 @@ class Giveaway(commands.Cog):
             raise commands.BadArgument(message="Wrong time syntax")
 
         embed = discord.Embed(
-            title="GiveAway started!",
+            title="Giveaway started!",
             description=f"**{giveaway_msg}**",
             timestamp=datetime.now(timezone.utc) + timedelta(seconds=time),
             colour=discord.Colour.green(),
@@ -202,7 +202,7 @@ class Giveaway(commands.Cog):
             c += 1
             uid = uid[:3] + str(c)
 
-        embed.set_footer(text=f"PIN: {uid} | GiveAway Ends")
+        embed.set_footer(text=f"PIN: {uid} | Giveaway Ends")
 
         message = await ctx.send(embed=embed)
         await message.add_reaction("🎉")
@@ -277,7 +277,8 @@ class Giveaway(commands.Cog):
         winners: typing.Optional[int] = None,
         rigged: typing.Optional[str] = None,
     ):
-        """Pick a new winner"""
+        """Pick a new winner
+        Usage: giveaway reroll pin <no_of_winners> <rigged>"""
         for i in self.giveaway_db.find():
             if i["message_id"] == giveaway:
                 doc = i
