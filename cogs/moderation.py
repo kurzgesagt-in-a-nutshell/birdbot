@@ -6,17 +6,17 @@ import datetime
 import asyncio
 import logging
 
+from discord.channel import DMChannel
+
+
+from utils import custom_converters
 from utils import helper
 from utils.helper import (
     create_user_infraction,
     devs_only,
     helper_and_above,
     mod_and_above,
-    patreon_only,
 )
-
-from birdbot import BirdBot
-from utils import custom_converters
 
 import discord
 from discord.ext import commands, tasks
@@ -36,11 +36,6 @@ class Moderation(commands.Cog):
         self.logging_channel = self.config_json["logging"]["logging_channel"]
         self.mod_role = self.config_json["roles"]["mod_role"]
         self.admin_role = self.config_json["roles"]["admin_role"]
-        self.patreon_roles = [
-            self.config_json["roles"]["patreon_blue_role"],
-            self.config_json["roles"]["patreon_green_role"],
-            self.config_json["roles"]["patreon_orange_role"],
-        ]
 
     @tasks.loop(minutes=10.0)
     async def timed_action_loop(self):
@@ -87,107 +82,141 @@ class Moderation(commands.Cog):
     def cog_unload(self):
         self.timed_action_loop.cancel()
 
-    # Listen for new patreons
-    @commands.Cog.listener()
-    async def on_member_join(self, member):
-        diff_roles = [role.id for role in member.roles]
-        if any(x in diff_roles for x in self.patreon_roles):
-
-            try:
-                embed = discord.Embed(
-                    title="Hey there patron! Annoyed about auto-joining the server?",
-                    description="Unfortunately Patreon doesn't natively support a way to disable this- "
-                    "but you have the choice of getting volutarily banned from the server "
-                    "therby preventing your account from rejoining. To do so simply type ```!unenroll```"
-                    "If you change your mind in the future just fill out [this form!](https://forms.gle/m4KPj2Szk1FKGE6F8)",
-                    color=0xFFFFFF,
-                )
-                embed.set_thumbnail(
-                    url="https://cdn.discordapp.com/emojis/824253681443536896.png?size=96"
-                )
-
-                await member.send(embed=embed)
-            except discord.Forbidden:
-                return
-
-    # Remind mods to use the correct prefix
-    @commands.Cog.listener()
-    async def on_message(self, message):
-        if not message.author.bot:
-            guild = discord.utils.get(self.bot.guilds, id=414027124836532234)
-            mod_role = discord.utils.get(guild.roles, id=self.mod_role)
-            admin_role = discord.utils.get(guild.roles, id=self.admin_role)
-
-            if not (
-                (mod_role in message.author.roles)
-                or (admin_role in message.author.roles)
-            ):
-                return
-            if re.match("^-(kick|ban|mute|warn)", message.content):
-                await message.channel.send(f"ahem.. {message.author.mention}")
-
-    @patreon_only()
     @commands.command()
-    async def unenroll(self, ctx):
-        self.logger.info("Command called")
-        embed = discord.Embed(
-            title="We're sorry to see you go",
-            description="Are you sure you want to get banned from the server?"
-            " If you change your mind in the future you can simply fill out [this form.](https://forms.gle/m4KPj2Szk1FKGE6F8)",
-            color=0xFFCB00,
-        )
-        embed.set_thumbnail(
-            url="https://cdn.discordapp.com/emojis/736621027093774467.png?size=96"
-        )
+    async def report(
+        self,
+        ctx,
+        user_id: str = None,
+        message_link: str = None,
+        *,
+        extras: str = None,
+    ):
+        """Report an issue to the authorites\n Usage: report\nreport user_ID message_link description_of_issue"""
 
-        def check(reaction, user):
-            return user == ctx.author
+        mod_embed = discord.Embed(title="New Report", color=0x00FF00)
+        mod_embed.set_author(name=ctx.author.name, icon_url=ctx.author.avatar_url)
 
-        fallback_embed = discord.Embed(
-            title="Action Cancelled",
-            description="Phew, That was close.",
-            color=0x00FFA9,
-        )
-
-        try:
-            confirm_msg = await ctx.author.send(embed=embed)
-            await confirm_msg.add_reaction("<:kgsYes:580164400691019826>")
-            await confirm_msg.add_reaction(":kgsNo:610542174127259688>")
-            reaction, user = await self.bot.wait_for(
-                "reaction_add", timeout=120, check=check
+        def check(msg):
+            return msg.author == ctx.author and isinstance(
+                msg.channel, discord.DMChannel
             )
 
-            if reaction.emoji.id == 580164400691019826:
+        if user_id is None:
+            try:
+                msg = await ctx.author.send(
+                    embed=discord.Embed(
+                        title="Thanks for reaching out!",
+                        description="Briefly describe your issue",
+                        color=0xFF69B4,
+                    )
+                )
+                report_desc = await self.bot.wait_for(
+                    "message", timeout=120, check=check
+                )
+                extras = report_desc.content
 
-                member = discord.utils.get(
-                    self.bot.guilds, id=414027124836532234
-                ).get_member(ctx.author.id)
+                await msg.edit(
+                    embed=discord.Embed(
+                        title="Report description noted!",
+                        description="If you have a [User ID](https://support.discord.com/hc/en-us/articles/206346498-Where-can-I-find-my-User-Server-Message-ID-) for the person you're reporting against please enter them, else type no",
+                    )
+                )
+                user_id_desc = await self.bot.wait_for(
+                    "message", timeout=120, check=check
+                )
+                if not "no" in user_id_desc.content.lower():
+                    report_user = self.bot.get_user(int(user_id_desc.content))
+                    if report_user is not None:
+                        user_id = f"({user_id_desc.content}) {report_user.name}"
 
-                infraction_db = BirdBot.db.Infraction
-
-                inf = infraction_db.find_one({"user_id": ctx.author.id})
-                if inf is None:
-                    create_user_infraction(ctx.author)
-
-                    inf = infraction_db.find_one({"user_id": ctx.author.id})
-                infraction_db.update_one(
-                    {"user_id": ctx.author.id}, {"$set": {"banned_patron": True}}
+                await msg.edit(
+                    embed=discord.Embed(
+                        title="Got it!",
+                        description="Finally do you happen to have a message link? type no if not",
+                    )
                 )
 
-                await ctx.author.send("Success! You've been banned from the server.")
-                await member.ban(reason="Patron Voluntary Removal")
+                link_desc = await self.bot.wait_for("message", timeout=120, check=check)
+                if not "no" in link_desc.content.lower():
+                    message_link = link_desc.content
+
+                await msg.edit(
+                    embed=discord.Embed(
+                        title="Report Successful!",
+                        description="Your report has been sent to the proper authorities.",
+                        color=0x00FF00,
+                    )
+                )
+
+            except discord.Forbidden:
+                await ctx.send(
+                    "I can't seem to DM you, please check your privacy settings and try again"
+                )
                 return
-            if reaction.emoji.id == 610542174127259688:
-                await confirm_msg.edit(embed=fallback_embed)
+            except asyncio.TimeoutError:
+                await msg.edit(
+                    embed=discord.Embed(
+                        title="Report timed out",
+                        description="Oops please try again",
+                        color=0xFF0000,
+                    )
+                )
                 return
 
-        except discord.Forbidden:
-            await ctx.send(
-                "I can't seem to DM you. please check your privacy settings and try again"
-            )
+        mod_embed.description = f"**Report description: ** {extras}\n**User: ** {user_id}\n**Message Link: ** [click to jump]({message_link})"
 
-        except asyncio.TimeoutError:
-            await confirm_msg.edit(embed=fallback_embed)
+        mod_channel = self.bot.get_channel(414095428573986816)
+        await mod_channel.send(embed=mod_embed)
+
+    @commands.Cog.listener()
+    async def on_message(self, after):
+        if after.author.bot:
+            return
+        check_role = after.guild.get_role(414092550031278091)
+        if after.author.top_role >= check_role:
+            return
+        if not (
+            after.channel.id == 414027124836532236
+            or after.channel.id == 414179142020366336
+        ):
+            return
+        if after.embeds:
+            for e in after.embeds:
+                if any(s in e.type for s in ["mp4", "gif", "webm", "gifv"]):
+                    await after.delete()
+                elif e.thumbnail:
+                    if any(
+                        s in e.thumbnail.url for s in ["mp4", "gif", "webm", "gifv"]
+                    ):
+                        await after.delete()
+                elif e.image:
+                    if any(s in e.image.url for s in ["mp4", "gif", "webm", "gifv"]):
+                        await after.delete()
+
+    @commands.Cog.listener()
+    async def on_message_edit(self, before, after):
+        if after.author.bot:
+            return
+        check_role = after.guild.get_role(414092550031278091)
+        if after.author.top_role >= check_role:
+            return
+        if not (
+            after.channel.id == 414027124836532236
+            or after.channel.id == 414179142020366336
+        ):
+            return
+        if after.embeds:
+            for e in after.embeds:
+                if any(s in e.type for s in ["mp4", "gif", "webm", "gifv"]):
+                    await after.delete()
+                elif e.thumbnail:
+                    if any(
+                        s in e.thumbnail.url for s in ["mp4", "gif", "webm", "gifv"]
+                    ):
+                        await after.delete()
+                elif e.image:
+                    if any(s in e.image.url for s in ["mp4", "gif", "webm", "gifv"]):
+                        await after.delete()
 
     @mod_and_above()
     @commands.command(aliases=["purge", "prune", "clear"])
@@ -286,6 +315,32 @@ class Moderation(commands.Cog):
 
         await ctx.message.delete(delay=4)
 
+    @commands.command(aliases=["forceban"])
+    @mod_and_above()
+    async def fban(self, ctx, member: int, *, reason: str):
+        """Force ban a member who is not in the server.\nUsage: fban user_id reason"""
+        if reason is None:
+            raise commands.BadArgument("Provide a reason and re-run the command")
+
+        logging_channel = discord.utils.get(ctx.guild.channels, id=self.logging_channel)
+
+        # TODO Make helper.create_infraction compatible with IDs
+        await ctx.guild.ban(discord.Object(member))
+
+        embed = discord.Embed(
+            title="Force Ban",
+            description=f"Action By: {ctx.author.mention}",
+            color=0xFF0000,
+            timestamp=datetime.datetime.utcnow(),
+        )
+        embed.add_field(name="User(s) Affected ", value=f"{member}", inline=False)
+        embed.add_field(name="Reason", value=f"{reason}", inline=False)
+
+        await logging_channel.send(embed=embed)
+        await ctx.message.add_reaction("<:kgsYes:580164400691019826>")
+
+        await ctx.message.delete(delay=6)
+
     @commands.command(aliases=["yeet"])
     @mod_and_above()
     async def ban(self, ctx: commands.Context, *args):
@@ -317,8 +372,9 @@ class Moderation(commands.Cog):
                 members.remove(m)
                 failed_ban = True
         if failed_ban:
-            x = await ctx.send(
-                "Certain users could not be banned due to your clearance"
+            await ctx.send(
+                "Certain users could not be banned due to your clearance",
+                delete_after=6,
             )
         if len(members) == 0:
             return
@@ -339,9 +395,7 @@ class Moderation(commands.Cog):
 
         await logging_channel.send(embed=embed)
 
-        await asyncio.sleep(6)
-        await ctx.message.delete()
-        await x.delete()
+        await ctx.message.delete(delay=6)
 
     @commands.command()
     @mod_and_above()
@@ -412,7 +466,9 @@ class Moderation(commands.Cog):
 
         await ctx.message.add_reaction("<:kgsYes:580164400691019826>")
         if failed_kick:
-            x = await ctx.send("Could not kick certain users due to your clearance")
+            await ctx.send(
+                "Could not kick certain users due to your clearance", delete_after=6
+            )
         if len(members) == 0:
             return
 
@@ -429,9 +485,7 @@ class Moderation(commands.Cog):
             author=ctx.author, users=members, action="kick", reason=reason
         )
 
-        await asyncio.sleep(6)
-        await ctx.message.delete()
-        await x.delete()
+        await ctx.message.delete(delay=6)
 
     @commands.command()
     @helper_and_above()
@@ -480,8 +534,9 @@ class Moderation(commands.Cog):
 
         await ctx.message.add_reaction("<:kgsYes:580164400691019826>")
         if failed_mute:
-            x = await ctx.send(
-                "Certain members could not be muted due to your clearance"
+            await ctx.send(
+                "Certain members could not be muted due to your clearance",
+                delete_after=6,
             )
         if len(members) == 0:
             return
@@ -513,9 +568,7 @@ class Moderation(commands.Cog):
 
                 self.timed_action_list = helper.get_timed_actions()
 
-        await asyncio.sleep(6)
-        await ctx.message.delete()
-        await x.delete()
+        await ctx.message.delete(delay=6)
 
     @commands.command()
     @helper_and_above()
@@ -547,8 +600,7 @@ class Moderation(commands.Cog):
         )
 
         await logging_channel.send(embed=embed)
-        await asyncio.sleep(6)
-        await ctx.message.delete()
+        await ctx.message.delete(delay=6)
 
     @commands.command()
     @mod_and_above()
@@ -632,8 +684,9 @@ class Moderation(commands.Cog):
                 members.remove(m)
 
         if failed_warn:
-            x = await ctx.send(
-                "Certain members could not be warned due to your clearance"
+            await ctx.send(
+                "Certain members could not be warned due to your clearance",
+                delete_after=6,
             )
         if len(members) == 0:
             return
@@ -652,10 +705,7 @@ class Moderation(commands.Cog):
         await logging_channel.send(embed=embed)
 
         await ctx.message.add_reaction("<:kgsYes:580164400691019826>")
-        await asyncio.sleep(6)
-        await ctx.message.delete()
-        if failed_warn:
-            await x.delete()
+        await ctx.message.delete(delay=6)
 
     @commands.command(aliases=["unwarn", "removewarn"])
     @mod_and_above()

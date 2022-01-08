@@ -1,8 +1,10 @@
 import io
 import asyncio
 import json
-
+import aiohttp
 import logging
+import random
+import re
 
 from traceback import TracebackException
 
@@ -10,7 +12,221 @@ import discord
 from discord.ext import commands
 from discord.ext.commands import errors
 
-from utils.helper import NoAuthorityError, DevBotOnly, WrongChannel
+from birdbot import BirdBot
+
+from utils.helper import (
+    NoAuthorityError,
+    DevBotOnly,
+    WrongChannel,
+    patreon_only,
+    create_user_infraction,
+)
+
+
+class GuildChores(commands.Cog):
+    """Chores that need to performed during guild events"""
+
+    def __init__(self, bot):
+        self.logger = logging.getLogger("Guild Chores")
+        self.bot = bot
+
+        with open("config.json", "r") as config_file:
+            self.config_json = json.loads(config_file.read())
+
+        self.mod_role = self.config_json["roles"]["mod_role"]
+        self.admin_role = self.config_json["roles"]["admin_role"]
+        self.patreon_roles = [
+            self.config_json["roles"]["patreon_blue_role"],
+            self.config_json["roles"]["patreon_green_role"],
+            self.config_json["roles"]["patreon_orange_role"],
+        ]
+        self.pfp_list = [
+            "https://cdn.discordapp.com/emojis/909047588160942140.png?size=256",
+            "https://cdn.discordapp.com/emojis/909047567030059038.png?size=256",
+            "https://cdn.discordapp.com/emojis/909046980599250964.png?size=256",
+            "https://cdn.discordapp.com/emojis/909047000253734922.png?size=256",
+        ]
+        self.greeting_webhook_url = "https://discord.com/api/webhooks/909052135864410172/5Fky0bSJMC3vh3Pz69nYc2PfEV3W2IAwAsSFinBFuUXXzDc08X5dv085XlLDGz3MmQvt"
+
+    @commands.Cog.listener()
+    async def on_ready(self):
+        self.logger.info("Loaded Guild Chores")
+
+    @commands.Cog.listener()
+    async def on_message(self, message):
+        """Remind mods to use correct prefix, alert mod pings etc"""
+        if any(
+            x in message.raw_role_mentions
+            for x in [414092550031278091, 905510680763969536]
+        ):
+            if message.channel.category.id == 414095379156434945:  # mod category
+                return
+
+            role_names = [
+                discord.utils.get(message.guild.roles, id=role).name
+                for role in message.raw_role_mentions
+            ]
+            mod_channel = self.bot.get_channel(414095428573986816)
+            # mod_channel = self.bot.get_channel(414179142020366336)
+
+            embed = discord.Embed(
+                title="Mod ping alert!",
+                description=f"{' and '.join(role_names)} got pinged in {message.channel.mention} - [view message]({message.jump_url})",
+                color=0x00FF00,
+            )
+            embed.set_author(
+                name=message.author.display_name, icon_url=message.author.avatar_url
+            )
+            embed.set_footer(
+                text="Last 50 messages in the channel are attached for reference"
+            )
+
+            to_file = ""
+            async for msg in message.channel.history(limit=50):
+                to_file += f"{msg.author.display_name}: {msg.content}\n"
+
+            await mod_channel.send(
+                embed=embed,
+                file=discord.File(io.BytesIO(to_file.encode()), filename="history.txt"),
+            )
+
+        if not message.author.bot:
+            guild = discord.utils.get(self.bot.guilds, id=414027124836532234)
+            mod_role = discord.utils.get(guild.roles, id=self.mod_role)
+            admin_role = discord.utils.get(guild.roles, id=self.admin_role)
+
+            if not (
+                (mod_role in message.author.roles)
+                or (admin_role in message.author.roles)
+            ):
+                return
+            if re.match("^-(kick|ban|mute|warn)", message.content):
+                await message.channel.send(f"ahem.. {message.author.mention}")
+
+    @commands.Cog.listener()
+    async def on_member_update(self, before, after):
+        """Grant roles upon passing membership screening"""
+
+        if before.pending and (not after.pending):
+            guild = discord.utils.get(self.bot.guilds, id=414027124836532234)
+            await after.add_roles(
+                guild.get_role(542343829785804811),  # Verified
+                guild.get_role(901136119863844864),  # English
+                reason="Membership screening passed",
+            )
+
+    @commands.Cog.listener()
+    async def on_member_join(self, member):
+        """Listen for new patrons and provide
+        them the option to unenroll from autojoining
+        Listen for new members and fire webhook for greeting"""
+
+        # temp fix to remove clonex bots
+        if "clonex" in str(member.name).lower():
+            guild = discord.utils.get(self.bot.guilds, id=414027124836532234)
+            await guild.kick(member)
+            return
+
+        diff_roles = [role.id for role in member.roles]
+        if any(x in diff_roles for x in self.patreon_roles):
+
+            guild = discord.utils.get(self.bot.guilds, id=414027124836532234)
+            await member.add_roles(
+                guild.get_role(542343829785804811),  # Verified
+                guild.get_role(901136119863844864),  # English
+                reason="Patron auto join",
+            )
+
+            try:
+                embed = discord.Embed(
+                    title="Hey there patron! Annoyed about auto-joining the server?",
+                    description="Unfortunately Patreon doesn't natively support a way to disable this- "
+                    "but you have the choice of getting volutarily banned from the server "
+                    "therby preventing your account from rejoining. To do so simply type ```!unenroll```"
+                    "If you change your mind in the future just fill out [this form!](https://forms.gle/m4KPj2Szk1FKGE6F8)",
+                    color=0xFFFFFF,
+                )
+                embed.set_thumbnail(
+                    url="https://cdn.discordapp.com/emojis/824253681443536896.png?size=256"
+                )
+
+                await member.send(embed=embed)
+            except discord.Forbidden:
+                return
+        else:
+            async with aiohttp.ClientSession() as session:
+                hook = discord.Webhook.from_url(
+                    self.greeting_webhook_url,
+                    adapter=discord.AsyncWebhookAdapter(session),
+                )
+                await hook.send(
+                    f"Welcome hatchling {member.mention}!\n"
+                    "Make sure to read the <#414268041787080708> and say hello to our <@&584461501109108738>s",
+                    avatar_url=random.choice(self.pfp_list),
+                    allowed_mentions=discord.AllowedMentions(users=True, roles=True),
+                )
+
+    @patreon_only()
+    @commands.command()
+    async def unenroll(self, ctx):
+        embed = discord.Embed(
+            title="We're sorry to see you go",
+            description="Are you sure you want to get banned from the server?"
+            " If you change your mind in the future you can simply fill out [this form.](https://forms.gle/m4KPj2Szk1FKGE6F8)",
+            color=0xFFCB00,
+        )
+        embed.set_thumbnail(
+            url="https://cdn.discordapp.com/emojis/736621027093774467.png?size=96"
+        )
+
+        def check(reaction, user):
+            return user == ctx.author
+
+        fallback_embed = discord.Embed(
+            title="Action Cancelled",
+            description="Phew, That was close.",
+            color=0x00FFA9,
+        )
+
+        try:
+            confirm_msg = await ctx.author.send(embed=embed)
+            await confirm_msg.add_reaction("<:kgsYes:580164400691019826>")
+            await confirm_msg.add_reaction(":kgsNo:610542174127259688>")
+            reaction, user = await self.bot.wait_for(
+                "reaction_add", timeout=120, check=check
+            )
+
+            if reaction.emoji.id == 580164400691019826:
+
+                member = discord.utils.get(
+                    self.bot.guilds, id=414027124836532234
+                ).get_member(ctx.author.id)
+
+                infraction_db = BirdBot.db.Infraction
+
+                inf = infraction_db.find_one({"user_id": ctx.author.id})
+                if inf is None:
+                    create_user_infraction(ctx.author)
+
+                    inf = infraction_db.find_one({"user_id": ctx.author.id})
+                infraction_db.update_one(
+                    {"user_id": ctx.author.id}, {"$set": {"banned_patron": True}}
+                )
+
+                await ctx.author.send("Success! You've been banned from the server.")
+                await member.ban(reason="Patron Voluntary Removal")
+                return
+            if reaction.emoji.id == 610542174127259688:
+                await confirm_msg.edit(embed=fallback_embed)
+                return
+
+        except discord.Forbidden:
+            await ctx.send(
+                "I can't seem to DM you. please check your privacy settings and try again"
+            )
+
+        except asyncio.TimeoutError:
+            await confirm_msg.edit(embed=fallback_embed)
 
 
 class Errors(commands.Cog):
@@ -36,8 +252,7 @@ class Errors(commands.Cog):
             await ctx.message.add_reaction(reaction)
         if message is not None:
             await ctx.send(message, delete_after=delay)
-        await asyncio.sleep(delay)
-        await ctx.message.delete()
+        await ctx.message.delete(delay=delay)
 
     @commands.Cog.listener()
     async def on_ready(self):
@@ -103,3 +318,4 @@ class Errors(commands.Cog):
 
 def setup(bot):
     bot.add_cog(Errors(bot))
+    bot.add_cog(GuildChores(bot))
