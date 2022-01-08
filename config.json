@@ -10,9 +10,19 @@
         "mod_role": 414092550031278091,
         "admin_role": 414029841101225985,
         "kgsofficial_role": 414954904382210049,
-        "patreon_blue_role":753258289185161248,
-        "patreon_green_role":415154206970740737,
-        "patreon_orange_role":753268671107039274,
-        "trainee_mod_role":905510680763969536
+        "patreon_blue_role": 753258289185161248,
+        "patreon_green_role": 415154206970740737,
+        "patreon_orange_role": 753268671107039274,
+        "trainee_mod_role": 905510680763969536
+    },
+    "giveaway": {
+        "roles": [
+            { "id": 698479120878665729, "bias": 11, "name": "galacduck" },
+            { "id": 662937489220173884, "bias": 7, "name": "legendary duck" },
+            { "id": 637114917178048543, "bias": 4, "name": "super duck" },
+            { "id": 637114897544511488, "bias": 3, "name": "duck" },
+            { "id": 637114873268142081, "bias": 2, "name": "smol duck" }
+        ],
+        "default": 1
     }
 }
