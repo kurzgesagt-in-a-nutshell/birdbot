@@ -6,6 +6,7 @@ import datetime
 import asyncio
 import logging
 
+from discord import http
 from discord.channel import DMChannel
 
 
@@ -40,17 +41,11 @@ class Moderation(commands.Cog):
     @tasks.loop(minutes=10.0)
     async def timed_action_loop(self):
         guild = discord.utils.get(self.bot.guilds, id=414027124836532234)
-        mute_role = discord.utils.get(
-            guild.roles, id=self.config_json["roles"]["mute_role"]
-        )
+
         logging_channel = discord.utils.get(guild.channels, id=self.logging_channel)
 
         for action in self.timed_action_list:
             if action["action_end"] < datetime.datetime.utcnow():
-                user = discord.utils.get(guild.members, id=action["user_id"])
-
-                if user is not None:
-                    await user.remove_roles(mute_role, reason="Time Expired")
 
                 helper.delete_timed_actions_uid(u_id=action["user_id"])
 
@@ -496,9 +491,6 @@ class Moderation(commands.Cog):
         is_muted = False
 
         logging_channel = discord.utils.get(ctx.guild.channels, id=self.logging_channel)
-        mute_role = discord.utils.get(
-            ctx.guild.roles, id=self.config_json["roles"]["mute_role"]
-        )
 
         members, extra = custom_converters.get_members(ctx, *args)
 
@@ -516,10 +508,23 @@ class Moderation(commands.Cog):
                 message="Please provide a reason and re-run the command"
             )
 
+        if tot_time > 100800:
+            raise commands.BadArgument(message="Can't mute for longer than 28 days!")
+
         failed_mute = False
         for i in members:
             if i.top_role < ctx.author.top_role:
-                await i.add_roles(mute_role, reason=reason)
+                member_id = i.id
+                time = (
+                    datetime.datetime.utcnow() + datetime.timedelta(seconds=tot_time)
+                ).isoformat()
+                route = http.Route(
+                    "PATCH", f"/guilds/414027124836532234/members/{member_id}"
+                )
+                await self.bot.http.request(
+                    route, json={"communication_disabled_until": time}, reason=reason
+                )
+
                 try:
                     await i.send(
                         f"You have been muted for {time_str}.\nGiven reason: {reason}\n"
@@ -582,11 +587,14 @@ class Moderation(commands.Cog):
         if not members:
             raise commands.BadArgument(message="Provide members to mute")
 
-        mute_role = discord.utils.get(
-            ctx.guild.roles, id=self.config_json["roles"]["mute_role"]
-        )
         for i in members:
-            await i.remove_roles(mute_role, reason=f"Unmuted by {ctx.author}")
+            member_id = i.id
+            route = http.Route(
+                "PATCH", f"/guilds/414027124836532234/members/{member_id}"
+            )
+            await self.bot.http.request(
+                route, json={"communication_disabled_until": None}
+            )
             # TIMED
             helper.delete_timed_actions_uid(u_id=i.id)
             self.timed_action_list = helper.get_timed_actions()
