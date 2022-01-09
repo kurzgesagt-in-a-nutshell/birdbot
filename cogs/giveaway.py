@@ -66,11 +66,12 @@ class Giveaway(commands.Cog):
             embed["color"] = 15158332  # red
             embed["footer"]["text"] = "Giveaway Ended"
 
+            users = []
+
             for reaction in message.reactions:
                 if reaction.emoji == "🎉":
                     users = await reaction.users().flatten()
-                    users = [user.id for user in users]
-                    users.remove(self.bot.user.id)
+                    users = [user.id for user in users if user.id != self.bot.user.id]
 
             if users != []:
                 weights = []
@@ -97,12 +98,15 @@ class Giveaway(commands.Cog):
 
                 choice = np.random.choice(users, size=size, replace=False, p=prob)
                 winners = ""
+                winnerids = ", ".join([str(i) for i in choice])
                 for i in choice:
                     winner = await message.guild.fetch_member(i)
                     await message.channel.send(f"{winner.mention} won")
                     winners += winner.mention + "\n"
+
             else:
                 winners = "Nobody participated :("
+                winnerids = ""
 
             for i in embed["fields"]:
                 if i["name"].startswith("winners"):
@@ -118,7 +122,10 @@ class Giveaway(commands.Cog):
 
         if giveaway["pin"] in self.active_giveaways:
             del self.active_giveaways[giveaway["pin"]]
-            self.giveaway_db.update_one(giveaway, {"$set": {"giveaway_over": True}})
+            self.giveaway_db.update_one(
+                giveaway,
+                {"$set": {"giveaway_over": True}, "$set": {"winners": winnerids}},
+            )
 
     async def start_giveaway(self, giveaway):
         """Sets up a giveaway task"""
@@ -126,7 +133,8 @@ class Giveaway(commands.Cog):
         await asyncio.sleep(time)
         await self.choose_winner(giveaway)
 
-    @mod_and_above()
+    ##@mod_and_above()
+    @devs_only()
     @giveaway.command()
     async def start(self, ctx, time, *, giveaway_msg):
         """Starts a new giveaway
@@ -150,13 +158,13 @@ class Giveaway(commands.Cog):
                 dash_args.append([arguments[i], arguments[i + 1]])
 
         fields = {
-            "winners": {"name": "winners: 1", "value": " "},
+            "winners": {"name": "winners: 1", "value": "ㅤ"},
             "sponsor": {"name": "hosted by", "value": ctx.author.mention},
         }
 
         for a in dash_args:
             if a[0] == "-w":
-                fields["winners"] = {"name": f"winners: {a[1]}", "value": " "}
+                fields["winners"] = {"name": f"winners: {a[1]}", "value": "ㅤ"}
                 try:
                     winners = int(a[1])
                 except:
@@ -214,6 +222,7 @@ class Giveaway(commands.Cog):
             "message_id": message.id,
             "channel_id": message.channel.id,
             "winners_no": winners,
+            "winners": "",
             "rigged": rigged,
             "host": ctx.author.id,
             "sponsor": sponsor,
@@ -227,7 +236,8 @@ class Giveaway(commands.Cog):
 
         await giveaway
 
-    @mod_and_above()
+    # @mod_and_above()
+    @devs_only()
     @giveaway.command()
     async def end(self, ctx, pin: str):
         """Ends the giveaway early
@@ -244,7 +254,8 @@ class Giveaway(commands.Cog):
             await ctx.send("Giveaway not found!", delete_after=6)
             await ctx.message.delete(delay=6)
 
-    @mod_and_above()
+    # @mod_and_above()
+    @devs_only()
     @giveaway.command()
     async def cancel(self, ctx, pin: str):
         """Deletes a giveaway
@@ -268,7 +279,8 @@ class Giveaway(commands.Cog):
             await ctx.send("Giveaway not found!", delete_after=6)
             await ctx.message.delete(delay=6)
 
-    @mod_and_above()
+    # @mod_and_above()
+    @devs_only()
     @giveaway.command()
     async def reroll(
         self,
@@ -289,7 +301,8 @@ class Giveaway(commands.Cog):
                 await self.choose_winner(doc)
                 break
 
-    @mod_and_above()
+    # @mod_and_above()
+    @devs_only()
     @giveaway.command()
     async def list(self, ctx):
         """Lists all active giveaways
