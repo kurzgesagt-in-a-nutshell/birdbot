@@ -34,6 +34,6 @@ smmap==5.0.0
 toml==0.10.2
 tomli==1.2.3
 typing_extensions==4.0.1
-urllib3==1.26.7
+urllib3==1.26.8
 yarg==0.1.9
 yarl==1.7.2
