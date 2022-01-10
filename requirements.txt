@@ -29,7 +29,7 @@ pymongo==4.0.1
 python-dotenv==0.19.2
 python-Levenshtein==0.12.2
 requests==2.27.0
-rich==10.16.2
+rich==11.0.0
 smmap==5.0.0
 toml==0.10.2
 tomli==1.2.3
