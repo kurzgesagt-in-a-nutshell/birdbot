@@ -28,7 +28,7 @@ Pygments==2.11.2
 pymongo==4.0.1
 python-dotenv==0.19.2
 python-Levenshtein==0.12.2
-requests==2.27.0
+requests==2.27.1
 rich==10.16.2
 smmap==5.0.0
 toml==0.10.2
