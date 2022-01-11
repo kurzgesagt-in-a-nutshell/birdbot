@@ -17,12 +17,36 @@
     },
     "giveaway": {
         "roles": [
-            { "id": 698479120878665729, "bias": 11, "name": "galacduck" },
-            { "id": 662937489220173884, "bias": 7, "name": "legendary duck" },
-            { "id": 637114917178048543, "bias": 4, "name": "super duck" },
-            { "id": 637114897544511488, "bias": 3, "name": "duck" },
-            { "id": 637114873268142081, "bias": 2, "name": "smol duck" }
+            {
+                "id": 698479120878665729,
+                "bias": 11,
+                "name": "galacduck"
+            },
+            {
+                "id": 662937489220173884,
+                "bias": 7,
+                "name": "legendary duck"
+            },
+            {
+                "id": 637114917178048543,
+                "bias": 4,
+                "name": "super duck"
+            },
+            {
+                "id": 637114897544511488,
+                "bias": 3,
+                "name": "duck"
+            },
+            {
+                "id": 637114873268142081,
+                "bias": 2,
+                "name": "smol duck"
+            }
         ],
         "default": 1
+    },
+    "raidmode": {
+        "joins": 30,
+        "during": 10
     }
 }

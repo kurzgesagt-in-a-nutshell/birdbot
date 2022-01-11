@@ -1,9 +1,11 @@
 import logging
 import datetime
 import typing
+import json
 
 import discord
 from discord.ext import commands
+from birdbot import BirdBot
 
 from utils.helper import mod_and_above, devs_only
 
@@ -16,34 +18,33 @@ class Antiraid(commands.Cog):
     @commands.Cog.listener()
     async def on_ready(self):
         self.logger.info("loaded Antiraid")
-        self.raidon = False
-        self.raidinfo = (0, 0)
+        with open("config.json", "r") as config_file:
+            self.config_json = json.loads(config_file.read())
+        self.raidinfo = self.config_json["raidmode"]
         self.newjoins = []
-        self.blacklist = ["clonex"]
+        self.blacklist = ["clonex"] #temporary clonex fix, develop into a proper feature?
 
     @devs_only()
     @commands.command()
-    async def raidmode(self, ctx, joins: int, in_seconds: int):
+    async def raidmode(self, ctx, joins: typing.Optional[int] = None, during: typing.Optional[int] = None):
         """
         Turns the anti-raid mode on
-        Usage: on/off raidmode joins in_seconds
+        Usage: on/off raidmode joins during
         """
+        if not (joins and during):
+            await ctx.send(f'Raidmode will activate when there are {self.raidinfo["joins"]} joins every {self.raidinfo["during"]} seconds.')
+            return
+
         if joins > 100:
             raise commands.BadArgument(message="Can't do more than 100 joins.")
-        self.raidinfo = (joins, in_seconds)
-        self.raidon = True
-        await ctx.send(
-            f"Set raidmode when there are {joins} joins every {in_seconds} seconds."
-        )
 
-    @devs_only()
-    @commands.command()
-    async def raidoff(self, ctx):
-        """
-        Turns the anti-raid mode off
-        Usage: raidoff
-        """
-        self.raidon = False
+        self.raidinfo = {"joins": joins, "during": during}
+        with open("config.json", "w") as config_file:
+            self.config_json["raidmode"] = self.raidinfo
+            json.dump(self.config_json, config_file, indent=4)
+        await ctx.send(
+            f"Set raidmode when there are {joins} joins every {during} seconds."
+        )
 
     @commands.Cog.listener()
     async def on_member_join(self, member):
@@ -52,31 +53,48 @@ class Antiraid(commands.Cog):
         if member.bot:
             return
 
-        self.newjoins.append(member.joined_at)
+        self.newjoins.append({"id":member.id, "time": member.joined_at})
 
         if len(self.newjoins) >= 101:
             i = len(self.newjoins) - 100
             del self.newjoins[0:i]
 
-        len_newjoins = len(self.newjoins)
-
-        if self.raidon and len_newjoins >= self.raidinfo[0]:
-            index = len_newjoins - self.raidinfo[0]
-            if member.joined_at - self.newjoins[index] < datetime.timedelta(
-                seconds=self.raidinfo[1]
+        if len(self.newjoins) >= self.raidinfo["joins"]:
+            index = -self.raidinfo["joins"]
+            if member.joined_at - self.newjoins[index]["time"] < datetime.timedelta(
+                seconds=self.raidinfo["during"]
             ):
-                await member.send(
-                    "The Kurzgesagt - In a Nutshell server is currently under a raid. You were kicked as a precaution, if you did not take part in the raid try joining again in an hour!"
-                )
+                try:
+                    await member.send(
+                        "The Kurzgesagt - In a Nutshell server might currently be under a raid. You were kicked as a precaution, if you did not take part in the raid try joining again in an hour!"
+                    )
+                except:
+                    pass
                 await member.kick(reason="Raid counter")
-                return
 
-            if member.joined_at - self.newjoins[-2] > datetime.timedelta(minutes=5):
-                self.raidon = False
+                if not BirdBot.currently_raided:
+                    server = member.guild
+                    firstbots = self.newjoins[-index:]
+                    for memberid in firstbots:
+                        member = await server.get_member(memberid["id"])
+                        try:
+                            await member.send(
+                                "The Kurzgesagt - In a Nutshell server might currently be under a raid. You were kicked as a precaution, if you did not take part in the raid try joining again in an hour!"
+                            )
+                        except:
+                            pass
+                        try:
+                            await member.kick(reason="Raid counter")
+                        except:
+                            pass
+                BirdBot.currently_raided = True
+                return
+        else:
+            BirdBot.currently_raided = False
 
         for i in self.blacklist:
-            if member.name in i:
-                await member.kick(reason="Blacklisted name, probably a bot")
+            if i in str(member.name).lower():
+                await member.kick(reason="clonex")
 
 
 def setup(bot):

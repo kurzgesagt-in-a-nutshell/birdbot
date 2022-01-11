@@ -49,6 +49,8 @@ def setup():
 class BirdBot(commands.AutoShardedBot):
     """Main Bot"""
 
+    currently_raided = False
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.get_database()
