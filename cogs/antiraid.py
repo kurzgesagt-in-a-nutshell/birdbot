@@ -11,13 +11,14 @@ class Antiraid(commands.Cog):
     def __init__(self, bot):
         self.logger = logging.getLogger('Antiraid')
         self.bot = bot
-        self.raidon = False
-        self.raidinfo = (0, 0)
-        self.newjoins = []
     
     @commands.Cog.listener()
     async def on_ready(self):
         self.logger.info('loaded Antiraid')
+        self.raidon = False
+        self.raidinfo = (0, 0)
+        self.newjoins = []
+        self.blacklist = ["clonex"]
     
     @devs_only()
     @commands.command()
@@ -30,6 +31,16 @@ class Antiraid(commands.Cog):
             raise commands.BadArgument(message="Can't do more than 100 joins")
         self.raidinfo = (joins, per_second)
         await ctx.send(f'Set raidmode when there are {joins} joins every {per_second} seconds.')
+
+    @devs_only()
+    @commands.command()
+    async def raidoff(self, ctx):
+        """
+        Turns the anti-raid mode off
+        Usage: raidoff
+        """
+        await ctx.send(f'Turns raidemode off')
+
 
     @devs_only()
     @commands.command()
@@ -64,6 +75,10 @@ class Antiraid(commands.Cog):
 
             if self.self.newjoins[index]-member.joined_at > datetime.timedelta(minutes = 5):
                 self.raidon = False
+
+        for i in self.blacklist:
+            if member.name in i:
+                await member.kick(reason="Blacklisted name, probably a bot")
 
 
 
