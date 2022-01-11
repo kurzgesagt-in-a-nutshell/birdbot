@@ -31,6 +31,15 @@ class Antiraid(commands.Cog):
         self.raidinfo = (joins, per_second)
         await ctx.send(f'Set raidmode when there are {joins} joins every {per_second} seconds.')
 
+    @devs_only()
+    @commands.command()
+    async def raidoff(self, ctx):
+        """
+        Turns the anti-raid mode off
+        Usage: raidoff
+        """
+        await ctx.send(f'Turns raidemode off')
+
     @commands.Cog.listener()
     async def on_member_join(self, member):
         if member.guild.id != 414027124836532234:
@@ -45,13 +54,16 @@ class Antiraid(commands.Cog):
         if len_newjoins >= 101:
             i = len_newjoins-100 
             del len_newjoins[0:i]
-            len_newjoins -= 1
+            len_newjoins = 100
     	
-        if self.raidon and self.raidinfo[0] >= len_newjoins:
+        if self.raidon and len_newjoins >= self.raidinfo[0]:
             index = len_newjoins-self.raidinfo[0]
-            if self.newjoins[index]-member.joined_at > datetime.timedelta(seconds=self.raidinfo(1)):
+            if self.newjoins[index]-member.joined_at < datetime.timedelta(seconds=self.raidinfo[1]):
                 await member.send("The Kurzgesagt - In a Nutshell server is currently under a raid. You were kicked as a precaution, if you did not take part in the raid try joining again in an hour!")
                 await member.kick(reason="Raid counter")
+
+            if self.self.newjoins[index]-member.joined_at > datetime.timedelta(minutes = 5):
+                self.raidon = False
 
 
 
