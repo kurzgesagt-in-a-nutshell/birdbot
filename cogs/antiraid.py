@@ -69,6 +69,7 @@ class Antiraid(commands.Cog):
                     "The Kurzgesagt - In a Nutshell server is currently under a raid. You were kicked as a precaution, if you did not take part in the raid try joining again in an hour!"
                 )
                 await member.kick(reason="Raid counter")
+                return
 
             if member.joined_at - self.newjoins[-2] > datetime.timedelta(minutes=5):
                 self.raidon = False
