@@ -124,7 +124,7 @@ class Giveaway(commands.Cog):
             del self.active_giveaways[giveaway["pin"]]
             self.giveaway_db.update_one(
                 giveaway,
-                {"$set": {"giveaway_over": True}, "$set": {"winners": winnerids}},
+                {"$set": {"giveaway_over": True, "winners": winnerids}},
             )
 
     async def start_giveaway(self, giveaway):
