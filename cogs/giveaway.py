@@ -21,19 +21,15 @@ class Giveaway(commands.Cog):
     def __init__(self, bot):
         self.logger = logging.getLogger("Giveaway")
         self.bot = bot
+        with open("config.json", "r") as config_file:
+            config_json = json.loads(config_file.read())
+        self.giveaway_bias = config_json["giveaway"]
+        self.active_giveaways = {}
+        self.giveaway_db = self.bot.db.Giveaways
 
     @commands.Cog.listener()
     async def on_ready(self):
         self.logger.info("loaded Giveaway")
-
-        with open("config.json", "r") as config_file:
-            config_json = json.loads(config_file.read())
-
-        self.giveaway_bias = config_json["giveaway"]
-
-        self.active_giveaways = {}
-
-        self.giveaway_db = self.bot.db.Giveaways
 
         for giveaway in self.giveaway_db.find():
             if giveaway["giveaway_over"] == False:
