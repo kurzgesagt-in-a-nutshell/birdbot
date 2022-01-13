@@ -15,7 +15,6 @@ from utils import helper
 from utils.helper import (
     create_user_infraction,
     devs_only,
-    helper_and_above,
     mod_and_above,
 )
 
@@ -483,7 +482,7 @@ class Moderation(commands.Cog):
         await ctx.message.delete(delay=6)
 
     @commands.command()
-    @helper_and_above()
+    @mod_and_above()
     async def mute(self, ctx: commands.Context, *args):
         """Mute member(s). \nUsage: mute @member(s) <time> reason"""
 
@@ -576,7 +575,7 @@ class Moderation(commands.Cog):
         await ctx.message.delete(delay=6)
 
     @commands.command()
-    @helper_and_above()
+    @mod_and_above()
     async def unmute(
         self, ctx: commands.Context, members: commands.Greedy[discord.Member]
     ):
@@ -662,7 +661,7 @@ class Moderation(commands.Cog):
         return await logging_channel.send(embed=embed)
 
     @commands.command()
-    @helper_and_above()
+    @mod_and_above()
     async def warn(self, ctx: commands.Context, *args):
         """Warn user(s) \nUsage: warn @member(s) reason"""
         logging_channel = discord.utils.get(ctx.guild.channels, id=self.logging_channel)
