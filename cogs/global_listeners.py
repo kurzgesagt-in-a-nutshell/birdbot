@@ -18,6 +18,7 @@ from utils.helper import (
     NoAuthorityError,
     DevBotOnly,
     WrongChannel,
+    mainbot_only,
     patreon_only,
     create_user_infraction,
 )
@@ -114,13 +115,17 @@ class GuildChores(commands.Cog):
                 guild.get_role(901136119863844864),  # English
                 reason="Membership screening passed",
             )
-
+    
     @commands.Cog.listener()
     async def on_member_join(self, member):
         """Listen for new patrons and provide
         them the option to unenroll from autojoining
         Listen for new members and fire webhook for greeting"""
 
+        #mainbot only
+        if self.bot.user.id != 471705718957801483:
+            return
+        
         # temp fix to remove clonex bots
         if "clonex" in str(member.name).lower():
             guild = discord.utils.get(self.bot.guilds, id=414027124836532234)
