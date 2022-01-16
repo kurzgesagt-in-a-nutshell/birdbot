@@ -1,0 +1,6 @@
+{
+    "raidmode": {
+        "joins": 30,
+        "during": 10
+    }
+}

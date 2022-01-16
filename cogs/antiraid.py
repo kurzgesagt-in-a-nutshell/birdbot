@@ -14,15 +14,18 @@ class Antiraid(commands.Cog):
     def __init__(self, bot):
         self.logger = logging.getLogger("Antiraid")
         self.bot = bot
+        with open("config.json", "r") as config_file:
+            config_json = json.loads(config_file.read())
+        self.logging_channel = config_json["logging"]["logging_channel"]
+        with open("antiraid.json", "r") as config_file:
+            antiraid_json = json.loads(config_file.read())
+        self.raidinfo = antiraid_json["raidmode"]
+        self.newjoins = []
+        self.blacklist = ["clonex"] #temporary clonex fix, develop into a proper feature?
 
     @commands.Cog.listener()
     async def on_ready(self):
         self.logger.info("loaded Antiraid")
-        with open("config.json", "r") as config_file:
-            self.config_json = json.loads(config_file.read())
-        self.raidinfo = self.config_json["raidmode"]
-        self.newjoins = []
-        self.blacklist = ["clonex"] #temporary clonex fix, develop into a proper feature?
 
     @devs_only()
     @commands.command()
@@ -39,9 +42,8 @@ class Antiraid(commands.Cog):
             raise commands.BadArgument(message="Can't do more than 100 joins.")
 
         self.raidinfo = {"joins": joins, "during": during}
-        with open("config.json", "w") as config_file:
-            self.config_json["raidmode"] = self.raidinfo
-            json.dump(self.config_json, config_file, indent=4)
+        with open("antiraid.json", "w") as config_file:
+            json.dump({"raidmode": self.raidinfo}, config_file, indent=4)
         await ctx.send(
             f"Set raidmode when there are {joins} joins every {during} seconds."
         )
@@ -74,6 +76,7 @@ class Antiraid(commands.Cog):
 
                 if not BirdBot.currently_raided:
                     server = member.guild
+                    await server.get_channel(self.logging_channel).send("Detected a raid.")
                     firstbots = self.newjoins[-index:]
                     for memberid in firstbots:
                         member = await server.get_member(memberid["id"])
