@@ -80,20 +80,21 @@ class Antiraid(commands.Cog):
                     firstbots = self.newjoins[-index:]
                     for memberid in firstbots:
                         member = await server.get_member(memberid["id"])
-                        try:
-                            await member.send(
-                                "The Kurzgesagt - In a Nutshell server might currently be under a raid. You were kicked as a precaution, if you did not take part in the raid try joining again in an hour!"
-                            )
-                        except:
-                            pass
-                        try:
-                            await member.kick(reason="Raid counter")
-                        except:
-                            pass
+                        if member.pending:
+                            try:
+                                await member.send(
+                                    "The Kurzgesagt - In a Nutshell server might currently be under a raid. You were kicked as a precaution, if you did not take part in the raid try joining again in an hour!"
+                                )
+                            except:
+                                pass
+                            try:
+                                await member.kick(reason="Raid counter")
+                            except:
+                                pass
                 BirdBot.currently_raided = True
                 return
-        else:
-            BirdBot.currently_raided = False
+            else:
+                BirdBot.currently_raided = False
 
         for i in self.blacklist:
             if i in str(member.name).lower():
