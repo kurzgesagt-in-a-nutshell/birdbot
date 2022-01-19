@@ -11,7 +11,7 @@ colorama==0.4.4
 commonmark==0.9.1
 discord==1.7.3
 discord.py==1.7.3
-dnspython==2.1.0
+dnspython==2.2.0
 docopt==0.6.2
 fuzzywuzzy==0.18.0
 gitdb==4.0.9
