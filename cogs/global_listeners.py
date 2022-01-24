@@ -5,6 +5,7 @@ import aiohttp
 import logging
 import random
 import re
+import datetime
 
 from traceback import TracebackException
 
@@ -22,6 +23,48 @@ from utils.helper import (
     patreon_only,
     create_user_infraction,
 )
+
+
+class GuildLogger(commands.Cog):
+    def __init__(self, bot):
+        self.logger = logging.getLogger("Guild Logs")
+        self.bot = bot
+
+    @commands.Cog.listener()
+    async def on_ready(self):
+        self.logger.info("Loaded Guild Event Logging")
+
+    @commands.Cog.listener()
+    async def on_message_delete(self, message):
+
+        self.logger.info("something got deleted")
+        if message.guild.id != 414027124836532234:  # kgs guild id
+            return
+        elif message.author.bot:
+            return
+        for x in self.bot.commands:
+            if any(message.content.startswith(f"!{y}") for y in x.aliases):
+                return
+            if message.content.startswith(f"!{x.name}"):
+                return
+
+
+        embed = discord.Embed(
+            title="Message Deleted",
+            description=f"Message deleted in {message.channel.mention}",
+            color=0x10D0E6,
+            timestamp=datetime.datetime.utcnow(),
+        )
+        embed.set_author(
+            name=message.author.display_name, icon_url=message.author.avatar_url
+        )
+        embed.add_field(name="Content",value=message.content)
+
+        latest_logged_delete = await message.guild.audit_logs(
+            limit=1, action=discord.AuditLogAction.message_delete
+        ).flatten()[0]
+        if message.author == latest_logged_delete.target:
+            pass
 
 
 class GuildChores(commands.Cog):
@@ -115,17 +158,17 @@ class GuildChores(commands.Cog):
                 guild.get_role(901136119863844864),  # English
                 reason="Membership screening passed",
             )
-    
+
     @commands.Cog.listener()
     async def on_member_join(self, member):
         """Listen for new patrons and provide
         them the option to unenroll from autojoining
         Listen for new members and fire webhook for greeting"""
 
-        #mainbot only
+        # mainbot only
         if self.bot.user.id != 471705718957801483:
             return
-        
+
         # temp fix to remove clonex bots
         if "clonex" in str(member.name).lower():
             guild = discord.utils.get(self.bot.guilds, id=414027124836532234)
@@ -324,3 +367,4 @@ class Errors(commands.Cog):
 def setup(bot):
     bot.add_cog(Errors(bot))
     bot.add_cog(GuildChores(bot))
+    bot.add_cog(GuildLogger(bot))
