@@ -509,6 +509,8 @@ class Moderation(commands.Cog):
 
         if tot_time > 100800:
             raise commands.BadArgument(message="Can't mute for longer than 28 days!")
+        if tot_time <= 0:
+            raise commands.BadArgument(message="Improper time provided")
 
         failed_mute = False
         for i in members:
