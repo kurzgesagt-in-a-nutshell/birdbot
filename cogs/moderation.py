@@ -507,7 +507,7 @@ class Moderation(commands.Cog):
                 message="Please provide a reason and re-run the command"
             )
 
-        if tot_time > 100800:
+        if tot_time > 2419200:
             raise commands.BadArgument(message="Can't mute for longer than 28 days!")
         if tot_time <= 0:
             raise commands.BadArgument(message="Improper time provided")
