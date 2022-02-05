@@ -46,7 +46,7 @@ class GuildLogger(commands.Cog):
             return
         if before.author.bot:
             return
-        if before.channel.category.id == 414095379156434945 or if before.channel.category.id == 879399341561892905:  
+        if before.channel.category.id == 414095379156434945 or before.channel.category.id == 879399341561892905:  
             # mod category and logging category gets ignored
             return
         if before.content == after.content:
