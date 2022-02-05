@@ -70,6 +70,7 @@ class BirdBot(commands.AutoShardedBot):
             messages=True,
             reactions=True,
         )
+        max_messages  = 1000
         if args.beta:
             prefix = "b!"
             owner_ids = {
@@ -95,11 +96,13 @@ class BirdBot(commands.AutoShardedBot):
         else:
             prefix = "!"
             owner_ids = {183092910495891467}  # Sloth
+            max_messages = 10000
             activity = discord.Activity(
                 type=discord.ActivityType.listening, name="Steve's voice"
             )
         x = cls(
             loop=loop,
+            max_messages = max_messages,
             command_prefix=commands.when_mentioned_or(prefix),
             owner_ids=owner_ids,
             activity=activity,

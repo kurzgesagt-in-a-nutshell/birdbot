@@ -1,6 +1,8 @@
 {
     "logging": {
         "logging_channel": 543884016282239006,
+        "message_logging_channel": 879399217511161887,
+        "member_logging_channel":939570758903005296, 
         "dev_logging_channel": 865321589919055882,
         "automated_channel": 546689491486769163
     },
@@ -16,12 +18,31 @@
         "trainee_mod_role": 905510680763969536
     },
     "giveaway": {
-        "roles": [
-            { "id": 698479120878665729, "bias": 11, "name": "galacduck" },
-            { "id": 662937489220173884, "bias": 7, "name": "legendary duck" },
-            { "id": 637114917178048543, "bias": 4, "name": "super duck" },
-            { "id": 637114897544511488, "bias": 3, "name": "duck" },
-            { "id": 637114873268142081, "bias": 2, "name": "smol duck" }
+        "roles": [{
+                "id": 698479120878665729,
+                "bias": 11,
+                "name": "galacduck"
+            },
+            {
+                "id": 662937489220173884,
+                "bias": 7,
+                "name": "legendary duck"
+            },
+            {
+                "id": 637114917178048543,
+                "bias": 4,
+                "name": "super duck"
+            },
+            {
+                "id": 637114897544511488,
+                "bias": 3,
+                "name": "duck"
+            },
+            {
+                "id": 637114873268142081,
+                "bias": 2,
+                "name": "smol duck"
+            }
         ],
         "default": 1
     }
