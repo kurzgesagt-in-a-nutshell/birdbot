@@ -1,6 +1,8 @@
 {
     "logging": {
         "logging_channel": 543884016282239006,
+        "message_logging_channel": 879399217511161887,
+        "member_logging_channel":939570758903005296, 
         "dev_logging_channel": 865321589919055882,
         "automated_channel": 546689491486769163
     },

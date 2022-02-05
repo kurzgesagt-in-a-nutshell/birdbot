@@ -34,6 +34,7 @@ class Moderation(commands.Cog):
         config_file.close()
 
         self.logging_channel = self.config_json["logging"]["logging_channel"]
+        self.message_logging_channel = self.config_json["logging"]["message_logging_channel"]
         self.mod_role = self.config_json["roles"]["mod_role"]
         self.admin_role = self.config_json["roles"]["admin_role"]
 
@@ -255,7 +256,7 @@ class Moderation(commands.Cog):
             f"Deleted {len(deleted_messages) - 1} message(s)", delete_after=3.0
         )
 
-        logging_channel = discord.utils.get(ctx.guild.channels, id=self.logging_channel)
+        message_logging_channel = discord.utils.get(ctx.guild.channels, id=self.message_logging_channel)
 
         if msg_count == 1:
 
@@ -271,7 +272,7 @@ class Moderation(commands.Cog):
                 color=discord.Color.green(),
             )
 
-            await logging_channel.send(embed=embed)
+            await message_logging_channel.send(embed=embed)
 
         else:
             # formatting string to be sent as file for logging
@@ -299,7 +300,7 @@ class Moderation(commands.Cog):
 
                 log_str = f"{log_str} {author} | {time} | {content} \n"
 
-            await logging_channel.send(
+            await message_logging_channel.send(
                 f"{len(deleted_messages)} messages deleted in {channel.mention}",
                 file=discord.File(
                     io.BytesIO(f"{log_str}".encode()),
