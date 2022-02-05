@@ -26,7 +26,8 @@ class Help(commands.Cog):
 
         cogs = list(self.bot.cogs)
         cogs.remove("Dev")
-        cogs.remove("Errors")
+        cogs.remove("Errors")                
+        cogs.remove("GuildLogger")
         cogs.remove("Smfeed")
 
         if cmnd is None:
