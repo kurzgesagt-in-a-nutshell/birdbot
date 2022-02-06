@@ -9,10 +9,9 @@ from discord.ext import commands
 
 from utils.helper import (
     create_automod_embed,
-    create_embed,
     mod_and_above,
-    helper_and_above,
 )
+
 from difflib import SequenceMatcher
 
 
@@ -54,11 +53,11 @@ class Filter(commands.Cog):
             kurz_guild.text_channels, id=self.logging_channel_id
         )
 
-    @commands.command()
+    @commands.command(aliases=['blacklistword'])
     @mod_and_above()
-    async def blacklistword(self, ctx, channel, *, words):
+    async def blacklist_word(self, ctx, channel, *, words):
         words = words.split(" ")
-        if channel.id == 546315063745839115:
+        if channel.id == 546315063745839115: #humanities
             for word in words:
                 await self.add_to_humanities(word)
         else:
@@ -67,9 +66,9 @@ class Filter(commands.Cog):
         self.update_lists()
         await ctx.message.add_reaction("<:kgsYes:580164400691019826>")
 
-    @commands.command()
+    @commands.command(aliases=['whitelistword'])
     @mod_and_above()
-    async def white_list_word(self, ctx, *, words):
+    async def whitelist_word(self, ctx, *, words):
         words = words.split(" ")
         for word in words:
             await self.add_to_whitelist(word)
@@ -81,11 +80,11 @@ class Filter(commands.Cog):
     async def filter_check(self, ctx, channel: discord.TextChannel, *, words):
         if channel.id == 546315063745839115:
             await ctx.send(
-                self.check_message_for_profanity(words, self.humanities_list)
+                self.check_message(words, self.humanities_list)
             )
         else:
             await ctx.send(
-                self.check_message_for_profanity(words, self.humanities_list)
+                self.check_message(words, self.humanities_list)
             )
 
     @commands.Cog.listener()
@@ -217,7 +216,6 @@ class Filter(commands.Cog):
 
     def is_member_excluded(self, author):
         rolelist = [
-            # 849423379706150946,  # helper
             414092550031278091,  # mod
             414029841101225985,  # admin
             414954904382210049,  # offical
