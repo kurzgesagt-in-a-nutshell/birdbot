@@ -46,7 +46,10 @@ class GuildLogger(commands.Cog):
             return
         if before.author.bot:
             return
-        if before.channel.category.id == 414095379156434945 or before.channel.category.id == 879399341561892905:  
+        if (
+            before.channel.category.id == 414095379156434945
+            or before.channel.category.id == 879399341561892905
+        ):
             # mod category and logging category gets ignored
             return
         if before.content == after.content:
@@ -118,7 +121,9 @@ class GuildLogger(commands.Cog):
         else:
             self_deleted = True
             search_terms += f"\nDeleted by {message.author.id}"
-            embed.description += f"\nDeleted by {message.author.mention} {message.author.name}"
+            embed.description += (
+                f"\nDeleted by {message.author.mention} {message.author.name}"
+            )
 
         search_terms += f"\nSent by {message.author.id}"
         search_terms += f"\nMessage from {message.author.id} deleted by {message.author.id if self_deleted else latest_logged_delete.user.id} in {message.channel.id}```"
@@ -135,6 +140,11 @@ class GuildLogger(commands.Cog):
 
     @commands.Cog.listener()
     async def on_member_join(self, member):
+
+        # mainbot only
+        if self.bot.user.id != 471705718957801483:
+            return
+
         embed = discord.Embed(
             title="Member joined",
             description=f"{member.name}#{member.discriminator} ({member.id}) {member.mention}",
@@ -161,13 +171,17 @@ class GuildLogger(commands.Cog):
         )
         await member_logging_channel.send(embed=embed)
 
-
     @commands.Cog.listener()
     async def on_member_remove(self, member):
+
+        # mainbot only
+        if self.bot.user.id != 471705718957801483:
+            return
+
         embed = discord.Embed(
             title="Member Left",
             description=f"{member.name}#{member.discriminator} ({member.id})",
-            color=0xff0004,
+            color=0xFF0004,
             timestamp=datetime.datetime.utcnow(),
         )
         embed.set_author(name=member.name, icon_url=member.avatar_url)
@@ -184,9 +198,9 @@ class GuildLogger(commands.Cog):
             inline=True,
         )
         embed.add_field(
-            name = "Roles",
-            value = f"{' '.join([role.mention for role in member.roles])}",
-            inline = False,
+            name="Roles",
+            value=f"{' '.join([role.mention for role in member.roles])}",
+            inline=False,
         )
 
         embed.add_field(
@@ -209,15 +223,17 @@ class GuildLogger(commands.Cog):
         embed = discord.Embed(
             title="Nickname changed",
             description=f"{before.name}#{before.discriminator} ({before.id})",
-            color=0xff6633,
+            color=0xFF6633,
             timestamp=datetime.datetime.utcnow(),
         )
         embed.set_author(name=before.name, icon_url=before.avatar_url)
-        embed.add_field(name="Previous Nickname",value=f"{before.nick}",inline=True)
-        embed.add_field(name="Current Nickname",value=f"{after.nick}",inline=True)
+        embed.add_field(name="Previous Nickname", value=f"{before.nick}", inline=True)
+        embed.add_field(name="Current Nickname", value=f"{after.nick}", inline=True)
 
         embed.add_field(
-            name="Search terms", value=f"```{before.id} changed nickname```", inline=False
+            name="Search terms",
+            value=f"```{before.id} changed nickname```",
+            inline=False,
         )
         embed.set_footer(
             text="Input the search terms in your discord search bar to easily sort through specific logs"
