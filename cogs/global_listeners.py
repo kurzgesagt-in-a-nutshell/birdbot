@@ -364,6 +364,8 @@ class GuildChores(commands.Cog):
             except discord.Forbidden:
                 return
         else:
+            if BirdBot.currently_raided:
+                return
             async with aiohttp.ClientSession() as session:
                 hook = discord.Webhook.from_url(
                     self.greeting_webhook_url,
