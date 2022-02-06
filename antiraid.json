@@ -1,6 +1,7 @@
 {
     "raidmode": {
-        "joins": 30,
-        "during": 10
+        "joins": 100,
+        "during": 1,
+        "active": false
     }
 }

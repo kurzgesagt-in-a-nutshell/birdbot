@@ -21,7 +21,6 @@ class Antiraid(commands.Cog):
             antiraid_json = json.loads(config_file.read())
         self.raidinfo = antiraid_json["raidmode"]
         self.newjoins = []
-        self.blacklist = ["clonex"] #temporary clonex fix, develop into a proper feature?
 
     @commands.Cog.listener()
     async def on_ready(self):
@@ -29,19 +28,45 @@ class Antiraid(commands.Cog):
 
     @devs_only()
     @commands.command()
-    async def raidmode(self, ctx, joins: typing.Optional[int] = None, during: typing.Optional[int] = None):
+    async def raidmode(self, ctx, args=""):
         """
-        Turns the anti-raid mode on
-        Usage: on/off raidmode joins during
+        Changes the anti-raidmode settings
+        Usage: raidmode <joins>/<minutes> or <on/off>
         """
-        if not (joins and during):
-            await ctx.send(f'Raidmode will activate when there are {self.raidinfo["joins"]} joins every {self.raidinfo["during"]} seconds.')
+        if args == "off" or args == "on":
+            if args == "on":
+                self.raidinfo["active"] = True
+            elif args == "off":
+                self.raidinfo["active"] = False
+            with open("antiraid.json", "w") as config_file:
+                json.dump({"raidmode": self.raidinfo}, config_file, indent=4)
+            await ctx.send(f"Raidmode is turned {args}.")
+            return
+
+        if args != "":
+            try:
+                joins = int(args.split("/")[0])
+                during = int(args.split("/")[1])
+            except:
+                raise commands.BadArgument(
+                    message="Improper argument syntax. Example: 30/10 to trigger with 30 joins every 10 seconds."
+                )
+
+        if args == "":
+            if self.raidinfo["active"] == False:
+                activityinfo = "Raidmode is turned off."
+            else:
+                activityinfo = "Raidmode is turned on."
+            await ctx.send(
+                f'Raidmode will activate when there are {self.raidinfo["joins"]} joins every {self.raidinfo["during"]} seconds. {activityinfo}'
+            )
             return
 
         if joins > 100:
             raise commands.BadArgument(message="Can't do more than 100 joins.")
 
-        self.raidinfo = {"joins": joins, "during": during}
+        self.raidinfo["joins"] = joins
+        self.raidinfo["during"] = during
         with open("antiraid.json", "w") as config_file:
             json.dump({"raidmode": self.raidinfo}, config_file, indent=4)
         await ctx.send(
@@ -55,11 +80,14 @@ class Antiraid(commands.Cog):
         if member.bot:
             return
 
-        self.newjoins.append({"id":member.id, "time": member.joined_at})
+        self.newjoins.append({"id": member.id, "time": member.joined_at})
 
         if len(self.newjoins) >= 101:
             i = len(self.newjoins) - 100
             del self.newjoins[0:i]
+
+        if self.raidinfo["active"] == False:
+            return
 
         if len(self.newjoins) >= self.raidinfo["joins"]:
             index = -self.raidinfo["joins"]
@@ -72,11 +100,16 @@ class Antiraid(commands.Cog):
                     )
                 except:
                     pass
-                await member.kick(reason="Raid counter")
+                try:
+                    await member.kick(reason="Raid counter")
+                except:
+                    pass
 
                 if not BirdBot.currently_raided:
                     server = member.guild
-                    await server.get_channel(self.logging_channel).send("Detected a raid.")
+                    await server.get_channel(self.logging_channel).send(
+                        "Detected a raid."
+                    )
                     firstbots = self.newjoins[-index:]
                     for memberid in firstbots:
                         member = await server.get_member(memberid["id"])
@@ -95,10 +128,6 @@ class Antiraid(commands.Cog):
                 return
             else:
                 BirdBot.currently_raided = False
-
-        for i in self.blacklist:
-            if i in str(member.name).lower():
-                await member.kick(reason="clonex")
 
 
 def setup(bot):
