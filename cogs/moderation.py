@@ -12,11 +12,7 @@ from discord.channel import DMChannel
 
 from utils import custom_converters
 from utils import helper
-from utils.helper import (
-    create_user_infraction,
-    devs_only,
-    mod_and_above,
-)
+from utils.helper import create_user_infraction, devs_only, mod_and_above, calc_time
 
 import discord
 from discord.ext import commands, tasks
@@ -34,7 +30,9 @@ class Moderation(commands.Cog):
         config_file.close()
 
         self.logging_channel = self.config_json["logging"]["logging_channel"]
-        self.message_logging_channel = self.config_json["logging"]["message_logging_channel"]
+        self.message_logging_channel = self.config_json["logging"][
+            "message_logging_channel"
+        ]
         self.mod_role = self.config_json["roles"]["mod_role"]
         self.admin_role = self.config_json["roles"]["admin_role"]
 
@@ -256,7 +254,9 @@ class Moderation(commands.Cog):
             f"Deleted {len(deleted_messages) - 1} message(s)", delete_after=3.0
         )
 
-        message_logging_channel = discord.utils.get(ctx.guild.channels, id=self.message_logging_channel)
+        message_logging_channel = discord.utils.get(
+            ctx.guild.channels, id=self.message_logging_channel
+        )
 
         if msg_count == 1:
 
@@ -1007,18 +1007,20 @@ class Moderation(commands.Cog):
     async def slowmode(
         self,
         ctx: commands.Context,
-        time: typing.Optional[int] = None,
+        time=None,
         channel: typing.Optional[discord.TextChannel] = None,
         *,
         reason: str = None,
     ):
         """Add/Remove slowmode. \nUsage: slowmode <slowmode_time> <#channel> <reason>"""
 
+        time = calc_time([time, ""])[0]
+
         if time is None:
             time = 0
 
-        if time < 0:
-            raise commands.BadArgument(message="Improper time provided")
+        if time > 21600:
+            raise commands.BadArgument(message="Slowmode can't be over 6 hours.")
 
         ch = ctx.channel
 
