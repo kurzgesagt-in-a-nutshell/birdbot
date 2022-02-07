@@ -42,6 +42,10 @@ class GuildLogger(commands.Cog):
     @commands.Cog.listener()
     async def on_message_edit(self, before, after):
 
+        # mainbot only
+        if self.bot.user.id != 471705718957801483:
+            return
+
         if before.guild.id != 414027124836532234:  # kgs guild id
             return
         if before.author.bot:
@@ -82,6 +86,10 @@ class GuildLogger(commands.Cog):
 
     @commands.Cog.listener()
     async def on_message_delete(self, message):
+
+        # mainbot only
+        if self.bot.user.id != 471705718957801483:
+            return
 
         if message.guild.id != 414027124836532234:  # kgs guild id
             return
@@ -217,6 +225,11 @@ class GuildLogger(commands.Cog):
 
     @commands.Cog.listener()
     async def on_member_update(self, before, after):
+
+        # mainbot only
+        if self.bot.user.id != 471705718957801483:
+            return
+
         if before.nick == after.nick:
             return
 
