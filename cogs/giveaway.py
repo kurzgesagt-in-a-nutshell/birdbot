@@ -97,7 +97,7 @@ class Giveaway(commands.Cog):
                 winnerids = ", ".join([str(i) for i in choice])
                 for i in choice:
                     winner = await message.guild.fetch_member(i)
-                    await message.channel.send(f"{winner.mention} won")
+                    await message.channel.send(f"{winner.mention} won {giveaway['prize']}!")
                     winners += winner.mention + "\n"
 
             else:
