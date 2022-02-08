@@ -1,7 +1,7 @@
 import json
 import logging
 import re
-import threading
+import asyncio
 import demoji
 from better_profanity import profanity
 import discord
@@ -36,7 +36,7 @@ class Filter(commands.Cog):
         self.general_list = []
         self.white_list = []
         self.message_history_list = {}
-        self.message_history_lock = threading.RLock()
+        self.message_history_lock = asyncio.Lock()
         with open("swearfilters/humanitiesfilter.txt") as f:
             self.humanities_list = f.read().splitlines()
         with open("swearfilters/generalfilter.txt") as f:
@@ -47,17 +47,14 @@ class Filter(commands.Cog):
     @commands.Cog.listener()
     async def on_ready(self):
         self.logger.info("loaded Automod")
-        # FIXME: self.logging_channel sets to None on cog reload.
-        kurz_guild = self.bot.get_guild(414027124836532234)
-        self.logging_channel = discord.utils.get(
-            kurz_guild.text_channels, id=self.logging_channel_id
-        )
+        self.logging_channel = await self.bot.fetch_channel(self.logging_channel_id)
+        self.logger.info(self.logging_channel)
 
-    @commands.command(aliases=['blacklistword'])
+    @commands.command(aliases=["blacklistword"])
     @mod_and_above()
-    async def blacklist_word(self, ctx, channel, *, words):
+    async def blacklist_word(self, ctx, channel: discord.TextChannel, *, words):
         words = words.split(" ")
-        if channel.id == 546315063745839115: #humanities
+        if channel.id == 546315063745839115:  # humanities
             for word in words:
                 await self.add_to_humanities(word)
         else:
@@ -66,7 +63,7 @@ class Filter(commands.Cog):
         self.update_lists()
         await ctx.message.add_reaction("<:kgsYes:580164400691019826>")
 
-    @commands.command(aliases=['whitelistword'])
+    @commands.command(aliases=["whitelistword"])
     @mod_and_above()
     async def whitelist_word(self, ctx, *, words):
         words = words.split(" ")
@@ -79,28 +76,24 @@ class Filter(commands.Cog):
     @mod_and_above()
     async def filter_check(self, ctx, channel: discord.TextChannel, *, words):
         if channel.id == 546315063745839115:
-            await ctx.send(
-                self.check_message(words, self.humanities_list)
-            )
+            await ctx.send(self.check_message(words, self.humanities_list))
         else:
-            await ctx.send(
-                self.check_message(words, self.humanities_list)
-            )
+            await ctx.send(self.check_message(words, self.humanities_list))
 
     @commands.Cog.listener()
     async def on_message(self, message):
-        if not str(message.channel.type) == "private":
+        # if message.channel.id == 414179142020366336:
+
+        self.logging_channel = await self.bot.fetch_channel(self.logging_channel_id)
+        if not isinstance(message.channel, discord.DMChannel):
             await self.moderate(message)
 
     @commands.Cog.listener()
-    async def on_message_edit(self, oldMessage, newMessage):
-        if not str(newMessage.channel.type) == "private":
-            await self.moderate(newMessage)
-
-    @commands.Cog.listener()
-    async def on_message_update(self, oldMessage, newMessage):
-        if not str(newMessage.channel.type) == "private":
-            await self.moderate(newMessage)
+    async def on_message_edit(self, before, after):
+        if before.content == after.content:
+            return
+        if not isinstance(after.channel, discord.DMChannel):
+            await self.moderate(after)
 
     async def moderate(self, message):
         # TODO: This section is just for testing filter in DMs, to be removed for stable.
@@ -143,40 +136,53 @@ class Filter(commands.Cog):
         # elif message.channel.id == 414179142020366336:
         # elif not self.isExcluded(message.author):
 
-        if not self.is_member_excluded(message.author):
-            wordlist = self.get_word_list(message)
-            event = await self.check_message(message, wordlist)
-            if event[0]:
-                if event[1] == "profanity":
-                    await self.execute_action_on_message(message, dict({
-                        "ping": "Be nice, Don't say bad things"
-                        , "delete_after": 30
-                        , "delete_message": ""
-                        , "log": "profanity"}
-                    ))
-                if event[1] == "emoji":
-                    await self.execute_action_on_message(message, dict({
-                        "ping": "Please do not spam emojis"
-                        , "delete_after": 15
-                        , "delete_message": ""
-                        , "log": "Emoji Spam"}
-                    ))
-                if event[1] == "text":
-                    await self.execute_action_on_message(message, dict({
-                        "ping": "Please do not spam emojis"
-                        , "delete_after": 15
-                        , "delete_message": ""
-                        , "log": "Text Spam"}
-                    ))
-                if event[1] == "bypass":
-                    await self.execute_action_on_message(message, dict({
-                        "ping": "Please do not post gifs/videos in general"
-                        , "delete_after": 15
-                        , "delete_message": ""
-                        , "log": "Media in #general"}
-                    ))
+        if self.is_member_excluded(message.author):
+            return
 
+        wordlist = self.get_word_list(message)
+        event = await self.check_message(message, wordlist)
 
+        if event[0]:
+            if event[1] == "profanity":
+                await self.execute_action_on_message(
+                    message,
+                    {
+                        "ping": "Be nice, Don't say bad things",
+                        "delete_after": 30,
+                        "delete_message": "",
+                        "log": "profanity",
+                    },
+                )
+            if event[1] == "emoji":
+                await self.execute_action_on_message(
+                    message,
+                    {
+                        "ping": "Please do not spam emojis",
+                        "delete_after": 15,
+                        "delete_message": "",
+                        "log": "Emoji Spam",
+                    },
+                )
+            if event[1] == "text":
+                await self.execute_action_on_message(
+                    message,
+                    {
+                        "ping": "Please do not spam",
+                        "delete_after": 15,
+                        "delete_message": event[2],
+                        "log": "Text Spam",
+                    },
+                )
+            if event[1] == "bypass":
+                await self.execute_action_on_message(
+                    message,
+                    {
+                        "ping": "Please do not post gifs/videos in general",
+                        "delete_after": 15,
+                        "delete_message": "",
+                        "log": "Media in #general",
+                    },
+                )
 
     async def execute_action_on_message(self, message, actions):
         if "ping" in actions:
@@ -192,19 +198,25 @@ class Filter(commands.Cog):
                 )
 
         if "delete_message" in actions:
-            await message.delete()
+            if isinstance(actions["delete_message"],int):
+                for i in range(5):
+                    await self.message_history_list[actions["delete_message"]][i].delete()
+                self.message_history_list[actions["delete_message"]]  = self.message_history_list[actions["delete_message"]][4:]
+            else:
+                await message.delete()
 
-        #if "warn" in actions:
-            #logic for warn here
+        # if "warn" in actions:
+        # logic for warn here
 
-        #if "mute" in actions:
-            #logic for mute here
-        #if "message" in actions:
-            #logic for messaging the user
+        if "mute" in actions:
+
+
+        # if "message" in actions:
+        # logic for messaging the user
 
         if "log" in actions:
             embed = create_automod_embed(
-                message=message, automod_type=actions.get('log')
+                message=message, automod_type=actions.get("log")
             )
             await self.logging_channel.send(embed=embed)
 
@@ -217,17 +229,15 @@ class Filter(commands.Cog):
     def is_member_excluded(self, author):
         rolelist = [
             414092550031278091,  # mod
-            414029841101225985,  # admin
+            # 414029841101225985,  # admin
             414954904382210049,  # offical
             414155501518061578,  # robobird
             240254129333731328,  # stealth
         ]
         if author.bot:
             return True
-
-        for role in author.roles:
-            if role.id in rolelist:
-                return True
+        if any(x in [role.id for role in author.roles] for x in rolelist):
+            return True
         return False
 
     def update_lists(self):
@@ -314,15 +324,15 @@ class Filter(commands.Cog):
 
         # check for emoji spam
         def check_emoji_spam(message):
-            if message.channel.id == 526882555174191125:
+            if message.channel.id == 526882555174191125:  # new-members
                 return False
 
             if (
                 len(
                     re.findall(
-                        r"(<:[^\s]+:[0-9]*>)",
+                        r"((<a?)?:\w+:(\d{18}>)?)",
                         re.sub(
-                            r"(>[^/s]*<)+",
+                            r"(>[^\s]*<)+",
                             "> <",
                             str(message.content).encode("ascii", "ignore").decode(),
                         ),
@@ -334,13 +344,9 @@ class Filter(commands.Cog):
                 return True
             return False
 
-        # check for sticker spam
-        # def check_sticker_spam(self, message):
-
-
         # check for text spam
         def check_text_spam(self, message):
-            if message.channel.id == 526882555174191125:
+            if message.channel.id == 526882555174191125:  # new-members
                 return False
 
             # if the user has past messages
@@ -356,7 +362,7 @@ class Filter(commands.Cog):
                         )
                     # if the passed x message are similar with a 75% threshold
                     if adv / count > 0.60:
-                        return True
+                        return message.author.id
             if message.channel.id in self.message_history_list:
                 match_count = 0
                 # atleast 3 prior messages
@@ -368,26 +374,33 @@ class Filter(commands.Cog):
                         ):
                             match_count = match_count + 1
                         if match_count > 3:
-                            return True
+                            return message.channel.id
 
         # check for mass ping
-        # def check_ping_spam(message):
-
-        # check for ping offical
-        # def chec_ping_offical(message):
+        def check_ping_spam(message):
+            if len(message.mentions) > 5:
+                return ["True", "ping"]
 
         # check for gif bypass
         def check_gif_bypass(message):
+
             filetypes = ["mp4", "gif", "webm", "gifv"]
-            if (
-                message.channel.id == 414027124836532236
-                or message.channel.id == 414179142020366336
+
+            if not (
+                message.channel.id == 414027124836532236  # general
+                or message.channel.id == 414179142020366336  # bot testing
             ):
-                if message.embeds:
-                    for e in message.embeds:
-                        for t in filetypes:
-                            if e.url.endswith(t):
-                                return True
+                return
+            if message.embeds:
+                for e in message.embeds:
+                    if any(s in e.type for s in filetypes):
+                        return True
+                    elif e.thumbnail:
+                        if any(s in e.thumbnail.url for s in filetypes):
+                            return True
+                    elif e.image:
+                        if any(s in e.image.url for s in filetypes):
+                            return True
             return False
 
         # run checks
@@ -397,17 +410,24 @@ class Filter(commands.Cog):
             return [True, "emoji"]
         if check_gif_bypass(message):
             return [True, "bypass"]
+        if check_ping_spam(message):
+            return [True, "ping"]
 
         # this one goes last due to lock
-        with self.message_history_lock:
+        async with self.message_history_lock:
+
             # if getting past this point we write to message history and pop if to many messages
-            if check_text_spam(self, message):
-                return [True, "text"]
+            spam = check_text_spam(self, message)
+            if spam:
+                return [True, "text",spam]
+
+            message.channel.id
             if message.author.id in self.message_history_list:
                 found = False
                 for n in self.message_history_list[message.author.id]:
                     if message.id == n.id:
                         found = True
+                        # update existing message with edits if any
                         self.message_history_list[message.author.id][
                             self.message_history_list[message.author.id].index(n)
                         ] = message
@@ -421,6 +441,7 @@ class Filter(commands.Cog):
                 for n in self.message_history_list[message.channel.id]:
                     if message.id == n.id:
                         found = True
+                        # update existing message with edits if any
                         self.message_history_list[message.channel.id][
                             self.message_history_list[message.channel.id].index(n)
                         ] = message
@@ -430,18 +451,16 @@ class Filter(commands.Cog):
                 self.message_history_list[message.channel.id] = [message]
 
             if len(self.message_history_list[message.author.id]) > 5:
-                self.message_history_list[message.author.id].pop()
+                self.message_history_list[message.author.id].pop(0)
 
             if len(self.message_history_list[message.channel.id]) > 10:
-                self.message_history_list[message.channel.id].pop()
+                self.message_history_list[message.channel.id].pop(0)
 
         return [False, "none"]
 
     def exception_list_check(self, offending_list):
         for bad_word in offending_list:
-            if bad_word in self.white_list:
-                continue
-            else:
+            if not bad_word in self.white_list:
                 return True
 
         return False
