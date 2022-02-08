@@ -6,15 +6,13 @@ import datetime
 import asyncio
 import logging
 
+from discord import http
+from discord.channel import DMChannel
+
 
 from utils import custom_converters
 from utils import helper
-from utils.helper import (
-    create_user_infraction,
-    devs_only,
-    helper_and_above,
-    mod_and_above
-)
+from utils.helper import create_user_infraction, devs_only, mod_and_above, calc_time
 
 import discord
 from discord.ext import commands, tasks
@@ -32,23 +30,20 @@ class Moderation(commands.Cog):
         config_file.close()
 
         self.logging_channel = self.config_json["logging"]["logging_channel"]
+        self.message_logging_channel = self.config_json["logging"][
+            "message_logging_channel"
+        ]
         self.mod_role = self.config_json["roles"]["mod_role"]
         self.admin_role = self.config_json["roles"]["admin_role"]
 
     @tasks.loop(minutes=10.0)
     async def timed_action_loop(self):
         guild = discord.utils.get(self.bot.guilds, id=414027124836532234)
-        mute_role = discord.utils.get(
-            guild.roles, id=self.config_json["roles"]["mute_role"]
-        )
+
         logging_channel = discord.utils.get(guild.channels, id=self.logging_channel)
 
         for action in self.timed_action_list:
             if action["action_end"] < datetime.datetime.utcnow():
-                user = discord.utils.get(guild.members, id=action["user_id"])
-
-                if user is not None:
-                    await user.remove_roles(mute_role, reason="Time Expired")
 
                 helper.delete_timed_actions_uid(u_id=action["user_id"])
 
@@ -80,15 +75,141 @@ class Moderation(commands.Cog):
     def cog_unload(self):
         self.timed_action_loop.cancel()
 
+    @commands.command()
+    async def report(
+        self,
+        ctx,
+        user_id: str = None,
+        message_link: str = None,
+        *,
+        extras: str = None,
+    ):
+        """Report an issue to the authorites\n Usage: report\nreport user_ID message_link description_of_issue"""
+
+        mod_embed = discord.Embed(title="New Report", color=0x00FF00)
+        mod_embed.set_author(name=ctx.author.name, icon_url=ctx.author.avatar_url)
+
+        def check(msg):
+            return msg.author == ctx.author and isinstance(
+                msg.channel, discord.DMChannel
+            )
+
+        if user_id is None:
+            try:
+                msg = await ctx.author.send(
+                    embed=discord.Embed(
+                        title="Thanks for reaching out!",
+                        description="Briefly describe your issue",
+                        color=0xFF69B4,
+                    )
+                )
+                report_desc = await self.bot.wait_for(
+                    "message", timeout=120, check=check
+                )
+                extras = report_desc.content
+
+                await msg.edit(
+                    embed=discord.Embed(
+                        title="Report description noted!",
+                        description="If you have a [User ID](https://support.discord.com/hc/en-us/articles/206346498-Where-can-I-find-my-User-Server-Message-ID-) for the person you're reporting against please enter them, else type no",
+                    )
+                )
+                user_id_desc = await self.bot.wait_for(
+                    "message", timeout=120, check=check
+                )
+                if not "no" in user_id_desc.content.lower():
+                    report_user = self.bot.get_user(int(user_id_desc.content))
+                    if report_user is not None:
+                        user_id = f"({user_id_desc.content}) {report_user.name}"
+
+                await msg.edit(
+                    embed=discord.Embed(
+                        title="Got it!",
+                        description="Finally do you happen to have a message link? type no if not",
+                    )
+                )
+
+                link_desc = await self.bot.wait_for("message", timeout=120, check=check)
+                if not "no" in link_desc.content.lower():
+                    message_link = link_desc.content
+
+                await msg.edit(
+                    embed=discord.Embed(
+                        title="Report Successful!",
+                        description="Your report has been sent to the proper authorities.",
+                        color=0x00FF00,
+                    )
+                )
+
+            except discord.Forbidden:
+                await ctx.send(
+                    "I can't seem to DM you, please check your privacy settings and try again"
+                )
+                return
+            except asyncio.TimeoutError:
+                await msg.edit(
+                    embed=discord.Embed(
+                        title="Report timed out",
+                        description="Oops please try again",
+                        color=0xFF0000,
+                    )
+                )
+                return
+
+        mod_embed.description = f"**Report description: ** {extras}\n**User: ** {user_id}\n**Message Link: ** [click to jump]({message_link})"
+
+        mod_channel = self.bot.get_channel(414095428573986816)
+        await mod_channel.send(embed=mod_embed)
+
     @commands.Cog.listener()
-    async def on_message_edit(self, before, after):
-        if not after.channel.id == 414027124836532236:
+    async def on_message(self, after):
+        if after.author.bot:
+            return
+        check_role = after.guild.get_role(414092550031278091)
+        if after.author.top_role >= check_role:
+            return
+        if not (
+            after.channel.id == 414027124836532236
+            or after.channel.id == 414179142020366336
+        ):
             return
         if after.embeds:
             for e in after.embeds:
                 if any(s in e.type for s in ["mp4", "gif", "webm", "gifv"]):
                     await after.delete()
+                elif e.thumbnail:
+                    if any(
+                        s in e.thumbnail.url for s in ["mp4", "gif", "webm", "gifv"]
+                    ):
+                        await after.delete()
+                elif e.image:
+                    if any(s in e.image.url for s in ["mp4", "gif", "webm", "gifv"]):
+                        await after.delete()
 
+    @commands.Cog.listener()
+    async def on_message_edit(self, before, after):
+        if after.author.bot:
+            return
+        check_role = after.guild.get_role(414092550031278091)
+        if after.author.top_role >= check_role:
+            return
+        if not (
+            after.channel.id == 414027124836532236
+            or after.channel.id == 414179142020366336
+        ):
+            return
+        if after.embeds:
+            for e in after.embeds:
+                if any(s in e.type for s in ["mp4", "gif", "webm", "gifv"]):
+                    await after.delete()
+                elif e.thumbnail:
+                    if any(
+                        s in e.thumbnail.url for s in ["mp4", "gif", "webm", "gifv"]
+                    ):
+                        await after.delete()
+                elif e.image:
+                    if any(s in e.image.url for s in ["mp4", "gif", "webm", "gifv"]):
+                        await after.delete()
 
     @mod_and_above()
     @commands.command(aliases=["purge", "prune", "clear"])
@@ -133,7 +254,9 @@ class Moderation(commands.Cog):
             f"Deleted {len(deleted_messages) - 1} message(s)", delete_after=3.0
         )
 
-        logging_channel = discord.utils.get(ctx.guild.channels, id=self.logging_channel)
+        message_logging_channel = discord.utils.get(
+            ctx.guild.channels, id=self.message_logging_channel
+        )
 
         if msg_count == 1:
 
@@ -149,7 +272,7 @@ class Moderation(commands.Cog):
                 color=discord.Color.green(),
             )
 
-            await logging_channel.send(embed=embed)
+            await message_logging_channel.send(embed=embed)
 
         else:
             # formatting string to be sent as file for logging
@@ -177,7 +300,7 @@ class Moderation(commands.Cog):
 
                 log_str = f"{log_str} {author} | {time} | {content} \n"
 
-            await logging_channel.send(
+            await message_logging_channel.send(
                 f"{len(deleted_messages)} messages deleted in {channel.mention}",
                 file=discord.File(
                     io.BytesIO(f"{log_str}".encode()),
@@ -189,20 +312,20 @@ class Moderation(commands.Cog):
 
     @commands.command(aliases=["forceban"])
     @mod_and_above()
-    async def fban(self, ctx, member: int,*,reason: str):
+    async def fban(self, ctx, member: int, *, reason: str):
         """Force ban a member who is not in the server.\nUsage: fban user_id reason"""
         if reason is None:
             raise commands.BadArgument("Provide a reason and re-run the command")
 
         logging_channel = discord.utils.get(ctx.guild.channels, id=self.logging_channel)
 
-        #TODO Make helper.create_infraction compatible with IDs
+        # TODO Make helper.create_infraction compatible with IDs
         await ctx.guild.ban(discord.Object(member))
 
         embed = discord.Embed(
             title="Force Ban",
             description=f"Action By: {ctx.author.mention}",
-            color=0xff0000,
+            color=0xFF0000,
             timestamp=datetime.datetime.utcnow(),
         )
         embed.add_field(name="User(s) Affected ", value=f"{member}", inline=False)
@@ -211,9 +334,7 @@ class Moderation(commands.Cog):
         await logging_channel.send(embed=embed)
         await ctx.message.add_reaction("<:kgsYes:580164400691019826>")
 
-        await asyncio.sleep(6)
-        await ctx.message.delete()
-
+        await ctx.message.delete(delay=6)
 
     @commands.command(aliases=["yeet"])
     @mod_and_above()
@@ -246,8 +367,9 @@ class Moderation(commands.Cog):
                 members.remove(m)
                 failed_ban = True
         if failed_ban:
-            x = await ctx.send(
-                "Certain users could not be banned due to your clearance"
+            await ctx.send(
+                "Certain users could not be banned due to your clearance",
+                delete_after=6,
             )
         if len(members) == 0:
             return
@@ -268,9 +390,7 @@ class Moderation(commands.Cog):
 
         await logging_channel.send(embed=embed)
 
-        await asyncio.sleep(6)
-        await ctx.message.delete()
-        await x.delete()
+        await ctx.message.delete(delay=6)
 
     @commands.command()
     @mod_and_above()
@@ -341,7 +461,9 @@ class Moderation(commands.Cog):
 
         await ctx.message.add_reaction("<:kgsYes:580164400691019826>")
         if failed_kick:
-            x = await ctx.send("Could not kick certain users due to your clearance")
+            await ctx.send(
+                "Could not kick certain users due to your clearance", delete_after=6
+            )
         if len(members) == 0:
             return
 
@@ -358,12 +480,10 @@ class Moderation(commands.Cog):
             author=ctx.author, users=members, action="kick", reason=reason
         )
 
-        await asyncio.sleep(6)
-        await ctx.message.delete()
-        await x.delete()
+        await ctx.message.delete(delay=6)
 
     @commands.command()
-    @helper_and_above()
+    @mod_and_above()
     async def mute(self, ctx: commands.Context, *args):
         """Mute member(s). \nUsage: mute @member(s) <time> reason"""
 
@@ -371,9 +491,6 @@ class Moderation(commands.Cog):
         is_muted = False
 
         logging_channel = discord.utils.get(ctx.guild.channels, id=self.logging_channel)
-        mute_role = discord.utils.get(
-            ctx.guild.roles, id=self.config_json["roles"]["mute_role"]
-        )
 
         members, extra = custom_converters.get_members(ctx, *args)
 
@@ -391,10 +508,25 @@ class Moderation(commands.Cog):
                 message="Please provide a reason and re-run the command"
             )
 
+        if tot_time > 2419200:
+            raise commands.BadArgument(message="Can't mute for longer than 28 days!")
+        if tot_time <= 0:
+            raise commands.BadArgument(message="Improper time provided")
+
         failed_mute = False
         for i in members:
             if i.top_role < ctx.author.top_role:
-                await i.add_roles(mute_role, reason=reason)
+                member_id = i.id
+                time = (
+                    datetime.datetime.utcnow() + datetime.timedelta(seconds=tot_time)
+                ).isoformat()
+                route = http.Route(
+                    "PATCH", f"/guilds/414027124836532234/members/{member_id}"
+                )
+                await self.bot.http.request(
+                    route, json={"communication_disabled_until": time}, reason=reason
+                )
+
                 try:
                     await i.send(
                         f"You have been muted for {time_str}.\nGiven reason: {reason}\n"
@@ -409,8 +541,9 @@ class Moderation(commands.Cog):
 
         await ctx.message.add_reaction("<:kgsYes:580164400691019826>")
         if failed_mute:
-            x = await ctx.send(
-                "Certain members could not be muted due to your clearance"
+            await ctx.send(
+                "Certain members could not be muted due to your clearance",
+                delete_after=6,
             )
         if len(members) == 0:
             return
@@ -442,12 +575,10 @@ class Moderation(commands.Cog):
 
                 self.timed_action_list = helper.get_timed_actions()
 
-        await asyncio.sleep(6)
-        await ctx.message.delete()
-        await x.delete()
+        await ctx.message.delete(delay=6)
 
     @commands.command()
-    @helper_and_above()
+    @mod_and_above()
     async def unmute(
         self, ctx: commands.Context, members: commands.Greedy[discord.Member]
     ):
@@ -458,11 +589,14 @@ class Moderation(commands.Cog):
         if not members:
             raise commands.BadArgument(message="Provide members to mute")
 
-        mute_role = discord.utils.get(
-            ctx.guild.roles, id=self.config_json["roles"]["mute_role"]
-        )
         for i in members:
-            await i.remove_roles(mute_role, reason=f"Unmuted by {ctx.author}")
+            member_id = i.id
+            route = http.Route(
+                "PATCH", f"/guilds/414027124836532234/members/{member_id}"
+            )
+            await self.bot.http.request(
+                route, json={"communication_disabled_until": None}
+            )
             # TIMED
             helper.delete_timed_actions_uid(u_id=i.id)
             self.timed_action_list = helper.get_timed_actions()
@@ -476,8 +610,7 @@ class Moderation(commands.Cog):
         )
 
         await logging_channel.send(embed=embed)
-        await asyncio.sleep(6)
-        await ctx.message.delete()
+        await ctx.message.delete(delay=6)
 
     @commands.command()
     @mod_and_above()
@@ -531,7 +664,7 @@ class Moderation(commands.Cog):
         return await logging_channel.send(embed=embed)
 
     @commands.command()
-    @helper_and_above()
+    @mod_and_above()
     async def warn(self, ctx: commands.Context, *args):
         """Warn user(s) \nUsage: warn @member(s) reason"""
         logging_channel = discord.utils.get(ctx.guild.channels, id=self.logging_channel)
@@ -561,8 +694,9 @@ class Moderation(commands.Cog):
                 members.remove(m)
 
         if failed_warn:
-            x = await ctx.send(
-                "Certain members could not be warned due to your clearance"
+            await ctx.send(
+                "Certain members could not be warned due to your clearance",
+                delete_after=6,
             )
         if len(members) == 0:
             return
@@ -581,10 +715,7 @@ class Moderation(commands.Cog):
         await logging_channel.send(embed=embed)
 
         await ctx.message.add_reaction("<:kgsYes:580164400691019826>")
-        await asyncio.sleep(6)
-        await ctx.message.delete()
-        if failed_warn:
-            await x.delete()
+        await ctx.message.delete(delay=6)
 
     @commands.command(aliases=["unwarn", "removewarn"])
     @mod_and_above()
@@ -876,18 +1007,20 @@ class Moderation(commands.Cog):
     async def slowmode(
         self,
         ctx: commands.Context,
-        time: typing.Optional[int] = None,
+        time=None,
         channel: typing.Optional[discord.TextChannel] = None,
         *,
         reason: str = None,
     ):
         """Add/Remove slowmode. \nUsage: slowmode <slowmode_time> <#channel> <reason>"""
 
+        time = calc_time([time, ""])[0]
+
         if time is None:
             time = 0
 
-        if time < 0:
-            raise commands.BadArgument(message="Improper time provided")
+        if time > 21600:
+            raise commands.BadArgument(message="Slowmode can't be over 6 hours.")
 
         ch = ctx.channel
 

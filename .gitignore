@@ -147,6 +147,7 @@ token_temp.txt
 
 # No.
 prefixes.json
+banners.json
 
 # Unneccessary files 
 helpers.ipynb

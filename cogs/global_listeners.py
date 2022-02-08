@@ -5,6 +5,7 @@ import aiohttp
 import logging
 import random
 import re
+import datetime
 
 from traceback import TracebackException
 
@@ -12,13 +13,249 @@ import discord
 from discord.ext import commands
 from discord.ext.commands import errors
 
+from birdbot import BirdBot
+
 from utils.helper import (
     NoAuthorityError,
     DevBotOnly,
     WrongChannel,
+    mainbot_only,
     patreon_only,
     create_user_infraction,
 )
+
+
+class GuildLogger(commands.Cog):
+    """Log events neccesary for moderation"""
+
+    def __init__(self, bot):
+        self.logger = logging.getLogger("Guild Logs")
+        self.bot = bot
+
+        with open("config.json", "r") as config_file:
+            self.config_json = json.loads(config_file.read())
+
+    @commands.Cog.listener()
+    async def on_ready(self):
+        self.logger.info("Loaded Guild Event Logging")
+
+    @commands.Cog.listener()
+    async def on_message_edit(self, before, after):
+
+        # mainbot only
+        if self.bot.user.id != 471705718957801483:
+            return
+
+        if before.guild.id != 414027124836532234:  # kgs guild id
+            return
+        if before.author.bot:
+            return
+        if (
+            before.channel.category.id == 414095379156434945
+            or before.channel.category.id == 879399341561892905
+        ):
+            # mod category and logging category gets ignored
+            return
+        if before.content == after.content:
+            return
+
+        embed = discord.Embed(
+            title="Message Edited",
+            description=f"Message edited in {before.channel.mention}",
+            color=0xEE7600,
+            timestamp=datetime.datetime.utcnow(),
+        )
+        embed.set_author(
+            name=before.author.display_name, icon_url=before.author.avatar_url
+        )
+        embed.add_field(name="Before", value=before.content, inline=False)
+        embed.add_field(name="After", value=after.content, inline=False)
+        search_terms = f"""
+                        ```Edited in {before.channel.id}\nEdited by {before.author.id}\nMessage edited in {before.channel.id} by {before.author.id}```
+                        """
+
+        embed.add_field(name="Search terms", value=search_terms, inline=False)
+        embed.set_footer(
+            text="Input the search terms in your discord search bar to easily sort through specific logs"
+        )
+
+        message_logging_channel = self.bot.get_channel(
+            self.config_json["logging"]["message_logging_channel"]
+        )
+        await message_logging_channel.send(embed=embed)
+
+    @commands.Cog.listener()
+    async def on_message_delete(self, message):
+
+        # mainbot only
+        if self.bot.user.id != 471705718957801483:
+            return
+
+        if message.guild.id != 414027124836532234:  # kgs guild id
+            return
+        if message.author.bot:
+            return
+        if message.channel.category.id == 414095379156434945:  # mod category
+            return
+
+        # ignore message if its a registered bot command
+        for x in self.bot.commands:
+            if any(message.content.startswith(f"!{y}") for y in x.aliases):
+                return
+            if message.content.startswith(f"!{x.name}"):
+                return
+
+        embed = discord.Embed(
+            title="Message Deleted",
+            description=f"Message deleted in {message.channel.mention}",
+            color=0xC9322C,
+            timestamp=datetime.datetime.utcnow(),
+        )
+        embed.set_author(
+            name=message.author.display_name, icon_url=message.author.avatar_url
+        )
+        embed.add_field(name="Content", value=message.content)
+        search_terms = f"```Deleted in {message.channel.id}"
+
+        latest_logged_delete = await message.guild.audit_logs(
+            limit=1, action=discord.AuditLogAction.message_delete
+        ).flatten()
+        latest_logged_delete = latest_logged_delete[0]
+
+        self_deleted = False
+        if message.author == latest_logged_delete.target:
+            embed.description += f"\nDeleted by {latest_logged_delete.user.mention} {latest_logged_delete.user.name}"
+            search_terms += f"\nDeleted by {latest_logged_delete.user.id}"
+        else:
+            self_deleted = True
+            search_terms += f"\nDeleted by {message.author.id}"
+            embed.description += (
+                f"\nDeleted by {message.author.mention} {message.author.name}"
+            )
+
+        search_terms += f"\nSent by {message.author.id}"
+        search_terms += f"\nMessage from {message.author.id} deleted by {message.author.id if self_deleted else latest_logged_delete.user.id} in {message.channel.id}```"
+
+        embed.add_field(name="Search terms", value=search_terms, inline=False)
+        embed.set_footer(
+            text="Input the search terms in your discord search bar to easily sort through specific logs"
+        )
+
+        message_logging_channel = self.bot.get_channel(
+            self.config_json["logging"]["message_logging_channel"]
+        )
+        await message_logging_channel.send(embed=embed)
+
+    @commands.Cog.listener()
+    async def on_member_join(self, member):
+
+        # mainbot only
+        if self.bot.user.id != 471705718957801483:
+            return
+
+        embed = discord.Embed(
+            title="Member joined",
+            description=f"{member.name}#{member.discriminator} ({member.id}) {member.mention}",
+            color=0x45E65A,
+            timestamp=datetime.datetime.utcnow(),
+        )
+        embed.set_author(name=member.name, icon_url=member.avatar_url)
+
+        embed.add_field(
+            name="Account Created",
+            value=f"<t:{round(member.created_at.timestamp())}:R>",
+            inline=True,
+        )
+
+        embed.add_field(
+            name="Search terms", value=f"```{member.id} joined```", inline=False
+        )
+        embed.set_footer(
+            text="Input the search terms in your discord search bar to easily sort through specific logs"
+        )
+
+        member_logging_channel = self.bot.get_channel(
+            self.config_json["logging"]["member_logging_channel"]
+        )
+        await member_logging_channel.send(embed=embed)
+
+    @commands.Cog.listener()
+    async def on_member_remove(self, member):
+
+        # mainbot only
+        if self.bot.user.id != 471705718957801483:
+            return
+
+        embed = discord.Embed(
+            title="Member Left",
+            description=f"{member.name}#{member.discriminator} ({member.id})",
+            color=0xFF0004,
+            timestamp=datetime.datetime.utcnow(),
+        )
+        embed.set_author(name=member.name, icon_url=member.avatar_url)
+        acc_age = datetime.datetime.utcnow() - member.created_at
+
+        embed.add_field(
+            name="Account Created",
+            value=f"<t:{round(member.created_at.timestamp())}:R>",
+            inline=True,
+        )
+        embed.add_field(
+            name="Joined Server",
+            value=f"<t:{round(member.joined_at.timestamp())}:R>",
+            inline=True,
+        )
+        embed.add_field(
+            name="Roles",
+            value=f"{' '.join([role.mention for role in member.roles])}",
+            inline=False,
+        )
+
+        embed.add_field(
+            name="Search terms", value=f"```{member.id} left```", inline=False
+        )
+        embed.set_footer(
+            text="Input the search terms in your discord search bar to easily sort through specific logs"
+        )
+
+        member_logging_channel = self.bot.get_channel(
+            self.config_json["logging"]["member_logging_channel"]
+        )
+        await member_logging_channel.send(embed=embed)
+
+    @commands.Cog.listener()
+    async def on_member_update(self, before, after):
+
+        # mainbot only
+        if self.bot.user.id != 471705718957801483:
+            return
+
+        if before.nick == after.nick:
+            return
+
+        embed = discord.Embed(
+            title="Nickname changed",
+            description=f"{before.name}#{before.discriminator} ({before.id})",
+            color=0xFF6633,
+            timestamp=datetime.datetime.utcnow(),
+        )
+        embed.set_author(name=before.name, icon_url=before.avatar_url)
+        embed.add_field(name="Previous Nickname", value=f"{before.nick}", inline=True)
+        embed.add_field(name="Current Nickname", value=f"{after.nick}", inline=True)
+
+        embed.add_field(
+            name="Search terms",
+            value=f"```{before.id} changed nickname```",
+            inline=False,
+        )
+        embed.set_footer(
+            text="Input the search terms in your discord search bar to easily sort through specific logs"
+        )
+
+        member_logging_channel = self.bot.get_channel(
+            self.config_json["logging"]["member_logging_channel"]
+        )
+        await member_logging_channel.send(embed=embed)
 
 
 class GuildChores(commands.Cog):
@@ -52,7 +289,42 @@ class GuildChores(commands.Cog):
 
     @commands.Cog.listener()
     async def on_message(self, message):
-        """Remind mods to use correct prefix"""
+        """Remind mods to use correct prefix, alert mod pings etc"""
+        if any(
+            x in message.raw_role_mentions
+            for x in [414092550031278091, 905510680763969536]
+        ):
+            if message.channel.category.id == 414095379156434945:  # mod category
+                return
+
+            role_names = [
+                discord.utils.get(message.guild.roles, id=role).name
+                for role in message.raw_role_mentions
+            ]
+            mod_channel = self.bot.get_channel(414095428573986816)
+            # mod_channel = self.bot.get_channel(414179142020366336)
+
+            embed = discord.Embed(
+                title="Mod ping alert!",
+                description=f"{' and '.join(role_names)} got pinged in {message.channel.mention} - [view message]({message.jump_url})",
+                color=0x00FF00,
+            )
+            embed.set_author(
+                name=message.author.display_name, icon_url=message.author.avatar_url
+            )
+            embed.set_footer(
+                text="Last 50 messages in the channel are attached for reference"
+            )
+
+            to_file = ""
+            async for msg in message.channel.history(limit=50):
+                to_file += f"{msg.author.display_name}: {msg.content}\n"
+
+            await mod_channel.send(
+                embed=embed,
+                file=discord.File(io.BytesIO(to_file.encode()), filename="history.txt"),
+            )
+
         if not message.author.bot:
             guild = discord.utils.get(self.bot.guilds, id=414027124836532234)
             mod_role = discord.utils.get(guild.roles, id=self.mod_role)
@@ -84,7 +356,16 @@ class GuildChores(commands.Cog):
         them the option to unenroll from autojoining
         Listen for new members and fire webhook for greeting"""
 
-        return
+        # mainbot only
+        if self.bot.user.id != 471705718957801483:
+            return
+
+        # temp fix to remove clonex bots
+        if "clonex" in str(member.name).lower():
+            guild = discord.utils.get(self.bot.guilds, id=414027124836532234)
+            await guild.kick(member)
+            return
+
         diff_roles = [role.id for role in member.roles]
         if any(x in diff_roles for x in self.patreon_roles):
 
@@ -92,6 +373,7 @@ class GuildChores(commands.Cog):
             await member.add_roles(
                 guild.get_role(542343829785804811),  # Verified
                 guild.get_role(901136119863844864),  # English
+                reason="Patron auto join",
             )
 
             try:
@@ -111,6 +393,8 @@ class GuildChores(commands.Cog):
             except discord.Forbidden:
                 return
         else:
+            if BirdBot.currently_raided:
+                return
             async with aiohttp.ClientSession() as session:
                 hook = discord.Webhook.from_url(
                     self.greeting_webhook_url,
@@ -126,11 +410,10 @@ class GuildChores(commands.Cog):
     @patreon_only()
     @commands.command()
     async def unenroll(self, ctx):
-        self.logger.info("Command called")
         embed = discord.Embed(
             title="We're sorry to see you go",
             description="Are you sure you want to get banned from the server?"
-            " If you change your mind in the future you can simply fill out [this form.](https://forms.gle/m4KPj2Szk1FKGE6F8)",
+            "If you change your mind in the future you can simply fill out [this form.](https://forms.gle/m4KPj2Szk1FKGE6F8)",
             color=0xFFCB00,
         )
         embed.set_thumbnail(
@@ -210,8 +493,7 @@ class Errors(commands.Cog):
             await ctx.message.add_reaction(reaction)
         if message is not None:
             await ctx.send(message, delete_after=delay)
-        await asyncio.sleep(delay)
-        await ctx.message.delete()
+        await ctx.message.delete(delay=delay)
 
     @commands.Cog.listener()
     async def on_ready(self):
@@ -278,3 +560,4 @@ class Errors(commands.Cog):
 def setup(bot):
     bot.add_cog(Errors(bot))
     bot.add_cog(GuildChores(bot))
+    bot.add_cog(GuildLogger(bot))
