@@ -84,7 +84,6 @@ class GuildChores(commands.Cog):
         them the option to unenroll from autojoining
         Listen for new members and fire webhook for greeting"""
 
-        return
         diff_roles = [role.id for role in member.roles]
         if any(x in diff_roles for x in self.patreon_roles):
 
