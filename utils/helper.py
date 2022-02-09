@@ -564,3 +564,28 @@ def get_time_string(t: int) -> str:
 def get_timed_actions():
     """Fetch all timed action from db"""
     return timed_actions_db.find().sort("action_end", 1)
+
+
+def create_automod_embed(
+    message: discord.Message,
+    automod_type: str,
+):
+    """Create embed for automod
+
+    Args:
+        message (discord.Message): The message object
+        automod_type (str): Type of automod (eg.: "Profanity", "Spam", "Bypass" etc.)
+
+    Returns:
+        embed: A discord.Embed object.
+    """
+    embed = discord.Embed(
+        title=f"Message deleted. ({automod_type})",
+        description=f"Message author: {message.author.mention}\nChannel: {message.channel.mention}",
+        color=discord.Colour.dark_orange(),
+        timestamp=datetime.datetime.utcnow(),
+    )
+    embed.add_field(
+        name="Message Content", value=f"{message.content[:1024]}", inline=False
+    )
+    return embed

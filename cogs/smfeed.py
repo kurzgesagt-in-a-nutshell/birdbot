@@ -22,12 +22,18 @@ class Smfeed(commands.Cog):
     @commands.Cog.listener()
     async def on_message(self, message):
         """React to the twitter webhooks"""
+
+        if self.bot.user.id != 471705718957801483:
+            return
         if message.channel.id == 580354435302031360:
             await message.add_reaction("<:kgsYes:580164400691019826>")
 
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload):
         """If mod or above reacts to twitter webhook tweet, sends it to proper channel"""
+
+        if self.bot.user.id != 471705718957801483:
+            return
         if (
             payload.channel_id == 580354435302031360
             and not payload.member.bot
