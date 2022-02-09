@@ -1,4 +1,5 @@
 import json
+import typing
 import datetime
 import logging
 import re
@@ -52,25 +53,72 @@ class Filter(commands.Cog):
         self.logger.info("loaded Automod")
         self.logging_channel = await self.bot.fetch_channel(self.logging_channel_id)
 
+    @commands.command()
+    @mod_and_above()
+    async def showlist(self, ctx, channel: typing.Optional[discord.TextChannel] = None):
+        """Display blacklist for particular channel. Passing no channel will show the whitelist
+        Usage: showlist <#channel>"""
+        if channel is None:
+            await ctx.send(
+                "These are the words which are whitelisted",
+                file=discord.File("swearfilters/whitelist.txt"),
+            )
+        elif channel.id == 546315063745839115:
+            await ctx.send(
+                "These are the words which are blacklisted only in <#546315063745839115>",
+                file=discord.File("swearfilters/humanitiesfilter.txt"),
+            )
+        else:
+            await ctx.send(
+                "These are the words which are blacklisted everywhere",
+                file=discord.File("swearfilters/generalfilter.txt"),
+            )
+
+    @commands.command(aliases=["remove_word"])
+    @mod_and_above()
+    async def removeword(self, ctx, channel: discord.TextChannel, *, word):
+        """Removes a word from the filter list
+        Usage: remove_word <#channel> word"""
+
+        to_open = (
+            "swearfilters/humanitiesfilter.txt"
+            if channel.id == 546315063745839115
+            else "swearfilters/generalfilter.txt"
+        )
+        words = open(to_open, "r").read().splitlines()
+        if word not in words:
+            await ctx.send(f"{word} doesn't appear to be blacklisted")
+            return
+        words.remove(word)
+        with open(to_open,'w') as f:
+            for word in words:
+                f.write(word + "\n")
+        self.update_lists()
+        await ctx.message.add_reaction("<:kgsYes:580164400691019826>")
+
     @commands.command(aliases=["blacklistword"])
     @mod_and_above()
     async def blacklist_word(self, ctx, channel: discord.TextChannel, *, words):
+        """Add a word to the blacklist. Pass humanities as the channel to add word to humanities blacklist.
+        Usage: blacklistword <#channel> word_here"""
         words = words.split(" ")
         if channel.id == 546315063745839115:  # humanities
             for word in words:
-                await self.add_to_humanities(word)
+                self.add_to_humanities(word)
         else:
             for word in words:
-                await add_to_general(word)
+                add_to_general(word)
         self.update_lists()
         await ctx.message.add_reaction("<:kgsYes:580164400691019826>")
 
     @commands.command(aliases=["whitelistword"])
     @mod_and_above()
     async def whitelist_word(self, ctx, *, words):
+        """Add a word to the whitelist.
+        Usage: blacklistword <#channel> word_here"""
         words = words.split(" ")
         for word in words:
-            await self.add_to_whitelist(word)
+            self.add_to_whitelist(word)
         self.update_lists()
         await ctx.message.add_reaction("<:kgsYes:580164400691019826>")
 
@@ -78,12 +126,12 @@ class Filter(commands.Cog):
     @mod_and_above()
     async def filter_check(self, ctx, channel: discord.TextChannel, *, words):
         if channel.id == 546315063745839115:
-            await ctx.send(self.check_message(words, self.humanities_list))
+            await ctx.send(await self.check_message(words, self.humanities_list))
         else:
-            await ctx.send(self.check_message(words, self.humanities_list))
+            await ctx.send(await self.check_message(words, self.humanities_list))
 
     @commands.Cog.listener()
-    async def on_member_update(self,before,after):
+    async def on_member_update(self, before, after):
         if before.nick == after.nick:
             return
         await self.check_member(after)
@@ -92,6 +140,8 @@ class Filter(commands.Cog):
     async def on_message(self, message):
         # if message.channel.id == 414179142020366336:
         if message.channel.id == 414452106129571842:
+            return
+        if message.channel.category.id == 940955259273113702:  # language survey
             return
 
         self.logging_channel = await self.bot.fetch_channel(self.logging_channel_id)
@@ -102,29 +152,30 @@ class Filter(commands.Cog):
     async def on_message_edit(self, before, after):
         if after.channel.id == 414452106129571842:
             return
+        if after.channel.category.id == 940955259273113702:  # language survey
+            return
         if before.content == after.content:
             return
         if not isinstance(after.channel, discord.DMChannel):
             await self.moderate(after)
 
     async def check_member(self, member):
-        #TODO make more modular after policy review
+        # TODO make more modular after policy review
 
-        if member.nick is not None:
-            if not re.match(r"[a-zA-Z0-9~!@#$%^&*()_+`;':\",./<>?]{3,}",member.nick):
-                await member.edit(nick='Unpingable Nickname')
+        if member.nick is None:
+            if not re.match(r"[a-zA-Z0-9~!@#$%^&*()_+`;':\",./<>?]{3,}", member.name):
+                await member.edit(nick="Unpingable Nickname")
                 return
 
-        if not re.match(r"[a-zA-Z0-9~!@#$%^&*()_+`;':\",./<>?]{3,}",member.name):
-            await member.edit(nick='Unpingable Username')
-            return 
+        if not re.match(r"[a-zA-Z0-9~!@#$%^&*()_+`;':\",./<>?]{3,}", member.nick):
+            await member.edit(nick="Unpingable Username")
+            return
 
-            
-        if any(s in member.nick for s in ('hitler','führer','fuhrer')):
+        if any(s in member.nick for s in ("hitler", "führer", "fuhrer")):
             await member.edit(nick=None)
-            return 
+            return
 
-        if any(s in member.name for s in ('hitler','führer','fuhrer')):
+        if any(s in member.name for s in ("hitler", "führer", "fuhrer")):
             await member.edit(nick="Parrot")
             return
 
@@ -165,7 +216,7 @@ class Filter(commands.Cog):
                         "delete_after": 15,
                         "delete_message": event[2],
                         "log": "Text Spam",
-                        "mute": 60
+                        "mute": 60,
                     },
                 )
             if event[1] == "bypass":
@@ -180,7 +231,7 @@ class Filter(commands.Cog):
                 )
 
     async def execute_action_on_message(self, message, actions):
-        #TODO: make embeds more consistent once mod policy is set
+        # TODO: make embeds more consistent once mod policy is set
         if "ping" in actions:
             if "delete_after" in actions:
                 await message.channel.send(
@@ -201,7 +252,7 @@ class Filter(commands.Cog):
                 "PATCH", f"/guilds/414027124836532234/members/{message.author.id}"
             )
             await self.bot.http.request(
-                route, json={"communication_disabled_until": time}, reason='spam'
+                route, json={"communication_disabled_until": time}, reason="spam"
             )
 
             try:
@@ -213,17 +264,20 @@ class Filter(commands.Cog):
                 pass
 
         if "delete_message" in actions:
-            if isinstance(actions["delete_message"],int):
+            if isinstance(actions["delete_message"], int):
                 async with self.message_history_lock:
                     for i in range(4):
-                        await self.message_history_list[actions["delete_message"]][i].delete()
-                    self.message_history_list[actions["delete_message"]]  = self.message_history_list[actions["delete_message"]][3:]
+                        await self.message_history_list[actions["delete_message"]][
+                            i
+                        ].delete()
+                    self.message_history_list[
+                        actions["delete_message"]
+                    ] = self.message_history_list[actions["delete_message"]][3:]
             else:
                 await message.delete()
 
         # if "warn" in actions:
         # logic for warn here
-
 
         # if "message" in actions:
         # logic for messaging the user
@@ -255,11 +309,11 @@ class Filter(commands.Cog):
         return False
 
     def update_lists(self):
-        with open("swearfilters/humanitiesfilter.txt") as f:
+        with open("swearfilters/humanitiesfilter.txt","r") as f:
             self.humanities_list = f.read().splitlines()
-        with open("swearfilters/generalfilter.txt") as f:
+        with open("swearfilters/generalfilter.txt","r") as f:
             self.general_list = f.read().splitlines()
-        with open("swearfilters/whitelist.txt", "a") as f:
+        with open("swearfilters/whitelist.txt", "r") as f:
             self.white_list = f.read().splitlines()
 
     def add_to_humanities(self, word):
@@ -269,8 +323,6 @@ class Filter(commands.Cog):
     def add_to_whitelist(self, word):
         with open("swearfilters/filter.txt", "a") as f:
             f.write(word)
-
-
 
     async def check_message(self, message, word_list):
 
@@ -435,7 +487,7 @@ class Filter(commands.Cog):
             # if getting past this point we write to message history and pop if to many messages
             spam = check_text_spam(self, message)
             if spam:
-                return [True, "text",spam]
+                return [True, "text", spam]
 
             message.channel.id
             if message.author.id in self.message_history_list:

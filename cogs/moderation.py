@@ -161,55 +161,6 @@ class Moderation(commands.Cog):
         mod_channel = self.bot.get_channel(414095428573986816)
         await mod_channel.send(embed=mod_embed)
 
-    @commands.Cog.listener()
-    async def on_message(self, after):
-        if after.author.bot:
-            return
-        check_role = after.guild.get_role(414092550031278091)
-        if after.author.top_role >= check_role:
-            return
-        if not (
-            after.channel.id == 414027124836532236
-            or after.channel.id == 414179142020366336
-        ):
-            return
-        if after.embeds:
-            for e in after.embeds:
-                if any(s in e.type for s in ["mp4", "gif", "webm", "gifv"]):
-                    await after.delete()
-                elif e.thumbnail:
-                    if any(
-                        s in e.thumbnail.url for s in ["mp4", "gif", "webm", "gifv"]
-                    ):
-                        await after.delete()
-                elif e.image:
-                    if any(s in e.image.url for s in ["mp4", "gif", "webm", "gifv"]):
-                        await after.delete()
-
-    @commands.Cog.listener()
-    async def on_message_edit(self, before, after):
-        if after.author.bot:
-            return
-        check_role = after.guild.get_role(414092550031278091)
-        if after.author.top_role >= check_role:
-            return
-        if not (
-            after.channel.id == 414027124836532236
-            or after.channel.id == 414179142020366336
-        ):
-            return
-        if after.embeds:
-            for e in after.embeds:
-                if any(s in e.type for s in ["mp4", "gif", "webm", "gifv"]):
-                    await after.delete()
-                elif e.thumbnail:
-                    if any(
-                        s in e.thumbnail.url for s in ["mp4", "gif", "webm", "gifv"]
-                    ):
-                        await after.delete()
-                elif e.image:
-                    if any(s in e.image.url for s in ["mp4", "gif", "webm", "gifv"]):
-                        await after.delete()
 
     @mod_and_above()
     @commands.command(aliases=["purge", "prune", "clear"])
