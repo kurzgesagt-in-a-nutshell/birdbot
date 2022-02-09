@@ -1,10 +1,13 @@
 import json
+import datetime
 import logging
 import re
 import asyncio
 import demoji
 from better_profanity import profanity
+
 import discord
+from discord import http
 from discord.ext import commands
 
 from utils.helper import (
@@ -48,7 +51,6 @@ class Filter(commands.Cog):
     async def on_ready(self):
         self.logger.info("loaded Automod")
         self.logging_channel = await self.bot.fetch_channel(self.logging_channel_id)
-        self.logger.info(self.logging_channel)
 
     @commands.command(aliases=["blacklistword"])
     @mod_and_above()
@@ -81,6 +83,12 @@ class Filter(commands.Cog):
             await ctx.send(self.check_message(words, self.humanities_list))
 
     @commands.Cog.listener()
+    async def on_member_update(self,before,after):
+        if before.nick == after.nick:
+            return
+        await self.check_member(after)
+
+    @commands.Cog.listener()
     async def on_message(self, message):
         # if message.channel.id == 414179142020366336:
 
@@ -95,46 +103,28 @@ class Filter(commands.Cog):
         if not isinstance(after.channel, discord.DMChannel):
             await self.moderate(after)
 
-    async def moderate(self, message):
-        # TODO: This section is just for testing filter in DMs, to be removed for stable.
-        # if str(message.channel.type) == "private":
-        #     wordlist = self.general_list
-        #     event = await self.check_message(message, wordlist)
-        #     if event[0]:
-        #         if event[1] == "profanity":
-        #             print(f"{message.author} profanity detected {message.content}")
-        #             # await message.delete()
-        #             await message.channel.send(
-        #                 f"Be nice, Don't say bad things {message.author.mention}",
-        #                 delete_after=30,
-        #             )
-        #             await message.add_reaction("<:kgsYes:580164400691019826>")
-        #         if event[1] == "emoji":
-        #             print(f"Emoji Spam detected {message.content}")
-        #             # await message.delete()
-        #             await message.channel.send(
-        #                 f"Please do not spam emojis {message.author.mention}",
-        #                 delete_after=20,
-        #             )
-        #             await message.add_reaction("<:kgsYes:580164400691019826>")
-        #         if event[1] == "text":
-        #             print("text spam detected" + message.content)
-        #             # await message.delete()
-        #             await message.channel.send(
-        #                 f"Please do not spam {message.author.mention}", delete_after=20
-        #             )
-        #             await message.add_reaction("<:kgsYes:580164400691019826>")
-        #         if event[1] == "bypass":
-        #             print("bypass detected" + message.content)
-        #             # await message.delete()
-        #             await message.channel.send(
-        #                 f"Please do post gifs/videos in general {message.author.mention}",
-        #                 delete_after=20,
-        #             )
-        #             await message.add_reaction("<:kgsYes:580164400691019826>")
+    async def check_member(self, member):
+        #TODO make more modular after policy review
 
-        # elif message.channel.id == 414179142020366336:
-        # elif not self.isExcluded(message.author):
+        if member.nick is not None:
+            if not re.match(r"[a-zA-Z0-9~!@#$%^&*()_+`;':\",./<>?]{3,}",member.nick):
+                await member.edit(nick='Unpingable Nickname')
+                return
+
+        if not re.match(r"[a-zA-Z0-9~!@#$%^&*()_+`;':\",./<>?]{3,}",member.name):
+            await member.edit(nick='Unpingable Username')
+            return 
+
+            
+        if any(s in member.nick for s in ('hitler','führer','fuhrer')):
+            await member.edit(nick=None)
+            return 
+
+        if any(s in member.name for s in ('hitler','führer','fuhrer')):
+            await member.edit(nick="Parrot")
+            return
+
+    async def moderate(self, message):
 
         if self.is_member_excluded(message.author):
             return
@@ -171,6 +161,7 @@ class Filter(commands.Cog):
                         "delete_after": 15,
                         "delete_message": event[2],
                         "log": "Text Spam",
+                        "mute": 60
                     },
                 )
             if event[1] == "bypass":
@@ -185,6 +176,7 @@ class Filter(commands.Cog):
                 )
 
     async def execute_action_on_message(self, message, actions):
+        #TODO: make embeds more consistent once mod policy is set
         if "ping" in actions:
             if "delete_after" in actions:
                 await message.channel.send(
@@ -197,18 +189,36 @@ class Filter(commands.Cog):
                     delete_after=30,
                 )
 
+        if "mute" in actions:
+            time = (
+                datetime.datetime.utcnow() + datetime.timedelta(seconds=actions["mute"])
+            ).isoformat()
+            route = http.Route(
+                "PATCH", f"/guilds/414027124836532234/members/{message.author.id}"
+            )
+            await self.bot.http.request(
+                route, json={"communication_disabled_until": time}, reason='spam'
+            )
+
+            try:
+                await message.author.send(
+                    f"You have been muted for 30 minutes.\nGiven reason: Spam\n"
+                )
+
+            except discord.Forbidden:
+                pass
+
         if "delete_message" in actions:
             if isinstance(actions["delete_message"],int):
-                for i in range(5):
-                    await self.message_history_list[actions["delete_message"]][i].delete()
-                self.message_history_list[actions["delete_message"]]  = self.message_history_list[actions["delete_message"]][4:]
+                async with self.message_history_lock:
+                    for i in range(4):
+                        await self.message_history_list[actions["delete_message"]][i].delete()
+                    self.message_history_list[actions["delete_message"]]  = self.message_history_list[actions["delete_message"]][3:]
             else:
                 await message.delete()
 
         # if "warn" in actions:
         # logic for warn here
-
-        if "mute" in actions:
 
 
         # if "message" in actions:
@@ -229,7 +239,7 @@ class Filter(commands.Cog):
     def is_member_excluded(self, author):
         rolelist = [
             414092550031278091,  # mod
-            # 414029841101225985,  # admin
+            414029841101225985,  # admin
             414954904382210049,  # offical
             414155501518061578,  # robobird
             240254129333731328,  # stealth
@@ -255,6 +265,8 @@ class Filter(commands.Cog):
     def add_to_whitelist(self, word):
         with open("swearfilters/filter.txt", "a") as f:
             f.write(word)
+
+
 
     async def check_message(self, message, word_list):
 
