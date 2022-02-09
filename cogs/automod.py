@@ -91,6 +91,8 @@ class Filter(commands.Cog):
     @commands.Cog.listener()
     async def on_message(self, message):
         # if message.channel.id == 414179142020366336:
+        if message.channel.id == 414452106129571842:
+            return
 
         self.logging_channel = await self.bot.fetch_channel(self.logging_channel_id)
         if not isinstance(message.channel, discord.DMChannel):
@@ -98,6 +100,8 @@ class Filter(commands.Cog):
 
     @commands.Cog.listener()
     async def on_message_edit(self, before, after):
+        if after.channel.id == 414452106129571842:
+            return
         if before.content == after.content:
             return
         if not isinstance(after.channel, discord.DMChannel):
