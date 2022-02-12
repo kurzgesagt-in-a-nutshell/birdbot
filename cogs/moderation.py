@@ -23,8 +23,6 @@ class Moderation(commands.Cog):
         self.logger = logging.getLogger("Moderation")
         self.bot = bot
 
-        self.timed_action_list = helper.get_timed_actions()
-
         config_file = open("config.json", "r")
         self.config_json = json.loads(config_file.read())
         config_file.close()
@@ -36,44 +34,9 @@ class Moderation(commands.Cog):
         self.mod_role = self.config_json["roles"]["mod_role"]
         self.admin_role = self.config_json["roles"]["admin_role"]
 
-    @tasks.loop(minutes=10.0)
-    async def timed_action_loop(self):
-        guild = discord.utils.get(self.bot.guilds, id=414027124836532234)
-
-        logging_channel = discord.utils.get(guild.channels, id=self.logging_channel)
-
-        for action in self.timed_action_list:
-            if action["action_end"] < datetime.datetime.utcnow():
-
-                helper.delete_timed_actions_uid(u_id=action["user_id"])
-
-                embed = discord.Embed(
-                    title="Timed Action",
-                    description="Time Expired",
-                    color=discord.Color.dark_blue(),
-                    timestamp=datetime.datetime.utcnow(),
-                )
-                embed.add_field(
-                    name="User Affected",
-                    value="{} ({})".format(action["user_name"], action["user_id"]),
-                    inline=False,
-                )
-                embed.add_field(
-                    name="Action",
-                    value="Un{}".format(action["action"]),
-                    inline=False,
-                )
-                await logging_channel.send(embed=embed)
-
-        self.timed_action_list = helper.get_timed_actions()
-
     @commands.Cog.listener()
     async def on_ready(self):
-        self.timed_action_loop.start()
         self.logger.info("loaded Moderation")
-
-    def cog_unload(self):
-        self.timed_action_loop.cancel()
 
     @commands.command()
     async def report(
@@ -160,7 +123,6 @@ class Moderation(commands.Cog):
 
         mod_channel = self.bot.get_channel(414095428573986816)
         await mod_channel.send(embed=mod_embed)
-
 
     @mod_and_above()
     @commands.command(aliases=["purge", "prune", "clear"])
@@ -439,7 +401,6 @@ class Moderation(commands.Cog):
         """Mute member(s). \nUsage: mute @member(s) <time> reason"""
 
         tot_time = 0
-        is_muted = False
 
         logging_channel = discord.utils.get(ctx.guild.channels, id=self.logging_channel)
 
@@ -499,8 +460,6 @@ class Moderation(commands.Cog):
         if len(members) == 0:
             return
 
-        is_muted = True
-
         embed = helper.create_embed(
             author=ctx.author,
             action="Muted User(s)",
@@ -518,13 +477,6 @@ class Moderation(commands.Cog):
             reason=reason,
             time=time_str,
         )
-
-        if is_muted:
-            if tot_time != 0:
-                # TIMED
-                helper.create_timed_action(users=members, action="mute", time=tot_time)
-
-                self.timed_action_list = helper.get_timed_actions()
 
         await ctx.message.delete(delay=6)
 
@@ -548,9 +500,6 @@ class Moderation(commands.Cog):
             await self.bot.http.request(
                 route, json={"communication_disabled_until": None}
             )
-            # TIMED
-            helper.delete_timed_actions_uid(u_id=i.id)
-            self.timed_action_list = helper.get_timed_actions()
 
         await ctx.message.add_reaction("<:kgsYes:580164400691019826>")
         embed = helper.create_embed(

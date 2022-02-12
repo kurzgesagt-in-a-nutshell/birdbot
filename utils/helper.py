@@ -433,7 +433,7 @@ def update_warns(member_id: int, new_warns: typing.List):
 def create_timed_action(
     users: List[Union[discord.User, discord.Member]], action: str, time: int
 ):
-    """Creates a database entry for timed action
+    """Creates a database entry for timed action [not in use currently]
 
     Args:
         users (List[Union[discord.User, discord.Member]]): List of affected users
@@ -457,7 +457,7 @@ def create_timed_action(
 
 
 def delete_timed_actions_uid(u_id: int):
-    """delete timed action by user_id
+    """delete timed action by user_id [not in use currently]
 
     Args:
         u_id (int): user's id
@@ -562,7 +562,7 @@ def get_time_string(t: int) -> str:
 
 
 def get_timed_actions():
-    """Fetch all timed action from db"""
+    """Fetch all timed action from db [not in use currently]"""
     return timed_actions_db.find().sort("action_end", 1)
 
 
