@@ -90,7 +90,7 @@ class Filter(commands.Cog):
             await ctx.send(f"{word} doesn't appear to be blacklisted")
             return
         words.remove(word)
-        with open(to_open,'w') as f:
+        with open(to_open, "w") as f:
             for word in words:
                 f.write(word + "\n")
         self.update_lists()
@@ -309,9 +309,9 @@ class Filter(commands.Cog):
         return False
 
     def update_lists(self):
-        with open("swearfilters/humanitiesfilter.txt","r") as f:
+        with open("swearfilters/humanitiesfilter.txt", "r") as f:
             self.humanities_list = f.read().splitlines()
-        with open("swearfilters/generalfilter.txt","r") as f:
+        with open("swearfilters/generalfilter.txt", "r") as f:
             self.general_list = f.read().splitlines()
         with open("swearfilters/whitelist.txt", "r") as f:
             self.white_list = f.read().splitlines()
@@ -454,11 +454,14 @@ class Filter(commands.Cog):
 
             filetypes = ["mp4", "gif", "webm", "gifv"]
 
-            if not (
-                message.channel.id == 414027124836532236  # general
-                or message.channel.id == 414179142020366336  # bot testing
+            # general, bot-testing and humanities
+            if not message.channel.id in (
+                414027124836532236,
+                414179142020366336,
+                546315063745839115,
             ):
                 return
+
             if message.embeds:
                 for e in message.embeds:
                     if any(s in e.type for s in filetypes):
