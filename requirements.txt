@@ -27,5 +27,5 @@ python-Levenshtein==0.12.2
 rich==11.2.0
 smmap==5.0.0
 tomli==2.0.1
-typing_extensions==4.0.1
+typing_extensions==4.1.0
 yarl==1.7.2
