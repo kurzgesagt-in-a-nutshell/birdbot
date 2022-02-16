@@ -488,9 +488,9 @@ class Filter(commands.Cog):
         async with self.message_history_lock:
 
             # if getting past this point we write to message history and pop if to many messages
-            spam = check_text_spam(self, message)
-            if spam:
-                return [True, "text", spam]
+            # spam = check_text_spam(self, message)
+            # if spam:
+            #     return [True, "text", spam]
 
             message.channel.id
             if message.author.id in self.message_history_list:
