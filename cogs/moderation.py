@@ -259,7 +259,7 @@ class Moderation(commands.Cog):
         members, extra = custom_converters.get_members(ctx, *args)
 
         if members is None or members == []:
-            raise commands.BadArgument(message="Improper members passed")
+            raise commands.BadArgument(message="Could not find the user please verify if they're still in the server")
         if extra is None:
             raise commands.BadArgument(
                 message="Please provide a reason and re-run the command"
