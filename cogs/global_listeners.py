@@ -150,8 +150,17 @@ class GuildLogger(commands.Cog):
     async def on_member_join(self, member):
 
         # mainbot only
+
         if self.bot.user.id != 471705718957801483:
             return
+
+        #remind mods to screenshot milestone
+        if len(member.guild.members) == 69410:
+
+            mod_channel = self.bot.get_channel(414095428573986816)
+            await mod_channel.send('<@&414092550031278091> we are ten members away for 69420!! Someone get the screenshot')
+
+
 
         embed = discord.Embed(
             title="Member joined",
