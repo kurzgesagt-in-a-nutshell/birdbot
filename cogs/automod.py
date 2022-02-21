@@ -171,11 +171,11 @@ class Filter(commands.Cog):
             await member.edit(nick="Unpingable Username")
             return
 
-        if any(s in member.nick for s in ("hitler", "führer", "fuhrer")):
+        if any(s in member.nick for s in ("nazi","hitler", "führer", "fuhrer")):
             await member.edit(nick=None)
             return
 
-        if any(s in member.name for s in ("hitler", "führer", "fuhrer")):
+        if any(s in member.name for s in ("nazi","hitler", "führer", "fuhrer")):
             await member.edit(nick="Parrot")
             return
 
