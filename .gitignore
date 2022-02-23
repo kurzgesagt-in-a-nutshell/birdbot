@@ -136,6 +136,8 @@ dmypy.json
 temp.png
 __tmp_restart__.tmp
 
+# Swear Filters
+swearfilters/
 # Token file
 token.txt
 token_bird.txt
