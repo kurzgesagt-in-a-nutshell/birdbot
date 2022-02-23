@@ -322,7 +322,7 @@ class Filter(commands.Cog):
 
     def add_to_whitelist(self, word):
         with open("swearfilters/whitelist.txt", "a") as f:
-            f.write(word)
+            f.write(word+"\n")
 
     async def check_message(self, message, word_list):
 
