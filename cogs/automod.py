@@ -115,7 +115,7 @@ class Filter(commands.Cog):
     @mod_and_above()
     async def whitelist_word(self, ctx, *, words):
         """Add a word to the whitelist.
-        Usage: blacklistword <#channel> word_here"""
+        Usage: whitelist_worwhitelist_word <#channel> word_here"""
         words = words.split(" ")
         for word in words:
             self.add_to_whitelist(word)
@@ -321,7 +321,7 @@ class Filter(commands.Cog):
             f.write(word)
 
     def add_to_whitelist(self, word):
-        with open("swearfilters/filter.txt", "a") as f:
+        with open("swearfilters/whitelist.txt", "a") as f:
             f.write(word)
 
     async def check_message(self, message, word_list):
