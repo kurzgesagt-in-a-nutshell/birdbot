@@ -137,7 +137,8 @@ temp.png
 __tmp_restart__.tmp
 
 # Swear Filters
-swearfilters/
+/swearfilters/
+
 # Token file
 token.txt
 token_bird.txt
