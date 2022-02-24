@@ -412,7 +412,7 @@ class Filter(commands.Cog):
                     re.findall(
                         r"((<a?)?:\w+:(\d{18}>)?)",
                         re.sub(
-                            r"(>[^\s]*<)+",
+                            r"(>[\s]*<)+",
                             "> <",
                             str(message.content).encode("ascii", "ignore").decode(),
                         ),
