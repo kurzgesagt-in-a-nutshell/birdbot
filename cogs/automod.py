@@ -272,7 +272,7 @@ class Filter(commands.Cog):
                         ].delete()
                     self.message_history_list[
                         actions["delete_message"]
-                    ] = self.message_history_list[actions["delete_message"]][3:]
+                    ] = self.message_history_list[actions["delete_message"]][4:]
             else:
                 await message.delete()
 
@@ -328,7 +328,7 @@ class Filter(commands.Cog):
 
         # check for profanity
         def check_profanity(word_list, message):
-            print(self.white_list)
+            # print(self.white_list)
             profanity.load_censor_words(word_list)
             regex_list = self.generate_regex(word_list)
             # stores all words that are aparently profanity
@@ -498,11 +498,7 @@ class Filter(commands.Cog):
         async with self.message_history_lock:
 
             # if getting past this point we write to message history and pop if to many messages
-            # spam = check_text_spam(self, message)
-            # if spam:
-            #     return [True, "text", spam]
 
-            message.channel.id
             if message.author.id in self.message_history_list:
                 found = False
                 for n in self.message_history_list[message.author.id]:
@@ -536,6 +532,10 @@ class Filter(commands.Cog):
 
             if len(self.message_history_list[message.channel.id]) > 10:
                 self.message_history_list[message.channel.id].pop(0)
+
+        spam = check_text_spam(self, message)
+        if spam:
+            return [True, "text", spam]
 
         return [False, "none"]
 
