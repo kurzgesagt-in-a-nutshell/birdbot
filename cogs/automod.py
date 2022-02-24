@@ -299,7 +299,7 @@ class Filter(commands.Cog):
     def is_member_excluded(self, author):
         rolelist = [
             414092550031278091,  # mod
-            # 414029841101225985,  # admin
+            414029841101225985,  # admin
             414954904382210049,  # offical
             414155501518061578,  # robobird
             240254129333731328,  # stealth
