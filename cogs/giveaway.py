@@ -67,14 +67,20 @@ class Giveaway(commands.Cog):
             for reaction in message.reactions:
                 if reaction.emoji == "🎉":
                     users = await reaction.users().flatten()
-                    users = [user.id for user in users if user.id != self.bot.user.id]
+                    userids = [user.id for user in users if user.id != self.bot.user.id]
+                    users = []
+                    for userid in userids:
+                        try:
+                            member = await message.guild.fetch_member(userid)
+                            users.append(member)
+                        except discord.errors.NotFound:
+                            pass
 
             if users != []:
                 weights = []
                 for user in users:
                     bias = self.giveaway_bias["default"]
-                    member = await message.guild.fetch_member(user)
-                    roles = [role.id for role in member.roles]
+                    roles = [role.id for role in user.roles]
                     for role in self.giveaway_bias["roles"]:
                         if role["id"] in roles:
                             bias = role["bias"]
@@ -95,8 +101,7 @@ class Giveaway(commands.Cog):
                 choice = np.random.choice(users, size=size, replace=False, p=prob)
                 winners = ""
                 winnerids = ", ".join([str(i) for i in choice])
-                for i in choice:
-                    winner = await message.guild.fetch_member(i)
+                for winner in choice:
                     await message.channel.send(f"{winner.mention} won {giveaway['prize']}!")
                     winners += winner.mention + "\n"
 
@@ -113,7 +118,7 @@ class Giveaway(commands.Cog):
 
         except discord.errors.NotFound:
             del self.active_giveaways[giveaway["pin"]]
-            self.giveaway_db.delete_one(giveaway)
+            self.giveaway_db.update_one(giveaway, {"$set": {"giveaway_cancelled": True}})
             pass
 
         if giveaway["pin"] in self.active_giveaways:
@@ -222,6 +227,7 @@ class Giveaway(commands.Cog):
             "host": ctx.author.id,
             "sponsor": sponsor,
             "giveaway_over": False,
+            "giveaway_cancelled": False,
         }
 
         giveaway = asyncio.create_task(self.start_giveaway(doc), name=uid)
@@ -251,8 +257,8 @@ class Giveaway(commands.Cog):
     @mod_and_above()
     @giveaway.command()
     async def cancel(self, ctx, pin: str):
-        """Deletes a giveaway
-        Usage: giveaway delete pin"""
+        """Cancel a giveaway
+        Usage: giveaway cancel pin"""
         if pin in self.active_giveaways:
             giveaway = self.active_giveaways[pin]
             message = await ctx.guild.get_channel(giveaway["channel_id"]).fetch_message(
@@ -260,10 +266,10 @@ class Giveaway(commands.Cog):
             )
             await message.delete()
             del self.active_giveaways[pin]
-            self.giveaway_db.delete_one(giveaway)
+            self.giveaway_db.update_one(giveaway, {"$set": {"giveaway_cancelled": True}})
 
             for i in asyncio.all_tasks():
-                if i.get_name() == giveaway:
+                if i.get_name() == pin:
                     i.cancel()
                     break
 
@@ -292,6 +298,7 @@ class Giveaway(commands.Cog):
                     doc["rigged"] = rigged
                 await self.choose_winner(doc)
                 break
+        await ctx.send("Giveaway not found!", delete_after=6)
 
     @mod_and_above()
     @giveaway.command()
