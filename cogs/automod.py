@@ -16,8 +16,6 @@ from utils.helper import (
     mod_and_above,
 )
 
-from difflib import SequenceMatcher
-
 
 def add_to_general(word):
     with open("swearfilters/generalfilter.txt", "a") as f:
@@ -139,9 +137,12 @@ class Filter(commands.Cog):
     @commands.Cog.listener()
     async def on_message(self, message):
         # if message.channel.id == 414179142020366336:
-        if message.channel.id == 414452106129571842:
+        if message.channel.id == 414452106129571842: #bot commands
             return
-        if message.channel.category.id == 940955259273113702:  # language survey
+        if message.channel.category.id == 414095379156434945: #mod category
+            return
+
+        if message.content == "":
             return
 
         self.logging_channel = await self.bot.fetch_channel(self.logging_channel_id)
@@ -152,7 +153,7 @@ class Filter(commands.Cog):
     async def on_message_edit(self, before, after):
         if after.channel.id == 414452106129571842:
             return
-        if after.channel.category.id == 940955259273113702:  # language survey
+        if before.channel.category.id == 414095379156434945: #mod category
             return
         if before.content == after.content:
             return
@@ -216,7 +217,7 @@ class Filter(commands.Cog):
                         "delete_after": 15,
                         "delete_message": event[2],
                         "log": "Text Spam",
-                        "mute": 60,
+                        "mute": 1800,
                     },
                 )
             if event[1] == "bypass":
@@ -244,6 +245,19 @@ class Filter(commands.Cog):
                     delete_after=30,
                 )
 
+        if "delete_message" in actions:
+            if isinstance(actions["delete_message"], int):
+                async with self.message_history_lock:
+                    for i in range(4):
+                        await self.message_history_list[actions["delete_message"]][
+                            i
+                        ].delete()
+                    self.message_history_list[
+                        actions["delete_message"]
+                    ] = self.message_history_list[actions["delete_message"]][4:]
+            else:
+                await message.delete()
+
         if "mute" in actions:
             time = (
                 datetime.datetime.utcnow() + datetime.timedelta(seconds=actions["mute"])
@@ -263,18 +277,6 @@ class Filter(commands.Cog):
             except discord.Forbidden:
                 pass
 
-        if "delete_message" in actions:
-            if isinstance(actions["delete_message"], int):
-                async with self.message_history_lock:
-                    for i in range(4):
-                        await self.message_history_list[actions["delete_message"]][
-                            i
-                        ].delete()
-                    self.message_history_list[
-                        actions["delete_message"]
-                    ] = self.message_history_list[actions["delete_message"]][4:]
-            else:
-                await message.delete()
 
         # if "warn" in actions:
         # logic for warn here
@@ -297,7 +299,7 @@ class Filter(commands.Cog):
     def is_member_excluded(self, author):
         rolelist = [
             414092550031278091,  # mod
-            414029841101225985,  # admin
+            # 414029841101225985,  # admin
             414954904382210049,  # offical
             414155501518061578,  # robobird
             240254129333731328,  # stealth
@@ -429,30 +431,15 @@ class Filter(commands.Cog):
 
             # if the user has past messages
             if message.author.id in self.message_history_list:
-                adv = 0
                 count = len(self.message_history_list[message.author.id])
-                # atleast 3 prior messages
                 if count > 3:
-                    for m in self.message_history_list[message.author.id]:
-                        adv = (
-                            adv
-                            + SequenceMatcher(None, m.content, message.content).ratio()
-                        )
-                    # if the passed x message are similar with a 75% threshold
-                    if adv / count > 0.60:
+                    if all(m.content == message.content for m in self.message_history_list[message.author.id][0:4]):
                         return message.author.id
+
             if message.channel.id in self.message_history_list:
-                match_count = 0
-                # atleast 3 prior messages
-                if len(self.message_history_list[message.channel.id]) > 5:
-                    for m in self.message_history_list[message.channel.id]:
-                        if (
-                            SequenceMatcher(None, m.content, message.content).ratio()
-                            > 0.75
-                        ):
-                            match_count = match_count + 1
-                        if match_count > 3:
-                            return message.channel.id
+                if len(self.message_history_list[message.channel.id]) > 3:
+                    if all(m.content == message.content for m in self.message_history_list[message.channel.id][0:4]):
+                        return message.channel.id
 
         # check for mass ping
         def check_ping_spam(message):
