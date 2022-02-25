@@ -17,11 +17,6 @@ from utils.helper import (
 )
 
 
-def add_to_general(word):
-    with open("swearfilters/generalfilter.txt", "a") as f:
-        f.write(word)
-
-
 class Filter(commands.Cog):
     def __init__(self, bot):
         self.logger = logging.getLogger("Automod")
@@ -105,7 +100,7 @@ class Filter(commands.Cog):
                 self.add_to_humanities(word)
         else:
             for word in words:
-                add_to_general(word)
+                self.add_to_general(word)
         self.update_lists()
         await ctx.message.add_reaction("<:kgsYes:580164400691019826>")
 
@@ -137,9 +132,12 @@ class Filter(commands.Cog):
     @commands.Cog.listener()
     async def on_message(self, message):
         # if message.channel.id == 414179142020366336:
-        if message.channel.id == 414452106129571842: #bot commands
+        if message.channel.id == 414452106129571842:  # bot commands
             return
-        if message.channel.category.id == 414095379156434945: #mod category
+        if (
+            message.channel.category.id == 414095379156434945  # mod category
+            and message.channel.id != 414179142020366336  # bot testing
+        ):
             return
 
         if message.content == "":
@@ -153,7 +151,10 @@ class Filter(commands.Cog):
     async def on_message_edit(self, before, after):
         if after.channel.id == 414452106129571842:
             return
-        if before.channel.category.id == 414095379156434945: #mod category
+        if (
+            before.channel.category.id == 414095379156434945  # mod category
+            and before.channel.id != 414179142020366336  # bot testing
+        ):
             return
         if before.content == after.content:
             return
@@ -172,11 +173,11 @@ class Filter(commands.Cog):
             await member.edit(nick="Unpingable Username")
             return
 
-        if any(s in member.nick for s in ("nazi","hitler", "führer", "fuhrer")):
+        if any(s in member.nick for s in ("nazi", "hitler", "führer", "fuhrer")):
             await member.edit(nick=None)
             return
 
-        if any(s in member.name for s in ("nazi","hitler", "führer", "fuhrer")):
+        if any(s in member.name for s in ("nazi", "hitler", "führer", "fuhrer")):
             await member.edit(nick="Parrot")
             return
 
@@ -277,7 +278,6 @@ class Filter(commands.Cog):
             except discord.Forbidden:
                 pass
 
-
         # if "warn" in actions:
         # logic for warn here
 
@@ -320,11 +320,15 @@ class Filter(commands.Cog):
 
     def add_to_humanities(self, word):
         with open("swearfilters/humanitiesfilter.txt", "a") as f:
-            f.write(word)
+            f.write(word + "\n")
 
     def add_to_whitelist(self, word):
         with open("swearfilters/whitelist.txt", "a") as f:
-            f.write(word+"\n")
+            f.write(word + "\n")
+
+    def add_to_general(self, word):
+        with open("swearfilters/generalfilter.txt", "a") as f:
+            f.write(word + "\n")
 
     async def check_message(self, message, word_list):
 
@@ -433,12 +437,18 @@ class Filter(commands.Cog):
             if message.author.id in self.message_history_list:
                 count = len(self.message_history_list[message.author.id])
                 if count > 3:
-                    if all(m.content == message.content for m in self.message_history_list[message.author.id][0:4]):
+                    if all(
+                        m.content == message.content
+                        for m in self.message_history_list[message.author.id][0:4]
+                    ):
                         return message.author.id
 
             if message.channel.id in self.message_history_list:
                 if len(self.message_history_list[message.channel.id]) > 3:
-                    if all(m.content == message.content for m in self.message_history_list[message.channel.id][0:4]):
+                    if all(
+                        m.content == message.content
+                        for m in self.message_history_list[message.channel.id][0:4]
+                    ):
                         return message.channel.id
 
         # check for mass ping
