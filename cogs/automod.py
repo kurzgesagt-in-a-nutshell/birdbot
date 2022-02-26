@@ -13,6 +13,7 @@ from discord.ext import commands
 
 from utils.helper import (
     create_automod_embed,
+    devs_only,
     mod_and_above,
 )
 
@@ -46,82 +47,118 @@ class Filter(commands.Cog):
         self.logger.info("loaded Automod")
         self.logging_channel = await self.bot.fetch_channel(self.logging_channel_id)
 
-    @commands.command()
-    @mod_and_above()
-    async def showlist(self, ctx, channel: typing.Optional[discord.TextChannel] = None):
-        """Display blacklist for particular channel. Passing no channel will show the whitelist
-        Usage: showlist <#channel>"""
-        if channel is None:
+    # @mod_and_above()
+    @devs_only()
+    @commands.group(hidden=True)
+    async def filter(self, ctx: commands.Context):
+        """
+        Filter commands
+        Usage: filter < whitelist | blacklist | check >
+        """
+
+    @filter.command()
+    async def whitelist(self, ctx, arg, *, words: typing.Optional[str]):
+        """
+        Check or edit the whitelist
+        Usage: filter whitelist add/remove/show (words)
+        """
+        if words != None:
+            newwords = words.split(" ")
+        if arg == "show":
             await ctx.send(
                 "These are the words which are whitelisted",
                 file=discord.File("swearfilters/whitelist.txt"),
             )
-        elif channel.id == 546315063745839115:
-            await ctx.send(
-                "These are the words which are blacklisted only in <#546315063745839115>",
-                file=discord.File("swearfilters/humanitiesfilter.txt"),
-            )
+        elif not words:
+            raise commands.BadArgument(message="No words provided")
+        
+        elif arg == "add":
+            oldwords = self.white_list
+            nowords = [word for word in newwords if word in oldwords]
+            if nowords != []:
+                await ctx.send(f"{', '.join(nowords)} already in the whitelist")
+            [oldwords.append(word) for word in newwords if word not in oldwords]
+            with open("swearfilters/whitelist.txt", "w") as f:
+                f.write("\n".join(oldwords))
+        elif arg == "remove":
+            oldwords = self.white_list
+            nowords = [word for word in newwords if word not in oldwords]
+            if nowords != []:
+                await ctx.send(f"{', '.join(nowords)} not in the whitelist")
+            [oldwords.remove(word) for word in newwords if word in oldwords]
+            with open("swearfilters/whitelist.txt", "w") as f:
+                f.write("\n".join(oldwords))
         else:
-            await ctx.send(
-                "These are the words which are blacklisted everywhere",
-                file=discord.File("swearfilters/generalfilter.txt"),
+            raise commands.BadArgument(
+                message="Improper argument, it must be add/remove/show"
             )
 
-    @commands.command(aliases=["remove_word"])
-    @mod_and_above()
-    async def removeword(self, ctx, channel: discord.TextChannel, *, word):
-        """Removes a word from the filter list
-        Usage: remove_word <#channel> word"""
-
-        to_open = (
-            "swearfilters/humanitiesfilter.txt"
-            if channel.id == 546315063745839115
-            else "swearfilters/generalfilter.txt"
-        )
-        words = open(to_open, "r").read().splitlines()
-        if word not in words:
-            await ctx.send(f"{word} doesn't appear to be blacklisted")
-            return
-        words.remove(word)
-        with open(to_open, "w") as f:
-            for word in words:
-                f.write(word + "\n")
-        self.update_lists()
         await ctx.message.add_reaction("<:kgsYes:580164400691019826>")
 
-    @commands.command(aliases=["blacklistword"])
-    @mod_and_above()
-    async def blacklist_word(self, ctx, channel: discord.TextChannel, *, words):
-        """Add a word to the blacklist. Pass humanities as the channel to add word to humanities blacklist.
-        Usage: blacklistword <#channel> word_here"""
-        words = words.split(" ")
-        if channel.id == 546315063745839115:  # humanities
-            for word in words:
-                self.add_to_humanities(word)
+    @filter.command()
+    async def blacklist(self, ctx, arg, list, *, words: typing.Optional[str]):
+        """
+        Check or edit the blacklist(s)
+        Usage: filter blacklist add/remove/show general/humanities (words)
+        """
+        if list == "humanities":
+            channel = "swearfilters/humanitiesfilter.txt"
+            oldwords = self.humanities_list
+            listtype = "humanities"
+        elif list == "general":
+            channel = "swearfilters/generalfilter.txt"
+            oldwords = self.general_list
+            listtype = "general"
         else:
-            for word in words:
-                self.add_to_general(word)
-        self.update_lists()
+            raise commands.BadArgument(
+                message="No list chosen, must be general or humanities"
+            )
+
+        if words != None:
+            newwords = words.split(" ")
+        if arg == "show":
+            await ctx.send(
+                "These are the words which are blacklisted", file=discord.File(channel)
+            )
+        elif not words:
+            raise commands.BadArgument(message="No words provided")
+
+        elif arg == "add":
+            nowords = [word for word in newwords if word in oldwords]
+            if nowords != []:
+                await ctx.send(f"{', '.join(nowords)} already in the {listtype} blacklist")
+            [oldwords.append(word) for word in newwords if word not in oldwords]
+            with open(channel, "w") as f:
+                f.write("\n".join(oldwords))
+        elif arg == "remove":
+            nowords = [word for word in newwords if word not in oldwords]
+            if nowords != []:
+                await ctx.send(f"{', '.join(nowords)} not in the {listtype} blacklist")
+            [oldwords.remove(word) for word in newwords if word in oldwords]
+            with open(channel, "w") as f:
+                f.write("\n".join(oldwords))
+        else:
+            raise commands.BadArgument(
+                message="Improper argument, it must be add/remove/show"
+            )
+
         await ctx.message.add_reaction("<:kgsYes:580164400691019826>")
 
-    @commands.command(aliases=["whitelistword"])
-    @mod_and_above()
-    async def whitelist_word(self, ctx, *, words):
-        """Add a word to the whitelist.
-        Usage: whitelist_worwhitelist_word <#channel> word_here"""
-        words = words.split(" ")
-        for word in words:
-            self.add_to_whitelist(word)
-        self.update_lists()
-        await ctx.message.add_reaction("<:kgsYes:580164400691019826>")
-
-    @commands.command()
-    @mod_and_above()
-    async def filter_check(self, ctx, channel: discord.TextChannel, *, words):
-        if channel.id == 546315063745839115:
+    @filter.command()
+    async def check(self, ctx, list, *, words):
+        """
+        Test a word with the filter
+        Usage: filter check general/humanities word(s)
+        """
+        raise commands.BadArgument(message="This command doesn't work.")
+        if list == "humanities":
+            await ctx.send(await self.check_message(words, self.humanities_list))
+        elif list == "general":
             await ctx.send(await self.check_message(words, self.humanities_list))
         else:
-            await ctx.send(await self.check_message(words, self.humanities_list))
+            raise commands.BadArgument(
+                message="No list chosen, must be general or humanities"
+            )
 
     @commands.Cog.listener()
     async def on_member_update(self, before, after):
@@ -309,26 +346,6 @@ class Filter(commands.Cog):
         if any(x in [role.id for role in author.roles] for x in rolelist):
             return True
         return False
-
-    def update_lists(self):
-        with open("swearfilters/humanitiesfilter.txt", "r") as f:
-            self.humanities_list = f.read().splitlines()
-        with open("swearfilters/generalfilter.txt", "r") as f:
-            self.general_list = f.read().splitlines()
-        with open("swearfilters/whitelist.txt", "r") as f:
-            self.white_list = f.read().splitlines()
-
-    def add_to_humanities(self, word):
-        with open("swearfilters/humanitiesfilter.txt", "a") as f:
-            f.write(word + "\n")
-
-    def add_to_whitelist(self, word):
-        with open("swearfilters/whitelist.txt", "a") as f:
-            f.write(word + "\n")
-
-    def add_to_general(self, word):
-        with open("swearfilters/generalfilter.txt", "a") as f:
-            f.write(word + "\n")
 
     async def check_message(self, message, word_list):
 
