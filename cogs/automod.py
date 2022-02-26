@@ -1,4 +1,5 @@
 import json
+from tkinter.colorchooser import Chooser
 import typing
 import datetime
 import logging
@@ -47,99 +48,134 @@ class Filter(commands.Cog):
         self.logger.info("loaded Automod")
         self.logging_channel = await self.bot.fetch_channel(self.logging_channel_id)
 
-    @mod_and_above()
+    # @mod_and_above()
+    @devs_only()
     @commands.group(hidden=True)
-    async def filter(self, ctx: commands.Context):
+    async def filter(self, ctx):
         """
         Filter commands
         Usage: filter < whitelist | blacklist | check >
         """
 
-    @filter.command()
-    async def whitelist(self, ctx, arg, *, words: typing.Optional[str]):
+    @filter.group()
+    async def whitelist(self, ctx):
         """
-        Check or edit the whitelist
-        Usage: filter whitelist add/remove/show (words)
+        Whitelist commands
+        Usage: filter whitelist show/add/remove
         """
-        if words != None:
-            newwords = words.split(" ")
-        if arg == "show":
-            await ctx.send(
-                "These are the words which are whitelisted",
-                file=discord.File("swearfilters/whitelist.txt"),
-            )
-        elif not words:
-            raise commands.BadArgument(message="No words provided")
         
-        elif arg == "add":
-            oldwords = self.white_list
-            nowords = [word for word in newwords if word in oldwords]
-            if nowords != []:
-                await ctx.send(f"{', '.join(nowords)} already in the whitelist")
-            [oldwords.append(word) for word in newwords if word not in oldwords]
-            with open("swearfilters/whitelist.txt", "w") as f:
-                f.write("\n".join(oldwords))
-        elif arg == "remove":
-            oldwords = self.white_list
-            nowords = [word for word in newwords if word not in oldwords]
-            if nowords != []:
-                await ctx.send(f"{', '.join(nowords)} not in the whitelist")
-            [oldwords.remove(word) for word in newwords if word in oldwords]
-            with open("swearfilters/whitelist.txt", "w") as f:
-                f.write("\n".join(oldwords))
-        else:
-            raise commands.BadArgument(
-                message="Improper argument, it must be add/remove/show"
-            )
+    @whitelist.command(hidden=True)
+    async def show(self, ctx):
+        """
+        Send the whitelist words
+        Usage: filter whitelist show
+        """
+        await ctx.send(
+            "These are the words which are whitelisted",
+            file=discord.File("swearfilters/whitelist.txt"),
+        )
 
         await ctx.message.add_reaction("<:kgsYes:580164400691019826>")
 
-    @filter.command()
-    async def blacklist(self, ctx, arg, list, *, words: typing.Optional[str]):
+    @whitelist.command(hidden=True)
+    async def add(self, ctx, *, words):
         """
-        Check or edit the blacklist(s)
-        Usage: filter blacklist add/remove/show general/humanities (words)
+        Add word(s) to the whitelist
+        Usage: filter whitelist add word(s)
         """
-        if list == "humanities":
-            channel = "swearfilters/humanitiesfilter.txt"
-            oldwords = self.humanities_list
-            listtype = "humanities"
-        elif list == "general":
-            channel = "swearfilters/generalfilter.txt"
-            oldwords = self.general_list
-            listtype = "general"
+        newwords = words.split(" ")
+        oldwords = self.white_list
+        nowords = [word for word in newwords if word in oldwords]
+        if nowords != []:
+            await ctx.send(f"{', '.join(nowords)} already in the whitelist")
+        [oldwords.append(word) for word in newwords if word not in oldwords]
+        with open("swearfilters/whitelist.txt", "w") as f:
+            f.write("\n".join(oldwords))
+
+        await ctx.message.add_reaction("<:kgsYes:580164400691019826>")
+
+    @whitelist.command(hidden=True)
+    async def remove(self, ctx, *, words):
+        """
+        Remove word(s) from the whitelist
+        Usage: filter whitelist remove word(s)
+        """
+        newwords = words.split(" ")
+        oldwords = self.white_list
+        nowords = [word for word in newwords if word not in oldwords]
+        if nowords != []:
+            await ctx.send(f"{', '.join(nowords)} not in the whitelist")
+        [oldwords.remove(word) for word in newwords if word in oldwords]
+        with open("swearfilters/whitelist.txt", "w") as f:
+            f.write("\n".join(oldwords))
+
+        await ctx.message.add_reaction("<:kgsYes:580164400691019826>")
+
+    @filter.group()
+    async def blacklist(self, ctx):
+        """
+        Check or edit the blacklist
+        Usage: filter blacklist show/add/remove
+        """
+
+    async def choose_list(self, listtype):
+        """Does the filter list selection logic"""
+        if listtype == "humanities":
+            return "swearfilters/humanitiesfilter.txt", self.humanities_list
+        elif listtype == "general":
+            return "swearfilters/generalfilter.txt", self.general_list
         else:
             raise commands.BadArgument(
                 message="No list chosen, must be general or humanities"
             )
 
-        if words != None:
-            newwords = words.split(" ")
-        if arg == "show":
-            await ctx.send(
-                "These are the words which are blacklisted", file=discord.File(channel)
-            )
-        elif not words:
-            raise commands.BadArgument(message="No words provided")
+    @blacklist.command(hidden=True)
+    async def show(self, ctx, listtype):
+        """
+        Send the blacklist words
+        Usage: filter blacklist show general/humanities
+        """
+        channel, oldwords = await self.choose_list(listtype)
+        await ctx.send(
+            f"These are the words which are in the {listtype} blacklist",
+            file=discord.File(channel),
+        )
 
-        elif arg == "add":
-            nowords = [word for word in newwords if word in oldwords]
-            if nowords != []:
-                await ctx.send(f"{', '.join(nowords)} already in the {listtype} blacklist")
-            [oldwords.append(word) for word in newwords if word not in oldwords]
-            with open(channel, "w") as f:
-                f.write("\n".join(oldwords))
-        elif arg == "remove":
-            nowords = [word for word in newwords if word not in oldwords]
-            if nowords != []:
-                await ctx.send(f"{', '.join(nowords)} not in the {listtype} blacklist")
-            [oldwords.remove(word) for word in newwords if word in oldwords]
-            with open(channel, "w") as f:
-                f.write("\n".join(oldwords))
-        else:
-            raise commands.BadArgument(
-                message="Improper argument, it must be add/remove/show"
-            )
+        await ctx.message.add_reaction("<:kgsYes:580164400691019826>")
+
+    @blacklist.command(hidden=True)
+    async def add(self, ctx, listtype, *, words):
+        """
+        Add word(s) to the blacklist
+        Usage: filter blacklist add general/humanities words
+        """
+        channel, oldwords = await self.choose_list(listtype)
+
+        newwords = words.split(" ")
+        nowords = [word for word in newwords if word in oldwords]
+        if nowords != []:
+            await ctx.send(f"{', '.join(nowords)} already in the {listtype} blacklist")
+        [oldwords.append(word) for word in newwords if word not in oldwords]
+        with open(channel, "w") as f:
+            f.write("\n".join(oldwords))
+
+        await ctx.message.add_reaction("<:kgsYes:580164400691019826>")
+
+    @blacklist.command(hidden=True)
+    async def remove(self, ctx, listtype, *, words):
+        """
+        Remove word(s) from the blacklist
+        Usage: filter blacklist remove general/humanities words
+        """
+        channel, oldwords = await self.choose_list(listtype)
+
+        newwords = words.split(" ")
+        nowords = [word for word in newwords if word not in oldwords]
+        if nowords != []:
+            await ctx.send(f"{', '.join(nowords)} not in the {listtype} blacklist")
+        [oldwords.remove(word) for word in newwords if word in oldwords]
+        with open(channel, "w") as f:
+            f.write("\n".join(oldwords))
 
         await ctx.message.add_reaction("<:kgsYes:580164400691019826>")
 
