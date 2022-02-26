@@ -47,8 +47,7 @@ class Filter(commands.Cog):
         self.logger.info("loaded Automod")
         self.logging_channel = await self.bot.fetch_channel(self.logging_channel_id)
 
-    # @mod_and_above()
-    @devs_only()
+    @mod_and_above()
     @commands.group(hidden=True)
     async def filter(self, ctx: commands.Context):
         """
