@@ -48,7 +48,8 @@ possible_commands = [
     #Go4Liftoff Bot#1922
     r"ll",r"nl",r"listlaunches",r"nextlaunch",
 
-    #Tatsu#8792 (only add commands that take in args)
+    #Tatsu#8792 (add commands that frequently get used coz too many to add manually)
+    r"rank",r"fish",r"rep"
 ]
 
 class NoAuthorityError(commands.CheckFailure):
@@ -190,7 +191,7 @@ def is_external_command(message: discord.Message):
     returns bool
     """
     for command in possible_commands:
-        if re.match(possible_prefixes+command, message.content):
+        if re.match(possible_prefixes+command, message.content, re.IGNORECASE):
             return True
     return False
 
