@@ -47,8 +47,7 @@ class Filter(commands.Cog):
         self.logger.info("loaded Automod")
         self.logging_channel = await self.bot.fetch_channel(self.logging_channel_id)
 
-    # @mod_and_above()
-    @devs_only()
+    @mod_and_above()
     @commands.group(hidden=True)
     async def filter(self, ctx):
         """
@@ -192,11 +191,12 @@ class Filter(commands.Cog):
         Test a word with the filter
         Usage: filter check general/humanities word(s)
         """
-        raise commands.BadArgument(message="This command doesn't work.")
+        # TODO: return words that triggered the profanity
+        msg = await ctx.send(words)
         if list == "humanities":
-            await ctx.send(await self.check_message(words, self.humanities_list))
+            await ctx.send(await self.check_message(msg, self.humanities_list))
         elif list == "general":
-            await ctx.send(await self.check_message(words, self.humanities_list))
+            await ctx.send(await self.check_message(msg, self.general_list))
         else:
             raise commands.BadArgument(
                 message="No list chosen, must be general or humanities"
