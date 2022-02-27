@@ -1,5 +1,4 @@
 import json
-from tkinter.colorchooser import Chooser
 import typing
 import datetime
 import logging
@@ -56,6 +55,9 @@ class Filter(commands.Cog):
         Filter commands
         Usage: filter < whitelist | blacklist | check >
         """
+        if ctx.invoked_subcommand is None:
+            await ctx.send(ctx.command.help)
+            
 
     @filter.group()
     async def whitelist(self, ctx):
@@ -63,9 +65,11 @@ class Filter(commands.Cog):
         Whitelist commands
         Usage: filter whitelist show/add/remove
         """
+        if ctx.invoked_subcommand is None:
+            await ctx.send(ctx.command.help)
         
-    @whitelist.command(hidden=True)
-    async def show(self, ctx):
+    @whitelist.command(hidden=True,aliases=["show"])
+    async def _show(self, ctx):
         """
         Send the whitelist words
         Usage: filter whitelist show
@@ -77,8 +81,8 @@ class Filter(commands.Cog):
 
         await ctx.message.add_reaction("<:kgsYes:580164400691019826>")
 
-    @whitelist.command(hidden=True)
-    async def add(self, ctx, *, words):
+    @whitelist.command(hidden=True,aliases=['add'])
+    async def _add(self, ctx, *, words):
         """
         Add word(s) to the whitelist
         Usage: filter whitelist add word(s)
@@ -94,8 +98,8 @@ class Filter(commands.Cog):
 
         await ctx.message.add_reaction("<:kgsYes:580164400691019826>")
 
-    @whitelist.command(hidden=True)
-    async def remove(self, ctx, *, words):
+    @whitelist.command(hidden=True,aliases=['remove'])
+    async def _remove(self, ctx, *, words):
         """
         Remove word(s) from the whitelist
         Usage: filter whitelist remove word(s)
@@ -117,6 +121,9 @@ class Filter(commands.Cog):
         Check or edit the blacklist
         Usage: filter blacklist show/add/remove
         """
+        if ctx.invoked_subcommand is None:
+            await ctx.send(ctx.command.help)
+
 
     async def choose_list(self, listtype):
         """Does the filter list selection logic"""
