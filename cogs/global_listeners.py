@@ -19,9 +19,9 @@ from utils.helper import (
     NoAuthorityError,
     DevBotOnly,
     WrongChannel,
-    mainbot_only,
     patreon_only,
     create_user_infraction,
+    is_internal_command
 )
 
 
@@ -98,13 +98,9 @@ class GuildLogger(commands.Cog):
         if message.channel.category.id == 414095379156434945:  # mod category
             return
 
-        # ignore message if its a registered bot command
-        for x in self.bot.commands:
-            if any(message.content.startswith(f"!{y}") for y in x.aliases):
-                return
-            if message.content.startswith(f"!{x.name}"):
-                return
-
+        if is_internal_command(self.bot, message):
+            return
+ 
         embed = discord.Embed(
             title="Message Deleted",
             description=f"Message deleted in {message.channel.mention}",

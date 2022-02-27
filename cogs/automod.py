@@ -13,8 +13,9 @@ from discord.ext import commands
 
 from utils.helper import (
     create_automod_embed,
-    devs_only,
     mod_and_above,
+    is_internal_command,
+    is_external_command
 )
 
 
@@ -56,7 +57,6 @@ class Filter(commands.Cog):
         """
         if ctx.invoked_subcommand is None:
             await ctx.send(ctx.command.help)
-            
 
     @filter.group()
     async def whitelist(self, ctx):
@@ -66,8 +66,8 @@ class Filter(commands.Cog):
         """
         if ctx.invoked_subcommand is None:
             await ctx.send(ctx.command.help)
-        
-    @whitelist.command(hidden=True,aliases=["show"])
+
+    @whitelist.command(hidden=True, aliases=["show"])
     async def _show(self, ctx):
         """
         Send the whitelist words
@@ -80,7 +80,7 @@ class Filter(commands.Cog):
 
         await ctx.message.add_reaction("<:kgsYes:580164400691019826>")
 
-    @whitelist.command(hidden=True,aliases=['add'])
+    @whitelist.command(hidden=True, aliases=["add"])
     async def _add(self, ctx, *, words):
         """
         Add word(s) to the whitelist
@@ -97,7 +97,7 @@ class Filter(commands.Cog):
 
         await ctx.message.add_reaction("<:kgsYes:580164400691019826>")
 
-    @whitelist.command(hidden=True,aliases=['remove'])
+    @whitelist.command(hidden=True, aliases=["remove"])
     async def _remove(self, ctx, *, words):
         """
         Remove word(s) from the whitelist
@@ -122,7 +122,6 @@ class Filter(commands.Cog):
         """
         if ctx.invoked_subcommand is None:
             await ctx.send(ctx.command.help)
-
 
     async def choose_list(self, listtype):
         """Does the filter list selection logic"""
@@ -210,9 +209,6 @@ class Filter(commands.Cog):
 
     @commands.Cog.listener()
     async def on_message(self, message):
-        # if message.channel.id == 414179142020366336:
-        if message.channel.id == 414452106129571842:  # bot commands
-            return
         if (
             message.channel.category.id == 414095379156434945  # mod category
             and message.channel.id != 414179142020366336  # bot testing
@@ -220,6 +216,12 @@ class Filter(commands.Cog):
             return
 
         if message.content == "":
+            return
+
+        if is_internal_command(self.bot,message):
+            return
+
+        if is_external_command(message):
             return
 
         self.logging_channel = await self.bot.fetch_channel(self.logging_channel_id)
