@@ -787,8 +787,7 @@ class Moderation(commands.Cog):
         await ctx.message.delete(delay=5)
 
     @commands.command(aliases=["infr", "inf", "infraction"])
-    #@mod_and_above()
-    @devs_only()
+    @mod_and_above()
     async def infractions(
         self,
         ctx: commands.Context,
@@ -798,7 +797,9 @@ class Moderation(commands.Cog):
         """Get Infractions.
         Usage: infr <@member / member_id> <infraction_type>"""
         if member is None and mem_id is None:
-            raise commands.BadArgument(message="Provide user.\n`Usage: infr <@member / member_id>`")
+            raise commands.BadArgument(
+                message="Provide user.\n`Usage: infr <@member / member_id>`"
+            )
 
         if member is not None:
             mem_id = member.id
@@ -811,31 +812,23 @@ class Moderation(commands.Cog):
         async def interaction_check(interaction):
             if interaction.user == ctx.author:
                 return True
-        
-        async def button_warn(interaction):
-            inf_type = "warn"
-            infs_embed = helper.get_infractions(member_id=mem_id, inf_type=inf_type)
-            await msg.edit(embed=infs_embed)
-        async def button_mute(interaction):
-            inf_type = "mute"
-            infs_embed = helper.get_infractions(member_id=mem_id, inf_type=inf_type)
-            await msg.edit(embed=infs_embed)
-        async def button_ban(interaction):
-            inf_type = "ban"
-            infs_embed = helper.get_infractions(member_id=mem_id, inf_type=inf_type)
-            await msg.edit(embed=infs_embed)
-        async def button_kick(interaction):
-            inf_type = "kick"
-            infs_embed = helper.get_infractions(member_id=mem_id, inf_type=inf_type)
-            await msg.edit(embed=infs_embed)
-        button1 = discord.ui.Button(label="Warns", emoji="⚠️")
-        button1.callback = button_warn
-        button2 = discord.ui.Button(label="Mutes", emoji="🔇")
-        button2.callback = button_mute
-        button3 = discord.ui.Button(label="Bans", emoji="<:kgsBan:744009103856238704>")
-        button3.callback = button_ban
-        button4 = discord.ui.Button(label="Kicks", emoji="👢")
-        button4.callback = button_kick
+
+        class Button(discord.ui.Button):
+            def __init__(self, label, emoji, inf_type):
+                super().__init__(label=label, emoji=emoji)
+                self.inf_type = inf_type
+
+            async def callback(self, interaction):
+                inf_type = self.inf_type
+                infs_embed = helper.get_infractions(member_id=mem_id, inf_type=inf_type)
+                await msg.edit(embed=infs_embed)
+
+        button1 = Button(label="Warns", emoji="⚠️", inf_type="warn")
+        button2 = Button(label="Mutes", emoji="🔇", inf_type="mute")
+        button3 = Button(
+            label="Bans", emoji="<:kgsBan:744009103856238704>", inf_type="ban"
+        )
+        button4 = Button(label="Kicks", emoji="👢", inf_type="kick")
         view = discord.ui.View(button1, button2, button3, button4, timeout=20.0)
         view.on_timeout = on_timeout
         view.interaction_check = interaction_check
