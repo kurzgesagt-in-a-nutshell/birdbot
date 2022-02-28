@@ -814,8 +814,8 @@ class Moderation(commands.Cog):
                 return True
 
         class Button(discord.ui.Button):
-            def __init__(self, label, emoji, inf_type):
-                super().__init__(label=label, emoji=emoji)
+            def __init__(self, label, inf_type):
+                super().__init__(label=label)
                 self.inf_type = inf_type
 
             async def callback(self, interaction):
@@ -823,12 +823,10 @@ class Moderation(commands.Cog):
                 infs_embed = helper.get_infractions(member_id=mem_id, inf_type=inf_type)
                 await msg.edit(embed=infs_embed)
 
-        button1 = Button(label="Warns", emoji="⚠️", inf_type="warn")
-        button2 = Button(label="Mutes", emoji="🔇", inf_type="mute")
-        button3 = Button(
-            label="Bans", emoji="<:kgsBan:744009103856238704>", inf_type="ban"
-        )
-        button4 = Button(label="Kicks", emoji="👢", inf_type="kick")
+        button1 = Button(label="Warns", inf_type="warn")
+        button2 = Button(label="Mutes", inf_type="mute")
+        button3 = Button(label="Bans", inf_type="ban")
+        button4 = Button(label="Kicks", inf_type="kick")
         view = discord.ui.View(button1, button2, button3, button4, timeout=20.0)
         view.on_timeout = on_timeout
         view.interaction_check = interaction_check
