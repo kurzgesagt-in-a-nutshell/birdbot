@@ -787,122 +787,59 @@ class Moderation(commands.Cog):
         await ctx.message.delete(delay=5)
 
     @commands.command(aliases=["infr", "inf", "infraction"])
-    @mod_and_above()
+    #@mod_and_above()
+    @devs_only()
     async def infractions(
         self,
         ctx: commands.Context,
         member: typing.Optional[discord.Member] = None,
         mem_id: typing.Optional[int] = None,
-        inf_type: str = None,
     ):
-        """Get Infractions. \nUsage: infr <@member / member_id> <infraction_type>"""
-        try:
+        """Get Infractions.
+        Usage: infr <@member / member_id> <infraction_type>"""
+        if member is None and mem_id is None:
+            raise commands.BadArgument(message="Provide user.\n`Usage: infr <@member / member_id>`")
 
-            if member is None and mem_id is None:
-                return await ctx.send(
-                    "Provide user.\n`Usage: infr <@member / member_id> <infraction_type>`"
-                )
+        if member is not None:
+            mem_id = member.id
 
-            if inf_type is not None:
-                if (
-                    inf_type == "w"
-                    or inf_type == "W"
-                    or re.match("warn", inf_type, re.IGNORECASE)
-                ):
-                    inf_type = "warn"
-                elif (
-                    inf_type == "m"
-                    or inf_type == "M"
-                    or re.match("mute", inf_type, re.IGNORECASE)
-                ):
-                    inf_type = "mute"
-                elif (
-                    inf_type == "b"
-                    or inf_type == "B"
-                    or re.match("ban", inf_type, re.IGNORECASE)
-                ):
-                    inf_type = "ban"
-                elif (
-                    inf_type == "k"
-                    or inf_type == "K"
-                    or re.match("kick", inf_type, re.IGNORECASE)
-                ):
-                    inf_type = "kick"
+        infs_embed = helper.get_infractions(member_id=mem_id, inf_type="warn")
 
-            else:
-                inf_type = "warn"
+        async def on_timeout():
+            await msg.edit(view=None)
 
-            if member is not None:
-                mem_id = member.id
-
+        async def interaction_check(interaction):
+            if interaction.user == ctx.author:
+                return True
+        
+        async def button_warn(interaction):
+            inf_type = "warn"
             infs_embed = helper.get_infractions(member_id=mem_id, inf_type=inf_type)
-
-            msg = None
-            msg = await ctx.send(embed=infs_embed)
-            await msg.add_reaction("\U0001F1FC")
-            await msg.add_reaction("\U0001F1F2")
-            await msg.add_reaction("\U0001F1E7")
-            await msg.add_reaction("\U0001F1F0")
-
-            while True:
-                try:
-                    reaction, user = await self.bot.wait_for(
-                        "reaction_add",
-                        check=lambda reaction, user: user == ctx.author
-                        and reaction.emoji
-                        in [
-                            "\U0001F1FC",
-                            "\U0001F1F2",
-                            "\U0001F1E7",
-                            "\U0001F1F0",
-                        ],
-                        timeout=20.0,
-                    )
-
-                except asyncio.exceptions.TimeoutError:
-                    await ctx.send("Embed Timed Out.", delete_after=3.0)
-                    if msg:
-                        await msg.clear_reactions()
-                    break
-
-                else:
-                    em = reaction.emoji
-                    if em == "\U0001F1FC":
-                        inf_type = "warn"
-                        infs_embed = helper.get_infractions(
-                            member_id=mem_id, inf_type=inf_type
-                        )
-                        await msg.edit(embed=infs_embed)
-                        await msg.remove_reaction(emoji=em, member=user)
-
-                    elif em == "\U0001F1F2":
-                        inf_type = "mute"
-                        infs_embed = helper.get_infractions(
-                            member_id=mem_id, inf_type=inf_type
-                        )
-                        await msg.edit(embed=infs_embed)
-                        await msg.remove_reaction(emoji=em, member=user)
-
-                    elif em == "\U0001F1E7":
-                        inf_type = "ban"
-                        infs_embed = helper.get_infractions(
-                            member_id=mem_id, inf_type=inf_type
-                        )
-                        await msg.edit(embed=infs_embed)
-                        await msg.remove_reaction(emoji=em, member=user)
-
-                    elif em == "\U0001F1F0":
-                        inf_type = "kick"
-                        infs_embed = helper.get_infractions(
-                            member_id=mem_id, inf_type=inf_type
-                        )
-                        await msg.edit(embed=infs_embed)
-                        await msg.remove_reaction(emoji=em, member=user)
-
-        except asyncio.exceptions.TimeoutError:
-            await ctx.send("Embed Timed Out.", delete_after=3.0)
-            if msg:
-                await msg.clear_reactions()
+            await msg.edit(embed=infs_embed)
+        async def button_mute(interaction):
+            inf_type = "mute"
+            infs_embed = helper.get_infractions(member_id=mem_id, inf_type=inf_type)
+            await msg.edit(embed=infs_embed)
+        async def button_ban(interaction):
+            inf_type = "ban"
+            infs_embed = helper.get_infractions(member_id=mem_id, inf_type=inf_type)
+            await msg.edit(embed=infs_embed)
+        async def button_kick(interaction):
+            inf_type = "kick"
+            infs_embed = helper.get_infractions(member_id=mem_id, inf_type=inf_type)
+            await msg.edit(embed=infs_embed)
+        button1 = discord.ui.Button(label="Warns", emoji="⚠️")
+        button1.callback = button_warn
+        button2 = discord.ui.Button(label="Mutes", emoji="🔇")
+        button2.callback = button_mute
+        button3 = discord.ui.Button(label="Bans", emoji="<:kgsBan:744009103856238704>")
+        button3.callback = button_ban
+        button4 = discord.ui.Button(label="Kicks", emoji="👢")
+        button4.callback = button_kick
+        view = discord.ui.View(button1, button2, button3, button4, timeout=20.0)
+        view.on_timeout = on_timeout
+        view.interaction_check = interaction_check
+        msg = await ctx.send(embed=infs_embed, view=view)
 
     @commands.command(aliases=["slothmode"])
     @mod_and_above()
