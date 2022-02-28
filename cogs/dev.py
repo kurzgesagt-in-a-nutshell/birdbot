@@ -7,7 +7,7 @@ import traceback
 import os
 
 from contextlib import redirect_stdout
-from discord.ext.commands.errors import ExtensionNotFound
+from discord import ExtensionNotFound
 
 from git import Repo, exc
 from git.cmd import Git
