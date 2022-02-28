@@ -812,6 +812,8 @@ class Moderation(commands.Cog):
         async def interaction_check(interaction):
             if interaction.user == ctx.author:
                 return True
+            else:
+                await interaction.response.send_message("You can't use that", ephemeral=True)
 
         class Button(discord.ui.Button):
             def __init__(self, label, inf_type):
