@@ -21,7 +21,7 @@ def main():
         dotenv.load_dotenv()
         args = parser.parse_args()
         bot = BirdBot.from_parseargs(args)
-        bot.load_extensions()
+        bot.load_extensions(args)
         if args.beta:
             token = os.environ.get("BETA_BOT_TOKEN")
         elif args.alpha:

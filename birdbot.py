@@ -129,16 +129,17 @@ class BirdBot(commands.AutoShardedBot):
         logger.info("Connected to mongoDB")
         cls.db = db
 
-    def load_extensions(self):
+    def load_extensions(self, args):
         """Loads all cogs from cogs/ without the '_' prefix"""
         for filename in os.listdir("cogs/"):
-            if not filename.startswith("_"):
-                logger.info(f"loading {f'cogs.{filename[:-3]}'}")
-                try:
-                    self.load_extension(f"cogs.{filename[:-3]}")
-                except Exception as e:
-                    logger.error(f"cogs.{filename[:-3]} cannot be loaded. [{e}]")
-                    logger.exception(f"Cannot load cog {f'cogs.{filename[:-3]}'}")
+            if not (filename[:-3] in ("antiraid", "automod") and (args.beta or args.alpha)):
+                if not filename.startswith("_"):
+                    logger.info(f"loading {f'cogs.{filename[:-3]}'}")
+                    try:
+                        self.load_extension(f"cogs.{filename[:-3]}")
+                    except Exception as e:
+                        logger.error(f"cogs.{filename[:-3]} cannot be loaded. [{e}]")
+                        logger.exception(f"Cannot load cog {f'cogs.{filename[:-3]}'}")
 
     async def close(self):
         """Close the Discord connection and the aiohttp sessions if any (future perhaps?)."""
