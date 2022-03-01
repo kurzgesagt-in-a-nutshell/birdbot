@@ -227,6 +227,7 @@ class Filter(commands.Cog):
         self.logging_channel = await self.bot.fetch_channel(self.logging_channel_id)
         if not isinstance(message.channel, discord.DMChannel):
             await self.moderate(message)
+            await self.check_member(message.author)
 
     @commands.Cog.listener()
     async def on_message_edit(self, before, after):
