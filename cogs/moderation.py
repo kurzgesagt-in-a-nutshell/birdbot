@@ -39,90 +39,72 @@ class Moderation(commands.Cog):
         self.logger.info("loaded Moderation")
 
     @commands.command()
-    async def report(
-        self,
-        ctx,
-        user_id: str = None,
-        message_link: str = None,
-        *,
-        extras: str = None,
-    ):
-        """Report an issue to the authorites\n Usage: report\nreport user_ID message_link description_of_issue"""
+    async def report(self, ctx):
+        """Report an issue to the authorites
+        Usage: report"""
 
-        mod_embed = discord.Embed(title="New Report", color=0x00FF00)
-        mod_embed.set_author(name=ctx.author.name, icon_url=ctx.author.avatar_url)
+        class Modal(discord.ui.Modal):
+            def __init__(self, bot):
+                super().__init__("Report")
+                user = discord.ui.InputText(
+                    label="User ID",
+                    style=discord.InputTextStyle.short,
+                    placeholder="471705718957801483",
+                )
+                text = discord.ui.InputText(
+                    label="Briefly describe your issue",
+                    style=discord.InputTextStyle.long,
+                )
+                message = discord.ui.InputText(
+                    label="Message link",
+                    style=discord.InputTextStyle.short,
+                    placeholder="https://discord.com/channels/414027124836532234/414268041787080708/937750299165208607",
+                    required=False,
+                )
+                self.add_item(user)
+                self.add_item(text)
+                self.add_item(message)
+                self.bot = bot
 
-        def check(msg):
-            return msg.author == ctx.author and isinstance(
-                msg.channel, discord.DMChannel
+            async def callback(self, interaction):
+                description = self.children[1].value
+                message_link = self.children[2].value
+                userid = self.children[0].value
+
+                mod_embed = discord.Embed(title="New Report", color=0x00FF00)
+                mod_embed.set_author(
+                    name=ctx.author.name, icon_url=ctx.author.avatar.url
+                )
+
+                mod_embed.description = f"**Report description: ** {description}\n**User: ** {userid}\n**Message Link: ** [click to jump]({message_link})"
+
+                mod_channel = self.bot.get_channel(414095428573986816)
+                await mod_channel.send(embed=mod_embed)
+
+                await interaction.message.edit("Report done", view=None)
+                await interaction.response.send_message(
+                    "Report has been sent!", ephemeral=True
+                )
+
+        button = discord.ui.Button(label="Make a report")
+
+        async def call_back(interaction):
+            modal = Modal(self.bot)
+            await interaction.response.send_modal(modal)
+
+        button.callback = call_back
+        view = discord.ui.View(button, timeout=120)
+
+        async def on_timeout():
+            await msg.edit("Timed out", view=None)
+
+        view.on_timeout = on_timeout
+        try:
+            msg = await ctx.author.send(view=view)
+        except discord.Forbidden:
+            await ctx.send(
+                "I can't send you a DM, please check your server privacy settings."
             )
-
-        if user_id is None:
-            try:
-                msg = await ctx.author.send(
-                    embed=discord.Embed(
-                        title="Thanks for reaching out!",
-                        description="Briefly describe your issue",
-                        color=0xFF69B4,
-                    )
-                )
-                report_desc = await self.bot.wait_for(
-                    "message", timeout=120, check=check
-                )
-                extras = report_desc.content
-
-                await msg.edit(
-                    embed=discord.Embed(
-                        title="Report description noted!",
-                        description="If you have a [User ID](https://support.discord.com/hc/en-us/articles/206346498-Where-can-I-find-my-User-Server-Message-ID-) for the person you're reporting against please enter them, else type no",
-                    )
-                )
-                user_id_desc = await self.bot.wait_for(
-                    "message", timeout=120, check=check
-                )
-                if not "no" in user_id_desc.content.lower():
-                    report_user = self.bot.get_user(int(user_id_desc.content))
-                    if report_user is not None:
-                        user_id = f"({user_id_desc.content}) {report_user.name}"
-
-                await msg.edit(
-                    embed=discord.Embed(
-                        title="Got it!",
-                        description="Finally do you happen to have a message link? type no if not",
-                    )
-                )
-
-                link_desc = await self.bot.wait_for("message", timeout=120, check=check)
-                if not "no" in link_desc.content.lower():
-                    message_link = link_desc.content
-
-                await msg.edit(
-                    embed=discord.Embed(
-                        title="Report Successful!",
-                        description="Your report has been sent to the proper authorities.",
-                        color=0x00FF00,
-                    )
-                )
-
-            except discord.Forbidden:
-                await ctx.send(
-                    "I can't seem to DM you, please check your privacy settings and try again"
-                )
-                return
-            except asyncio.TimeoutError:
-                await msg.edit(
-                    embed=discord.Embed(
-                        title="Report timed out",
-                        description="Oops please try again",
-                        color=0xFF0000,
-                    )
-                )
-                return
-
-        mod_embed.description = f"**Report description: ** {extras}\n**User: ** {user_id}\n**Message Link: ** [click to jump]({message_link})"
-
-        mod_channel = self.bot.get_channel(414095428573986816)
-        await mod_channel.send(embed=mod_embed)
 
     @mod_and_above()
     @commands.command(aliases=["purge", "prune", "clear"])
@@ -813,7 +795,9 @@ class Moderation(commands.Cog):
             if interaction.user == ctx.author:
                 return True
             else:
-                await interaction.response.send_message("You can't use that", ephemeral=True)
+                await interaction.response.send_message(
+                    "You can't use that", ephemeral=True
+                )
 
         class Button(discord.ui.Button):
             def __init__(self, label, inf_type):
