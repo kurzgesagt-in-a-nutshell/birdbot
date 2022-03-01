@@ -246,6 +246,8 @@ class Filter(commands.Cog):
     async def check_member(self, member):
         # TODO make more modular after policy review
 
+        if member.bot:
+            return
         if member.nick is None:
             if not re.match(r"[a-zA-Z0-9~!@#$%^&*()_+`;':\",./<>?]{3,}", member.name):
                 await member.edit(nick="Unpingable Nickname")
