@@ -66,7 +66,7 @@ class GuildLogger(commands.Cog):
             timestamp=datetime.datetime.utcnow(),
         )
         embed.set_author(
-            name=before.author.display_name, icon_url=before.author.avatar_url
+            name=before.author.display_name, icon_url=before.author.avatar.url
         )
         embed.add_field(name="Before", value=before.content, inline=False)
         embed.add_field(name="After", value=after.content, inline=False)
@@ -108,7 +108,7 @@ class GuildLogger(commands.Cog):
             timestamp=datetime.datetime.utcnow(),
         )
         embed.set_author(
-            name=message.author.display_name, icon_url=message.author.avatar_url
+            name=message.author.display_name, icon_url=message.author.avatar.url
         )
         embed.add_field(name="Content", value=message.content)
         search_terms = f"```Deleted in {message.channel.id}"
@@ -164,7 +164,7 @@ class GuildLogger(commands.Cog):
             color=0x45E65A,
             timestamp=datetime.datetime.utcnow(),
         )
-        embed.set_author(name=member.name, icon_url=member.avatar_url)
+        embed.set_author(name=member.name, icon_url=member.avatar.url)
 
         embed.add_field(
             name="Account Created",
@@ -197,7 +197,7 @@ class GuildLogger(commands.Cog):
             color=0xFF0004,
             timestamp=datetime.datetime.utcnow(),
         )
-        embed.set_author(name=member.name, icon_url=member.avatar_url)
+        embed.set_author(name=member.name, icon_url=member.avatar.url)
         acc_age = datetime.datetime.utcnow() - member.created_at
 
         embed.add_field(
@@ -244,7 +244,7 @@ class GuildLogger(commands.Cog):
             color=0xFF6633,
             timestamp=datetime.datetime.utcnow(),
         )
-        embed.set_author(name=before.name, icon_url=before.avatar_url)
+        embed.set_author(name=before.name, icon_url=before.avatar.url)
         embed.add_field(name="Previous Nickname", value=f"{before.nick}", inline=True)
         embed.add_field(name="Current Nickname", value=f"{after.nick}", inline=True)
 
@@ -315,7 +315,7 @@ class GuildChores(commands.Cog):
                 color=0x00FF00,
             )
             embed.set_author(
-                name=message.author.display_name, icon_url=message.author.avatar_url
+                name=message.author.display_name, icon_url=message.author.avatar.url
             )
             embed.set_footer(
                 text="Last 50 messages in the channel are attached for reference"
