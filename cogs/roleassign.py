@@ -38,10 +38,10 @@ class Roleassign(commands.Cog):
         roles = {"colours": {"embed": {'thumbnail': {'url': 'https://cdn.discordapp.com/attachments/522777063376158760/569239529148645376/bird.gif'}, 'color': 4572415, 'description': '**:Violet Bird**\n**Pink Bird**\n**Blue Bird**\n**Green Bird**\n**Yellow Bird**\n**Orange Bird**\n**Red Bird**', 'title': 'Press the button to get the role'},
          "list": [{"label": "Violet", "role": 558336866621980673}, {"label": "Pink", "role": 557944766869012510}, {"label": "Blue", "role": 557944673205747733}, {"label": "Green", "role": 557944598857646080}, {"label": "Yellow", "role": 557944535288643616}, {"label": "Orange", "role": 557944471736680474}, {"label": "Red", "role": 557944390753058816}],
           "addroles": False},
-          "welcome": {"embed": {'thumbnail': {'url': 'https://cdn.discordapp.com/emojis/588032757133869097.png'}, 'color': 4572415, 'description': ':kgsWelcome: : The <&584461501109108738> role, you will be pinged in <#526882555174191125> every time someone joins.', 'title': 'Press the button to get the role'},
+          "welcome": {"embed": {'thumbnail': {'url': 'https://cdn.discordapp.com/emojis/588032757133869097.png'}, 'color': 4572415, 'description': 'The <&584461501109108738> role, you will be pinged in <#526882555174191125> every time someone joins.', 'title': 'Press the button to get the role'},
           "list": [{"label": "Welcome Bird", "role": 584461501109108738}],
           "addroles": True},
-          "languages": {"embed": {'thumbnail': {'url': 'https://cdn.discordapp.com/emojis/672323362797780992.png'}, 'color': 4572415, 'description': '🇬🇧 : English\n\n🇩🇪 : Deutsch\n\n🇪🇸 : Español', 'title': 'React to get notified when a video goes live'},
+          "languages": {"embed": {'thumbnail': {'url': 'https://cdn.discordapp.com/emojis/672323362797780992.png'}, 'color': 4572415, 'description': 'English\n\nDeutsch\n\nEspañol', 'title': 'React to get notified when a video goes live'},
           "list": [{"label": "English", "role": 901136119863844864}, {"label": "Deutsch", "role": 642097150158962688}, {"label": "Español", "role": 677171902397284363}],
           "addroles": True}
         }
