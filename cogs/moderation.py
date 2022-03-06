@@ -410,16 +410,10 @@ class Moderation(commands.Cog):
         failed_mute = False
         for i in members:
             if i.top_role < ctx.author.top_role:
-                member_id = i.id
                 time = (
-                    datetime.datetime.utcnow() + datetime.timedelta(seconds=tot_time)
-                ).isoformat()
-                route = http.Route(
-                    "PATCH", f"/guilds/414027124836532234/members/{member_id}"
+                    discord.utils.utcnow() + datetime.timedelta(seconds=tot_time)
                 )
-                await self.bot.http.request(
-                    route, json={"communication_disabled_until": time}, reason=reason
-                )
+                await i.edit(timed_out_until=time)
 
                 try:
                     await i.send(
@@ -475,13 +469,7 @@ class Moderation(commands.Cog):
             raise commands.BadArgument(message="Provide members to mute")
 
         for i in members:
-            member_id = i.id
-            route = http.Route(
-                "PATCH", f"/guilds/414027124836532234/members/{member_id}"
-            )
-            await self.bot.http.request(
-                route, json={"communication_disabled_until": None}
-            )
+            await i.edit(timed_out_until=None)
 
         await ctx.message.add_reaction("<:kgsYes:580164400691019826>")
         embed = helper.create_embed(
