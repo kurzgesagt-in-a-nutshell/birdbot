@@ -45,28 +45,25 @@ class Moderation(commands.Cog):
 
         class Modal(discord.ui.Modal):
             def __init__(self, bot):
-                super().__init__("Report")
-                user = discord.ui.InputText(
-                    label="User ID",
-                    style=discord.InputTextStyle.short,
-                    placeholder="471705718957801483",
-                )
-                text = discord.ui.InputText(
-                    label="Briefly describe your issue",
-                    style=discord.InputTextStyle.long,
-                )
-                message = discord.ui.InputText(
-                    label="Message link",
-                    style=discord.InputTextStyle.short,
-                    placeholder="https://discord.com/channels/414027124836532234/414268041787080708/937750299165208607",
-                    required=False,
-                )
-                self.add_item(user)
-                self.add_item(text)
-                self.add_item(message)
+                super().__init__(title="Report")
                 self.bot = bot
+            user = discord.ui.TextInput(
+                label="User ID",
+                style=discord.TextStyle.short,
+                placeholder="471705718957801483",
+            )
+            text = discord.ui.TextInput(
+                label="Briefly describe your issue",
+                style=discord.TextStyle.long,
+            )
+            message = discord.ui.TextInput(
+                label="Message link",
+                style=discord.TextStyle.short,
+                placeholder="https://discord.com/channels/414027124836532234/414268041787080708/937750299165208607",
+                required=False,
+            )
 
-            async def callback(self, interaction):
+            async def on_submit(self, interaction):
                 description = self.children[1].value
                 message_link = self.children[2].value
                 userid = self.children[0].value
@@ -93,7 +90,8 @@ class Moderation(commands.Cog):
             await interaction.response.send_modal(modal)
 
         button.callback = call_back
-        view = discord.ui.View(button, timeout=120)
+        view = discord.ui.View(timeout=120)
+        view.add_item(button)
 
         async def on_timeout():
             await msg.edit("Timed out", view=None)
@@ -809,11 +807,11 @@ class Moderation(commands.Cog):
                 infs_embed = helper.get_infractions(member_id=mem_id, inf_type=inf_type)
                 await msg.edit(embed=infs_embed)
 
-        button1 = Button(label="Warns", inf_type="warn")
-        button2 = Button(label="Mutes", inf_type="mute")
-        button3 = Button(label="Bans", inf_type="ban")
-        button4 = Button(label="Kicks", inf_type="kick")
-        view = discord.ui.View(button1, button2, button3, button4, timeout=20.0)
+        view = discord.ui.View(timeout=20.0)
+        view.add_item(Button(label="Warns", inf_type="warn"))
+        view.add_item(Button(label="Mutes", inf_type="mute"))
+        view.add_item(Button(label="Bans", inf_type="ban"))
+        view.add_item(Button(label="Kicks", inf_type="kick"))
         view.on_timeout = on_timeout
         view.interaction_check = interaction_check
         msg = await ctx.send(embed=infs_embed, view=view)

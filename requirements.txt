@@ -19,7 +19,7 @@ mypy-extensions==0.4.3
 numpy==1.22.2
 pathspec==0.9.0
 platformdirs==2.5.1
-py-cord==2.0.0b4
+git+https://github.com/Rapptz/discord.py
 Pygments==2.11.2
 pymongo==4.0.1
 python-dotenv==0.19.2
