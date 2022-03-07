@@ -590,7 +590,6 @@ class Moderation(commands.Cog):
     @commands.command(aliases=["unwarn", "removewarn"])
     @mod_and_above()
     async def delwarn(self, ctx: commands.context, member: discord.Member):
-        """Remove warn for a user.\nUsage: delwarn @member/id"""
         warns = helper.get_warns(member_id=member.id)
 
         if warns is None:
@@ -602,14 +601,14 @@ class Moderation(commands.Cog):
             color=discord.Colour.magenta(),
             timestamp=datetime.datetime.utcnow(),
         )
-
         warn_len = len(warns)
-        page = 0
-        start = 0
-        end = start + 5 if start + 5 < warn_len else warn_len
+        end = 5 if 5 < warn_len else warn_len
+        global delete_warn_idx
         delete_warn_idx = -1
-
-        for idx, warn in enumerate(warns[start:end]):
+        global page
+        page = 0
+        
+        for idx, warn in enumerate(warns[0:end]):
             embed.add_field(
                 name=f"ID: {idx}",
                 value="```{0}\n{1}\n{2}```".format(
@@ -620,48 +619,29 @@ class Moderation(commands.Cog):
                 inline=False,
             )
 
-        msg = await ctx.send(embed=embed)
-
-        emote_list = [
-            "\u0030\uFE0F\u20E3",
-            "\u0031\uFE0F\u20E3",
-            "\u0032\uFE0F\u20E3",
-            "\u0033\uFE0F\u20E3",
-            "\u0034\uFE0F\u20E3",
-        ]
-        left_arrow = "\u2B05\uFE0F"
-        right_arrow = "\u27A1\uFE0F"
-        cross = "\u274C"
-        yes = "\u2705"
-
-        await msg.add_reaction(left_arrow)
-        for i in emote_list[0 : end - start]:
-            await msg.add_reaction(i)
-        await msg.add_reaction(right_arrow)
-        await msg.add_reaction(cross)
-
-        def check(reaction, user):
-            return user == ctx.author and (
-                str(reaction.emoji) in emote_list
-                or str(reaction.emoji) == right_arrow
-                or str(reaction.emoji) == left_arrow
-                or str(reaction.emoji) == cross
-                or str(reaction.emoji) == yes
-            )
-
-        try:
-            while True:
-                reaction, user = await self.bot.wait_for(
-                    "reaction_add", timeout=30.0, check=check
-                )
-
-                if str(reaction.emoji) in emote_list:
-                    await msg.clear_reactions()
-
-                    delete_warn_idx = (page * 5) + emote_list.index(str(reaction.emoji))
+        view = discord.ui.View(timeout=30)
+        class Button(discord.ui.Button):
+            def __init__(self, label, style, row, member, warns):
+                super().__init__(label=label, style=style, row=row)
+                self.label=label
+                self.warns = warns
+                self.warn_len = len(warns)
+                self.warn_len = warn_len
+                self.member= member
+            
+            async def callback(self, interaction: discord.Interaction):
+                global page
+                global delete_warn_idx
+                if self.label.isdigit():
+                    
+                    if (page * 5) + int(self.label) < self.warn_len:
+                        delete_warn_idx = (page * 5) + int(self.label)
+                    else:
+                        await interaction.response.send_message("Out of range", ephemeral=True)
+                        return
 
                     embed = discord.Embed(
-                        title=f"Warns for {member.name}",
+                        title=f"Warns for {self.member.name}",
                         description=f"Confirm removal of warn",
                         color=discord.Colour.magenta(),
                         timestamp=datetime.datetime.utcnow(),
@@ -682,49 +662,55 @@ class Moderation(commands.Cog):
                             ),
                         ),
                     )
+                    await interaction.message.edit(embed=embed)
 
-                    await msg.edit(embed=embed)
-                    await msg.add_reaction(yes)
-                    await msg.add_reaction(cross)
+                    return
 
-                elif str(reaction.emoji) == yes:
+                elif self.label == "✓":
                     if delete_warn_idx != -1:
 
-                        del warns[delete_warn_idx]
-                        helper.update_warns(member.id, warns)
+                        del self.warns[delete_warn_idx]
+                        helper.update_warns(member.id, self.warns)
 
-                        await msg.edit(
+                        await interaction.message.edit(
                             content="Warning deleted successfully.",
                             embed=None,
+                            view=None,
                             delete_after=5,
                         )
-                        break
+                        view.stop()
+                    return
 
-                elif str(reaction.emoji) == cross:
-                    await msg.edit(content="Exited!!!", embed=None, delete_after=5)
-                    break
+                elif self.label == "x":
+                    await interaction.message.edit(content="Exited!!!", embed=None, view=None, delete_after=5)
+                    view.stop()
+                    return
 
                 else:
-                    await msg.clear_reactions()
+                    delete_warn_idx = -1
 
-                    if str(reaction.emoji) == left_arrow:
+                    if self.label == "<":
                         if page >= 1:
                             page -= 1
+                        else:
+                            page = (self.warn_len - 1) // 5
 
-                    elif str(reaction.emoji) == right_arrow:
-                        if page < (warn_len - 1) // 5:
+                    elif self.label == ">":
+                        if page < (self.warn_len - 1) // 5:
                             page += 1
+                        else:
+                            page = 0
 
                     start = page * 5
-                    end = start + 5 if start + 5 < warn_len else warn_len
+                    end = start + 5 if start + 5 < self.warn_len else self.warn_len
 
                     embed = discord.Embed(
-                        title=f"Warns for {member.name}",
+                        title=f"Warns for {self.member.name}",
                         description=f"Showing atmost 5 warns at a time",
                         color=discord.Colour.magenta(),
                         timestamp=datetime.datetime.utcnow(),
                     )
-                    for idx, warn in enumerate(warns[start:end]):
+                    for idx, warn in enumerate(self.warns[start:end]):
                         embed.add_field(
                             name=f"ID: {idx}",
                             value="```{0}\n{1}\n{2}```".format(
@@ -739,20 +725,30 @@ class Moderation(commands.Cog):
                             inline=False,
                         )
 
-                    await msg.edit(embed=embed)
+                    await interaction.message.edit(embed=embed)
+                
 
-                    await msg.add_reaction(left_arrow)
-                    for i in emote_list[0 : end - start]:
-                        await msg.add_reaction(i)
-                    await msg.add_reaction(right_arrow)
-                    await msg.add_reaction(cross)
+        for i in range(end):
+            view.add_item(Button(label=str(i), style=discord.ButtonStyle.gray, row=0, member=member, warns=warns))
+        view.add_item(Button(label="<", style=discord.ButtonStyle.blurple, row=1, member=member, warns=warns))
+        view.add_item(Button(label=">", style=discord.ButtonStyle.blurple, row=1, member=member, warns=warns))
+        view.add_item(Button(label="x", style=discord.ButtonStyle.red, row=1, member=member, warns=warns))
+        view.add_item(Button(label="✓", row=1, style=discord.ButtonStyle.green, member=member, warns=warns))
 
-        except asyncio.TimeoutError:
-            await msg.clear_reactions()
-            await ctx.message.delete(delay=5)
-            return
+        async def on_timeout():
+            await msg.delete(delay=5)
 
-        await ctx.message.delete(delay=5)
+        async def interaction_check(interaction):
+            if interaction.user == ctx.author:
+                return True
+            else:
+                await interaction.response.send_message(
+                    "You can't use that", ephemeral=True
+                )
+        view.interaction_check = interaction_check
+        view.on_timeout = on_timeout
+
+        msg = await ctx.send(embed=embed, view=view)
 
     @commands.command(aliases=["infr", "inf", "infraction"])
     @mod_and_above()
