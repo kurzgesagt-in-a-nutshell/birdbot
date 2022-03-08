@@ -426,6 +426,9 @@ class Filter(commands.Cog):
                     tracker = tracker + 2
             # Chagnes letter emojis to normal ascii ones
             message_clean = self.convert_regional(message_clean)
+            # Changes “ and ” into "
+            message_clean = message_clean.replace("“", "\"")
+            message_clean = message_clean.replace("”", "\"")
             # find all question marks in message
             indexes = [x.start() for x in re.finditer(r"\?", message_clean)]
             # get rid of all other non ascii charcters
