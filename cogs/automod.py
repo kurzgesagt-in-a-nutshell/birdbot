@@ -250,20 +250,15 @@ class Filter(commands.Cog):
             return
         if member.nick is None:
             if not re.search(r"[a-zA-Z0-9~!@#$%^&*()_+`;':\",./<>?]{3,}", member.name,re.IGNORECASE):
+                await member.edit(nick="Unpingable Username")
+            if any(s in member.name for s in ("nazi", "hitler", "führer", "fuhrer")):
+                await member.edit(nick="Parrot")
+            
+        else:
+            if not re.search(r"[a-zA-Z0-9~!@#$%^&*()_+`;':\",./<>?]{3,}", member.nick,re.IGNORECASE):
                 await member.edit(nick="Unpingable Nickname")
-                return
-
-        if not re.search(r"[a-zA-Z0-9~!@#$%^&*()_+`;':\",./<>?]{3,}", member.nick,re.IGNORECASE):
-            await member.edit(nick="Unpingable Username")
-            return
-
-        if any(s in member.nick for s in ("nazi", "hitler", "führer", "fuhrer")):
-            await member.edit(nick=None)
-            return
-
-        if any(s in member.name for s in ("nazi", "hitler", "führer", "fuhrer")):
-            await member.edit(nick="Parrot")
-            return
+            if any(s in member.nick for s in ("nazi", "hitler", "führer", "fuhrer")):
+                await member.edit(nick=None)
 
     async def moderate(self, message):
 
