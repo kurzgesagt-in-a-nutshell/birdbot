@@ -589,64 +589,71 @@ class Moderation(commands.Cog):
 
     @commands.command(aliases=["unwarn", "removewarn"])
     @mod_and_above()
-    async def delwarn(self, ctx: commands.context, member: discord.Member):
-        warns = helper.get_warns(member_id=member.id)
-
-        if warns is None:
-            return await ctx.reply("User has no warns.", delete_after=10)
-
-        embed = discord.Embed(
-            title=f"Warns for {member.name}",
-            description=f"Showing atmost 5 warns at a time. (Total warns: {len(warns)})",
-            color=discord.Colour.magenta(),
-            timestamp=datetime.datetime.utcnow(),
-        )
-        warn_len = len(warns)
-        end = 5 if 5 < warn_len else warn_len
-        global delete_warn_idx
-        delete_warn_idx = -1
-        global page
-        page = 0
-        
-        for idx, warn in enumerate(warns[0:end]):
-            embed.add_field(
-                name=f"ID: {idx}",
-                value="```{0}\n{1}\n{2}```".format(
-                    "Author: {} ({})".format(warn["author_name"], warn["author_id"]),
-                    "Reason: {}".format(warn["reason"]),
-                    "Date: {}".format(warn["datetime"].replace(microsecond=0)),
-                ),
-                inline=False,
-            )
-
-        view = discord.ui.View(timeout=30)
-        class Button(discord.ui.Button):
-            def __init__(self, label, style, row, member, warns):
-                super().__init__(label=label, style=style, row=row)
-                self.label=label
+    async def delwarn(self, ctx: commands.context, member: discord.Member):      
+        class View(discord.ui.View):
+            def __init__(self, warns):
+                super().__init__(timeout=20)
+                self.delete_warn_idx = -1
+                self.page = 0
                 self.warns = warns
                 self.warn_len = len(warns)
-                self.warn_len = warn_len
-                self.member= member
-            
-            async def callback(self, interaction: discord.Interaction):
-                global page
-                global delete_warn_idx
-                if self.label.isdigit():
-                    
-                    if (page * 5) + int(self.label) < self.warn_len:
-                        delete_warn_idx = (page * 5) + int(self.label)
-                    else:
-                        await interaction.response.send_message("Out of range", ephemeral=True)
-                        return
 
-                    embed = discord.Embed(
-                        title=f"Warns for {self.member.name}",
-                        description=f"Confirm removal of warn",
-                        color=discord.Colour.magenta(),
-                        timestamp=datetime.datetime.utcnow(),
+                for i in range(5):
+                    disabled=False
+                    if i >= self.warn_len:
+                        disabled = True
+                    self.add_item(Button(label=str(i), disabled=disabled))
+
+            @discord.ui.button(label="<", style=discord.ButtonStyle.blurple, row=1)
+            async def back(self, button: discord.ui.Button, interaction: discord.Interaction):
+                self.delete_warn_idx = -1
+                if self.page >= 1:
+                    self.page -= 1
+                else:
+                    self.page = (self.warn_len - 1) // 5
+                await self.write_msg(interaction)
+            @discord.ui.button(label=">", style=discord.ButtonStyle.blurple, row=1)
+            async def forward(self, button: discord.ui.Button, interaction: discord.Interaction):
+                self.delete_warn_idx = -1
+                if self.page < (self.warn_len - 1) // 5:
+                    self.page += 1
+                else:
+                    self.page = 0
+                await self.write_msg(interaction)
+            @discord.ui.button(label="x", style=discord.ButtonStyle.red, row=1)
+            async def exit(self, button: discord.ui.Button, interaction: discord.Interaction):
+                await interaction.message.edit(content="Exited!!!", embed=None, view=None, delete_after=5)
+                self.stop()
+                return
+            @discord.ui.button(label="✓", style=discord.ButtonStyle.green, row=1, disabled=True)
+            async def confirm(self, button: discord.ui.Button, interaction: discord.Interaction):
+                if self.delete_warn_idx != -1:
+
+                    del self.warns[self.delete_warn_idx]
+                    helper.update_warns(member.id, self.warns)
+
+                    await interaction.message.edit(
+                        content="Warning deleted successfully.",
+                        embed=None,
+                        view=None,
+                        delete_after=5,
                     )
+                    self.stop()
+                return
 
+            async def write_msg(self, interaction):
+                delete_warn_idx = self.delete_warn_idx
+                page = self.page
+                warn_len = self.warn_len
+
+                embed = discord.Embed(
+                    title=f"Warns for {member.name}",
+                    color=discord.Colour.magenta(),
+                    timestamp=datetime.datetime.utcnow(),
+                )
+
+                if delete_warn_idx != -1:
+                    embed.description=f"Confirm removal of warn"
                     embed.add_field(
                         name="Delete Warn?",
                         value="```{0}\n{1}\n{2}```".format(
@@ -662,54 +669,27 @@ class Moderation(commands.Cog):
                             ),
                         ),
                     )
-                    await interaction.message.edit(embed=embed)
-
-                    return
-
-                elif self.label == "✓":
-                    if delete_warn_idx != -1:
-
-                        del self.warns[delete_warn_idx]
-                        helper.update_warns(member.id, self.warns)
-
-                        await interaction.message.edit(
-                            content="Warning deleted successfully.",
-                            embed=None,
-                            view=None,
-                            delete_after=5,
-                        )
-                        view.stop()
-                    return
-
-                elif self.label == "x":
-                    await interaction.message.edit(content="Exited!!!", embed=None, view=None, delete_after=5)
-                    view.stop()
-                    return
-
+                    for button in self.children:
+                        if button.label == "✓":
+                            button.disabled=False
+                        elif button.row == 0:
+                            button.disabled=True
                 else:
-                    delete_warn_idx = -1
-
-                    if self.label == "<":
-                        if page >= 1:
-                            page -= 1
-                        else:
-                            page = (self.warn_len - 1) // 5
-
-                    elif self.label == ">":
-                        if page < (self.warn_len - 1) // 5:
-                            page += 1
-                        else:
-                            page = 0
-
                     start = page * 5
-                    end = start + 5 if start + 5 < self.warn_len else self.warn_len
+                    end = start + 5 if start + 5 < warn_len else warn_len
 
-                    embed = discord.Embed(
-                        title=f"Warns for {self.member.name}",
-                        description=f"Showing atmost 5 warns at a time",
-                        color=discord.Colour.magenta(),
-                        timestamp=datetime.datetime.utcnow(),
-                    )
+                    for button in self.children:
+                        if button.row == 0:
+                            if int(button.label) >= (end - start):
+                                button.disabled=True
+                            else:
+                                button.disabled=False
+                        elif button.label == "✓":
+                            button.disabled=True
+
+                    embed.description=f"Showing atmost 5 warns at a time. (Total warns: {warn_len})"
+                    embed.set_footer(text=f"Page {page+1}/{(warn_len-1)//5+1}")
+
                     for idx, warn in enumerate(self.warns[start:end]):
                         embed.add_field(
                             name=f"ID: {idx}",
@@ -725,29 +705,58 @@ class Moderation(commands.Cog):
                             inline=False,
                         )
 
-                    await interaction.message.edit(embed=embed)
-                
+                await interaction.message.edit(embed=embed, view=view)
 
-        for i in range(end):
-            view.add_item(Button(label=str(i), style=discord.ButtonStyle.gray, row=0, member=member, warns=warns))
-        view.add_item(Button(label="<", style=discord.ButtonStyle.blurple, row=1, member=member, warns=warns))
-        view.add_item(Button(label=">", style=discord.ButtonStyle.blurple, row=1, member=member, warns=warns))
-        view.add_item(Button(label="x", style=discord.ButtonStyle.red, row=1, member=member, warns=warns))
-        view.add_item(Button(label="✓", row=1, style=discord.ButtonStyle.green, member=member, warns=warns))
 
-        async def on_timeout():
-            await msg.delete(delay=5)
+            async def on_timeout(self):
+                await msg.edit(view=None, delete_after=5)
 
-        async def interaction_check(interaction):
-            if interaction.user == ctx.author:
-                return True
-            else:
-                await interaction.response.send_message(
-                    "You can't use that", ephemeral=True
-                )
-        view.interaction_check = interaction_check
-        view.on_timeout = on_timeout
+            async def interaction_check(self, interaction):
+                if interaction.user == ctx.author:
+                    return True
+                else:
+                    await interaction.response.send_message(
+                        "You can't use that", ephemeral=True
+                    )
 
+        class Button(discord.ui.Button):
+            def __init__(self, label, disabled):
+                super().__init__(label=label, style=discord.ButtonStyle.gray, row=0, disabled=disabled)
+
+            async def callback(self, interaction: discord.Interaction):
+                view.delete_warn_idx = int(self.label)
+                await view.write_msg(interaction)
+                return
+
+        warns = helper.get_warns(member_id=member.id)
+        #warns might not get deleted properly, temp fix
+        if warns is None or warns == []:
+            return await ctx.reply("User has no warns.", delete_after=10)
+
+        view = View(warns=warns)
+
+        warn_len = len(warns)
+
+        embed = discord.Embed(
+            title=f"Warns for {member.name}",
+            description=f"Showing atmost 5 warns at a time. (Total warns: {warn_len})",
+            color=discord.Colour.magenta(),
+            timestamp=datetime.datetime.utcnow(),
+        )
+        embed.set_footer(text=f"Page 1/{(warn_len-1)//5+1}")
+        
+        end = 5 if 5 < warn_len else warn_len
+        
+        for idx, warn in enumerate(warns[0:end]):
+            embed.add_field(
+                name=f"ID: {idx}",
+                value="```{0}\n{1}\n{2}```".format(
+                    "Author: {} ({})".format(warn["author_name"], warn["author_id"]),
+                    "Reason: {}".format(warn["reason"]),
+                    "Date: {}".format(warn["datetime"].replace(microsecond=0)),
+                ),
+                inline=False,
+            )
         msg = await ctx.send(embed=embed, view=view)
 
     @commands.command(aliases=["infr", "inf", "infraction"])
