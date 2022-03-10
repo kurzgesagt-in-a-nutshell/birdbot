@@ -421,9 +421,8 @@ class Filter(commands.Cog):
                     tracker = tracker + 2
             # Chagnes letter emojis to normal ascii ones
             message_clean = self.convert_regional(message_clean)
-            # Changes “ and ” into "
-            message_clean = message_clean.replace("“", "\"")
-            message_clean = message_clean.replace("”", "\"")
+            # changes cyrllic letters into ascii ones
+            message_clean = self.convert_letters(message_clean)
             # find all question marks in message
             indexes = [x.start() for x in re.finditer(r"\?", message_clean)]
             # get rid of all other non ascii charcters
@@ -644,6 +643,36 @@ class Filter(commands.Cog):
             else:
                 to_return = to_return + letter
             counter = counter + 1
+        return to_return
+
+    def convert_letters(self, word):
+        replacement = {
+            "а": "a",
+            "в": "b",
+            "с": "c",
+            "е": "e",
+            "н": "h",
+            "к": "k",
+            "м": "m",
+            "и": "n",
+            "о": "o",
+            "р": "p",
+            "🇷": "r",
+            "т": "t",
+            "ш": "w",
+            "х": "x",
+            "у": "y",
+            "“": "\"",
+            "”": "\"",
+        }
+
+        to_return = ""
+        letter_list = list(word)
+        for letter in letter_list:
+            if replacement.get(letter.lower()) is not None:
+                to_return = to_return + replacement.get(letter.lower())
+            else:
+                to_return = to_return + letter
         return to_return
 
     def generate_regex(self, words):
