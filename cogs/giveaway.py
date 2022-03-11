@@ -278,7 +278,8 @@ class Giveaway(commands.Cog):
             await ctx.send("Giveaway not found!", delete_after=6)
             await ctx.message.delete(delay=6)
 
-    @mod_and_above()
+    #@mod_and_above()
+    @devs_only()
     @giveaway.command()
     async def reroll(
         self,
@@ -288,7 +289,15 @@ class Giveaway(commands.Cog):
         rigged: typing.Optional[str] = None,
     ):
         """Pick a new winner
-        Usage: giveaway reroll pin <no_of_winners> <rigged>"""
+        Usage: giveaway reroll messageid <no_of_winners> <rigged>"""
+        if rigged != None:
+            if rigged.lower() == "y" or rigged.lower() == "yes":
+                rigged = True
+            elif rigged.lower() == "n" or rigged.lower() == "no":
+                rigged = False
+            else:
+                raise commands.BadArgument(message="Rigged argument must be y/n")
+        
         for i in self.giveaway_db.find():
             if i["message_id"] == giveaway:
                 doc = i
