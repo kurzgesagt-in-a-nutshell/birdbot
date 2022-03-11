@@ -278,8 +278,7 @@ class Giveaway(commands.Cog):
             await ctx.send("Giveaway not found!", delete_after=6)
             await ctx.message.delete(delay=6)
 
-    #@mod_and_above()
-    @devs_only()
+    @mod_and_above()
     @giveaway.command()
     async def reroll(
         self,
