@@ -10,7 +10,7 @@ colorama==0.4.4
 commonmark==0.9.1
 demoji==1.1.0
 discord.py==1.7.3
-dnspython==2.2.0
+dnspython==2.2.1
 fuzzywuzzy==0.18.0
 gitdb==4.0.9
 GitPython==3.1.27
