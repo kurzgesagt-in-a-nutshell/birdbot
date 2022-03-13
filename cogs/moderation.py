@@ -16,6 +16,7 @@ from utils.helper import create_user_infraction, devs_only, mod_and_above, calc_
 
 import discord
 from discord.ext import commands, tasks
+from discord import app_commands
 
 
 class Moderation(commands.Cog):
@@ -38,20 +39,14 @@ class Moderation(commands.Cog):
     async def on_ready(self):
         self.logger.info("loaded Moderation")
 
-    @commands.command()
-    async def report(self, ctx):
-        """Report an issue to the authorites
-        Usage: report"""
-
+    @app_commands.guilds(414027124836532234)
+    @app_commands.command()
+    async def report(self, interaction: discord.Interaction, member: discord.Member):  
         class Modal(discord.ui.Modal):
-            def __init__(self, bot):
+            def __init__(self, member):
                 super().__init__(title="Report")
-                self.bot = bot
-            user = discord.ui.TextInput(
-                label="User ID",
-                style=discord.TextStyle.short,
-                placeholder="471705718957801483",
-            )
+                self.member = member
+
             text = discord.ui.TextInput(
                 label="Briefly describe your issue",
                 style=discord.TextStyle.long,
@@ -64,45 +59,26 @@ class Moderation(commands.Cog):
             )
 
             async def on_submit(self, interaction):
-                description = self.children[1].value
-                message_link = self.children[2].value
-                userid = self.children[0].value
+                description = self.children[0].value
+                message_link = self.children[1].value
 
                 mod_embed = discord.Embed(title="New Report", color=0x00FF00)
                 mod_embed.set_author(
-                    name=ctx.author.name, icon_url=ctx.author.avatar.url
+                    name=interaction.user.name, icon_url=interaction.user.avatar.url
                 )
 
-                mod_embed.description = f"**Report description: ** {description}\n**User: ** {userid}\n**Message Link: ** [click to jump]({message_link})"
+                mod_embed.description = f"**Report description: ** {description}\n**User: ** {self.member}\n**Message Link: ** [click to jump]({message_link})"
 
-                mod_channel = self.bot.get_channel(414095428573986816)
+                mod_channel = interaction.guild.get_channel(414095428573986816)
                 await mod_channel.send(embed=mod_embed)
 
-                await interaction.message.edit("Report done", view=None)
                 await interaction.response.send_message(
                     "Report has been sent!", ephemeral=True
                 )
 
-        button = discord.ui.Button(label="Make a report")
-
-        async def call_back(interaction):
-            modal = Modal(self.bot)
-            await interaction.response.send_modal(modal)
-
-        button.callback = call_back
-        view = discord.ui.View(timeout=120)
-        view.add_item(button)
-
-        async def on_timeout():
-            await msg.edit("Timed out", view=None)
-
-        view.on_timeout = on_timeout
-        try:
-            msg = await ctx.author.send(view=view)
-        except discord.Forbidden:
-            await ctx.send(
-                "I can't send you a DM, please check your server privacy settings."
-            )
+        memberid = member.id
+        await interaction.response.send_modal(Modal(member=memberid))
+        
 
     @mod_and_above()
     @commands.command(aliases=["purge", "prune", "clear"])
