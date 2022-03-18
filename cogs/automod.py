@@ -191,15 +191,89 @@ class Filter(commands.Cog):
         Usage: filter check general/humanities word(s)
         """
         # TODO: return words that triggered the profanity
+
+        def check_profanity_test(word_list, message):
+            # print(self.white_list)
+            profanity.load_censor_words(word_list)
+            regex_list = self.generate_regex(word_list)
+            # stores all words that are aparently profanity
+            offending_list = []
+            toReturn = False
+            # filter out bold and italics but keep *
+            message_clean = message
+            indexes = re.finditer("(\*\*.*\*\*)", message)
+            if indexes:
+                tracker = 0
+                for i in indexes:
+                    message_clean = message_clean.replace(
+                        message_clean[i.start() - tracker : i.end() - tracker],
+                        message_clean[i.start() + 2 - tracker : i.end() - 2 - tracker],
+                    )
+                    tracker = tracker + 4
+            indexes = re.finditer(r"(\*.*\*)", message_clean)
+            if indexes:
+                tracker = 0
+                for i in indexes:
+                    message_clean = message_clean.replace(
+                        message_clean[i.start() - tracker : i.end() - tracker],
+                        message_clean[i.start() + 1 - tracker : i.end() - 1 - tracker],
+                    )
+                    tracker = tracker + 2
+            # Chagnes letter emojis to normal ascii ones
+            message_clean = self.convert_regional(message_clean)
+            # changes cyrllic letters into ascii ones
+            message_clean = self.convert_letters(message_clean)
+            # find all question marks in message
+            indexes = [x.start() for x in re.finditer(r"\?", message_clean)]
+            # get rid of all other non ascii charcters
+            message_clean = demoji.replace(message_clean, "*")
+            message_clean = (
+                str(message_clean)
+                .encode("ascii", "replace")
+                .decode()
+                .lower()
+                .replace("?", "*")
+            )
+            # put back question marks
+            message_clean = {message_clean}
+            for i in indexes:
+                message_clean[i] = "?"
+            message_clean = "".join(message_clean)
+            # sub out discord emojis
+            message_clean = re.sub(r"(<[A-z]*:[^\s]+:[0-9]*>)", "*", message_clean)
+            if profanity.contains_profanity(message_clean):
+                offending_list = []
+                for w in word_list:
+                    if re.search(w, message_clean):
+                        offending_list.append(re.findall(w,word_list))
+                if self.exception_list_check(offending_list):
+                    return False
+                else:
+                    return True
+            elif profanity.contains_profanity(str(message_clean).replace(" ", "")):
+                return True
+            else:
+                for regex in regex_list:
+                    if re.search(regex, message_clean):
+                        found_items = re.findall(regex[:-3] + "[A-z]*)", message_clean)
+                        for e in found_items:
+                            offending_list.append(e)
+                        toReturn = True
+            if toReturn:
+                if self.exception_list_check(offending_list):
+                    return False
+                return [True, offending_list]
+            return False
         msg = await ctx.send(words)
         if list == "humanities":
-            await ctx.send(await self.check_message(msg, self.humanities_list))
+            await ctx.send(check_profanity_test(self.humanities_list, words))
         elif list == "general":
-            await ctx.send(await self.check_message(msg, self.general_list))
+            await ctx.send(check_profanity_test(self.general_list, words))
         else:
             raise commands.BadArgument(
                 message="No list chosen, must be general or humanities"
             )
+
 
     @commands.Cog.listener()
     async def on_member_update(self, before, after):
@@ -445,11 +519,12 @@ class Filter(commands.Cog):
                 offending_list = []
                 for w in word_list:
                     if re.search(w, message_clean):
-                        offending_list.append(w)
+                        for e in re.findall(w,word_list):
+                            offending_list.append(e)
                 if self.exception_list_check(offending_list):
-                    return True
-                else:
                     return False
+                else:
+                    return [True, offending_list]
             elif profanity.contains_profanity(str(message_clean).replace(" ", "")):
                 return True
             else:
@@ -461,10 +536,9 @@ class Filter(commands.Cog):
                             print(e)
                         toReturn = True
             if toReturn:
-                print(self.white_list)
                 if self.exception_list_check(offending_list):
-                    return toReturn
-
+                    return False
+                return True
             return False
 
         # check for emoji spam
