@@ -259,7 +259,7 @@ class Filter(commands.Cog):
             return False
         msg = await ctx.send(words)
         if list == "humanities":
-            await ctx.send(check_profanity_test(self.humanities_list, words))
+            await ctx.send(check_profanity_test(self.humanities_list + self.general_list, words))
         elif list == "general":
             await ctx.send(check_profanity_test(self.general_list, words))
         else:
@@ -438,7 +438,7 @@ class Filter(commands.Cog):
 
     def get_word_list(self, message):
         if message.channel == 546315063745839115:
-            return self.humanities_list
+            return self.humanities_list + self.general_list
         else:
             return self.general_list
 
