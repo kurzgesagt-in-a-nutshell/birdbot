@@ -245,7 +245,7 @@ class Moderation(commands.Cog):
         embed.add_field(name="Reason", value=f"{reason}", inline=False)
 
         await logging_channel.send(embed=embed)
-        await ctx.message.add_reaction("<:kgsYes:580164400691019826>")
+        await ctx.message.add_reaction("<:kgsYes:955703069516128307>")
 
         await ctx.message.delete(delay=6)
 
@@ -289,7 +289,7 @@ class Moderation(commands.Cog):
         if len(members) == 0:
             return
 
-        await ctx.message.add_reaction("<:kgsYes:580164400691019826>")
+        await ctx.message.add_reaction("<:kgsYes:955703069516128307>")
 
         helper.create_infraction(
             author=ctx.author, users=members, action="ban", reason=reason
@@ -346,7 +346,7 @@ class Moderation(commands.Cog):
             color=discord.Color.dark_red(),
         )
         await logging_channel.send(embed=embed)
-        await ctx.message.add_reaction("<:kgsYes:580164400691019826>")
+        await ctx.message.add_reaction("<:kgsYes:955703069516128307>")
 
     @commands.command()
     @mod_and_above()
@@ -374,7 +374,7 @@ class Moderation(commands.Cog):
                 failed_kick = True
                 members.remove(i)
 
-        await ctx.message.add_reaction("<:kgsYes:580164400691019826>")
+        await ctx.message.add_reaction("<:kgsYes:955703069516128307>")
         if failed_kick:
             await ctx.send(
                 "Could not kick certain users due to your clearance", delete_after=6
@@ -453,7 +453,7 @@ class Moderation(commands.Cog):
                 failed_mute = True
                 members.remove(i)
 
-        await ctx.message.add_reaction("<:kgsYes:580164400691019826>")
+        await ctx.message.add_reaction("<:kgsYes:955703069516128307>")
         if failed_mute:
             await ctx.send(
                 "Certain members could not be muted due to your clearance",
@@ -503,7 +503,7 @@ class Moderation(commands.Cog):
                 route, json={"communication_disabled_until": None}
             )
 
-        await ctx.message.add_reaction("<:kgsYes:580164400691019826>")
+        await ctx.message.add_reaction("<:kgsYes:955703069516128307>")
         embed = helper.create_embed(
             author=ctx.author,
             action="Unmuted User(s)",
@@ -616,7 +616,7 @@ class Moderation(commands.Cog):
         )
         await logging_channel.send(embed=embed)
 
-        await ctx.message.add_reaction("<:kgsYes:580164400691019826>")
+        await ctx.message.add_reaction("<:kgsYes:955703069516128307>")
         await ctx.message.delete(delay=6)
 
     @commands.command(aliases=["unwarn", "removewarn"])

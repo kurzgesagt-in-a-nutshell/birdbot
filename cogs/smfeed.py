@@ -26,7 +26,7 @@ class Smfeed(commands.Cog):
         if self.bot.user.id != 471705718957801483:
             return
         if message.channel.id == 580354435302031360:
-            await message.add_reaction("<:kgsYes:580164400691019826>")
+            await message.add_reaction("<:kgsYes:955703069516128307>")
 
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload):
@@ -37,7 +37,7 @@ class Smfeed(commands.Cog):
         if (
             payload.channel_id == 580354435302031360
             and not payload.member.bot
-            and payload.emoji.id == 580164400691019826
+            and payload.emoji.id == 955703069516128307
         ):
             guild = discord.utils.get(self.bot.guilds, id=414027124836532234)
             trainee_mod_role = guild.get_role(self.trainee_mod_role)
@@ -46,7 +46,7 @@ class Smfeed(commands.Cog):
                 message = await channel.fetch_message(payload.message_id)
                 for reaction in message.reactions:
                     if type(reaction.emoji) != type(""):
-                        if reaction.emoji.id == 580164400691019826:
+                        if reaction.emoji.id == 955703069516128307:
                             if reaction.count < 3:
                                 channel = guild.get_channel(
                                     489450008643502080

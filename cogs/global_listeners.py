@@ -21,7 +21,7 @@ from utils.helper import (
     WrongChannel,
     patreon_only,
     create_user_infraction,
-    is_internal_command
+    is_internal_command,
 )
 
 
@@ -100,7 +100,7 @@ class GuildLogger(commands.Cog):
 
         if is_internal_command(self.bot, message):
             return
- 
+
         embed = discord.Embed(
             title="Message Deleted",
             description=f"Message deleted in {message.channel.mention}",
@@ -150,13 +150,13 @@ class GuildLogger(commands.Cog):
         if self.bot.user.id != 471705718957801483:
             return
 
-        #remind mods to screenshot milestone
+        # remind mods to screenshot milestone
         if len(member.guild.members) == 69410:
 
             mod_channel = self.bot.get_channel(414095428573986816)
-            await mod_channel.send('<@&414092550031278091> we are ten members away for 69420!! Someone get the screenshot')
-
-
+            await mod_channel.send(
+                "<@&414092550031278091> we are ten members away for 69420!! Someone get the screenshot"
+            )
 
         embed = discord.Embed(
             title="Member joined",
@@ -436,13 +436,13 @@ class GuildChores(commands.Cog):
 
         try:
             confirm_msg = await ctx.author.send(embed=embed)
-            await confirm_msg.add_reaction("<:kgsYes:580164400691019826>")
-            await confirm_msg.add_reaction(":kgsNo:610542174127259688>")
+            await confirm_msg.add_reaction("<:kgsYes:955703069516128307>")
+            await confirm_msg.add_reaction("<:kgsNo:955703108565098496>")
             reaction, user = await self.bot.wait_for(
                 "reaction_add", timeout=120, check=check
             )
 
-            if reaction.emoji.id == 580164400691019826:
+            if reaction.emoji.id == 955703069516128307:
 
                 member = discord.utils.get(
                     self.bot.guilds, id=414027124836532234
@@ -462,7 +462,7 @@ class GuildChores(commands.Cog):
                 await ctx.author.send("Success! You've been banned from the server.")
                 await member.ban(reason="Patron Voluntary Removal")
                 return
-            if reaction.emoji.id == 610542174127259688:
+            if reaction.emoji.id == 955703108565098496:
                 await confirm_msg.edit(embed=fallback_embed)
                 return
 
@@ -513,20 +513,20 @@ class Errors(commands.Cog):
         if isinstance(
             err, (errors.MissingPermissions, NoAuthorityError, errors.NotOwner)
         ):
-            await self.react_send_delete(ctx, reaction="<:kgsNo:610542174127259688>")
+            await self.react_send_delete(ctx, reaction="<:kgsNo:955703108565098496>")
 
         elif isinstance(err, DevBotOnly):
             await self.react_send_delete(
                 ctx,
                 message="This command can only be run on the main bot",
-                reaction="<:kgsNo:610542174127259688>",
+                reaction="<:kgsNo:955703108565098496>",
             )
 
         elif isinstance(err, commands.MissingRequiredArgument):
             await self.react_send_delete(
                 ctx,
                 message=f"You're missing the {err.param.name} argument. Please check syntax using the help command.",
-                reaction="<:kgsNo:610542174127259688>",
+                reaction="<:kgsNo:955703108565098496>",
             )
 
         elif isinstance(err, commands.CommandNotFound):
@@ -539,7 +539,7 @@ class Errors(commands.Cog):
             await self.react_send_delete(
                 ctx,
                 message=err,
-                reaction="<:kgsNo:610542174127259688>",
+                reaction="<:kgsNo:955703108565098496>",
                 delay=4,
             )
 

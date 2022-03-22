@@ -112,8 +112,8 @@ class Topic(commands.Cog):
         embed.set_footer(text="topic")
         message = await automated_channel.send(embed=embed)
 
-        await message.add_reaction("<:kgsYes:580164400691019826>")
-        await message.add_reaction("<:kgsNo:610542174127259688>")
+        await message.add_reaction("<:kgsYes:955703069516128307>")
+        await message.add_reaction("<:kgsNo:955703108565098496>")
 
         await ctx.send("Topic suggested.", delete_after=4)
         await ctx.message.delete(delay=4)
@@ -129,7 +129,7 @@ class Topic(commands.Cog):
                     payload.message_id
                 )
                 if message.embeds and message.embeds[0].footer.text == "topic":
-                    if payload.emoji.id == 580164400691019826:
+                    if payload.emoji.id == 955703069516128307:
                         topic = message.embeds[0].description
                         author = message.embeds[0].author
                         self.topics.append(topic.strip("*"))
@@ -150,7 +150,7 @@ class Topic(commands.Cog):
                         except discord.Forbidden:
                             pass
 
-                    elif payload.emoji.id == 610542174127259688:
+                    elif payload.emoji.id == 955703108565098496:
                         message = await self.bot.get_channel(
                             payload.channel_id
                         ).fetch_message(payload.message_id)

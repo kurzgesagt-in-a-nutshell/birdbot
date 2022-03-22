@@ -157,8 +157,8 @@ class Banner(commands.Cog):
         embed.set_image(url="attachment://banner.png")
         embed.set_footer(text="banner")
         message = await automated_channel.send(embed=embed, file=file)
-        await message.add_reaction("<:kgsYes:580164400691019826>")
-        await message.add_reaction("<:kgsNo:610542174127259688>")
+        await message.add_reaction("<:kgsYes:955703069516128307>")
+        await message.add_reaction("<:kgsNo:955703108565098496>")
 
         await ctx.send("Banner suggested.", delete_after=4)
         await ctx.message.delete(delay=4)
@@ -214,7 +214,7 @@ class Banner(commands.Cog):
                 )
 
                 if message.embeds and message.embeds[0].footer.text == "banner":
-                    if payload.emoji.id == 580164400691019826:  # kgsYes emote
+                    if payload.emoji.id == 955703069516128307:  # kgsYes emote
                         url = message.embeds[0].image.url
                         author = message.embeds[0].author
                         embed = discord.Embed(colour=discord.Colour.green())
@@ -240,7 +240,7 @@ class Banner(commands.Cog):
                         except discord.Forbidden:
                             pass
 
-                    elif payload.emoji.id == 610542174127259688:  # kgsNo emoji
+                    elif payload.emoji.id == 955703108565098496:  # kgsNo emoji
                         embed = discord.Embed(title="Banner suggestion removed!")
                         await message.edit(embed=embed, delete_after=6)
 

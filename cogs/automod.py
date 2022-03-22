@@ -15,7 +15,7 @@ from utils.helper import (
     create_automod_embed,
     mod_and_above,
     is_internal_command,
-    is_external_command
+    is_external_command,
 )
 
 
@@ -78,7 +78,7 @@ class Filter(commands.Cog):
             file=discord.File("swearfilters/whitelist.txt"),
         )
 
-        await ctx.message.add_reaction("<:kgsYes:580164400691019826>")
+        await ctx.message.add_reaction("<:kgsYes:955703069516128307>")
 
     @whitelist.command(hidden=True, aliases=["add"])
     async def _add(self, ctx, *, words):
@@ -95,7 +95,7 @@ class Filter(commands.Cog):
         with open("swearfilters/whitelist.txt", "w") as f:
             f.write("\n".join(oldwords))
 
-        await ctx.message.add_reaction("<:kgsYes:580164400691019826>")
+        await ctx.message.add_reaction("<:kgsYes:955703069516128307>")
 
     @whitelist.command(hidden=True, aliases=["remove"])
     async def _remove(self, ctx, *, words):
@@ -112,7 +112,7 @@ class Filter(commands.Cog):
         with open("swearfilters/whitelist.txt", "w") as f:
             f.write("\n".join(oldwords))
 
-        await ctx.message.add_reaction("<:kgsYes:580164400691019826>")
+        await ctx.message.add_reaction("<:kgsYes:955703069516128307>")
 
     @filter.group()
     async def blacklist(self, ctx):
@@ -146,7 +146,7 @@ class Filter(commands.Cog):
             file=discord.File(channel),
         )
 
-        await ctx.message.add_reaction("<:kgsYes:580164400691019826>")
+        await ctx.message.add_reaction("<:kgsYes:955703069516128307>")
 
     @blacklist.command(hidden=True)
     async def add(self, ctx, listtype, *, words):
@@ -164,7 +164,7 @@ class Filter(commands.Cog):
         with open(channel, "w") as f:
             f.write("\n".join(oldwords))
 
-        await ctx.message.add_reaction("<:kgsYes:580164400691019826>")
+        await ctx.message.add_reaction("<:kgsYes:955703069516128307>")
 
     @blacklist.command(hidden=True)
     async def remove(self, ctx, listtype, *, words):
@@ -182,7 +182,7 @@ class Filter(commands.Cog):
         with open(channel, "w") as f:
             f.write("\n".join(oldwords))
 
-        await ctx.message.add_reaction("<:kgsYes:580164400691019826>")
+        await ctx.message.add_reaction("<:kgsYes:955703069516128307>")
 
     @filter.command()
     async def check(self, ctx, list, *, words):
@@ -285,7 +285,7 @@ class Filter(commands.Cog):
         if message.content == "":
             return
 
-        if is_internal_command(self.bot,message):
+        if is_internal_command(self.bot, message):
             return
 
         if is_external_command(message):
@@ -316,13 +316,17 @@ class Filter(commands.Cog):
         if member.bot:
             return
         if member.nick is None:
-            if not re.search(r"[a-zA-Z0-9~!@#$%^&*()_+`;':\",./<>?]{3,}", member.name,re.IGNORECASE):
+            if not re.search(
+                r"[a-zA-Z0-9~!@#$%^&*()_+`;':\",./<>?]{3,}", member.name, re.IGNORECASE
+            ):
                 await member.edit(nick="Unpingable Username")
             if any(s in member.name for s in ("nazi", "hitler", "führer", "fuhrer")):
                 await member.edit(nick="Parrot")
-            
+
         else:
-            if not re.search(r"[a-zA-Z0-9~!@#$%^&*()_+`;':\",./<>?]{3,}", member.nick,re.IGNORECASE):
+            if not re.search(
+                r"[a-zA-Z0-9~!@#$%^&*()_+`;':\",./<>?]{3,}", member.nick, re.IGNORECASE
+            ):
                 await member.edit(nick="Unpingable Nickname")
             if any(s in member.nick for s in ("nazi", "hitler", "führer", "fuhrer")):
                 await member.edit(nick=None)
@@ -721,8 +725,8 @@ class Filter(commands.Cog):
             "ш": "w",
             "х": "x",
             "у": "y",
-            "“": "\"",
-            "”": "\"",
+            "“": '"',
+            "”": '"',
         }
 
         to_return = ""
