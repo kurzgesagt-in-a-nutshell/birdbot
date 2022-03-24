@@ -50,7 +50,7 @@ possible_commands = [
 
     #Tatsu#8792 (add commands that frequently get used coz too many to add manually)
     r"rank",r"fish",r"rep",r"profile",r"cookie",r"quest",
-    r"tg",r"tatsugotchi",r"pet"
+    r"tg",r"tatsugotchi",r"pet",r"slots",r"top"
 ]
 
 class NoAuthorityError(commands.CheckFailure):
