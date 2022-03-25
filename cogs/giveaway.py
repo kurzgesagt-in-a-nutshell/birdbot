@@ -102,23 +102,31 @@ class Giveaway(commands.Cog):
                 winners = ""
                 winnerids = ", ".join([str(i) for i in choice])
                 for winner in choice:
-                    await message.channel.send(f"{winner.mention} won {giveaway['prize']}!")
-                    winners += winner.mention + "\n"
+                    await message.channel.send(
+                        f"{winner.mention} won **{giveaway['prize']}**!"
+                    )
+                    winners += f"> {winner.mention}\n"
 
             else:
                 winners = "Nobody participated :("
                 winnerids = ""
+            newdescription = ""
+            for line in embed["description"].splitlines():
+                newdescription += line + "\n"
+                if line.startswith("> **Winners"):
+                    newdescription += winners
+            newdescription[:-2]
 
-            for i in embed["fields"]:
-                if i["name"].startswith("winners"):
-                    i["value"] = winners
+            embed["description"] = newdescription
 
             embed = discord.Embed.from_dict(embed)
             await message.edit(embed=embed)
 
         except discord.errors.NotFound:
             del self.active_giveaways[giveaway["pin"]]
-            self.giveaway_db.update_one(giveaway, {"$set": {"giveaway_cancelled": True}})
+            self.giveaway_db.update_one(
+                giveaway, {"$set": {"giveaway_cancelled": True}}
+            )
             pass
 
         if giveaway["pin"] in self.active_giveaways:
@@ -158,13 +166,13 @@ class Giveaway(commands.Cog):
                 dash_args.append([arguments[i], arguments[i + 1]])
 
         fields = {
-            "winners": {"name": "winners: 1", "value": "ㅤ"},
-            "sponsor": {"name": "hosted by", "value": ctx.author.mention},
+            "winners": "> **Winners: 1**",
+            "sponsor": f"> **Hosted by**\n> {ctx.author.mention}",
         }
 
         for a in dash_args:
             if a[0] == "-w":
-                fields["winners"] = {"name": f"winners: {a[1]}", "value": "ㅤ"}
+                fields["winners"] = f"> **Winners: {a[1]}**"
                 try:
                     winners = int(a[1])
                 except:
@@ -176,7 +184,7 @@ class Giveaway(commands.Cog):
                     sponsor = member_converter(ctx, a[1]).mention
                 except:
                     raise commands.BadArgument(message="Improper mention of user")
-                fields["sponsor"] = {"name": "sponsored by", "value": sponsor}
+                fields["sponsor"] = f"> **Sponsored by**\n> {sponsor}"
                 sponsor = member_converter(ctx, a[1]).id
             elif a[0] == "-r":
                 if a[1].lower() == "y" or a[1].lower() == "yes":
@@ -195,14 +203,14 @@ class Giveaway(commands.Cog):
 
         embed = discord.Embed(
             title="Giveaway started!",
-            description=f"**{giveaway_msg}**",
             timestamp=datetime.now(timezone.utc) + timedelta(seconds=time),
             colour=discord.Colour.green(),
         )
+        description = f"**{giveaway_msg}\n**"
         for field in fields:
-            embed.add_field(
-                name=fields[field]["name"], value=fields[field]["value"], inline=False
-            )
+            description += "\n" + fields[field]
+
+        embed.description = description
 
         uid = str(datetime.utcnow().timestamp())[-3:] + "0"
         c = 0
@@ -266,7 +274,9 @@ class Giveaway(commands.Cog):
             )
             await message.delete()
             del self.active_giveaways[pin]
-            self.giveaway_db.update_one(giveaway, {"$set": {"giveaway_cancelled": True}})
+            self.giveaway_db.update_one(
+                giveaway, {"$set": {"giveaway_cancelled": True}}
+            )
 
             for i in asyncio.all_tasks():
                 if i.get_name() == pin:
@@ -296,7 +306,7 @@ class Giveaway(commands.Cog):
                 rigged = False
             else:
                 raise commands.BadArgument(message="Rigged argument must be y/n")
-        
+
         for i in self.giveaway_db.find():
             if i["message_id"] == giveaway:
                 doc = i
