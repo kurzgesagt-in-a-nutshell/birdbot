@@ -99,25 +99,26 @@ class Giveaway(commands.Cog):
                     size = len(users)
 
                 choice = np.random.choice(users, size=size, replace=False, p=prob)
-                winners = ""
-                winnerids = ", ".join([str(i) for i in choice])
+                winners = []
+                winnerids = ", ".join([str(i.id) for i in choice])
                 for winner in choice:
                     await message.channel.send(
                         f"{winner.mention} won **{giveaway['prize']}**!"
                     )
-                    winners += f"> {winner.mention}\n"
+                    winners.append(f"> {winner.mention}")
+                winners = "\n".join(winners)
 
             else:
-                winners = "Nobody participated :("
+                winners = "> Nobody participated :("
                 winnerids = ""
-            newdescription = ""
-            for line in embed["description"].splitlines():
-                newdescription += line + "\n"
-                if line.startswith("> **Winners"):
-                    newdescription += winners
-            newdescription[:-2]
 
-            embed["description"] = newdescription
+            newdescription = embed["description"].splitlines()
+            for i in range(len(newdescription)):
+                if newdescription[i].startswith("> **Winners"):
+                    newdescription.insert(i + 1, winners)
+                    break
+
+            embed["description"] = "\n".join(newdescription)
 
             embed = discord.Embed.from_dict(embed)
             await message.edit(embed=embed)
@@ -135,6 +136,9 @@ class Giveaway(commands.Cog):
                 giveaway,
                 {"$set": {"giveaway_over": True, "winners": winnerids}},
             )
+        else:
+            winnerids += f", old: {giveaway['winners']}"
+            self.giveaway_db.update_one(giveaway, {"$set": {"winners": winnerids}})
 
     async def start_giveaway(self, giveaway):
         """Sets up a giveaway task"""
@@ -315,7 +319,7 @@ class Giveaway(commands.Cog):
                 if rigged != None:
                     doc["rigged"] = rigged
                 await self.choose_winner(doc)
-                break
+                return
         await ctx.send("Giveaway not found!", delete_after=6)
 
     @mod_and_above()
