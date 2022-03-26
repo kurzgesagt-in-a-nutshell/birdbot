@@ -4,6 +4,7 @@ import datetime
 import logging
 import re
 import asyncio
+import io
 import demoji
 from better_profanity import profanity
 
@@ -36,12 +37,16 @@ class Filter(commands.Cog):
         self.white_list = []
         self.message_history_list = {}
         self.message_history_lock = asyncio.Lock()
-        with open("swearfilters/humanitiesfilter.txt") as f:
-            self.humanities_list = f.read().splitlines()
-        with open("swearfilters/generalfilter.txt") as f:
-            self.general_list = f.read().splitlines()
-        with open("swearfilters/whitelist.txt") as f:
-            self.white_list = f.read().splitlines()
+
+        self.humanities_list = self.bot.db.filterlist.find_one({"name": "humanities"})[
+            "filter"
+        ]
+        self.general_list = self.bot.db.filterlist.find_one({"name": "general"})[
+            "filter"
+        ]
+        self.white_list = self.bot.db.filterlist.find_one({"name": "whitelist"})[
+            "filter"
+        ]
 
     @commands.Cog.listener()
     async def on_ready(self):
@@ -75,7 +80,9 @@ class Filter(commands.Cog):
         """
         await ctx.send(
             "These are the words which are whitelisted",
-            file=discord.File("swearfilters/whitelist.txt"),
+            file=discord.File(
+                io.BytesIO("\n".join(self.white_list).encode("UTF-8")), "whitelist.txt"
+            ),
         )
 
         await ctx.message.add_reaction("<:kgsYes:955703069516128307>")
@@ -86,14 +93,20 @@ class Filter(commands.Cog):
         Add word(s) to the whitelist
         Usage: filter whitelist add word(s)
         """
-        newwords = words.split(" ")
-        oldwords = self.white_list
-        nowords = [word for word in newwords if word in oldwords]
-        if nowords != []:
-            await ctx.send(f"{', '.join(nowords)} already in the whitelist")
-        [oldwords.append(word) for word in newwords if word not in oldwords]
-        with open("swearfilters/whitelist.txt", "w") as f:
-            f.write("\n".join(oldwords))
+        new_words = words.split(" ")
+
+        words_to_add = []
+        for word in new_words:
+            if word in self.white_list:
+                await ctx.send(f"`{word}` already exists in whitelist.", delete_after=6)
+            else:
+                words_to_add.append(word)
+
+        self.bot.db.filterlist.update_one(
+            {"name": "whitelist"}, {"$push": {"filter": {"$each": words_to_add}}}
+        )
+
+        await self.update_list("whitelist")
 
         await ctx.message.add_reaction("<:kgsYes:955703069516128307>")
 
@@ -103,14 +116,20 @@ class Filter(commands.Cog):
         Remove word(s) from the whitelist
         Usage: filter whitelist remove word(s)
         """
-        newwords = words.split(" ")
-        oldwords = self.white_list
-        nowords = [word for word in newwords if word not in oldwords]
-        if nowords != []:
-            await ctx.send(f"{', '.join(nowords)} not in the whitelist")
-        [oldwords.remove(word) for word in newwords if word in oldwords]
-        with open("swearfilters/whitelist.txt", "w") as f:
-            f.write("\n".join(oldwords))
+        new_words = words.split(" ")
+
+        words_to_remove = []
+        for word in new_words:
+            if word not in self.white_list:
+                await ctx.send(f"`{word}` doesn't exist in whitelist.", delete_after=6)
+            else:
+                words_to_remove.append(word)
+
+        self.bot.db.filterlist.update_one(
+            {"name": "whitelist"}, {"$pull": {"filter": {"$in": words_to_remove}}}
+        )
+
+        await self.update_list("whitelist")
 
         await ctx.message.add_reaction("<:kgsYes:955703069516128307>")
 
@@ -123,64 +142,103 @@ class Filter(commands.Cog):
         if ctx.invoked_subcommand is None:
             await ctx.send(ctx.command.help)
 
-    async def choose_list(self, listtype):
+    async def update_list(self, list_type):
+        """Updates filter list from Mongo based on list_type"""
+
+        if list_type == "whitelist":
+            self.white_list = self.bot.db.filterlist.find_one({"name": "whitelist"})[
+                "filter"
+            ]
+
+        elif list_type == "general":
+            self.general_list = self.bot.db.filterlist.find_one({"name": "general"})[
+                "filter"
+            ]
+
+        elif list_type == "humanities":
+            self.humanities_list = self.bot.db.filterlist.find_one(
+                {"name": "humanities"}
+            )["filter"]
+
+        else:
+            raise commands.BadArgument(
+                message="Invalid list, must be whitelist, general or humanities."
+            )
+
+    async def choose_list(self, list_type):
         """Does the filter list selection logic"""
-        if listtype == "humanities":
-            return "swearfilters/humanitiesfilter.txt", self.humanities_list
-        elif listtype == "general":
-            return "swearfilters/generalfilter.txt", self.general_list
+        if list_type == "humanities":
+            return self.humanities_list
+        elif list_type == "general":
+            return self.general_list
         else:
             raise commands.BadArgument(
                 message="No list chosen, must be general or humanities"
             )
 
     @blacklist.command(hidden=True)
-    async def show(self, ctx, listtype):
+    async def show(self, ctx, list_type):
         """
         Send the blacklist words
         Usage: filter blacklist show general/humanities
         """
-        channel, oldwords = await self.choose_list(listtype)
+        word_list = await self.choose_list(list_type)
         await ctx.send(
-            f"These are the words which are in the {listtype} blacklist",
-            file=discord.File(channel),
+            f"These are the words which are in the {list_type} blacklist",
+            file=discord.File(
+                io.BytesIO("\n".join(word_list).encode("UTF-8")), f"{list_type}.txt"
+            ),
         )
 
         await ctx.message.add_reaction("<:kgsYes:955703069516128307>")
 
     @blacklist.command(hidden=True)
-    async def add(self, ctx, listtype, *, words):
+    async def add(self, ctx, list_type, *, words):
         """
         Add word(s) to the blacklist
         Usage: filter blacklist add general/humanities words
         """
-        channel, oldwords = await self.choose_list(listtype)
 
-        newwords = words.split(" ")
-        nowords = [word for word in newwords if word in oldwords]
-        if nowords != []:
-            await ctx.send(f"{', '.join(nowords)} already in the {listtype} blacklist")
-        [oldwords.append(word) for word in newwords if word not in oldwords]
-        with open(channel, "w") as f:
-            f.write("\n".join(oldwords))
+        old_words = await self.choose_list(list_type)
+        new_words = words.split(" ")
+
+        words_to_add = []
+        for word in new_words:
+            if word in old_words:
+                await ctx.send(f"`{word}` already exists in blacklist.", delete_after=6)
+            else:
+                words_to_add.append(word)
+
+        self.bot.db.filterlist.update_one(
+            {"name": list_type}, {"$push": {"filter": {"$each": words_to_add}}}
+        )
+
+        await self.update_list(list_type)
 
         await ctx.message.add_reaction("<:kgsYes:955703069516128307>")
 
     @blacklist.command(hidden=True)
-    async def remove(self, ctx, listtype, *, words):
+    async def remove(self, ctx, list_type, *, words):
         """
         Remove word(s) from the blacklist
         Usage: filter blacklist remove general/humanities words
         """
-        channel, oldwords = await self.choose_list(listtype)
 
-        newwords = words.split(" ")
-        nowords = [word for word in newwords if word not in oldwords]
-        if nowords != []:
-            await ctx.send(f"{', '.join(nowords)} not in the {listtype} blacklist")
-        [oldwords.remove(word) for word in newwords if word in oldwords]
-        with open(channel, "w") as f:
-            f.write("\n".join(oldwords))
+        old_words = await self.choose_list(list_type)
+        new_words = words.split(" ")
+
+        words_to_remove = []
+        for word in new_words:
+            if word not in old_words:
+                await ctx.send(f"`{word}` doesn't exists in blacklist.", delete_after=6)
+            else:
+                words_to_remove.append(word)
+
+        self.bot.db.filterlist.update_one(
+            {"name": list_type}, {"$pull": {"filter": {"$in": words_to_remove}}}
+        )
+
+        await self.update_list(list_type)
 
         await ctx.message.add_reaction("<:kgsYes:955703069516128307>")
 
@@ -257,16 +315,18 @@ class Filter(commands.Cog):
                     return False
                 return [True, offending_list]
             return False
+
         msg = await ctx.send(words)
         if list == "humanities":
-            await ctx.send(check_profanity_test(self.humanities_list + self.general_list, words))
+            await ctx.send(
+                check_profanity_test(self.humanities_list + self.general_list, words)
+            )
         elif list == "general":
             await ctx.send(check_profanity_test(self.general_list, words))
         else:
             raise commands.BadArgument(
                 message="No list chosen, must be general or humanities"
             )
-
 
     @commands.Cog.listener()
     async def on_member_update(self, before, after):
@@ -534,7 +594,7 @@ class Filter(commands.Cog):
             if toReturn:
                 if self.exception_list_check(offending_list):
                     return toReturn
-                    
+
             return False
 
         # check for emoji spam
