@@ -511,7 +511,7 @@ class Errors(commands.Cog):
         channel = await self.bot.fetch_channel(self.dev_logging_channel)
 
         if isinstance(
-            err, (errors.MissingPermissions, NoAuthorityError, errors.NotOwner)
+            err, (errors.MissingPermissions, NoAuthorityError, errors.NotOwner,errors.CheckAnyFailure)
         ):
             await self.react_send_delete(ctx, reaction="<:kgsNo:955703108565098496>")
 
