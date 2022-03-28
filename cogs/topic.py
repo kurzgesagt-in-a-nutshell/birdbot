@@ -9,7 +9,7 @@ import copy
 import discord
 from discord.ext import commands
 
-from utils.helper import mod_and_above, general_only, bot_commands_only, role_and_above
+from utils.helper import mod_and_above, general_only, bot_commands_only, patreon_only, role_and_above
 
 
 class Topic(commands.Cog):
@@ -39,7 +39,7 @@ class Topic(commands.Cog):
 
     @commands.group(invoke_without_command=True)
     @general_only()
-    @role_and_above(637114897544511488)  # duck role id
+    @commands.check_any(role_and_above(637114897544511488),  patreon_only())# duck and above or patrons
     @commands.cooldown(1, 60)
     async def topic(self, ctx: commands.Context):
         """Get a topic to talk about."""
