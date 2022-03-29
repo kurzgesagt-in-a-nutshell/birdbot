@@ -794,6 +794,7 @@ class Filter(commands.Cog):
             "у": "y",
             "“": '"',
             "”": '"',
+            "’": "'",
         }
 
         to_return = ""
