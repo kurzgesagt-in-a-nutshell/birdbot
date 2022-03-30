@@ -300,7 +300,15 @@ class Filter(commands.Cog):
             # sub out discord emojis
             message_clean = re.sub(r"(<[A-z]*:[^\s]+:[0-9]*>)", "*", message_clean)
             if profanity.contains_profanity(message_clean):
-                return True
+                if profanity.contains_profanity(message_clean):
+                    offending_list = []
+                    for w in word_list:
+                        if re.search(w, message_clean):
+                            offending_list.append(w)
+                    if self.exception_list_check(offending_list):
+                        return False
+                    else:
+                        return True
             elif profanity.contains_profanity(str(message_clean).replace(" ", "")):
                 return True
             else:
@@ -578,9 +586,9 @@ class Filter(commands.Cog):
                     if re.search(w, message_clean):
                         offending_list.append(w)
                 if self.exception_list_check(offending_list):
-                    return True
-                else:
                     return False
+                else:
+                    return True
             elif profanity.contains_profanity(str(message_clean).replace(" ", "")):
                 return True
             else:
