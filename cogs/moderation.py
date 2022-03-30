@@ -119,7 +119,11 @@ class Moderation(commands.Cog):
                 )
                 return
 
-        mod_embed.description = f"**Report description: ** {extras}\n**User: ** {user_id}\n**Message Link: ** [click to jump]({message_link})"
+        if isinstance(ctx.channel, discord.DMChannel):
+            channel = "DMs"
+        else:
+            channel = ctx.channel.mention
+        mod_embed.description = f"**Report description: ** {extras}\n**User: ** {user_id}\n**Message Link: ** [click to jump]({message_link})\n**Channel: ** {channel}"
 
         mod_channel = self.bot.get_channel(414095428573986816)
         await mod_channel.send(embed=mod_embed)
