@@ -300,15 +300,14 @@ class Filter(commands.Cog):
             # sub out discord emojis
             message_clean = re.sub(r"(<[A-z]*:[^\s]+:[0-9]*>)", "*", message_clean)
             if profanity.contains_profanity(message_clean):
-                if profanity.contains_profanity(message_clean):
-                    offending_list = []
-                    for w in word_list:
-                        if re.search(w, message_clean):
-                            offending_list.append(w)
-                    if self.exception_list_check(offending_list):
-                        return False
-                    else:
-                        return True
+                offending_list = []
+                for w in word_list:
+                    if re.search(w, message_clean):
+                        offending_list.append(w)
+                if self.exception_list_check(offending_list):
+                    return False
+                else:
+                    return True
             elif profanity.contains_profanity(str(message_clean).replace(" ", "")):
                 return True
             else:
@@ -597,7 +596,6 @@ class Filter(commands.Cog):
                         found_items = re.findall(regex[:-3] + "[A-z]*)", message_clean)
                         for e in found_items:
                             offending_list.append(e)
-                            print(e)
                         toReturn = True
             if toReturn:
                 if self.exception_list_check(offending_list):
@@ -737,7 +735,7 @@ class Filter(commands.Cog):
 
     def exception_list_check(self, offending_list):
         for bad_word in offending_list:
-            if not bad_word in self.white_list:
+            if bad_word in self.white_list:
                 return True
 
         return False
