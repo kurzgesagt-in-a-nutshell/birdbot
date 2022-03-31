@@ -511,7 +511,13 @@ class Errors(commands.Cog):
         channel = await self.bot.fetch_channel(self.dev_logging_channel)
 
         if isinstance(
-            err, (errors.MissingPermissions, NoAuthorityError, errors.NotOwner,errors.CheckAnyFailure)
+            err,
+            (
+                errors.MissingPermissions,
+                NoAuthorityError,
+                errors.NotOwner,
+                errors.CheckAnyFailure,
+            ),
         ):
             await self.react_send_delete(ctx, reaction="<:kgsNo:955703108565098496>")
 
@@ -547,7 +553,7 @@ class Errors(commands.Cog):
             self.logger.exception(traceback_txt)
             await ctx.message.add_reaction("<:kgsStop:579824947959169024>")
             await ctx.send(
-                "Uh oh, an unhandled exception occured, if this issue persists please contact FC or sloth"
+                "Uh oh, an unhandled exception occured, if this issue persists please contact any of bot devs (Sloth, FC, Austin, Orav)."
             )
             description = (
                 f"An [**unhandled exception**]({ctx.message.jump_url}) occured in <#{ctx.message.channel.id}> when "

@@ -49,6 +49,12 @@ class Moderation(commands.Cog):
     ):
         """Report an issue to the authorites\n Usage: report\nreport user_ID message_link description_of_issue"""
 
+        if message_link and not message_link.startswith("http"):
+            if extras:
+                extras = f"{message_link} {extras}"
+            else:
+                extras = f"{message_link}"
+
         mod_embed = discord.Embed(title="New Report", color=0x00FF00)
         mod_embed.set_author(name=ctx.author.name, icon_url=ctx.author.avatar_url)
 
@@ -74,7 +80,7 @@ class Moderation(commands.Cog):
                 await msg.edit(
                     embed=discord.Embed(
                         title="Report description noted!",
-                        description="If you have a [User ID](https://support.discord.com/hc/en-us/articles/206346498-Where-can-I-find-my-User-Server-Message-ID-) for the person you're reporting against please enter them, else type no",
+                        description='If you have a [User ID](https://support.discord.com/hc/en-us/articles/206346498-Where-can-I-find-my-User-Server-Message-ID-) for the person you\'re reporting against please enter them, else type "no"',
                     )
                 )
                 user_id_desc = await self.bot.wait_for(
@@ -88,7 +94,7 @@ class Moderation(commands.Cog):
                 await msg.edit(
                     embed=discord.Embed(
                         title="Got it!",
-                        description="Finally do you happen to have a message link? type no if not",
+                        description='Finally do you happen to have a message link? type "no" if not',
                     )
                 )
 
@@ -119,7 +125,12 @@ class Moderation(commands.Cog):
                 )
                 return
 
-        mod_embed.description = f"**Report description: ** {extras}\n**User: ** {user_id}\n**Message Link: ** [click to jump]({message_link})"
+        if isinstance(ctx.channel, discord.DMChannel):
+            channel = "User DM"
+        else:
+            channel = ctx.channel.mention
+
+        mod_embed.description = f"**Report description: ** {extras}\n**User: ** {user_id}\n**Message Link: ** [click to jump]({message_link})\n**Channel: ** {channel}"
 
         mod_channel = self.bot.get_channel(414095428573986816)
         await mod_channel.send(embed=mod_embed)
