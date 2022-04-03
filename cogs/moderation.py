@@ -871,7 +871,6 @@ class Moderation(commands.Cog):
                     )
 
                 except asyncio.exceptions.TimeoutError:
-                    await ctx.send("Embed Timed Out.", delete_after=3.0)
                     if msg:
                         await msg.clear_reactions()
                     break
