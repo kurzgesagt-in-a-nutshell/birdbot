@@ -26,6 +26,8 @@ from utils.helper import (
 
 #janky fix for server memories, will make permanent once out of experimentation
 async def check_server_memories(message):
+    if any(_id in [role.id for role in message.author.roles] for _id in [414092550031278091,414029841101225985]): #mod or admin
+        return
     if message.channel.id == 960927545639972994:  # server memories // media only
         if message.author.bot:
             return
