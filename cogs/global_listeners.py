@@ -24,6 +24,29 @@ from utils.helper import (
     is_internal_command,
 )
 
+#janky fix for server memories, will make permanent once out of experimentation
+async def check_server_memories(message):
+    if message.channel.id == 960927545639972994:  # server memories // media only
+        if message.author.bot:
+            return
+        if len(message.attachments) == 0 and len(message.embeds) == 0:
+            await message.delete()
+            await message.channel.send(
+                f"{message.author.mention} You can only send screenshots in this channel. ",
+                delete_after=5,
+            )
+            return
+        else:
+            for e in message.embeds:
+                self.logger.info(e.type)
+                if e.type != "image":
+                    await message.delete()
+                    await message.channel.send(
+                        f"{message.author.mention} You can only send screenshots in this channel. ",
+                        delete_after=5,
+                    )
+                    return
+
 
 class GuildLogger(commands.Cog):
     """Log events neccesary for moderation"""
@@ -83,6 +106,8 @@ class GuildLogger(commands.Cog):
             self.config_json["logging"]["message_logging_channel"]
         )
         await message_logging_channel.send(embed=embed)
+
+        await check_server_memories(message)
 
     @commands.Cog.listener()
     async def on_message_delete(self, message):
@@ -292,6 +317,8 @@ class GuildChores(commands.Cog):
     async def on_ready(self):
         self.logger.info("Loaded Guild Chores")
 
+
+
     @commands.Cog.listener()
     async def on_message(self, message):
         """Remind mods to use correct prefix, alert mod pings etc"""
@@ -343,26 +370,8 @@ class GuildChores(commands.Cog):
             if re.match("^-(kick|ban|mute|warn)", message.content):
                 await message.channel.send(f"ahem.. {message.author.mention}")
 
-        if message.channel.id == 960927545639972994:  # server memories // media only
-            if message.author.bot:
-                return
-            if len(message.attachments) == 0 and len(message.embeds) == 0:
-                await message.delete()
-                await message.channel.send(
-                    f"{message.author.mention} You can only send screenshots in this channel. ",
-                    delete_after=5,
-                )
-                return
-            else:
-                for e in message.embeds:
-                    self.logger.info(e.type)
-                    if e.type != "image":
-                        await message.delete()
-                        await message.channel.send(
-                            f"{message.author.mention} You can only send screenshots in this channel. ",
-                            delete_after=5,
-                        )
-                        return
+        await check_server_memories(message)
+
 
     @commands.Cog.listener()
     async def on_member_update(self, before, after):
