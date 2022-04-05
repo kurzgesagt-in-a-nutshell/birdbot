@@ -26,9 +26,10 @@ from utils.helper import (
 
 #janky fix for server memories, will make permanent once out of experimentation
 async def check_server_memories(message):
-    if any(_id in [role.id for role in message.author.roles] for _id in [414092550031278091,414029841101225985]): #mod or admin
-        return
+
     if message.channel.id == 960927545639972994:  # server memories // media only
+        if any(_id in [role.id for role in message.author.roles] for _id in [414092550031278091,414029841101225985]): #mod or admin
+            return
         if message.author.bot:
             return
         if len(message.attachments) == 0 and len(message.embeds) == 0:
@@ -40,7 +41,6 @@ async def check_server_memories(message):
             return
         else:
             for e in message.embeds:
-                self.logger.info(e.type)
                 if e.type != "image":
                     await message.delete()
                     await message.channel.send(
@@ -75,6 +75,8 @@ class GuildLogger(commands.Cog):
             return
         if before.author.bot:
             return
+
+        await check_server_memories(after)
         if (
             before.channel.category.id == 414095379156434945
             or before.channel.category.id == 879399341561892905
@@ -109,7 +111,6 @@ class GuildLogger(commands.Cog):
         )
         await message_logging_channel.send(embed=embed)
 
-        await check_server_memories(message)
 
     @commands.Cog.listener()
     async def on_message_delete(self, message):
@@ -324,6 +325,8 @@ class GuildChores(commands.Cog):
     @commands.Cog.listener()
     async def on_message(self, message):
         """Remind mods to use correct prefix, alert mod pings etc"""
+
+        await check_server_memories(message)
         if any(
             x in message.raw_role_mentions
             for x in [414092550031278091, 905510680763969536]
@@ -372,7 +375,6 @@ class GuildChores(commands.Cog):
             if re.match("^-(kick|ban|mute|warn)", message.content):
                 await message.channel.send(f"ahem.. {message.author.mention}")
 
-        await check_server_memories(message)
 
 
     @commands.Cog.listener()
