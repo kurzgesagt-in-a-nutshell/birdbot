@@ -343,6 +343,25 @@ class GuildChores(commands.Cog):
             if re.match("^-(kick|ban|mute|warn)", message.content):
                 await message.channel.send(f"ahem.. {message.author.mention}")
 
+        if message.channel.id == 960927545639972994:  # server memories // media only
+            if len(message.attachments) == 0 and len(message.embeds) == 0:
+                await message.delete()
+                await message.channel.send(
+                    f"{message.author.mention} You can only send screenshots in this channel. ",
+                    delete_after=5,
+                )
+                return
+            else:
+                for e in message.embeds:
+                    self.logger.info(e.type)
+                    if e.type != "image":
+                        await message.delete()
+                        await message.channel.send(
+                            f"{message.author.mention} You can only send screenshots in this channel. ",
+                            delete_after=5,
+                        )
+                        return
+
     @commands.Cog.listener()
     async def on_member_update(self, before, after):
         """Grant roles upon passing membership screening"""
