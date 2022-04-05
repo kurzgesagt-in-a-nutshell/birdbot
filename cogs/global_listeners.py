@@ -344,6 +344,8 @@ class GuildChores(commands.Cog):
                 await message.channel.send(f"ahem.. {message.author.mention}")
 
         if message.channel.id == 960927545639972994:  # server memories // media only
+            if message.author.bot:
+                return
             if len(message.attachments) == 0 and len(message.embeds) == 0:
                 await message.delete()
                 await message.channel.send(
