@@ -598,7 +598,7 @@ class Filter(commands.Cog):
                             offending_list.append(e)
                         toReturn = True
             if toReturn:
-                if self.exception_list_check(offending_list):
+                if not self.exception_list_check(offending_list):
                     return toReturn
 
             return False
