@@ -94,6 +94,7 @@ possible_commands = [
 ]
 
 
+# ----Exception classes begin------#
 class NoAuthorityError(commands.CheckFailure):
     """Raised when user has no clearance to run a command"""
 
@@ -108,10 +109,9 @@ class WrongChannel(commands.CheckFailure):
 class DevBotOnly(commands.CheckFailure):
     """Raised when trying to run commands meant for dev bots"""
 
+# ----Exception classes end------#
 
-# Custom checks
-
-
+# ------Custom checks begin-------#
 def general_only():
     async def predicate(ctx: commands.Context):
         if (
@@ -239,6 +239,7 @@ def is_external_command(message: discord.Message):
             return True
     return False
 
+# ------Custom checks end-------#
 
 def create_embed(
     author: Union[discord.User, discord.Member],
@@ -690,10 +691,10 @@ def create_automod_embed(
     return embed
 
 
-def get_active_staff(bot: commands.AutoShardedBot):
+def get_active_staff(bot: commands.AutoShardedBot) -> str:
     """
     Gets string containing mentions of active staff (mods, trainee mods and admins)
-    Mentions entire mod role if no one is online
+    Mentions both mod roles if no mod is online
     Returns: str
     """
 
@@ -709,4 +710,21 @@ def get_active_staff(bot: commands.AutoShardedBot):
             if member.bot:
                 continue
 
-            if member.status 
+            if isinstance(member.status, (discord.Status.online, discord.Status.idle)):
+                mention_str += member.mention
+
+                if not mods_active:
+                    if any(
+                        role_id
+                        in [config_roles["mod_role"], config_roles["trainee_mod_role"]]
+                        for role_id in [role.id for role in member.roles]
+                    ):
+                        # check for active mods
+                        mods_active = True
+
+        if not mods_active:
+            mention_str += f"<@&{config_roles['mod_role']}> <@&{config_roles['trainee_mod_role']}>"
+
+        return mention_str
+
+

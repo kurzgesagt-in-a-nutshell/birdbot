@@ -12,7 +12,7 @@ from discord.channel import DMChannel
 
 from utils import custom_converters
 from utils import helper
-from utils.helper import create_user_infraction, devs_only, mod_and_above, calc_time
+from utils.helper import  mod_and_above, calc_time, get_active_staff
 
 import discord
 from discord.ext import commands, tasks
@@ -47,7 +47,7 @@ class Moderation(commands.Cog):
         *,
         extras: str = None,
     ):
-        """Report an issue to the authorites\n Usage: report\nreport user_ID message_link description_of_issue"""
+        """Report an issue to the authorites. Use this command in the bots DMs\n Usage: report\nreport user_ID message_link description_of_issue"""
 
         if message_link and not message_link.startswith("http"):
             if extras:
@@ -133,7 +133,7 @@ class Moderation(commands.Cog):
         mod_embed.description = f"**Report description: ** {extras}\n**User: ** {user_id}\n**Message Link: ** [click to jump]({message_link})\n**Channel: ** {channel}"
 
         mod_channel = self.bot.get_channel(414095428573986816)
-        await mod_channel.send(embed=mod_embed)
+        await mod_channel.send(content=get_active_staff(), embed=mod_embed)
 
     @mod_and_above()
     @commands.command(aliases=["purge", "prune", "clear"])
