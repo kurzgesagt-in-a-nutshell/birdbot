@@ -12,6 +12,7 @@ from birdbot import BirdBot
 
 infraction_db = BirdBot.db.Infraction
 timed_actions_db = BirdBot.db.TimedAction
+cmd_blacklist_db = BirdBot.db.CommandBlacklist
 
 config_json = json.load(open("config.json"))
 config_roles = config_json["roles"]
@@ -109,9 +110,14 @@ class WrongChannel(commands.CheckFailure):
 class DevBotOnly(commands.CheckFailure):
     """Raised when trying to run commands meant for dev bots"""
 
+
 # ----Exception classes end------#
 
 # ------Custom checks begin-------#
+
+def is_whitelisted(ctx: commands.Context):
+    return is_member_whitelisted(ctx.author, ctx.command)
+
 def general_only():
     async def predicate(ctx: commands.Context):
         if (
@@ -239,7 +245,9 @@ def is_external_command(message: discord.Message):
             return True
     return False
 
+
 # ------Custom checks end-------#
+
 
 def create_embed(
     author: Union[discord.User, discord.Member],
@@ -302,6 +310,7 @@ def create_user_infraction(user: Union[discord.User, discord.Member]):
         "user_name": user.name,
         "last_updated": datetime.datetime.utcnow(),
         "banned_patron": False,
+        "final_warn": False,
         "mute": [],
         "warn": [],
         "kick": [],
@@ -315,6 +324,8 @@ def create_infraction(
     users: List[Union[discord.User, discord.Member]],
     action: str,
     reason: str,
+    inf_level: int,
+    final_warn: bool = False,
     time: str = None,
 ):
     """Create infraction for list of users
@@ -324,6 +335,7 @@ def create_infraction(
         users (List[Union[discord.User, discord.Member]]): List of affected users
         action (str): Action ("mute", "ban", "warn", "kick")
         reason (str): Reasen
+        inf_level (int): The level of infraction (1-5)
         time (str, optional): Time strirng (applies for mutes). Defaults to None.
     """
     for u in users:
@@ -334,6 +346,9 @@ def create_infraction(
             create_user_infraction(u)
             inf = infraction_db.find_one({"user_id": u.id})
 
+        if final_warn:
+            inf["final_warn"] = True
+
         if action == "mute":
             inf["mute"].append(
                 {
@@ -341,6 +356,7 @@ def create_infraction(
                     "author_name": author.name,
                     "datetime": datetime.datetime.utcnow(),
                     "reason": reason,
+                    "infraction_level": inf_level,
                     "duration": time,
                 }
             )
@@ -352,6 +368,7 @@ def create_infraction(
                     "author_name": author.name,
                     "datetime": datetime.datetime.utcnow(),
                     "reason": reason,
+                    "infraction_level": inf_level,
                 }
             )
 
@@ -362,6 +379,7 @@ def create_infraction(
                     "author_name": author.name,
                     "datetime": datetime.datetime.utcnow(),
                     "reason": reason,
+                    "infraction_level": inf_level,
                 }
             )
 
@@ -372,6 +390,7 @@ def create_infraction(
                     "author_name": author.name,
                     "datetime": datetime.datetime.utcnow(),
                     "reason": reason,
+                    "infraction_level": inf_level,
                 }
             )
 
@@ -402,26 +421,32 @@ def get_infractions(member_id: int, inf_type: str) -> discord.Embed:
 
     if infr:
 
+        value = "```Total Infractions: {}".format(
+            len(infr["warn"]) + len(infr["mute"]) + len(infr["ban"]) + len(infr["kick"])
+        )
+        if infr["final_warn"]:
+            value += "\nUSER IS ON FINAL WARNING"
+        value += "```"
+
         embed.add_field(
             name="{} ({})".format(infr["user_name"], infr["user_id"]),
-            value="```Total Infractions: {}```".format(
-                len(infr["warn"])
-                + len(infr["mute"])
-                + len(infr["ban"])
-                + len(infr["kick"])
-            ),
+            value=value,
             inline=False,
         )
 
         if inf_type == "warn":
             warn_str = ""
             for idx, warn in enumerate(infr["warn"]):
-                warn_str = "{0}{1}\n{2}\n{3}\n\n".format(
+                warn_str = "{0}{1}\n{2}\n{3}\n".format(
                     warn_str,
                     "Author: {} ({})".format(warn["author_name"], warn["author_id"]),
                     "Reason: {}".format(warn["reason"]),
                     "Date: {}".format(warn["datetime"].replace(microsecond=0)),
                 )
+                try:
+                    warn_str += f"Infraction Level: {warn['infraction_level']}\n\n"
+                except KeyError:
+                    warn_str += "\n"
 
                 if (idx + 1) % 5 == 0:
                     embed.add_field(
@@ -437,13 +462,18 @@ def get_infractions(member_id: int, inf_type: str) -> discord.Embed:
         elif inf_type == "mute":
             mute_str = ""
             for idx, mute in enumerate(infr["mute"]):
-                mute_str = "{0}{1}\n{2}\n{3}\n{4}\n\n".format(
+                mute_str = "{0}{1}\n{2}\n{3}\n{4}\n".format(
                     mute_str,
                     "Author: {} ({})".format(mute["author_name"], mute["author_id"]),
                     "Reason: {}".format(mute["reason"]),
                     "Duration: {}".format(mute["duration"]),
                     "Date: {}".format(mute["datetime"].replace(microsecond=0)),
                 )
+
+                try:
+                    mute_str += f"Infraction Level: {mute['infraction_level']}\n\n"
+                except KeyError:
+                    mute_str += "\n"
 
                 if (idx + 1) % 5 == 0:
                     embed.add_field(
@@ -459,12 +489,17 @@ def get_infractions(member_id: int, inf_type: str) -> discord.Embed:
         elif inf_type == "ban":
             ban_str = ""
             for idx, ban in enumerate(infr["ban"]):
-                ban_str = "{0}{1}\n{2}\n{3}\n\n".format(
+                ban_str = "{0}{1}\n{2}\n{3}\n".format(
                     ban_str,
                     "Author: {} ({})".format(ban["author_name"], ban["author_id"]),
                     "Reason: {}".format(ban["reason"]),
                     "Date: {}".format(ban["datetime"].replace(microsecond=0)),
                 )
+
+                try:
+                    ban_str += f"Infraction Level: {ban['infraction_level']}\n\n"
+                except KeyError:
+                    ban_str += "\n"
 
                 if (idx + 1) % 5 == 0:
                     embed.add_field(name="Bans", value=f"```{ban_str}```", inline=False)
@@ -478,12 +513,17 @@ def get_infractions(member_id: int, inf_type: str) -> discord.Embed:
         elif inf_type == "kick":
             kick_str = ""
             for idx, kick in enumerate(infr["kick"]):
-                kick_str = "{0}{1}\n{2}\n{3}\n\n".format(
+                kick_str = "{0}\n{1}\n{2}\n".format(
                     kick_str,
                     "Author: {} ({})".format(kick["author_name"], kick["author_id"]),
                     "Reason: {}".format(kick["reason"]),
                     "Date: {}".format(kick["datetime"].replace(microsecond=0)),
                 )
+
+                try:
+                    kick_str += f"Infraction Level: {kick['infraction_level']}\n\n"
+                except KeyError:
+                    kick_str += "\n"
 
                 if (idx + 1) % 5 == 0:
                     embed.add_field(
@@ -723,8 +763,62 @@ def get_active_staff(bot: commands.AutoShardedBot) -> str:
                         mods_active = True
 
         if not mods_active:
-            mention_str += f"<@&{config_roles['mod_role']}> <@&{config_roles['trainee_mod_role']}>"
+            mention_str += (
+                f"<@&{config_roles['mod_role']}> <@&{config_roles['trainee_mod_role']}>"
+            )
 
         return mention_str
+
+
+def is_member_whitelisted(member: discord.Member, command: commands.Command) -> bool:
+    """
+    Checks wether a particular member is blacklisted from using a particular command.
+    Args:
+        member: discord.Member object to check for
+        command: commands.Command object to check against
+    Returns:
+        boolean
+    """
+    cmd = cmd_blacklist_db.find_one({"command_name": command.name})
+    if cmd is None:
+        cmd_blacklist_db.insert_one(
+            {"command_name": command.name, "blacklisted_users": []}
+        )
+        return True
+
+    return member.id not in cmd["blacklisted_users"]
+
+
+def blacklist_member(bot: commands.AutoShardedBot,member: discord.Member, command_name):
+    """
+    Blacklists a member from a command
+    """
+
+    command = discord.utils.get(bot.commands, name=command_name)
+    cmd = cmd_blacklist_db.find_one({"command_name": command.name})
+    if cmd is None:
+        cmd_blacklist_db.insert_one(
+            {"command_name": command.name, "blacklisted_users": [member.id]}
+        )
+        return
+
+    cmd_blacklist_db.update(
+        {"command_name": command.name}, {"$push": {"blacklisted_users": member.id}}
+    )
+
+
+def whitelist_member(member: discord.Member, command: commands.Command) -> bool:
+    """
+    Whitelist a member from a command and return True
+    If user is not blacklisted return False
+    """
+    cmd = cmd_blacklist_db.find_one({"command_name": command.name})
+    if cmd is None or member.id not in cmd["blacklisted_users"]:
+        return False
+
+    cmd_blacklist_db.update(
+        {"command_name": command.name}, {"$pull": {"blacklisted_users": member.id}}
+    )
+    return True
 
 
