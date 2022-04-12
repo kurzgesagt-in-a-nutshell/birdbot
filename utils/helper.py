@@ -19,39 +19,80 @@ config_roles = config_json["roles"]
 logger = logging.getLogger("Helper")
 
 
-#commands from third party bots
+# commands from third party bots
 possible_prefixes = r"^([$+,\-.;>]|t!)"
 possible_commands = [
-
-    #common for everyone (mostly)
-    r"help",r"info",r"invite",r"ping",
-
-    #Compiler#6201 
-    r"invite", r"compile(rs)?",r"languages",
-    r"asm", r"botinfo", r"cpp", r"formats?",
-
-    #SongBird
-    r"play(next|erstats|lists)?",r"previous",r"scsearch",r"select",
-    r"announce",r"bassboost",r"forceskip",r"pause",
-    r"repeat",r"resume",r"seek",r"shuffle",r"skip",
-    r"stop",r"volume",r"(clear|un)?queue",r"deduplicate",
-    r"move",r"now",r"removeabsent",r"save(all)?",r"undo",
-    r"about",r"details",r"lyrics",r"settings",r"stats",
-
-    #TeXit#0796
-    r"tex(config|doc)?",r"autotex",r"(guild)?preamble",
-    r"ctan",r"calc",r"nlab",r"query",
-
-    #YAGPDB.xyz#8760 (only include enabled commands)
-    r"remindme",r"who(is|ami)",
-
-    #Go4Liftoff Bot#1922
-    r"ll",r"nl",r"listlaunches",r"nextlaunch",
-
-    #Tatsu#8792 (add commands that frequently get used coz too many to add manually)
-    r"rank",r"fish",r"rep",r"profile",r"cookie",r"quest",
-    r"tg",r"tatsugotchi",r"pet",r"slots?",r"top"
+    # common for everyone (mostly)
+    r"help",
+    r"info",
+    r"invite",
+    r"ping",
+    # Compiler#6201
+    r"invite",
+    r"compile(rs)?",
+    r"languages",
+    r"asm",
+    r"botinfo",
+    r"cpp",
+    r"formats?",
+    # SongBird
+    r"play(next|erstats|lists)?",
+    r"previous",
+    r"scsearch",
+    r"select",
+    r"announce",
+    r"bassboost",
+    r"forceskip",
+    r"pause",
+    r"repeat",
+    r"resume",
+    r"seek",
+    r"shuffle",
+    r"skip",
+    r"stop",
+    r"volume",
+    r"(clear|un)?queue",
+    r"deduplicate",
+    r"move",
+    r"now",
+    r"removeabsent",
+    r"save(all)?",
+    r"undo",
+    r"about",
+    r"details",
+    r"lyrics",
+    r"settings",
+    r"stats",
+    # TeXit#0796
+    r"tex(config|doc)?",
+    r"autotex",
+    r"(guild)?preamble",
+    r"ctan",
+    r"calc",
+    r"nlab",
+    r"query",
+    # YAGPDB.xyz#8760 (only include enabled commands)
+    r"remindme",
+    r"who(is|ami)",
+    # Go4Liftoff Bot#1922
+    r"ll",
+    r"nl",
+    r"listlaunches",
+    r"nextlaunch",
+    # Tatsu#8792 (add commands that frequently get used coz too many to add manually)
+    r"rank",
+    r"fish",
+    r"rep",
+    r"profile",
+    r"cookie",
+    r"quest",
+    r"tg",
+    r"tatsugotchi",
+    r"pet",
+    r"slots?",
+    r"top",
 ]
+
 
 class NoAuthorityError(commands.CheckFailure):
     """Raised when user has no clearance to run a command"""
@@ -69,6 +110,7 @@ class DevBotOnly(commands.CheckFailure):
 
 
 # Custom checks
+
 
 def general_only():
     async def predicate(ctx: commands.Context):
@@ -186,13 +228,14 @@ def is_internal_command(bot: commands.AutoShardedBot, message: discord.Message):
             return True
     return False
 
+
 def is_external_command(message: discord.Message):
     """
     check if message is a third party bot command
     returns bool
     """
     for command in possible_commands:
-        if re.match(possible_prefixes+command, message.content, re.IGNORECASE):
+        if re.match(possible_prefixes + command, message.content, re.IGNORECASE):
             return True
     return False
 
@@ -645,3 +688,25 @@ def create_automod_embed(
         name="Message Content", value=f"{message.content[:1024]}", inline=False
     )
     return embed
+
+
+def get_active_staff(bot: commands.AutoShardedBot):
+    """
+    Gets string containing mentions of active staff (mods, trainee mods and admins)
+    Mentions entire mod role if no one is online
+    Returns: str
+    """
+
+    guild = discord.utils.get(bot.guilds, id=414027124836532234)
+    mention_str = ""
+    mods_active = False
+    for role_id in [
+        config_roles["mod_role"],
+        config_roles["admin_role"],
+        config_roles["trainee_mod_role"],
+    ]:
+        for member in discord.utils.get(guild.roles, id=role_id).members:
+            if member.bot:
+                continue
+
+            if member.status 
