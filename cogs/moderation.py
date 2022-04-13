@@ -133,7 +133,7 @@ class Moderation(commands.Cog):
         mod_embed.description = f"**Report description: ** {extras}\n**User: ** {user_id}\n**Message Link: ** [click to jump]({message_link})\n**Channel: ** {channel}"
 
         mod_channel = self.bot.get_channel(414095428573986816)
-        await mod_channel.send(content=get_active_staff(), embed=mod_embed)
+        await mod_channel.send(content=get_active_staff(self.bot), embed=mod_embed,allowed_mentions=discord.AllowedMentions(roles=True, users=True))
 
     @mod_and_above()
     @commands.command(aliases=["purge", "prune", "clear"])
@@ -996,19 +996,26 @@ class Moderation(commands.Cog):
         Blacklists a member from a command
         Usage: blacklist_command @user command_name 
         """
+
+        command = discord.utils.get(self.bot.commands, name=command_name)
+        if command is None:
+            raise commands.BadArgument(message=f'{command_name} is not a valid command')
         if ctx.author.top_role > member.top_role:
-            blacklist_member(self.bot,member,command_name)
+            blacklist_member(self.bot,member,command)
             await ctx.send(f'{member.name} can no longer use {command_name}')
         else:
             await ctx.send(f'You cannot blacklist someone higher or equal to you smh')
 
     @commands.command(aliases=['yescmd','commandwhitelist'])
     @mod_and_above()
-    async def whitelist_command(self, ctx,member: discord.Member, command: commands.Command):
+    async def whitelist_command(self, ctx,member: discord.Member, command_name: str):
         """
         Whitelists a member from a command
         Usage: whitelist_command @user command_name 
         """
+        command = discord.utils.get(self.bot.commands, name=command_name)
+        if command is None:
+            raise commands.BadArgument(message=f'{command_name} is not a valid command')
         if whitelist_member(member,command):
             await ctx.send(f'{member.name} can now use {command.name}')
         else:

@@ -115,8 +115,10 @@ class DevBotOnly(commands.CheckFailure):
 
 # ------Custom checks begin-------#
 
+
 def is_whitelisted(ctx: commands.Context):
     return is_member_whitelisted(ctx.author, ctx.command)
+
 
 def general_only():
     async def predicate(ctx: commands.Context):
@@ -750,15 +752,14 @@ def get_active_staff(bot: commands.AutoShardedBot) -> str:
             if member.bot:
                 continue
 
-            if isinstance(member.status, (discord.Status.online, discord.Status.idle)):
+            if (
+                member.status == discord.Status.online
+                or member.status == discord.Status.idle
+            ):
                 mention_str += member.mention
 
                 if not mods_active:
-                    if any(
-                        role_id
-                        in [config_roles["mod_role"], config_roles["trainee_mod_role"]]
-                        for role_id in [role.id for role in member.roles]
-                    ):
+                    if member.top_role.id in [config_roles["mod_role"], config_roles["trainee_mod_role"]:
                         # check for active mods
                         mods_active = True
 
@@ -770,31 +771,13 @@ def get_active_staff(bot: commands.AutoShardedBot) -> str:
         return mention_str
 
 
-def is_member_whitelisted(member: discord.Member, command: commands.Command) -> bool:
-    """
-    Checks wether a particular member is blacklisted from using a particular command.
-    Args:
-        member: discord.Member object to check for
-        command: commands.Command object to check against
-    Returns:
-        boolean
-    """
-    cmd = cmd_blacklist_db.find_one({"command_name": command.name})
-    if cmd is None:
-        cmd_blacklist_db.insert_one(
-            {"command_name": command.name, "blacklisted_users": []}
-        )
-        return True
-
-    return member.id not in cmd["blacklisted_users"]
-
-
-def blacklist_member(bot: commands.AutoShardedBot,member: discord.Member, command_name):
+def blacklist_member(
+    bot: commands.AutoShardedBot, member: discord.Member, command: commands.Command
+):
     """
     Blacklists a member from a command
     """
 
-    command = discord.utils.get(bot.commands, name=command_name)
     cmd = cmd_blacklist_db.find_one({"command_name": command.name})
     if cmd is None:
         cmd_blacklist_db.insert_one(
@@ -802,7 +785,7 @@ def blacklist_member(bot: commands.AutoShardedBot,member: discord.Member, comman
         )
         return
 
-    cmd_blacklist_db.update(
+    cmd_blacklist_db.update_one(
         {"command_name": command.name}, {"$push": {"blacklisted_users": member.id}}
     )
 
@@ -816,9 +799,7 @@ def whitelist_member(member: discord.Member, command: commands.Command) -> bool:
     if cmd is None or member.id not in cmd["blacklisted_users"]:
         return False
 
-    cmd_blacklist_db.update(
+    cmd_blacklist_db.update_one(
         {"command_name": command.name}, {"$pull": {"blacklisted_users": member.id}}
     )
     return True
-
-

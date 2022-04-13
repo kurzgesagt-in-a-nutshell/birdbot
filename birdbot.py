@@ -71,6 +71,7 @@ class BirdBot(commands.AutoShardedBot):
             webhooks=True,
             messages=True,
             reactions=True,
+            presences=True
         )
         max_messages  = 1000
         if args.beta:
