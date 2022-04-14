@@ -603,6 +603,6 @@ class Errors(commands.Cog):
 
 
 def setup(bot):
-    # bot.add_cog(Errors(bot))
+    bot.add_cog(Errors(bot))
     bot.add_cog(GuildChores(bot))
     bot.add_cog(GuildLogger(bot))
