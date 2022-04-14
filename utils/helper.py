@@ -759,7 +759,7 @@ def get_active_staff(bot: commands.AutoShardedBot) -> str:
                 mention_str += member.mention
 
                 if not mods_active:
-                    if member.top_role.id in [config_roles["mod_role"], config_roles["trainee_mod_role"]:
+                    if member.top_role.id in [config_roles["mod_role"], config_roles["trainee_mod_role"]]:
                         # check for active mods
                         mods_active = True
 
