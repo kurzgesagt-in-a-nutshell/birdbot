@@ -12,6 +12,7 @@ from birdbot import BirdBot
 
 infraction_db = BirdBot.db.Infraction
 timed_actions_db = BirdBot.db.TimedAction
+cmd_blacklist_db = BirdBot.db.CommandBlacklist
 
 config_json = json.load(open("config.json"))
 config_roles = config_json["roles"]
@@ -19,40 +20,82 @@ config_roles = config_json["roles"]
 logger = logging.getLogger("Helper")
 
 
-#commands from third party bots
+# commands from third party bots
 possible_prefixes = r"^([$+,\-.;>]|t!)"
 possible_commands = [
-
-    #common for everyone (mostly)
-    r"help",r"info",r"invite",r"ping",
-
-    #Compiler#6201 
-    r"invite", r"compile(rs)?",r"languages",
-    r"asm", r"botinfo", r"cpp", r"formats?",
-
-    #SongBird
-    r"play(next|erstats|lists)?",r"previous",r"scsearch",r"select",
-    r"announce",r"bassboost",r"forceskip",r"pause",
-    r"repeat",r"resume",r"seek",r"shuffle",r"skip",
-    r"stop",r"volume",r"(clear|un)?queue",r"deduplicate",
-    r"move",r"now",r"removeabsent",r"save(all)?",r"undo",
-    r"about",r"details",r"lyrics",r"settings",r"stats",
-
-    #TeXit#0796
-    r"tex(config|doc)?",r"autotex",r"(guild)?preamble",
-    r"ctan",r"calc",r"nlab",r"query",
-
-    #YAGPDB.xyz#8760 (only include enabled commands)
-    r"remindme",r"who(is|ami)",
-
-    #Go4Liftoff Bot#1922
-    r"ll",r"nl",r"listlaunches",r"nextlaunch",
-
-    #Tatsu#8792 (add commands that frequently get used coz too many to add manually)
-    r"rank",r"fish",r"rep",r"profile",r"cookie",r"quest",
-    r"tg",r"tatsugotchi",r"pet",r"slots?",r"top"
+    # common for everyone (mostly)
+    r"help",
+    r"info",
+    r"invite",
+    r"ping",
+    # Compiler#6201
+    r"invite",
+    r"compile(rs)?",
+    r"languages",
+    r"asm",
+    r"botinfo",
+    r"cpp",
+    r"formats?",
+    # SongBird
+    r"play(next|erstats|lists)?",
+    r"previous",
+    r"scsearch",
+    r"select",
+    r"announce",
+    r"bassboost",
+    r"forceskip",
+    r"pause",
+    r"repeat",
+    r"resume",
+    r"seek",
+    r"shuffle",
+    r"skip",
+    r"stop",
+    r"volume",
+    r"(clear|un)?queue",
+    r"deduplicate",
+    r"move",
+    r"now",
+    r"removeabsent",
+    r"save(all)?",
+    r"undo",
+    r"about",
+    r"details",
+    r"lyrics",
+    r"settings",
+    r"stats",
+    # TeXit#0796
+    r"tex(config|doc)?",
+    r"autotex",
+    r"(guild)?preamble",
+    r"ctan",
+    r"calc",
+    r"nlab",
+    r"query",
+    # YAGPDB.xyz#8760 (only include enabled commands)
+    r"remindme",
+    r"who(is|ami)",
+    # Go4Liftoff Bot#1922
+    r"ll",
+    r"nl",
+    r"listlaunches",
+    r"nextlaunch",
+    # Tatsu#8792 (add commands that frequently get used coz too many to add manually)
+    r"rank",
+    r"fish",
+    r"rep",
+    r"profile",
+    r"cookie",
+    r"quest",
+    r"tg",
+    r"tatsugotchi",
+    r"pet",
+    r"slots?",
+    r"top",
 ]
 
+
+# ----Exception classes begin------#
 class NoAuthorityError(commands.CheckFailure):
     """Raised when user has no clearance to run a command"""
 
@@ -68,7 +111,14 @@ class DevBotOnly(commands.CheckFailure):
     """Raised when trying to run commands meant for dev bots"""
 
 
-# Custom checks
+# ----Exception classes end------#
+
+# ------Custom checks begin-------#
+
+
+def is_whitelisted(ctx: commands.Context):
+    return is_member_whitelisted(ctx.author, ctx.command)
+
 
 def general_only():
     async def predicate(ctx: commands.Context):
@@ -186,15 +236,19 @@ def is_internal_command(bot: commands.AutoShardedBot, message: discord.Message):
             return True
     return False
 
+
 def is_external_command(message: discord.Message):
     """
     check if message is a third party bot command
     returns bool
     """
     for command in possible_commands:
-        if re.match(possible_prefixes+command, message.content, re.IGNORECASE):
+        if re.match(possible_prefixes + command, message.content, re.IGNORECASE):
             return True
     return False
+
+
+# ------Custom checks end-------#
 
 
 def create_embed(
@@ -258,6 +312,7 @@ def create_user_infraction(user: Union[discord.User, discord.Member]):
         "user_name": user.name,
         "last_updated": datetime.datetime.utcnow(),
         "banned_patron": False,
+        "final_warn": False,
         "mute": [],
         "warn": [],
         "kick": [],
@@ -271,6 +326,8 @@ def create_infraction(
     users: List[Union[discord.User, discord.Member]],
     action: str,
     reason: str,
+    inf_level: int,
+    final_warn: bool = False,
     time: str = None,
 ):
     """Create infraction for list of users
@@ -280,6 +337,7 @@ def create_infraction(
         users (List[Union[discord.User, discord.Member]]): List of affected users
         action (str): Action ("mute", "ban", "warn", "kick")
         reason (str): Reasen
+        inf_level (int): The level of infraction (1-5)
         time (str, optional): Time strirng (applies for mutes). Defaults to None.
     """
     for u in users:
@@ -290,6 +348,9 @@ def create_infraction(
             create_user_infraction(u)
             inf = infraction_db.find_one({"user_id": u.id})
 
+        if final_warn:
+            inf["final_warn"] = True
+
         if action == "mute":
             inf["mute"].append(
                 {
@@ -297,6 +358,7 @@ def create_infraction(
                     "author_name": author.name,
                     "datetime": datetime.datetime.utcnow(),
                     "reason": reason,
+                    "infraction_level": inf_level,
                     "duration": time,
                 }
             )
@@ -308,6 +370,7 @@ def create_infraction(
                     "author_name": author.name,
                     "datetime": datetime.datetime.utcnow(),
                     "reason": reason,
+                    "infraction_level": inf_level,
                 }
             )
 
@@ -318,6 +381,7 @@ def create_infraction(
                     "author_name": author.name,
                     "datetime": datetime.datetime.utcnow(),
                     "reason": reason,
+                    "infraction_level": inf_level,
                 }
             )
 
@@ -328,6 +392,7 @@ def create_infraction(
                     "author_name": author.name,
                     "datetime": datetime.datetime.utcnow(),
                     "reason": reason,
+                    "infraction_level": inf_level,
                 }
             )
 
@@ -358,26 +423,32 @@ def get_infractions(member_id: int, inf_type: str) -> discord.Embed:
 
     if infr:
 
+        value = "```Total Infractions: {}".format(
+            len(infr["warn"]) + len(infr["mute"]) + len(infr["ban"]) + len(infr["kick"])
+        )
+        if infr["final_warn"]:
+            value += "\nUSER IS ON FINAL WARNING"
+        value += "```"
+
         embed.add_field(
             name="{} ({})".format(infr["user_name"], infr["user_id"]),
-            value="```Total Infractions: {}```".format(
-                len(infr["warn"])
-                + len(infr["mute"])
-                + len(infr["ban"])
-                + len(infr["kick"])
-            ),
+            value=value,
             inline=False,
         )
 
         if inf_type == "warn":
             warn_str = ""
             for idx, warn in enumerate(infr["warn"]):
-                warn_str = "{0}{1}\n{2}\n{3}\n\n".format(
+                warn_str = "{0}{1}\n{2}\n{3}\n".format(
                     warn_str,
                     "Author: {} ({})".format(warn["author_name"], warn["author_id"]),
                     "Reason: {}".format(warn["reason"]),
                     "Date: {}".format(warn["datetime"].replace(microsecond=0)),
                 )
+                try:
+                    warn_str += f"Infraction Level: {warn['infraction_level']}\n\n"
+                except KeyError:
+                    warn_str += "\n"
 
                 if (idx + 1) % 5 == 0:
                     embed.add_field(
@@ -393,13 +464,18 @@ def get_infractions(member_id: int, inf_type: str) -> discord.Embed:
         elif inf_type == "mute":
             mute_str = ""
             for idx, mute in enumerate(infr["mute"]):
-                mute_str = "{0}{1}\n{2}\n{3}\n{4}\n\n".format(
+                mute_str = "{0}{1}\n{2}\n{3}\n{4}\n".format(
                     mute_str,
                     "Author: {} ({})".format(mute["author_name"], mute["author_id"]),
                     "Reason: {}".format(mute["reason"]),
                     "Duration: {}".format(mute["duration"]),
                     "Date: {}".format(mute["datetime"].replace(microsecond=0)),
                 )
+
+                try:
+                    mute_str += f"Infraction Level: {mute['infraction_level']}\n\n"
+                except KeyError:
+                    mute_str += "\n"
 
                 if (idx + 1) % 5 == 0:
                     embed.add_field(
@@ -415,12 +491,17 @@ def get_infractions(member_id: int, inf_type: str) -> discord.Embed:
         elif inf_type == "ban":
             ban_str = ""
             for idx, ban in enumerate(infr["ban"]):
-                ban_str = "{0}{1}\n{2}\n{3}\n\n".format(
+                ban_str = "{0}{1}\n{2}\n{3}\n".format(
                     ban_str,
                     "Author: {} ({})".format(ban["author_name"], ban["author_id"]),
                     "Reason: {}".format(ban["reason"]),
                     "Date: {}".format(ban["datetime"].replace(microsecond=0)),
                 )
+
+                try:
+                    ban_str += f"Infraction Level: {ban['infraction_level']}\n\n"
+                except KeyError:
+                    ban_str += "\n"
 
                 if (idx + 1) % 5 == 0:
                     embed.add_field(name="Bans", value=f"```{ban_str}```", inline=False)
@@ -434,12 +515,17 @@ def get_infractions(member_id: int, inf_type: str) -> discord.Embed:
         elif inf_type == "kick":
             kick_str = ""
             for idx, kick in enumerate(infr["kick"]):
-                kick_str = "{0}{1}\n{2}\n{3}\n\n".format(
+                kick_str = "{0}\n{1}\n{2}\n".format(
                     kick_str,
                     "Author: {} ({})".format(kick["author_name"], kick["author_id"]),
                     "Reason: {}".format(kick["reason"]),
                     "Date: {}".format(kick["datetime"].replace(microsecond=0)),
                 )
+
+                try:
+                    kick_str += f"Infraction Level: {kick['infraction_level']}\n\n"
+                except KeyError:
+                    kick_str += "\n"
 
                 if (idx + 1) % 5 == 0:
                     embed.add_field(
@@ -645,3 +731,75 @@ def create_automod_embed(
         name="Message Content", value=f"{message.content[:1024]}", inline=False
     )
     return embed
+
+
+def get_active_staff(bot: commands.AutoShardedBot) -> str:
+    """
+    Gets string containing mentions of active staff (mods, trainee mods and admins)
+    Mentions both mod roles if no mod is online
+    Returns: str
+    """
+
+    guild = discord.utils.get(bot.guilds, id=414027124836532234)
+    mention_str = ""
+    mods_active = False
+    for role_id in [
+        config_roles["mod_role"],
+        config_roles["admin_role"],
+        config_roles["trainee_mod_role"],
+    ]:
+        for member in discord.utils.get(guild.roles, id=role_id).members:
+            if member.bot:
+                continue
+
+            if (
+                member.status == discord.Status.online
+                or member.status == discord.Status.idle
+            ):
+                mention_str += member.mention
+
+                if not mods_active:
+                    if member.top_role.id in [config_roles["mod_role"], config_roles["trainee_mod_role"]]:
+                        # check for active mods
+                        mods_active = True
+
+        if not mods_active:
+            mention_str += (
+                f"<@&{config_roles['mod_role']}> <@&{config_roles['trainee_mod_role']}>"
+            )
+
+        return mention_str
+
+
+def blacklist_member(
+    bot: commands.AutoShardedBot, member: discord.Member, command: commands.Command
+):
+    """
+    Blacklists a member from a command
+    """
+
+    cmd = cmd_blacklist_db.find_one({"command_name": command.name})
+    if cmd is None:
+        cmd_blacklist_db.insert_one(
+            {"command_name": command.name, "blacklisted_users": [member.id]}
+        )
+        return
+
+    cmd_blacklist_db.update_one(
+        {"command_name": command.name}, {"$push": {"blacklisted_users": member.id}}
+    )
+
+
+def whitelist_member(member: discord.Member, command: commands.Command) -> bool:
+    """
+    Whitelist a member from a command and return True
+    If user is not blacklisted return False
+    """
+    cmd = cmd_blacklist_db.find_one({"command_name": command.name})
+    if cmd is None or member.id not in cmd["blacklisted_users"]:
+        return False
+
+    cmd_blacklist_db.update_one(
+        {"command_name": command.name}, {"$pull": {"blacklisted_users": member.id}}
+    )
+    return True

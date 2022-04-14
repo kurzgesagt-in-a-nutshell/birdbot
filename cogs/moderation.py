@@ -12,7 +12,7 @@ from discord.channel import DMChannel
 
 from utils import custom_converters
 from utils import helper
-from utils.helper import create_user_infraction, devs_only, mod_and_above, calc_time
+from utils.helper import mod_and_above, calc_time, get_active_staff, blacklist_member, whitelist_member
 
 import discord
 from discord.ext import commands, tasks
@@ -47,7 +47,7 @@ class Moderation(commands.Cog):
         *,
         extras: str = None,
     ):
-        """Report an issue to the authorites\n Usage: report\nreport user_ID message_link description_of_issue"""
+        """Report an issue to the authorites. Use this command in the bots DMs\n Usage: report\nreport user_ID message_link description_of_issue"""
 
         if message_link and not message_link.startswith("http"):
             if extras:
@@ -133,7 +133,7 @@ class Moderation(commands.Cog):
         mod_embed.description = f"**Report description: ** {extras}\n**User: ** {user_id}\n**Message Link: ** [click to jump]({message_link})\n**Channel: ** {channel}"
 
         mod_channel = self.bot.get_channel(414095428573986816)
-        await mod_channel.send(embed=mod_embed)
+        await mod_channel.send(content=get_active_staff(self.bot), embed=mod_embed,allowed_mentions=discord.AllowedMentions(roles=True, users=True))
 
     @mod_and_above()
     @commands.command(aliases=["purge", "prune", "clear"])
@@ -262,8 +262,8 @@ class Moderation(commands.Cog):
 
     @commands.command(aliases=["yeet"])
     @mod_and_above()
-    async def ban(self, ctx: commands.Context, *args):
-        """Ban a member.\nUsage: ban @member(s) reason"""
+    async def ban(self, ctx: commands.Context, inf_level: int, *args):
+        """Ban a member.\nUsage: ban infraction_level @member(s) reason"""
 
         logging_channel = discord.utils.get(ctx.guild.channels, id=self.logging_channel)
 
@@ -277,6 +277,9 @@ class Moderation(commands.Cog):
             raise commands.BadArgument(
                 message="Please provide a reason and re-run the command"
             )
+
+        if inf_level not in range(1,6):
+            raise commands.BadArgument(message="Infraction level must be between 1 and 5")
         reason = " ".join(extra)
 
         failed_ban = False
@@ -303,7 +306,11 @@ class Moderation(commands.Cog):
         await ctx.message.add_reaction("<:kgsYes:955703069516128307>")
 
         helper.create_infraction(
-            author=ctx.author, users=members, action="ban", reason=reason
+            author=ctx.author,
+            users=members,
+            action="ban",
+            reason=reason,
+            inf_level=inf_level,
         )
 
         embed = helper.create_embed(
@@ -361,8 +368,8 @@ class Moderation(commands.Cog):
 
     @commands.command()
     @mod_and_above()
-    async def kick(self, ctx: commands.Context, *args):
-        """Kick member(s).\nUsage: kick @member(s) reason"""
+    async def kick(self, ctx: commands.Context, inf_level: int, *args):
+        """Kick member(s).\nUsage: kick infraction_level @member(s) reason"""
 
         members, reason = custom_converters.get_members(ctx, *args)
 
@@ -370,6 +377,9 @@ class Moderation(commands.Cog):
             raise commands.BadArgument(
                 message="Please provide a reason and re-run the command"
             )
+
+        if inf_level not in range(1,6):
+            raise commands.BadArgument(message="Infraction level must be between 1 and 5")
 
         if members is None:
             raise commands.BadArgument(message="Improper members passed")
@@ -403,15 +413,19 @@ class Moderation(commands.Cog):
         await logging_channel.send(embed=embed)
 
         helper.create_infraction(
-            author=ctx.author, users=members, action="kick", reason=reason
+            author=ctx.author,
+            users=members,
+            action="kick",
+            reason=reason,
+            inf_level=inf_level,
         )
 
         await ctx.message.delete(delay=6)
 
     @commands.command()
     @mod_and_above()
-    async def mute(self, ctx: commands.Context, *args):
-        """Mute member(s). \nUsage: mute @member(s) <time> reason"""
+    async def mute(self, ctx: commands.Context, inf_level: int, *args):
+        """Mute member(s). \nUsage: mute infraction_level @member(s) <time> reason"""
 
         tot_time = 0
 
@@ -421,6 +435,8 @@ class Moderation(commands.Cog):
 
         if members is None:
             raise commands.BadArgument(message="Improper member passed")
+        if inf_level not in range(1,6):
+            raise commands.BadArgument(message="Infraction level must be between 1 and 5")
 
         tot_time, reason = helper.calc_time(extra)
 
@@ -432,6 +448,12 @@ class Moderation(commands.Cog):
             raise commands.BadArgument(
                 message="Please provide a reason and re-run the command"
             )
+
+        final_warn = True if reason.startswith("--final") else False
+        default_msg = "(Note: Accumulation of warns may lead to permanent removal from the server)"
+        if final_warn:
+            reason = reason[7:]
+            default_msg = "(This is your final warning, future infractions will lead to a non negotiable ban from the server)"
 
         if tot_time > 2419200:
             raise commands.BadArgument(message="Can't mute for longer than 28 days!")
@@ -454,8 +476,7 @@ class Moderation(commands.Cog):
 
                 try:
                     await i.send(
-                        f"You have been muted for {time_str}.\nGiven reason: {reason}\n"
-                        "(Note: Accumulation of mutes may lead to permanent removal from the server)"
+                        f"You have been muted for {time_str}.\nGiven reason: {reason}\n{default_msg}"
                     )
 
                 except discord.Forbidden:
@@ -475,7 +496,7 @@ class Moderation(commands.Cog):
 
         embed = helper.create_embed(
             author=ctx.author,
-            action="Muted User(s)",
+            action="Muted User(s)" + (" (FINAL WARNING)" if final_warn else ""),
             users=members,
             reason=reason,
             extra=f"Mute Duration: {time_str} or {tot_time} seconds",
@@ -489,6 +510,8 @@ class Moderation(commands.Cog):
             action="mute",
             reason=reason,
             time=time_str,
+            inf_level=inf_level,
+            final_warn=final_warn,
         )
 
         await ctx.message.delete(delay=6)
@@ -578,8 +601,8 @@ class Moderation(commands.Cog):
 
     @commands.command()
     @mod_and_above()
-    async def warn(self, ctx: commands.Context, *args):
-        """Warn user(s) \nUsage: warn @member(s) reason"""
+    async def warn(self, ctx: commands.Context, inf_level: int, *args):
+        """Warn user(s) \nUsage: warn infraction_level @member(s) reason"""
         logging_channel = discord.utils.get(ctx.guild.channels, id=self.logging_channel)
 
         members, reason = custom_converters.get_members(ctx, *args)
@@ -591,15 +614,22 @@ class Moderation(commands.Cog):
                 message="No reason provided, please re-run the command with a reaso"
             )
 
-        reason = " ".join(reason)
+        if inf_level not in range(1,6):
+            raise commands.BadArgument(message="Infraction level must be between 1 and 5")
+
+        final_warn = True if reason[0] == "--final" else False
+        default_msg = "(Note: Accumulation of warns may lead to permanent removal from the server)"
+        if final_warn:
+            reason = " ".join(reason[1:])
+            default_msg = "(This is your final warning, future infractions will lead to a non negotiable ban from the server)"
+        else:
+            reason = " ".join(reason)
 
         failed_warn = False
         for m in members:
             if m.top_role.name == "Muted" or m.top_role < ctx.author.top_role:
                 try:
-                    await m.send(
-                        f"You have been warned for {reason} (Note: Accumulation of warns may lead to permanent removal from the server)"
-                    )
+                    await m.send(f"You have been warned for {reason} {default_msg}")
                 except discord.Forbidden:
                     pass
             else:
@@ -615,12 +645,17 @@ class Moderation(commands.Cog):
             return
 
         helper.create_infraction(
-            author=ctx.author, users=members, action="warn", reason=reason
+            author=ctx.author,
+            users=members,
+            action="warn",
+            reason=reason,
+            inf_level=inf_level,
+            final_warn=final_warn,
         )
 
         embed = helper.create_embed(
             author=ctx.author,
-            action="Warned User(s)",
+            action="Warned User(s)" + (" (FINAL WARNING)" if final_warn else ""),
             users=members,
             reason=reason,
             color=discord.Color.red(),
@@ -953,6 +988,39 @@ class Moderation(commands.Cog):
         await logging_channel.send(embed=embed)
 
         await ctx.send(f"Slowmode of {time}s added to {ch.mention}.")
+
+    @commands.command(aliases=['nocmd','commandblacklist'])
+    @mod_and_above()
+    async def blacklist_command(self, ctx,member: discord.Member, command_name: str):
+        """
+        Blacklists a member from a command
+        Usage: blacklist_command @user command_name 
+        """
+
+        command = discord.utils.get(self.bot.commands, name=command_name)
+        if command is None:
+            raise commands.BadArgument(message=f'{command_name} is not a valid command')
+        if ctx.author.top_role > member.top_role:
+            blacklist_member(self.bot,member,command)
+            await ctx.send(f'{member.name} can no longer use {command_name}')
+        else:
+            await ctx.send(f'You cannot blacklist someone higher or equal to you smh')
+
+    @commands.command(aliases=['yescmd','commandwhitelist'])
+    @mod_and_above()
+    async def whitelist_command(self, ctx,member: discord.Member, command_name: str):
+        """
+        Whitelists a member from a command
+        Usage: whitelist_command @user command_name 
+        """
+        command = discord.utils.get(self.bot.commands, name=command_name)
+        if command is None:
+            raise commands.BadArgument(message=f'{command_name} is not a valid command')
+        if whitelist_member(member,command):
+            await ctx.send(f'{member.name} can now use {command.name}')
+        else:
+            await ctx.send(f'{member.name} is not blacklisted from {command.name}')
+
 
 
 def setup(bot):
