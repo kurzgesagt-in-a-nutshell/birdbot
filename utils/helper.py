@@ -593,6 +593,38 @@ def update_warns(member_id: int, new_warns: typing.List):
     infraction_db.update_one({"user_id": member_id}, {"$set": {"warn": new_warns}})
 
 
+def append_infraction(
+    member_id: int, infr_type: str, infr_id: int, title: str, description: str
+):
+    """Adds a field and description to any one of the infraction type (warn, ban, mute, kick) of a member
+
+    Args:
+        member_id (int): Member ID
+        infr_type (str): warn/mute/ban/kick
+        infr_id (int): ID of infraction that needs to be appeneded
+        title (str): key field
+        description (str): Description for title
+    """
+
+    if infr_type not in ["warn", "mute", "ban", "kick"]:
+        return -1
+
+    infr = infraction_db.find_one(
+        {"user_id": member_id, infr_type: {"$elemMatch": {"id": infr_id}}}
+    )
+    if infr:
+        for idx, inf in enumerate(infr[infr_type]):
+            if inf["id"] == infr_id:
+                infr[infr_type][idx][title] = description
+                break
+
+        infraction_db.update_one({"user_id": member_id}, {"$set": infr})
+        return 0
+
+    else:
+        return -1
+
+
 def create_timed_action(
     users: List[Union[discord.User, discord.Member]], action: str, time: int
 ):
