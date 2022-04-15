@@ -1023,16 +1023,19 @@ class Moderation(commands.Cog):
                 inline=False,
             )
             embed.add_field(name="Base Reason", value=result["reason"], inline=False)
-            embed.add_field(
-                name="Infraction Level", value=result["infraction_level"], inline=False
-            )
+            if "infraction_level" in result:
+                embed.add_field(
+                    name="Infraction Level",
+                    value=result["infraction_level"],
+                    inline=False,
+                )
+                del result["infraction_level"]
 
             del (
                 result["author_id"],
                 result["author_name"],
                 result["datetime"],
                 result["reason"],
-                result["infraction_level"],
             )
 
             for key in result:
@@ -1041,7 +1044,7 @@ class Moderation(commands.Cog):
             await ctx.send(embed=embed)
             await ctx.message.add_reaction("<:kgsYes:955703069516128307>")
 
-    @commands.command(aliases=["einfr", "edit_infr", "editinfr"])
+    @commands.command(aliases=["einf", "einfr", "edit_infr", "editinfr"])
     @mod_and_above()
     async def edit_infraction(
         self,
