@@ -426,7 +426,8 @@ def get_infractions(member_id: int, inf_type: str) -> discord.Embed:
         value = "```Total Infractions: {}".format(
             len(infr["warn"]) + len(infr["mute"]) + len(infr["ban"]) + len(infr["kick"])
         )
-        if infr["final_warn"]:
+
+        if "final_warn" in infr:
             value += "\nUSER IS ON FINAL WARNING"
         value += "```"
 
@@ -759,7 +760,10 @@ def get_active_staff(bot: commands.AutoShardedBot) -> str:
                 mention_str += member.mention
 
                 if not mods_active:
-                    if member.top_role.id in [config_roles["mod_role"], config_roles["trainee_mod_role"]]:
+                    if member.top_role.id in [
+                        config_roles["mod_role"],
+                        config_roles["trainee_mod_role"],
+                    ]:
                         # check for active mods
                         mods_active = True
 
