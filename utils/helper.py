@@ -313,7 +313,6 @@ def create_user_infraction(user: Union[discord.User, discord.Member]):
         "last_updated": datetime.datetime.utcnow(),
         "banned_patron": False,
         "final_warn": False,
-        "last_infr_no": 0,
         "mute": [],
         "warn": [],
         "kick": [],
@@ -361,7 +360,6 @@ def create_infraction(
                     "reason": reason,
                     "infraction_level": inf_level,
                     "duration": time,
-                    "id": inf["last_infr_no"] + 1 if "last_infr_no" in inf else "None",
                 }
             )
 
@@ -373,7 +371,6 @@ def create_infraction(
                     "datetime": datetime.datetime.utcnow(),
                     "reason": reason,
                     "infraction_level": inf_level,
-                    "id": inf["last_infr_no"] + 1 if "last_infr_no" in inf else "None",
                 }
             )
 
@@ -385,7 +382,6 @@ def create_infraction(
                     "datetime": datetime.datetime.utcnow(),
                     "reason": reason,
                     "infraction_level": inf_level,
-                    "id": inf["last_infr_no"] + 1 if "last_infr_no" in inf else "None",
                 }
             )
 
@@ -397,13 +393,9 @@ def create_infraction(
                     "datetime": datetime.datetime.utcnow(),
                     "reason": reason,
                     "infraction_level": inf_level,
-                    "id": inf["last_infr_no"] + 1 if "last_infr_no" in inf else "None",
                 }
             )
 
-        inf["last_infr_no"] = (
-            inf["last_infr_no"] + 1 if "last_infr_no" in inf else "None"
-        )
         inf["last_updated"] = datetime.datetime.utcnow()
 
         infraction_db.update_one({"user_id": u.id}, {"$set": inf})
@@ -459,8 +451,7 @@ def get_infractions(member_id: int, inf_type: str) -> discord.Embed:
                 except KeyError:
                     warn_str += "\n"
 
-                if "id" in warn:
-                    warn_str += f"Warn ID: {warn['id']}\n\n"
+                warn_str += f"Warn ID: {idx}\n\n"
 
                 if (idx + 1) % 5 == 0:
                     embed.add_field(
@@ -489,8 +480,7 @@ def get_infractions(member_id: int, inf_type: str) -> discord.Embed:
                 except KeyError:
                     mute_str += "\n"
 
-                if "id" in mute:
-                    mute_str += f"Mute ID: {mute['id']}\n\n"
+                mute_str += f"Mute ID: {idx}\n\n"
 
                 if (idx + 1) % 5 == 0:
                     embed.add_field(
@@ -518,8 +508,7 @@ def get_infractions(member_id: int, inf_type: str) -> discord.Embed:
                 except KeyError:
                     ban_str += "\n"
 
-                if "id" in ban:
-                    ban_str += f"Ban ID: {ban['id']}\n"
+                ban_str += f"Ban ID: {idx}\n"
 
                 if (idx + 1) % 5 == 0:
                     embed.add_field(name="Bans", value=f"```{ban_str}```", inline=False)
@@ -545,8 +534,7 @@ def get_infractions(member_id: int, inf_type: str) -> discord.Embed:
                 except KeyError:
                     kick_str += "\n"
 
-                if "id" in kick:
-                    kick_str += f"Kick ID: {kick['id']}\n\n"
+                kick_str += f"Kick ID: {idx}\n\n"
 
                 if (idx + 1) % 5 == 0:
                     embed.add_field(
@@ -609,17 +597,17 @@ def append_infraction(
     if infr_type not in ["warn", "mute", "ban", "kick"]:
         return -1
 
-    infr = infraction_db.find_one(
-        {"user_id": member_id, infr_type: {"$elemMatch": {"id": infr_id}}}
-    )
-    if infr:
-        for idx, inf in enumerate(infr[infr_type]):
-            if inf["id"] == infr_id:
-                infr[infr_type][idx][title] = description
-                break
+    infr = infraction_db.find_one({"user_id": member_id})
 
-        infraction_db.update_one({"user_id": member_id}, {"$set": infr})
-        return 0
+    if infr:
+
+        if infr_id in range(0, len(infr[infr_type])):
+            infr[infr_type][infr_id][title] = description
+            infraction_db.update_one({"user_id": member_id}, {"$set": infr})
+            return 0
+
+        else:
+            return -1
 
     else:
         return -1
