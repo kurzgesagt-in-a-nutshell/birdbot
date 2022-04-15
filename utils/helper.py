@@ -427,7 +427,7 @@ def get_infractions(member_id: int, inf_type: str) -> discord.Embed:
             len(infr["warn"]) + len(infr["mute"]) + len(infr["ban"]) + len(infr["kick"])
         )
 
-        if "final_warn" in infr:
+        if "final_warn" in infr and infr["final_warn"]:
             value += "\nUSER IS ON FINAL WARNING"
         value += "```"
 
@@ -447,9 +447,11 @@ def get_infractions(member_id: int, inf_type: str) -> discord.Embed:
                     "Date: {}".format(warn["datetime"].replace(microsecond=0)),
                 )
                 try:
-                    warn_str += f"Infraction Level: {warn['infraction_level']}\n\n"
+                    warn_str += f"Infraction Level: {warn['infraction_level']}\n"
                 except KeyError:
                     warn_str += "\n"
+
+                warn_str += f"Warn ID: {idx}\n\n"
 
                 if (idx + 1) % 5 == 0:
                     embed.add_field(
@@ -474,9 +476,11 @@ def get_infractions(member_id: int, inf_type: str) -> discord.Embed:
                 )
 
                 try:
-                    mute_str += f"Infraction Level: {mute['infraction_level']}\n\n"
+                    mute_str += f"Infraction Level: {mute['infraction_level']}\n"
                 except KeyError:
                     mute_str += "\n"
+
+                mute_str += f"Mute ID: {idx}\n\n"
 
                 if (idx + 1) % 5 == 0:
                     embed.add_field(
@@ -500,9 +504,11 @@ def get_infractions(member_id: int, inf_type: str) -> discord.Embed:
                 )
 
                 try:
-                    ban_str += f"Infraction Level: {ban['infraction_level']}\n\n"
+                    ban_str += f"Infraction Level: {ban['infraction_level']}\n"
                 except KeyError:
                     ban_str += "\n"
+
+                ban_str += f"Ban ID: {idx}\n"
 
                 if (idx + 1) % 5 == 0:
                     embed.add_field(name="Bans", value=f"```{ban_str}```", inline=False)
@@ -524,9 +530,11 @@ def get_infractions(member_id: int, inf_type: str) -> discord.Embed:
                 )
 
                 try:
-                    kick_str += f"Infraction Level: {kick['infraction_level']}\n\n"
+                    kick_str += f"Infraction Level: {kick['infraction_level']}\n"
                 except KeyError:
                     kick_str += "\n"
+
+                kick_str += f"Kick ID: {idx}\n\n"
 
                 if (idx + 1) % 5 == 0:
                     embed.add_field(
@@ -560,7 +568,29 @@ def get_warns(member_id: int):
         return warns["warn"]
 
     else:
-        None
+        return None
+
+
+def get_single_infraction_type(user_id: int, infr_type: str):
+    """Return single infraction type (any one of warn, ban, mute, kick) for a user
+
+    Args:
+        user_id (int): User ID
+        infr_type (str): warn/ban/mute/kick
+
+    Returns:
+        Union[int, List. None]: List of infraction objects
+    """
+
+    if infr_type not in ["warn", "ban", "mute", "kick"]:
+        return -1
+
+    infr = infraction_db.find_one({"user_id": user_id})
+
+    if infr:
+        return infr[infr_type]
+    else:
+        return None
 
 
 def update_warns(member_id: int, new_warns: typing.List):
@@ -571,6 +601,38 @@ def update_warns(member_id: int, new_warns: typing.List):
         new_warns (typing.List): List of warns
     """
     infraction_db.update_one({"user_id": member_id}, {"$set": {"warn": new_warns}})
+
+
+def append_infraction(
+    member_id: int, infr_type: str, infr_id: int, title: str, description: str
+):
+    """Adds a field and description to any one of the infraction type (warn, ban, mute, kick) of a member
+
+    Args:
+        member_id (int): Member ID
+        infr_type (str): warn/mute/ban/kick
+        infr_id (int): ID of infraction that needs to be appeneded
+        title (str): key field
+        description (str): Description for title
+    """
+
+    if infr_type not in ["warn", "mute", "ban", "kick"]:
+        return -1
+
+    infr = infraction_db.find_one({"user_id": member_id})
+
+    if infr:
+
+        if infr_id in range(0, len(infr[infr_type])):
+            infr[infr_type][infr_id][title] = description
+            infraction_db.update_one({"user_id": member_id}, {"$set": infr})
+            return 0
+
+        else:
+            return -1
+
+    else:
+        return -1
 
 
 def create_timed_action(

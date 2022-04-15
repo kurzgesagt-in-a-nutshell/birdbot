@@ -1,3 +1,4 @@
+from ast import alias
 import json
 import io
 import re
@@ -12,7 +13,15 @@ from discord.channel import DMChannel
 
 from utils import custom_converters
 from utils import helper
-from utils.helper import mod_and_above, calc_time, get_active_staff, blacklist_member, whitelist_member
+from utils.helper import (
+    append_infraction,
+    get_single_infraction_type,
+    mod_and_above,
+    calc_time,
+    get_active_staff,
+    blacklist_member,
+    whitelist_member,
+)
 
 import discord
 from discord.ext import commands, tasks
@@ -133,7 +142,11 @@ class Moderation(commands.Cog):
         mod_embed.description = f"**Report description: ** {extras}\n**User: ** {user_id}\n**Message Link: ** [click to jump]({message_link})\n**Channel: ** {channel}"
 
         mod_channel = self.bot.get_channel(414095428573986816)
-        await mod_channel.send(content=get_active_staff(self.bot), embed=mod_embed,allowed_mentions=discord.AllowedMentions(roles=True, users=True))
+        await mod_channel.send(
+            content=get_active_staff(self.bot),
+            embed=mod_embed,
+            allowed_mentions=discord.AllowedMentions(roles=True, users=True),
+        )
 
     @mod_and_above()
     @commands.command(aliases=["purge", "prune", "clear"])
@@ -278,8 +291,10 @@ class Moderation(commands.Cog):
                 message="Please provide a reason and re-run the command"
             )
 
-        if inf_level not in range(1,6):
-            raise commands.BadArgument(message="Infraction level must be between 1 and 5")
+        if inf_level not in range(1, 6):
+            raise commands.BadArgument(
+                message="Infraction level must be between 1 and 5"
+            )
         reason = " ".join(extra)
 
         failed_ban = False
@@ -378,8 +393,10 @@ class Moderation(commands.Cog):
                 message="Please provide a reason and re-run the command"
             )
 
-        if inf_level not in range(1,6):
-            raise commands.BadArgument(message="Infraction level must be between 1 and 5")
+        if inf_level not in range(1, 6):
+            raise commands.BadArgument(
+                message="Infraction level must be between 1 and 5"
+            )
 
         if members is None:
             raise commands.BadArgument(message="Improper members passed")
@@ -435,8 +452,10 @@ class Moderation(commands.Cog):
 
         if members is None:
             raise commands.BadArgument(message="Improper member passed")
-        if inf_level not in range(1,6):
-            raise commands.BadArgument(message="Infraction level must be between 1 and 5")
+        if inf_level not in range(1, 6):
+            raise commands.BadArgument(
+                message="Infraction level must be between 1 and 5"
+            )
 
         tot_time, reason = helper.calc_time(extra)
 
@@ -614,8 +633,10 @@ class Moderation(commands.Cog):
                 message="No reason provided, please re-run the command with a reaso"
             )
 
-        if inf_level not in range(1,6):
-            raise commands.BadArgument(message="Infraction level must be between 1 and 5")
+        if inf_level not in range(1, 6):
+            raise commands.BadArgument(
+                message="Infraction level must be between 1 and 5"
+            )
 
         final_warn = True if reason[0] == "--final" else False
         default_msg = "(Note: Accumulation of warns may lead to permanent removal from the server)"
@@ -949,6 +970,132 @@ class Moderation(commands.Cog):
             if msg:
                 await msg.clear_reactions()
 
+    @commands.command(aliases=["dinfr", "detailed", "details"])
+    @mod_and_above()
+    async def detailed_infr(
+        self,
+        ctx: commands.Context,
+        user: typing.Optional[discord.User],
+        infr_type: str,
+        infr_id: int,
+    ):
+        """Get detailed single Infractions. \nUsage: infr <@member / member_id> w/m/k/b infraction_id"""
+
+        infr_type = infr_type.lower()
+
+        if infr_type not in ["w", "b", "m", "k"]:
+            return await ctx.reply("Infraction can only be any of these: w, m, k, b")
+
+        if infr_type == "w":
+            infr_type = "warn"
+        elif infr_type == "m":
+            infr_type = "mute"
+        elif infr_type == "b":
+            infr_type = "ban"
+        else:
+            infr_type = "kick"
+
+        result = get_single_infraction_type(user.id, infr_type)
+
+        if result == -1:
+            await ctx.reply("Invalid command format.", delete_after=6)
+            await ctx.message.add_reaction("<:kgsNo:955703108565098496>")
+
+        elif result:
+
+            if infr_id not in range(0, len(result)):
+                await ctx.message.add_reaction("<:kgsNo:955703108565098496>")
+                return await ctx.reply("Invalid infraction ID.", delete_after=6)
+
+            result = result[infr_id]
+            embed = discord.Embed(
+                title=f"Detailed infraction for {user.name} ({user.id}) ",
+                description=f"**Infraction Type:** {infr_type}",
+                color=discord.Color.green(),
+                timestamp=datetime.datetime.utcnow(),
+            )
+            embed.add_field(
+                name=f"Author", value=f"<@{result['author_id']}>", inline=False
+            )
+            embed.add_field(
+                name="Date (UTC)",
+                value=result["datetime"].replace(microsecond=0),
+                inline=False,
+            )
+            embed.add_field(name="Base Reason", value=result["reason"], inline=False)
+            embed.add_field(
+                name="Infraction Level", value=result["infraction_level"], inline=False
+            )
+
+            del (
+                result["author_id"],
+                result["author_name"],
+                result["datetime"],
+                result["reason"],
+                result["infraction_level"],
+            )
+
+            for key in result:
+                embed.add_field(name=key, value=result[key], inline=False)
+
+            await ctx.send(embed=embed)
+            await ctx.message.add_reaction("<:kgsYes:955703069516128307>")
+
+    @commands.command(aliases=["einfr", "edit_infr", "editinfr"])
+    @mod_and_above()
+    async def edit_infraction(
+        self,
+        ctx: commands.Context,
+        user: discord.User,
+        infr_type: str,
+        infr_id: int,
+        title: str,
+        *,
+        description: str,
+    ):
+        """Add details to an infraction. \nUsage: edit_infr @user/id w/m/k/b infraction_id title description"""
+
+        infr_type = infr_type.lower()
+
+        if infr_type not in ["w", "b", "m", "k"]:
+            return await ctx.reply("Infraction can only be any of these: w, m, k, b")
+
+        if infr_type == "w":
+            infr_type = "warn"
+        elif infr_type == "m":
+            infr_type = "mute"
+        elif infr_type == "b":
+            infr_type = "ban"
+        else:
+            infr_type = "kick"
+
+        result = append_infraction(user.id, infr_type, infr_id, title, description)
+
+        if result == -1:
+            await ctx.reply(
+                "Infraction with given id and type not found.", delete_after=6
+            )
+            await ctx.message.add_reaction("<:kgsNo:955703108565098496>")
+
+        else:
+            await ctx.message.add_reaction("<:kgsYes:955703069516128307>")
+            await ctx.reply("Infraction updated successfully.", delete_after=6)
+
+            extra = f"Title: {title}\nDescription: {description} \nID: {infr_id}"
+
+            embed = helper.create_embed(
+                author=ctx.author,
+                action=f"Appended details to {infr_type} ",
+                users=[user],
+                extra=extra,
+                color=discord.Color.red(),
+            )
+
+            logging_channel = discord.utils.get(
+                ctx.guild.channels, id=self.logging_channel
+            )
+            await logging_channel.send(embed=embed)
+
     @commands.command(aliases=["slothmode"])
     @mod_and_above()
     async def slowmode(
@@ -989,38 +1136,37 @@ class Moderation(commands.Cog):
 
         await ctx.send(f"Slowmode of {time}s added to {ch.mention}.")
 
-    @commands.command(aliases=['nocmd','commandblacklist'])
+    @commands.command(aliases=["nocmd", "commandblacklist"])
     @mod_and_above()
-    async def blacklist_command(self, ctx,member: discord.Member, command_name: str):
+    async def blacklist_command(self, ctx, member: discord.Member, command_name: str):
         """
         Blacklists a member from a command
-        Usage: blacklist_command @user command_name 
+        Usage: blacklist_command @user command_name
         """
 
         command = discord.utils.get(self.bot.commands, name=command_name)
         if command is None:
-            raise commands.BadArgument(message=f'{command_name} is not a valid command')
+            raise commands.BadArgument(message=f"{command_name} is not a valid command")
         if ctx.author.top_role > member.top_role:
-            blacklist_member(self.bot,member,command)
-            await ctx.send(f'{member.name} can no longer use {command_name}')
+            blacklist_member(self.bot, member, command)
+            await ctx.send(f"{member.name} can no longer use {command_name}")
         else:
-            await ctx.send(f'You cannot blacklist someone higher or equal to you smh')
+            await ctx.send(f"You cannot blacklist someone higher or equal to you smh")
 
-    @commands.command(aliases=['yescmd','commandwhitelist'])
+    @commands.command(aliases=["yescmd", "commandwhitelist"])
     @mod_and_above()
-    async def whitelist_command(self, ctx,member: discord.Member, command_name: str):
+    async def whitelist_command(self, ctx, member: discord.Member, command_name: str):
         """
         Whitelists a member from a command
-        Usage: whitelist_command @user command_name 
+        Usage: whitelist_command @user command_name
         """
         command = discord.utils.get(self.bot.commands, name=command_name)
         if command is None:
-            raise commands.BadArgument(message=f'{command_name} is not a valid command')
-        if whitelist_member(member,command):
-            await ctx.send(f'{member.name} can now use {command.name}')
+            raise commands.BadArgument(message=f"{command_name} is not a valid command")
+        if whitelist_member(member, command):
+            await ctx.send(f"{member.name} can now use {command.name}")
         else:
-            await ctx.send(f'{member.name} is not blacklisted from {command.name}')
-
+            await ctx.send(f"{member.name} is not blacklisted from {command.name}")
 
 
 def setup(bot):
