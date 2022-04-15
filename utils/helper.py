@@ -427,7 +427,7 @@ def get_infractions(member_id: int, inf_type: str) -> discord.Embed:
             len(infr["warn"]) + len(infr["mute"]) + len(infr["ban"]) + len(infr["kick"])
         )
 
-        if "final_warn" in infr:
+        if "final_warn" in infr and infr["final_warn"]:
             value += "\nUSER IS ON FINAL WARNING"
         value += "```"
 
@@ -568,7 +568,29 @@ def get_warns(member_id: int):
         return warns["warn"]
 
     else:
-        None
+        return None
+
+
+def get_single_infraction_type(user_id: int, infr_type: str):
+    """Return single infraction type (any one of warn, ban, mute, kick) for a user
+
+    Args:
+        user_id (int): User ID
+        infr_type (str): warn/ban/mute/kick
+
+    Returns:
+        Union[int, List. None]: List of infraction objects
+    """
+
+    if infr_type not in ["warn", "ban", "mute", "kick"]:
+        return -1
+
+    infr = infraction_db.find_one({"user_id": user_id})
+
+    if infr:
+        return infr[infr_type]
+    else:
+        return None
 
 
 def update_warns(member_id: int, new_warns: typing.List):

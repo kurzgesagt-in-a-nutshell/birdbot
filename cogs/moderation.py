@@ -15,6 +15,7 @@ from utils import custom_converters
 from utils import helper
 from utils.helper import (
     append_infraction,
+    get_single_infraction_type,
     mod_and_above,
     calc_time,
     get_active_staff,
@@ -969,6 +970,77 @@ class Moderation(commands.Cog):
             if msg:
                 await msg.clear_reactions()
 
+    @commands.command(aliases=["dinfr", "detailed", "details"])
+    @mod_and_above()
+    async def detailed_infr(
+        self,
+        ctx: commands.Context,
+        user: typing.Optional[discord.User],
+        infr_type: str,
+        infr_id: int,
+    ):
+        """Get detailed single Infractions. \nUsage: infr <@member / member_id> w/m/k/b infraction_id"""
+
+        infr_type = infr_type.lower()
+
+        if infr_type not in ["w", "b", "m", "k"]:
+            return await ctx.reply("Infraction can only be any of these: w, m, k, b")
+
+        if infr_type == "w":
+            infr_type = "warn"
+        elif infr_type == "m":
+            infr_type = "mute"
+        elif infr_type == "b":
+            infr_type = "ban"
+        else:
+            infr_type = "kick"
+
+        result = get_single_infraction_type(user.id, infr_type)
+
+        if result == -1:
+            await ctx.reply("Invalid command format.", delete_after=6)
+            await ctx.message.add_reaction("<:kgsNo:955703108565098496>")
+
+        elif result:
+
+            if infr_id not in range(0, len(result)):
+                await ctx.message.add_reaction("<:kgsNo:955703108565098496>")
+                return await ctx.reply("Invalid infraction ID.", delete_after=6)
+
+            result = result[infr_id]
+            embed = discord.Embed(
+                title=f"Detailed infraction for {user.name} ({user.id}) ",
+                description=f"**Infraction Type:** {infr_type}",
+                color=discord.Color.green(),
+                timestamp=datetime.datetime.utcnow(),
+            )
+            embed.add_field(
+                name=f"Author", value=f"<@{result['author_id']}>", inline=False
+            )
+            embed.add_field(
+                name="Date (UTC)",
+                value=result["datetime"].replace(microsecond=0),
+                inline=False,
+            )
+            embed.add_field(name="Base Reason", value=result["reason"], inline=False)
+            embed.add_field(
+                name="Infraction Level", value=result["infraction_level"], inline=False
+            )
+
+            del (
+                result["author_id"],
+                result["author_name"],
+                result["datetime"],
+                result["reason"],
+                result["infraction_level"],
+            )
+
+            for key in result:
+                embed.add_field(name=key, value=result[key], inline=False)
+
+            await ctx.send(embed=embed)
+            await ctx.message.add_reaction("<:kgsYes:955703069516128307>")
+
     @commands.command(aliases=["einfr", "edit_infr", "editinfr"])
     @mod_and_above()
     async def edit_infraction(
@@ -981,7 +1053,7 @@ class Moderation(commands.Cog):
         *,
         description: str,
     ):
-        """Add details to an infraction. \nUsage: edit_infr @user/id w/m/k/b infr_id title description"""
+        """Add details to an infraction. \nUsage: edit_infr @user/id w/m/k/b infraction_id title description"""
 
         infr_type = infr_type.lower()
 
