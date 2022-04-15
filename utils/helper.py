@@ -313,6 +313,7 @@ def create_user_infraction(user: Union[discord.User, discord.Member]):
         "last_updated": datetime.datetime.utcnow(),
         "banned_patron": False,
         "final_warn": False,
+        "last_infr_no": 0,
         "mute": [],
         "warn": [],
         "kick": [],
@@ -360,6 +361,7 @@ def create_infraction(
                     "reason": reason,
                     "infraction_level": inf_level,
                     "duration": time,
+                    "id": inf["last_infr_no"] + 1 if "last_infr_no" in inf else "None",
                 }
             )
 
@@ -371,6 +373,7 @@ def create_infraction(
                     "datetime": datetime.datetime.utcnow(),
                     "reason": reason,
                     "infraction_level": inf_level,
+                    "id": inf["last_infr_no"] + 1 if "last_infr_no" in inf else "None",
                 }
             )
 
@@ -382,6 +385,7 @@ def create_infraction(
                     "datetime": datetime.datetime.utcnow(),
                     "reason": reason,
                     "infraction_level": inf_level,
+                    "id": inf["last_infr_no"] + 1 if "last_infr_no" in inf else "None",
                 }
             )
 
@@ -393,9 +397,13 @@ def create_infraction(
                     "datetime": datetime.datetime.utcnow(),
                     "reason": reason,
                     "infraction_level": inf_level,
+                    "id": inf["last_infr_no"] + 1 if "last_infr_no" in inf else "None",
                 }
             )
 
+        inf["last_infr_no"] = (
+            inf["last_infr_no"] + 1 if "last_infr_no" in inf else "None"
+        )
         inf["last_updated"] = datetime.datetime.utcnow()
 
         infraction_db.update_one({"user_id": u.id}, {"$set": inf})
@@ -447,9 +455,12 @@ def get_infractions(member_id: int, inf_type: str) -> discord.Embed:
                     "Date: {}".format(warn["datetime"].replace(microsecond=0)),
                 )
                 try:
-                    warn_str += f"Infraction Level: {warn['infraction_level']}\n\n"
+                    warn_str += f"Infraction Level: {warn['infraction_level']}\n"
                 except KeyError:
                     warn_str += "\n"
+
+                if "id" in warn:
+                    warn_str += f"Warn ID: {warn['id']}\n\n"
 
                 if (idx + 1) % 5 == 0:
                     embed.add_field(
@@ -474,9 +485,12 @@ def get_infractions(member_id: int, inf_type: str) -> discord.Embed:
                 )
 
                 try:
-                    mute_str += f"Infraction Level: {mute['infraction_level']}\n\n"
+                    mute_str += f"Infraction Level: {mute['infraction_level']}\n"
                 except KeyError:
                     mute_str += "\n"
+
+                if "id" in mute:
+                    mute_str += f"Mute ID: {mute['id']}\n\n"
 
                 if (idx + 1) % 5 == 0:
                     embed.add_field(
@@ -500,9 +514,12 @@ def get_infractions(member_id: int, inf_type: str) -> discord.Embed:
                 )
 
                 try:
-                    ban_str += f"Infraction Level: {ban['infraction_level']}\n\n"
+                    ban_str += f"Infraction Level: {ban['infraction_level']}\n"
                 except KeyError:
                     ban_str += "\n"
+
+                if "id" in ban:
+                    ban_str += f"Ban ID: {ban['id']}\n"
 
                 if (idx + 1) % 5 == 0:
                     embed.add_field(name="Bans", value=f"```{ban_str}```", inline=False)
@@ -524,9 +541,12 @@ def get_infractions(member_id: int, inf_type: str) -> discord.Embed:
                 )
 
                 try:
-                    kick_str += f"Infraction Level: {kick['infraction_level']}\n\n"
+                    kick_str += f"Infraction Level: {kick['infraction_level']}\n"
                 except KeyError:
                     kick_str += "\n"
+
+                if "id" in kick:
+                    kick_str += f"Kick ID: {kick['id']}\n\n"
 
                 if (idx + 1) % 5 == 0:
                     embed.add_field(
