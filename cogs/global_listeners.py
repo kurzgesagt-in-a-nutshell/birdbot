@@ -551,6 +551,7 @@ class Errors(commands.Cog):
                 NoAuthorityError,
                 errors.NotOwner,
                 errors.CheckAnyFailure,
+                errors.CheckFailure,
             ),
         ):
             await self.react_send_delete(ctx, reaction="<:kgsNo:955703108565098496>")
