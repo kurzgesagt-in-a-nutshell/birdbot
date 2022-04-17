@@ -259,6 +259,7 @@ def create_embed(
     extra=None,
     color=discord.Color.blurple,
     link=None,
+    inf_level=None,
 ) -> discord.Embed:
     """
     Creates an embed
@@ -297,6 +298,9 @@ def create_embed(
 
     if link:
         embed.add_field(name="Link", value=link, inline=False)
+    
+    if inf_level:
+        embed.add_field(name="Level", value=inf_level, inline=False)
 
     return embed
 
@@ -429,6 +433,35 @@ def get_infractions(member_id: int, inf_type: str) -> discord.Embed:
 
         if "final_warn" in infr and infr["final_warn"]:
             value += "\nUSER IS ON FINAL WARNING"
+       
+        inflevels = {"legacy": 0}
+
+        for key in infr:
+            if type(infr[key]) == list:
+                for i in infr[key]:
+                    if "infraction_level" in i:
+                        if i["infraction_level"] not in inflevels:
+                            inflevels[i["infraction_level"]] = 0
+                        inflevels[i["infraction_level"]] += 1
+                    else:
+                        inflevels["legacy"] += 1
+
+        dectoroman = {
+            1: "I",
+            2: "II",
+            3: "III",
+            4: "IV",
+            5: "V",}
+
+        valuelist = []
+        if inflevels["legacy"] != 0:
+            valuelist.append(f'{inflevels["legacy"]}xLegacy')
+        del inflevels["legacy"]
+        for key in sorted(inflevels):
+            valuelist.append(f'{inflevels[key]}x{dectoroman[key]}')
+
+        value += "\n" + ", ".join(valuelist)
+
         value += "```"
 
         embed.add_field(
@@ -446,10 +479,8 @@ def get_infractions(member_id: int, inf_type: str) -> discord.Embed:
                     "Reason: {}".format(warn["reason"]),
                     "Date: {}".format(warn["datetime"].replace(microsecond=0)),
                 )
-                try:
+                if 'infraction_level' in warn:
                     warn_str += f"Infraction Level: {warn['infraction_level']}\n"
-                except KeyError:
-                    warn_str += "\n"
 
                 warn_str += f"Warn ID: {idx}\n\n"
 
@@ -475,10 +506,9 @@ def get_infractions(member_id: int, inf_type: str) -> discord.Embed:
                     "Date: {}".format(mute["datetime"].replace(microsecond=0)),
                 )
 
-                try:
+                if 'infraction_level' in mute:
                     mute_str += f"Infraction Level: {mute['infraction_level']}\n"
-                except KeyError:
-                    mute_str += "\n"
+
 
                 mute_str += f"Mute ID: {idx}\n\n"
 
@@ -503,10 +533,9 @@ def get_infractions(member_id: int, inf_type: str) -> discord.Embed:
                     "Date: {}".format(ban["datetime"].replace(microsecond=0)),
                 )
 
-                try:
+                if 'infraction_level' in ban:
                     ban_str += f"Infraction Level: {ban['infraction_level']}\n"
-                except KeyError:
-                    ban_str += "\n"
+
 
                 ban_str += f"Ban ID: {idx}\n"
 
@@ -529,10 +558,9 @@ def get_infractions(member_id: int, inf_type: str) -> discord.Embed:
                     "Date: {}".format(kick["datetime"].replace(microsecond=0)),
                 )
 
-                try:
+                if 'infraction_level' in kick:
                     kick_str += f"Infraction Level: {kick['infraction_level']}\n"
-                except KeyError:
-                    kick_str += "\n"
+
 
                 kick_str += f"Kick ID: {idx}\n\n"
 
