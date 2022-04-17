@@ -15,6 +15,7 @@ from utils import custom_converters
 from utils import helper
 from utils.helper import (
     append_infraction,
+    devs_only,
     get_single_infraction_type,
     mod_and_above,
     calc_time,
@@ -334,6 +335,7 @@ class Moderation(commands.Cog):
             users=members,
             reason=reason,
             color=discord.Color.dark_red(),
+            inf_level=inf_level,
         )
 
         await logging_channel.send(embed=embed)
@@ -426,6 +428,7 @@ class Moderation(commands.Cog):
             users=members,
             reason=reason,
             color=discord.Color.red(),
+            inf_level=inf_level,
         )
         await logging_channel.send(embed=embed)
 
@@ -520,6 +523,7 @@ class Moderation(commands.Cog):
             reason=reason,
             extra=f"Mute Duration: {time_str} or {tot_time} seconds",
             color=discord.Color.red(),
+            inf_level=inf_level,
         )
         await logging_channel.send(embed=embed)
 
@@ -680,6 +684,7 @@ class Moderation(commands.Cog):
             users=members,
             reason=reason,
             color=discord.Color.red(),
+            inf_level=inf_level,
         )
         await logging_channel.send(embed=embed)
 
