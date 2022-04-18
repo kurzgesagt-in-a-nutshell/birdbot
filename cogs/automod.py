@@ -259,7 +259,7 @@ class Filter(commands.Cog):
             toReturn = False
             # filter out bold and italics but keep *
             message_clean = message
-            indexes = re.finditer("(\*\*.*\*\*)", message)
+            indexes = re.finditer("(\*\*.*?\*\*)", message)
             if indexes:
                 tracker = 0
                 for i in indexes:
@@ -268,7 +268,7 @@ class Filter(commands.Cog):
                         message_clean[i.start() + 2 - tracker : i.end() - 2 - tracker],
                     )
                     tracker = tracker + 4
-            indexes = re.finditer(r"(\*.*\*)", message_clean)
+            indexes = re.finditer(r"(\*.*?\*)", message_clean)
             if indexes:
                 tracker = 0
                 for i in indexes:
@@ -539,7 +539,7 @@ class Filter(commands.Cog):
             toReturn = False
             # filter out bold and italics but keep *
             message_clean = message.content
-            indexes = re.finditer("(\*\*.*\*\*)", message.content)
+            indexes = re.finditer("(\*\*.*?\*\*)", message.content)
             if indexes:
                 tracker = 0
                 for i in indexes:
@@ -548,7 +548,7 @@ class Filter(commands.Cog):
                         message_clean[i.start() + 2 - tracker : i.end() - 2 - tracker],
                     )
                     tracker = tracker + 4
-            indexes = re.finditer(r"(\*.*\*)", message_clean)
+            indexes = re.finditer(r"(\*.*?\*)", message_clean)
             if indexes:
                 tracker = 0
                 for i in indexes:
