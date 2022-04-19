@@ -256,6 +256,7 @@ class Filter(commands.Cog):
             regex_list = self.generate_regex(word_list)
             # stores all words that are aparently profanity
             offending_list = []
+            word_list.extend(self.white_list)
             toReturn = False
             # filter out bold and italics but keep *
             message_clean = message
@@ -302,14 +303,12 @@ class Filter(commands.Cog):
             if profanity.contains_profanity(message_clean):
                 offending_list = []
                 for w in word_list:
-                    if re.search(w, message_clean):
+                    if re.search(re.escape(w), message_clean):
                         offending_list.append(w)
                 if self.exception_list_check(offending_list):
                     return False
                 else:
                     return True
-            elif profanity.contains_profanity(str(message_clean).replace(" ", "")):
-                return True
             else:
                 for regex in regex_list:
                     if re.search(regex, message_clean):
@@ -536,6 +535,7 @@ class Filter(commands.Cog):
             regex_list = self.generate_regex(word_list)
             # stores all words that are aparently profanity
             offending_list = []
+            word_list.extend(self.white_list)
             toReturn = False
             # filter out bold and italics but keep *
             message_clean = message.content
@@ -582,14 +582,12 @@ class Filter(commands.Cog):
             if profanity.contains_profanity(message_clean):
                 offending_list = []
                 for w in word_list:
-                    if re.search(w, message_clean):
+                    if re.search(re.escape(w), message_clean):
                         offending_list.append(w)
                 if self.exception_list_check(offending_list):
                     return False
                 else:
                     return True
-            elif profanity.contains_profanity(str(message_clean).replace(" ", "")):
-                return True
             else:
                 for regex in regex_list:
                     if re.search(regex, message_clean):
