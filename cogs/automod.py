@@ -1,3 +1,4 @@
+import copy
 import json
 import typing
 import datetime
@@ -250,9 +251,11 @@ class Filter(commands.Cog):
         """
         # TODO: return words that triggered the profanity
 
-        def check_profanity_test(word_list, message):
+        def check_profanity_test(ref_word_list, message):
             # print(self.white_list)
+            word_list = copy.copy(ref_word_list)
             profanity.load_censor_words(word_list)
+            print(profanity.CENSOR_WORDSET)
             regex_list = self.generate_regex(word_list)
             # stores all words that are aparently profanity
             offending_list = []
@@ -286,6 +289,7 @@ class Filter(commands.Cog):
             indexes = [x.start() for x in re.finditer(r"\?", message_clean)]
             # get rid of all other non ascii charcters
             message_clean = demoji.replace(message_clean, "*")
+            print(message_clean)
             message_clean = (
                 str(message_clean)
                 .encode("ascii", "replace")
@@ -300,26 +304,29 @@ class Filter(commands.Cog):
             message_clean = "".join(message_clean)
             # sub out discord emojis
             message_clean = re.sub(r"(<[A-z]*:[^\s]+:[0-9]*>)", "*", message_clean)
+            print(message_clean)
+            print(profanity.contains_profanity(message_clean))
             if profanity.contains_profanity(message_clean):
                 offending_list = []
                 for w in word_list:
                     if re.search(re.escape(w), message_clean):
                         offending_list.append(w)
-                if self.exception_list_check(offending_list):
+                if self.exception_list_check(offending_list) and not offending_list == []:
                     return False
                 else:
                     return True
             else:
+                print("here")
                 for regex in regex_list:
                     if re.search(regex, message_clean):
                         found_items = re.findall(regex[:-3] + "[A-z]*)", message_clean)
                         for e in found_items:
                             offending_list.append(e)
                         toReturn = True
+                        print(found_items)
             if toReturn:
-                if self.exception_list_check(offending_list):
-                    return False
-                return [True, offending_list]
+                if not self.exception_list_check(offending_list):
+                    return [True, offending_list]
             return False
 
         msg = await ctx.send(words)
@@ -529,13 +536,14 @@ class Filter(commands.Cog):
     async def check_message(self, message, word_list):
 
         # check for profanity
-        def check_profanity(word_list, message):
+        def check_profanity(ref_word_list, message):
             # print(self.white_list)
-            profanity.load_censor_words(word_list)
-            regex_list = self.generate_regex(word_list)
+            local_word_list = copy.copy(ref_word_list)
+            profanity.load_censor_words(local_word_list)
+            regex_list = self.generate_regex(local_word_list)
             # stores all words that are aparently profanity
             offending_list = []
-            word_list.extend(self.white_list)
+            local_word_list.extend(self.white_list)
             toReturn = False
             # filter out bold and italics but keep *
             message_clean = message.content
@@ -579,12 +587,14 @@ class Filter(commands.Cog):
             message_clean = "".join(message_clean)
             # sub out discord emojis
             message_clean = re.sub(r"(<[A-z]*:[^\s]+:[0-9]*>)", "*", message_clean)
+            print(message_clean)
             if profanity.contains_profanity(message_clean):
                 offending_list = []
-                for w in word_list:
+                for w in local_word_list:
                     if re.search(re.escape(w), message_clean):
                         offending_list.append(w)
-                if self.exception_list_check(offending_list):
+                print(offending_list)
+                if self.exception_list_check(offending_list) and not offending_list == []:
                     return False
                 else:
                     return True
@@ -598,7 +608,6 @@ class Filter(commands.Cog):
             if toReturn:
                 if not self.exception_list_check(offending_list):
                     return toReturn
-
             return False
 
         # check for emoji spam
@@ -733,10 +742,9 @@ class Filter(commands.Cog):
 
     def exception_list_check(self, offending_list):
         for bad_word in offending_list:
-            if bad_word in self.white_list:
-                return True
-
-        return False
+            if not bad_word in self.white_list:
+                return False
+        return True
 
     def convert_regional(self, word):
         replacement = {
@@ -821,7 +829,7 @@ class Filter(commands.Cog):
         return to_return
 
     def generate_regex(self, words):
-        joining_chars = r'[ _\-\+\.*!@#$%^&():\'"]*'
+        joining_chars = r'[ _\-\+\.\*!@#$%^&():\'"]*'
         replacement = {
             "a": r"4a\@\#",
             "b": r"b\*",
