@@ -1,6 +1,7 @@
 {
     "logging": {
         "logging_channel": 543884016282239006,
+        "automod_logging_channel":966769038879498301,
         "message_logging_channel": 879399217511161887,
         "member_logging_channel":939570758903005296, 
         "dev_logging_channel": 865321589919055882,

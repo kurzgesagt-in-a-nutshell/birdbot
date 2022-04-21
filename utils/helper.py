@@ -832,7 +832,7 @@ def get_active_staff(bot: commands.AutoShardedBot) -> str:
     """
 
     guild = discord.utils.get(bot.guilds, id=414027124836532234)
-    mention_str = ""
+    active_staff = []
     mods_active = False
     for role_id in [
         config_roles["mod_role"],
@@ -842,12 +842,13 @@ def get_active_staff(bot: commands.AutoShardedBot) -> str:
         for member in discord.utils.get(guild.roles, id=role_id).members:
             if member.bot:
                 continue
-
+            if member in active_staff:
+                continue
             if (
                 member.status == discord.Status.online
                 or member.status == discord.Status.idle
             ):
-                mention_str += member.mention
+                active_staff.append(member)
 
                 if not mods_active:
                     if member.top_role.id in [
@@ -857,12 +858,14 @@ def get_active_staff(bot: commands.AutoShardedBot) -> str:
                         # check for active mods
                         mods_active = True
 
-        if not mods_active:
-            mention_str += (
-                f"<@&{config_roles['mod_role']}> <@&{config_roles['trainee_mod_role']}>"
-            )
+    mention_str = ' '.join([staff.mention for staff in active_staff])
 
-        return mention_str
+    if not mods_active:
+        mention_str += (
+            f"<@&{config_roles['mod_role']}> <@&{config_roles['trainee_mod_role']}>"
+        )
+
+    return mention_str
 
 
 def blacklist_member(

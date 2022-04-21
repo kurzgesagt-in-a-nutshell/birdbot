@@ -30,7 +30,7 @@ class Filter(commands.Cog):
         self.config_json = json.loads(config_file.read())
         config_file.close()
 
-        self.logging_channel_id = self.config_json["logging"]["logging_channel"]
+        self.logging_channel_id = self.config_json["logging"]["automod_logging_channel"]
         self.logging_channel = None
 
         self.humanities_list = []

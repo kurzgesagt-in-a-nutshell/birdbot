@@ -475,7 +475,7 @@ class Moderation(commands.Cog):
         default_msg = "(Note: Accumulation of warns may lead to permanent removal from the server)"
         if final_warn:
             reason = reason[7:]
-            default_msg = "(This is your final warning, future infractions will lead to a non negotiable ban from the server)"
+            default_msg = "**(This is your final warning, future infractions will lead to a non negotiable ban from the server)**"
 
         if tot_time > 2419200:
             raise commands.BadArgument(message="Can't mute for longer than 28 days!")
@@ -646,7 +646,7 @@ class Moderation(commands.Cog):
         default_msg = "(Note: Accumulation of warns may lead to permanent removal from the server)"
         if final_warn:
             reason = " ".join(reason[1:])
-            default_msg = "(This is your final warning, future infractions will lead to a non negotiable ban from the server)"
+            default_msg = "**(This is your final warning, future infractions will lead to a non negotiable ban from the server)**"
         else:
             reason = " ".join(reason)
 
