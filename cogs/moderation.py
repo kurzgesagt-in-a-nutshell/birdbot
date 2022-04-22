@@ -445,7 +445,7 @@ class Moderation(commands.Cog):
     @commands.command()
     @mod_and_above()
     async def mute(self, ctx: commands.Context, inf_level: int, *args):
-        """Mute member(s). \nUsage: mute infraction_level @member(s) <time> reason"""
+        """Mute member(s). \nUsage: mute infraction_level [@member(s) / user_id(s)] <time> reason"""
 
         tot_time = 0
 
@@ -1144,12 +1144,12 @@ class Moderation(commands.Cog):
 
         await ctx.send(f"Slowmode of {time}s added to {ch.mention}.")
 
-    @commands.command(aliases=["nocmd", "commandblacklist"])
+    @commands.command(aliases=["blacklist_command", "commandblacklist"])
     @mod_and_above()
-    async def blacklist_command(self, ctx, member: discord.Member, command_name: str):
+    async def nocmd(self, ctx, member: discord.Member, command_name: str):
         """
         Blacklists a member from a command
-        Usage: blacklist_command @user command_name
+        Usage: nocmd @user/user_ID command_name
         """
 
         command = discord.utils.get(self.bot.commands, name=command_name)
@@ -1161,12 +1161,12 @@ class Moderation(commands.Cog):
         else:
             await ctx.send(f"You cannot blacklist someone higher or equal to you smh")
 
-    @commands.command(aliases=["yescmd", "commandwhitelist"])
+    @commands.command(aliases=["whitelist_command", "commandwhitelist"])
     @mod_and_above()
-    async def whitelist_command(self, ctx, member: discord.Member, command_name: str):
+    async def yescmd(self, ctx, member: discord.Member, command_name: str):
         """
         Whitelists a member from a command
-        Usage: whitelist_command @user command_name
+        Usage: yescmd @user/user_ID command_name
         """
         command = discord.utils.get(self.bot.commands, name=command_name)
         if command is None:
