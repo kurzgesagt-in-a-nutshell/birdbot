@@ -51,7 +51,7 @@ class Topic(commands.Cog):
             self.topics_list = copy.deepcopy(self.topics)
 
     @mod_and_above()
-    @topic.command()
+    @topic.command(aliases=['search','find'])
     async def get(self, ctx: commands.Context, *, search_string: str):
         """
         Get a topic by search string.
@@ -68,7 +68,7 @@ class Topic(commands.Cog):
             return await ctx.send("No match found.", delete_after=6)
 
         embed_desc = "".join(
-            f"{self.topics.index(tp) + 1}. {tp}\n" for index, tp in enumerate(t)
+            f"{self.topics.index(tp) + 1}. {tp}\n" for _, tp in enumerate(t)
         )
 
         embed = discord.Embed(
@@ -84,7 +84,7 @@ class Topic(commands.Cog):
     async def add(self, ctx: commands.Context, *, topic: str):
         """
         Add a topic to the list.
-        Usage: topic add topic_string
+        Usage: topic add actual_topic
         """
 
         self.topics.append(topic)
@@ -100,7 +100,7 @@ class Topic(commands.Cog):
     async def suggest(self, ctx: commands.Context, *, topic: str):
         """
         Suggest a topic.
-        Usage: topic suggest topic_string
+        Usage: topic suggest actual_topic
         """
 
         automated_channel = self.bot.get_channel(self.automated_channel)

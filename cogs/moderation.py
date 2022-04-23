@@ -975,7 +975,7 @@ class Moderation(commands.Cog):
             if msg:
                 await msg.clear_reactions()
 
-    @commands.command(aliases=["dinfr", "detailed", "details"])
+    @commands.command(aliases=["dinfr", "inf_details","infr_details", "details"])
     @mod_and_above()
     async def detailed_infr(
         self,
@@ -984,7 +984,7 @@ class Moderation(commands.Cog):
         infr_type: str,
         infr_id: int,
     ):
-        """Get detailed single Infractions. \nUsage: infr <@member / member_id> w/m/k/b infraction_id"""
+        """Get detailed single Infractions. \nUsage: dinfr <@member / member_id> w/m/k/b infraction_id"""
 
         infr_type = infr_type.lower()
 
