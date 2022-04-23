@@ -226,7 +226,6 @@ class GuildLogger(commands.Cog):
             timestamp=datetime.datetime.utcnow(),
         )
         embed.set_author(name=member.name, icon_url=member.avatar_url)
-        acc_age = datetime.datetime.utcnow() - member.created_at
 
         embed.add_field(
             name="Account Created",
@@ -420,7 +419,7 @@ class GuildChores(commands.Cog):
                     title="Hey there patron! Annoyed about auto-joining the server?",
                     description="Unfortunately Patreon doesn't natively support a way to disable this- "
                     "but you have the choice of getting volutarily banned from the server "
-                    "therby preventing your account from rejoining. To do so simply type ```!unenroll```"
+                    "therby preventing your account from rejoining. To do so simply type ```!unenrol```"
                     "If you change your mind in the future just fill out [this form!](https://forms.gle/m4KPj2Szk1FKGE6F8)",
                     color=0xFFFFFF,
                 )
@@ -448,7 +447,7 @@ class GuildChores(commands.Cog):
 
     @patreon_only()
     @commands.command()
-    async def unenroll(self, ctx):
+    async def unenrol(self, ctx):
         embed = discord.Embed(
             title="We're sorry to see you go",
             description="Are you sure you want to get banned from the server?"
