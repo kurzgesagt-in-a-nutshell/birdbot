@@ -57,7 +57,7 @@ class Moderation(commands.Cog):
         *,
         extras: str = None,
     ):
-        """Report an issue to the authorites. Use this command in the bots DMs\n Usage: report\nreport user_ID message_link description_of_issue"""
+        """Report an issue to the authorites. Use this command in the bots DMs\n Usage: report\nreport <user_ID> <message_link> <description_of_issue>"""
 
         if message_link and not message_link.startswith("http"):
             if extras:
@@ -158,7 +158,7 @@ class Moderation(commands.Cog):
         msg_count: int = None,
         channel: discord.TextChannel = None,
     ):
-        """Clean messages. \nUsage: clean <@member(s)/ id(s)> number_of_messages <#channel>"""
+        """Clean messages. \nUsage: clean <@member(s)/id(s)> number_of_messages <#channel>"""
         messsage_count = msg_count  # used to display number of messages deleted
         if msg_count is None:
             return await ctx.send(
@@ -277,7 +277,7 @@ class Moderation(commands.Cog):
     @commands.command(aliases=["yeet"])
     @mod_and_above()
     async def ban(self, ctx: commands.Context, inf_level: int, *args):
-        """Ban a member.\nUsage: ban infraction_level @member(s) reason"""
+        """Ban a member.\nUsage: ban infraction_level [@member(s)/id(s)] reason"""
 
         logging_channel = discord.utils.get(ctx.guild.channels, id=self.logging_channel)
 
@@ -386,7 +386,7 @@ class Moderation(commands.Cog):
     @commands.command()
     @mod_and_above()
     async def kick(self, ctx: commands.Context, inf_level: int, *args):
-        """Kick member(s).\nUsage: kick infraction_level @member(s) reason"""
+        """Kick member(s).\nUsage: kick infraction_level [@member(s)/id(s)] reason"""
 
         members, reason = custom_converters.get_members(ctx, *args)
 
@@ -445,7 +445,7 @@ class Moderation(commands.Cog):
     @commands.command()
     @mod_and_above()
     async def mute(self, ctx: commands.Context, inf_level: int, *args):
-        """Mute member(s). \nUsage: mute infraction_level [@member(s) / user_id(s)] <time> reason"""
+        """Mute member(s). \nUsage: mute infraction_level [@member(s) / user_id(s)] time reason"""
 
         tot_time = 0
 
@@ -544,7 +544,7 @@ class Moderation(commands.Cog):
     async def unmute(
         self, ctx: commands.Context, members: commands.Greedy[discord.Member]
     ):
-        """Unmute member(s). \nUsage: unmute @member(s) <reason>"""
+        """Unmute member(s). \nUsage: unmute [@member(s)/id(s)] <reason>"""
 
         logging_channel = discord.utils.get(ctx.guild.channels, id=self.logging_channel)
 
@@ -580,7 +580,7 @@ class Moderation(commands.Cog):
         *,
         role_name: str = None,
     ):
-        """Add/Remove a role from a member. \nUsage: role @member role_name"""
+        """Add/Remove a role from a member. \nUsage: role @member/user_id role_name"""
 
         logging_channel = discord.utils.get(ctx.guild.channels, id=self.logging_channel)
 
@@ -625,7 +625,7 @@ class Moderation(commands.Cog):
     @commands.command()
     @mod_and_above()
     async def warn(self, ctx: commands.Context, inf_level: int, *args):
-        """Warn user(s) \nUsage: warn infraction_level @member(s) reason"""
+        """Warn user(s) \nUsage: warn infraction_level [@member(s)/id(s)] reason"""
         logging_channel = discord.utils.get(ctx.guild.channels, id=self.logging_channel)
 
         members, reason = custom_converters.get_members(ctx, *args)
@@ -867,7 +867,7 @@ class Moderation(commands.Cog):
         mem_id: typing.Optional[int] = None,
         inf_type: str = None,
     ):
-        """Get Infractions. \nUsage: infr <@member / member_id> <infraction_type>"""
+        """Get Infractions. \nUsage: infr <@member/member_id> <infraction_type>"""
         try:
 
             if member is None and mem_id is None:
@@ -984,7 +984,7 @@ class Moderation(commands.Cog):
         infr_type: str,
         infr_id: int,
     ):
-        """Get detailed single Infractions. \nUsage: dinfr <@member / member_id> w/m/k/b infraction_id"""
+        """Get detailed single Infractions. \nUsage: dinfr @member/member_id w/m/k/b infraction_id"""
 
         infr_type = infr_type.lower()
 

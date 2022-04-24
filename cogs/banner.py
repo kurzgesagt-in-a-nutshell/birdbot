@@ -37,7 +37,7 @@ class Banner(commands.Cog):
     async def banner(self, ctx: commands.Context):
         """
         Banner commands
-        Usage: banner < add | suggest | rotate | change >
+        Usage: banner add/suggest/rotate/change
         """
 
     async def verify_url(self, url: str, byte: bool = False):

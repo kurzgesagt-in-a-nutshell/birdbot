@@ -46,7 +46,7 @@ class Giveaway(commands.Cog):
     async def giveaway(self, ctx):
         """
         giveaway commands
-        Usage: giveaway < start | end | cancel | reroll | list>
+        Usage: giveaway start/end/cancel/reroll/list
         """
 
     async def choose_winner(self, giveaway):

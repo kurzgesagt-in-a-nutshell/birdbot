@@ -59,7 +59,7 @@ class Filter(commands.Cog):
     async def filter(self, ctx):
         """
         Filter commands
-        Usage: filter < whitelist | blacklist | check >
+        Usage: filter whitelist/blacklist/check
         """
         if ctx.invoked_subcommand is None:
             await ctx.send(ctx.command.help)
@@ -92,7 +92,7 @@ class Filter(commands.Cog):
     async def _add(self, ctx, *, words):
         """
         Add word(s) to the whitelist
-        Usage: filter whitelist add word(s)
+        Usage: filter whitelist add [word(s)]
         """
         new_words = words.split(" ")
 
@@ -115,7 +115,7 @@ class Filter(commands.Cog):
     async def _remove(self, ctx, *, words):
         """
         Remove word(s) from the whitelist
-        Usage: filter whitelist remove word(s)
+        Usage: filter whitelist remove [word(s)]
         """
         new_words = words.split(" ")
 
