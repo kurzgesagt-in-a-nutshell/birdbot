@@ -38,9 +38,8 @@ class Giveaway(commands.Cog):
 
     def cog_unload(self):
         self.giveaway_task.cancel()
-
-    # @mod_and_above()
-    @devs_only()
+        
+    @mod_and_above()
     @commands.group(hidden=True)
     async def giveaway(self, ctx):
         """
@@ -131,6 +130,7 @@ class Giveaway(commands.Cog):
             self.giveaway_db.update_one(
                 giveaway, {"$set": {"giveaway_cancelled": True}}
             )
+            return
 
         if giveaway["message_id"] in self.active_giveaways:
             del self.active_giveaways[giveaway["message_id"]]
@@ -144,27 +144,22 @@ class Giveaway(commands.Cog):
 
     @tasks.loop()
     async def giveaway_task(self):
-        timelist = []
-        templist = []
-        for messageid in self.active_giveaways:
-            templist.append(self.active_giveaways[messageid])
+        templist = list(self.active_giveaways)
+        firstgiveaway = {}
 
-        for giveaway in templist:
+        for i in templist:
+            giveaway = self.active_giveaways[i]
             if giveaway["end_time"] - datetime.utcnow() <= timedelta():
                 await self.choose_winner(giveaway)
             else:
-                timelist.append(
-                    {"id": giveaway["message_id"], "time": giveaway["end_time"]}
-                )
+                if not firstgiveaway:
+                    firstgiveaway = giveaway
+                if giveaway["end_time"] < firstgiveaway["end_time"]:
+                    firstgiveaway = giveaway
 
-        def sortfunc(x):
-            return x["time"]
-
-        timelist.sort(key=sortfunc)
-
-        if timelist:
-            await discord.utils.sleep_until(timelist[0]["time"])
-            await self.choose_winner(self.active_giveaways[timelist[0]["id"]])
+        if firstgiveaway:
+            await discord.utils.sleep_until(firstgiveaway["end_time"])
+            await self.choose_winner(firstgiveaway)
         else:
             self.giveaway_task.cancel()
 
@@ -275,10 +270,7 @@ class Giveaway(commands.Cog):
 
         if messageid in self.active_giveaways:
             await self.choose_winner(self.active_giveaways[messageid])
-            if self.giveaway_task.is_running():
-                self.giveaway_task.restart()
-            else:
-                self.giveaway_task.start()
+            self.giveaway_task.restart()
             return
 
         await ctx.send("Giveaway not found!", delete_after=6)
@@ -296,11 +288,12 @@ class Giveaway(commands.Cog):
                 message = await ctx.guild.get_channel(
                     giveaway["channel_id"]
                 ).fetch_message(giveaway["message_id"])
+                await message.delete()
             except:
-                return
-
-            await message.delete()
+                pass
+            
             del self.active_giveaways[messageid]
+            self.giveaway_task.restart()
             self.giveaway_db.update_one(
                 giveaway, {"$set": {"giveaway_cancelled": True}}
             )
@@ -352,7 +345,7 @@ class Giveaway(commands.Cog):
                 time = giveaway["end_time"] - datetime.utcnow()
                 embed.add_field(
                     name=giveaway["prize"],
-                    value=f"Giveaway ends in {int(time.total_seconds()/60)} minutes",
+                    value=f"[Giveaway](https://discord.com/channels/414027124836532234/{giveaway['channel_id']}/{giveaway['message_id']}) ends in {int(time.total_seconds()/60)} minutes",
                 )
             except:
                 pass
