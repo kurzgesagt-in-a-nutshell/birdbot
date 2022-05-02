@@ -38,7 +38,7 @@ class Giveaway(commands.Cog):
 
     def cog_unload(self):
         self.giveaway_task.cancel()
-        
+
     @mod_and_above()
     @commands.group(hidden=True)
     async def giveaway(self, ctx):
@@ -65,7 +65,7 @@ class Giveaway(commands.Cog):
             embed["footer"]["text"] = "Giveaway Ended"
 
             users = []
-
+            self.logger.debug("Fetching reactions from users")
             for reaction in message.reactions:
                 if reaction.emoji == "🎉":
                     users = await reaction.users().flatten()
@@ -78,7 +78,10 @@ class Giveaway(commands.Cog):
                         except discord.errors.NotFound:
                             pass
 
+            self.logger.debug("Fetched users")
+
             if users != []:
+                self.logger.debug("Calculating weights")
                 weights = []
                 for user in users:
                     bias = self.giveaway_bias["default"]
@@ -100,9 +103,11 @@ class Giveaway(commands.Cog):
                 if len(users) < size:
                     size = len(users)
 
+                self.logger.debug("Choosing winner(s)")
                 choice = np.random.choice(users, size=size, replace=False, p=prob)
                 winners = []
                 winnerids = ", ".join([str(i.id) for i in choice])
+                self.logger.debug(f"Fetched winner(s): {winnerids}")
                 for winner in choice:
                     await message.channel.send(
                         f"{winner.mention} won **{giveaway['prize']}**!"
@@ -114,6 +119,7 @@ class Giveaway(commands.Cog):
                 winners = "> Nobody participated :("
                 winnerids = ""
 
+            self.logger.debug("Sending new embed")
             newdescription = embed["description"].splitlines()
             for i in range(len(newdescription)):
                 if newdescription[i].startswith("> **Winners"):
@@ -126,6 +132,8 @@ class Giveaway(commands.Cog):
             await message.edit(embed=embed)
 
         else:
+            self.logger.debug("Message not found")
+            self.logger.debug("Deleting giveaway")
             del self.active_giveaways[giveaway["message_id"]]
             self.giveaway_db.update_one(
                 giveaway, {"$set": {"giveaway_cancelled": True}}
@@ -133,12 +141,14 @@ class Giveaway(commands.Cog):
             return
 
         if giveaway["message_id"] in self.active_giveaways:
+            self.logger.debug("Deleting giveaway")
             del self.active_giveaways[giveaway["message_id"]]
             self.giveaway_db.update_one(
                 giveaway,
                 {"$set": {"giveaway_over": True, "winners": winnerids}},
             )
         else:
+            self.logger.debug("Appending old winners and updating giveaway")
             winnerids += f", old: {giveaway['winners']}"
             self.giveaway_db.update_one(giveaway, {"$set": {"winners": winnerids}})
 
@@ -147,6 +157,8 @@ class Giveaway(commands.Cog):
         templist = list(self.active_giveaways)
         firstgiveaway = {}
 
+        self.logger.debug("Checking for giveaways")
+        self.logger.debug(f"{len(templist)} giveaways found: {templist}")
         for i in templist:
             giveaway = self.active_giveaways[i]
             if giveaway["end_time"] - datetime.utcnow() <= timedelta():
@@ -157,8 +169,11 @@ class Giveaway(commands.Cog):
                 if giveaway["end_time"] < firstgiveaway["end_time"]:
                     firstgiveaway = giveaway
 
+        self.logger.debug(f"Checking for first giveaway, {firstgiveaway}")
         if firstgiveaway:
+            self.logger.debug(f"Sleeping for: {firstgiveaway['end_time']}")
             await discord.utils.sleep_until(firstgiveaway["end_time"])
+            self.logger.debug(f"Choosing winner for {firstgiveaway}")
             await self.choose_winner(firstgiveaway)
         else:
             self.giveaway_task.cancel()
@@ -291,7 +306,7 @@ class Giveaway(commands.Cog):
                 await message.delete()
             except:
                 pass
-            
+
             del self.active_giveaways[messageid]
             self.giveaway_task.restart()
             self.giveaway_db.update_one(
