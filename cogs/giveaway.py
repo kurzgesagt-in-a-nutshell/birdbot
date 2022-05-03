@@ -109,7 +109,7 @@ class Giveaway(commands.Cog):
                 winnerids = ", ".join([str(i.id) for i in choice])
                 self.logger.debug(f"Fetched winner(s): {winnerids}")
                 for winner in choice:
-                    await message.channel.send(
+                    await message.reply(
                         f"{winner.mention} won **{giveaway['prize']}**!"
                     )
                     winners.append(f"> {winner.mention}")
@@ -337,15 +337,15 @@ class Giveaway(commands.Cog):
             else:
                 raise commands.BadArgument(message="Rigged argument must be y/n")
 
-        for i in self.giveaway_db.find({"giveaway_over": True}):
-            if i["message_id"] == giveaway:
-                doc = i
-                if winners != None:
-                    doc["winners_no"] = winners
-                if rigged != None:
-                    doc["rigged"] = rigged
-                await self.choose_winner(doc)
-                return
+        doc = self.giveaway_db.find_one({"giveaway_over": True, "message_id": giveaway})
+        if doc:
+            if winners != None:
+                doc["winners_no"] = winners
+            if rigged != None:
+                doc["rigged"] = rigged
+            await self.choose_winner(doc)
+            return
+
         await ctx.send("Giveaway not found!", delete_after=6)
         await ctx.message.delete(delay=6)
 
