@@ -9,7 +9,13 @@ import copy
 import discord
 from discord.ext import commands
 
-from utils.helper import mod_and_above, general_only, bot_commands_only, patreon_only, role_and_above
+from utils.helper import (
+    mod_and_above,
+    general_only,
+    bot_commands_only,
+    patreon_only,
+    role_and_above,
+)
 
 
 class Topic(commands.Cog):
@@ -39,8 +45,10 @@ class Topic(commands.Cog):
 
     @commands.group(invoke_without_command=True)
     @general_only()
-    @commands.check_any(role_and_above(637114897544511488),  patreon_only())# duck and above or patrons
-    @commands.cooldown(1, 60)
+    @commands.check_any(
+        role_and_above(637114897544511488), patreon_only()
+    )  # duck and above or patrons
+    @commands.cooldown(1, 300, commands.BucketType.user)
     async def topic(self, ctx: commands.Context):
         """Get a topic to talk about."""
 
@@ -51,7 +59,7 @@ class Topic(commands.Cog):
             self.topics_list = copy.deepcopy(self.topics)
 
     @mod_and_above()
-    @topic.command(aliases=['search','find'])
+    @topic.command(aliases=["search", "find"])
     async def get(self, ctx: commands.Context, *, search_string: str):
         """
         Get a topic by search string.
