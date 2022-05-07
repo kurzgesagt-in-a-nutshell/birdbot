@@ -21,7 +21,7 @@ logger = logging.getLogger("Helper")
 
 
 # commands from third party bots
-possible_prefixes = r"^([$+,\-.;>]|t!)"
+possible_prefixes = r"^([$+,\-.;>]|t!p//)"
 possible_commands = [
     # common for everyone (mostly)
     r"help",
@@ -92,6 +92,13 @@ possible_commands = [
     r"pet",
     r"slots?",
     r"top",
+    r"view ",
+    r"viewnav",
+    r"place",
+    r"toggleskip",
+    r"togglereminder ",
+    r"palette",
+    r"colours"
 ]
 
 
