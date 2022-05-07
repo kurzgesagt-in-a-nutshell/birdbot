@@ -15,6 +15,7 @@ from discord.ext import commands
 
 from utils.helper import (
     create_automod_embed,
+    devs_only,
     mod_and_above,
     is_internal_command,
     is_external_command,
@@ -89,22 +90,17 @@ class Filter(commands.Cog):
         await ctx.message.add_reaction("<:kgsYes:955703069516128307>")
 
     @whitelist.command(hidden=True, aliases=["add"])
-    async def _add(self, ctx, *, words):
+    async def _add(self, ctx, *, word):
         """
         Add word(s) to the whitelist
-        Usage: filter whitelist add [word(s)]
+        Usage: filter whitelist add word
         """
-        new_words = words.split(" ")
 
-        words_to_add = []
-        for word in new_words:
-            if word in self.white_list:
-                await ctx.send(f"`{word}` already exists in whitelist.", delete_after=6)
-            else:
-                words_to_add.append(word)
-
+        if word in self.white_list:
+            raise commands.BadArgument(message=f"`{word}` already exists in whitelist.", delete_after=6)
+        
         self.bot.db.filterlist.update_one(
-            {"name": "whitelist"}, {"$push": {"filter": {"$each": words_to_add}}}
+            {"name": "whitelist"}, {"$push": {"filter": word}}
         )
 
         await self.update_list("whitelist")
@@ -112,22 +108,17 @@ class Filter(commands.Cog):
         await ctx.message.add_reaction("<:kgsYes:955703069516128307>")
 
     @whitelist.command(hidden=True, aliases=["remove"])
-    async def _remove(self, ctx, *, words):
+    async def _remove(self, ctx, *, word):
         """
         Remove word(s) from the whitelist
-        Usage: filter whitelist remove [word(s)]
+        Usage: filter whitelist remove word
         """
-        new_words = words.split(" ")
 
-        words_to_remove = []
-        for word in new_words:
-            if word not in self.white_list:
-                await ctx.send(f"`{word}` doesn't exist in whitelist.", delete_after=6)
-            else:
-                words_to_remove.append(word)
+        if word not in self.white_list:
+            raise commands.BadArgument(message=f"`{word}` doesn't exist in whitelist.", delete_after=6)
 
         self.bot.db.filterlist.update_one(
-            {"name": "whitelist"}, {"$pull": {"filter": {"$in": words_to_remove}}}
+            {"name": "whitelist"}, {"$pull": {"filter": word}}
         )
 
         await self.update_list("whitelist")
@@ -194,24 +185,19 @@ class Filter(commands.Cog):
         await ctx.message.add_reaction("<:kgsYes:955703069516128307>")
 
     @blacklist.command(hidden=True)
-    async def add(self, ctx, list_type, *, words):
+    async def add(self, ctx, list_type, *, word):
         """
         Add word(s) to the blacklist
-        Usage: filter blacklist add general/humanities words
+        Usage: filter blacklist add general/humanities word
         """
 
         old_words = await self.choose_list(list_type)
-        new_words = words.split(" ")
 
-        words_to_add = []
-        for word in new_words:
-            if word in old_words:
-                await ctx.send(f"`{word}` already exists in blacklist.", delete_after=6)
-            else:
-                words_to_add.append(word)
+        if word in old_words:
+            raise commands.BadArgument(message=f"`{word}` already exists in blacklist.", delete_after=6)
 
         self.bot.db.filterlist.update_one(
-            {"name": list_type}, {"$push": {"filter": {"$each": words_to_add}}}
+            {"name": list_type}, {"$push": {"filter": word}}
         )
 
         await self.update_list(list_type)
@@ -219,24 +205,20 @@ class Filter(commands.Cog):
         await ctx.message.add_reaction("<:kgsYes:955703069516128307>")
 
     @blacklist.command(hidden=True)
-    async def remove(self, ctx, list_type, *, words):
+    async def remove(self, ctx, list_type, *, word):
         """
         Remove word(s) from the blacklist
-        Usage: filter blacklist remove general/humanities words
+        Usage: filter blacklist remove general/humanities word
         """
 
         old_words = await self.choose_list(list_type)
-        new_words = words.split(" ")
 
-        words_to_remove = []
-        for word in new_words:
-            if word not in old_words:
-                await ctx.send(f"`{word}` doesn't exists in blacklist.", delete_after=6)
-            else:
-                words_to_remove.append(word)
+        if word not in old_words:
+            raise commands.BadArgument(message=f"`{word}` doesn't exists in blacklist.", delete_after=6)
+
 
         self.bot.db.filterlist.update_one(
-            {"name": list_type}, {"$pull": {"filter": {"$in": words_to_remove}}}
+            {"name": list_type}, {"$pull": {"filter": word}}
         )
 
         await self.update_list(list_type)
