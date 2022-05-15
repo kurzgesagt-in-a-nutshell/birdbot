@@ -209,9 +209,9 @@ class Giveaway(commands.Cog):
         for a in dash_args:
             if a[0] == "-w":
                 fields["winners"] = f"> **Winners: {a[1]}**"
-                try:
+                if a[1].isdigit():
                     winners = int(a[1])
-                except:
+                else:
                     raise commands.BadArgument(
                         message="No of winners must be an integer"
                     )
@@ -229,10 +229,12 @@ class Giveaway(commands.Cog):
                     rigged = False
                 else:
                     raise commands.BadArgument(message="Argument must be y/n")
-            arguments.remove(a[0])
-            arguments.remove(a[1])
-
-        giveaway_msg = " ".join(arguments)
+            if a[0] in ["-w", "-s", "-r"]:
+                arg = " ".join(a)
+                if arg + " " in giveaway_msg:
+                    giveaway_msg = giveaway_msg.replace(arg + " ", "")
+                else:
+                    giveaway_msg = giveaway_msg.replace(arg, "")
 
         if time is None:
             raise commands.BadArgument(message="Wrong time syntax")
@@ -244,7 +246,13 @@ class Giveaway(commands.Cog):
             timestamp=time,
             colour=discord.Colour.green(),
         )
-        description = f"**{giveaway_msg}\n**"
+        riggedinfo = ""
+        if rigged:
+            riggedinfo = "[rigged](https://discord.com/channels/414027124836532234/414452106129571842/714496884844134401)"
+
+        description = (
+            f"**{giveaway_msg}**\nReact with 🎉 to join the {riggedinfo} giveaway\n"
+        )
         for field in fields:
             description += "\n" + fields[field]
 
@@ -278,6 +286,8 @@ class Giveaway(commands.Cog):
         else:
             self.giveaway_task.start()
 
+        await ctx.message.add_reaction("<:kgsYes:955703069516128307>")
+
     @giveaway.command()
     async def end(self, ctx, messageid: int):
         """Ends the giveaway early
@@ -286,6 +296,7 @@ class Giveaway(commands.Cog):
         if messageid in self.active_giveaways:
             await self.choose_winner(self.active_giveaways[messageid])
             self.giveaway_task.restart()
+            await ctx.message.add_reaction("<:kgsYes:955703069516128307>")
             return
 
         await ctx.send("Giveaway not found!", delete_after=6)
@@ -313,7 +324,7 @@ class Giveaway(commands.Cog):
                 giveaway, {"$set": {"giveaway_cancelled": True}}
             )
             await ctx.send("Giveaway cancelled!", delete_after=6)
-
+            await ctx.message.add_reaction("<:kgsYes:955703069516128307>")
             return
 
         await ctx.send("Giveaway not found!", delete_after=6)
@@ -344,6 +355,7 @@ class Giveaway(commands.Cog):
             if rigged != None:
                 doc["rigged"] = rigged
             await self.choose_winner(doc)
+            await ctx.message.add_reaction("<:kgsYes:955703069516128307>")
             return
 
         await ctx.send("Giveaway not found!", delete_after=6)
@@ -366,6 +378,7 @@ class Giveaway(commands.Cog):
                 pass
 
         await ctx.send(embed=embed)
+        await ctx.message.add_reaction("<:kgsYes:955703069516128307>")
 
 
 def setup(bot):
