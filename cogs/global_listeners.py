@@ -183,7 +183,8 @@ class GuildLogger(commands.Cog):
 
             mod_channel = self.bot.get_channel(414095428573986816)
             await mod_channel.send(
-                "<@&414092550031278091> we are ten members away for 69420!! Someone get the screenshot"
+                "<@&414092550031278091> <@&905510680763969536> We are ten members away for 69420!! Someone get the screenshot",
+                allowed_mentions=discord.AllowedMentions(roles=True)
             )
 
         embed = discord.Embed(
