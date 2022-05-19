@@ -234,6 +234,11 @@ class Dev(commands.Cog):
         message = _g.pull("origin", "master")
         await ctx.send(f"```{message}```")
 
+    @commands.command()
+    @mod_and_above()
+    async def send(self, ctx, channel: discord.TextChannel, *, msg: str):
+        await channel.send(msg)
+
 
 def setup(bot):
     bot.add_cog(Dev(bot))
