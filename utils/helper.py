@@ -287,7 +287,7 @@ def create_embed(
     if users is not None:
         user_str = ""
         for u in users:
-            user_str = f"{user_str} {u.mention}  ({u.id}) \n"
+            user_str = f"{user_str} <@{u.id}>  ({u.id}) \n"
 
     embed = discord.Embed(
         title=f"{action}",

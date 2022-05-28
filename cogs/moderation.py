@@ -357,21 +357,15 @@ class Moderation(commands.Cog):
 
         logging_channel = discord.utils.get(ctx.guild.channels, id=self.logging_channel)
 
-        ban_list = await ctx.guild.bans()
-
         mem = []  # for listing members in embed
 
-        for b in ban_list:
-            if b.user.id in member_id:
-                mem.append(b.user)
-                if reason is None:
-                    reason = b.reason
-
-                await ctx.guild.unban(b.user, reason=reason)
-                member_id.remove(b.user.id)
-
         for m in member_id:
-            await ctx.send(f"Member with ID {m} has not been banned before.")
+            try:
+                user = discord.Object(m)
+                await ctx.guild.unban(user, reason=reason)
+                mem.append(user)
+            except discord.errors.NotFound:
+                await ctx.send(f"Member with ID {m} has not been banned before.")
 
         if mem:
             embed = helper.create_embed(
