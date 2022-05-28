@@ -373,14 +373,15 @@ class Moderation(commands.Cog):
         for m in member_id:
             await ctx.send(f"Member with ID {m} has not been banned before.")
 
-        embed = helper.create_embed(
-            author=ctx.author,
-            action="Unbanned user(s)",
-            users=mem,
-            reason=reason,
-            color=discord.Color.dark_red(),
-        )
-        await logging_channel.send(embed=embed)
+        if mem:
+            embed = helper.create_embed(
+                author=ctx.author,
+                action="Unbanned user(s)",
+                users=mem,
+                reason=reason,
+                color=discord.Color.dark_red(),
+            )
+            await logging_channel.send(embed=embed)
         await ctx.message.add_reaction("<:kgsYes:955703069516128307>")
 
     @commands.command()
