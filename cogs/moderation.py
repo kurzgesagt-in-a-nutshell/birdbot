@@ -279,6 +279,11 @@ class Moderation(commands.Cog):
     async def ban(self, ctx: commands.Context, inf_level: int, *args):
         """Ban a member.\nUsage: ban infraction_level [@member(s)/id(s)] reason"""
 
+        if inf_level not in range(1, 6):
+            raise commands.BadArgument(
+                message="Infraction level must be between 1 and 5"
+            )
+
         logging_channel = discord.utils.get(ctx.guild.channels, id=self.logging_channel)
 
         members, extra = custom_converters.get_members(ctx, *args)
@@ -292,10 +297,6 @@ class Moderation(commands.Cog):
                 message="Please provide a reason and re-run the command"
             )
 
-        if inf_level not in range(1, 6):
-            raise commands.BadArgument(
-                message="Infraction level must be between 1 and 5"
-            )
         reason = " ".join(extra)
 
         failed_ban = False
