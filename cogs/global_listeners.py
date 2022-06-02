@@ -437,7 +437,7 @@ class GuildChores(commands.Cog):
             async with aiohttp.ClientSession() as session:
                 hook = discord.Webhook.from_url(
                     self.greeting_webhook_url,
-                    adapter=discord.AsyncWebhookAdapter(session),
+                    session=session,
                 )
                 await hook.send(
                     f"Welcome hatchling {member.mention}!\n"
