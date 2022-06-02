@@ -600,7 +600,7 @@ class Errors(commands.Cog):
             await channel.send(embed=embed, file=file)
 
 
-def setup(bot):
-    bot.add_cog(Errors(bot))
-    bot.add_cog(GuildChores(bot))
-    bot.add_cog(GuildLogger(bot))
+async def setup(bot):
+    await bot.add_cog(Errors(bot))
+    await bot.add_cog(GuildChores(bot))
+    await bot.add_cog(GuildLogger(bot))

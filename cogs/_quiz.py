@@ -114,5 +114,5 @@ class Quiz(commands.Cog):
                 self.id_and_tickets.remove(i)
 
 
-def setup(bot):
-    bot.add_cog(Quiz(bot))
+async def setup(bot):
+    await bot.add_cog(Quiz(bot))

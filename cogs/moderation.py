@@ -1040,5 +1040,5 @@ class Moderation(commands.Cog):
             await ctx.send(f"{member.name} is not blacklisted from {command.name}")
 
 
-def setup(bot):
-    bot.add_cog(Moderation(bot))
+async def setup(bot):
+    await bot.add_cog(Moderation(bot))

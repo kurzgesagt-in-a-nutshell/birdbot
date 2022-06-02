@@ -87,5 +87,5 @@ class Button(discord.ui.Button):
         await interaction.response.send_message(f"{role.name} {status}", ephemeral=True)        
         
 
-def setup(bot):
-    bot.add_cog(Roleassign(bot))
+async def setup(bot):
+    await bot.add_cog(Roleassign(bot))

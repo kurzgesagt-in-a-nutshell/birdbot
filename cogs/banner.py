@@ -245,5 +245,5 @@ class Banner(commands.Cog):
                         await message.edit(embed=embed, delete_after=6)
 
 
-def setup(bot):
-    bot.add_cog(Banner(bot))
+async def setup(bot):
+    await bot.add_cog(Banner(bot))

@@ -380,5 +380,5 @@ class Giveaway(commands.Cog):
         await ctx.message.add_reaction("<:kgsYes:955703069516128307>")
 
 
-def setup(bot):
-    bot.add_cog(Giveaway(bot))
+async def setup(bot):
+    await bot.add_cog(Giveaway(bot))

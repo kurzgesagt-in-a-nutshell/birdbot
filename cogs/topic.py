@@ -267,5 +267,5 @@ class Topic(commands.Cog):
                 return
 
 
-def setup(bot):
-    bot.add_cog(Topic(bot))
+async def setup(bot):
+    await bot.add_cog(Topic(bot))
