@@ -43,7 +43,8 @@ async def main():
             token = os.environ.get("ALPHA_BOT_TOKEN")
         else:
             token = os.environ.get("MAIN_BOT_TOKEN")
-        bot.run(token, reconnect=True)
+        async with bot:
+            await bot.start(token, reconnect=True)
 
 
 if __name__ == "__main__":
