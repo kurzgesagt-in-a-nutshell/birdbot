@@ -799,6 +799,7 @@ class Filter(commands.Cog):
             "⁷": "7",
             "⁸": "8",
             "⁹": "9",
+            "′": "'",
         }
 
         to_return = ""
