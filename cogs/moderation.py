@@ -205,7 +205,7 @@ class Moderation(commands.Cog):
             title="Force Ban",
             description=f"Action By: {ctx.author.mention}",
             color=0xFF0000,
-            timestamp=datetime.datetime.utcnow(),
+            timestamp=discord.utils.utcnow(),
         )
         embed.add_field(name="User(s) Affected ", value=f"{member}", inline=False)
         embed.add_field(name="Reason", value=f"{reason}", inline=False)
@@ -678,7 +678,7 @@ class Moderation(commands.Cog):
                 embed = discord.Embed(
                     title=f"Warns for {member.name}",
                     color=discord.Colour.magenta(),
-                    timestamp=datetime.datetime.utcnow(),
+                    timestamp=discord.utils.utcnow(),
                 )
 
                 if delete_warn_idx != -1:
@@ -770,7 +770,7 @@ class Moderation(commands.Cog):
             title=f"Warns for {member.name}",
             description=f"Showing atmost 5 warns at a time. (Total warns: {warn_len})",
             color=discord.Colour.magenta(),
-            timestamp=datetime.datetime.utcnow(),
+            timestamp=discord.utils.utcnow(),
         )
         embed.set_footer(text=f"Page 1/{(warn_len-1)//5+1}")
         
@@ -880,7 +880,7 @@ class Moderation(commands.Cog):
                 title=f"Detailed infraction for {user.name} ({user.id}) ",
                 description=f"**Infraction Type:** {infr_type}",
                 color=discord.Color.green(),
-                timestamp=datetime.datetime.utcnow(),
+                timestamp=discord.utils.utcnow(),
             )
             embed.add_field(
                 name=f"Author", value=f"<@{result['author_id']}>", inline=False

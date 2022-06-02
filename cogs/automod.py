@@ -466,7 +466,7 @@ class Filter(commands.Cog):
 
         if "mute" in actions:
             time = (
-                datetime.datetime.utcnow() + datetime.timedelta(seconds=actions["mute"])
+                discord.utils.utcnow() + datetime.timedelta(seconds=actions["mute"])
             ).isoformat()
             route = http.Route(
                 "PATCH", f"/guilds/414027124836532234/members/{message.author.id}"

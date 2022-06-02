@@ -90,7 +90,7 @@ class GuildLogger(commands.Cog):
             title="Message Edited",
             description=f"Message edited in {before.channel.mention}",
             color=0xEE7600,
-            timestamp=datetime.datetime.utcnow(),
+            timestamp=discord.utils.utcnow(),
         )
         embed.set_author(
             name=before.author.display_name, icon_url=before.author.avatar.url
@@ -133,7 +133,7 @@ class GuildLogger(commands.Cog):
             title="Message Deleted",
             description=f"Message deleted in {message.channel.mention}",
             color=0xC9322C,
-            timestamp=datetime.datetime.utcnow(),
+            timestamp=discord.utils.utcnow(),
         )
         embed.set_author(
             name=message.author.display_name, icon_url=message.author.avatar.url
@@ -191,7 +191,7 @@ class GuildLogger(commands.Cog):
             title="Member joined",
             description=f"{member.name}#{member.discriminator} ({member.id}) {member.mention}",
             color=0x45E65A,
-            timestamp=datetime.datetime.utcnow(),
+            timestamp=discord.utils.utcnow(),
         )
         embed.set_author(name=member.name, icon_url=member.avatar.url)
 
@@ -224,7 +224,7 @@ class GuildLogger(commands.Cog):
             title="Member Left",
             description=f"{member.name}#{member.discriminator} ({member.id})",
             color=0xFF0004,
-            timestamp=datetime.datetime.utcnow(),
+            timestamp=discord.utils.utcnow(),
         )
         embed.set_author(name=member.name, icon_url=member.avatar.url)
 
@@ -270,7 +270,7 @@ class GuildLogger(commands.Cog):
             title="Nickname changed",
             description=f"{before.name}#{before.discriminator} ({before.id})",
             color=0xFF6633,
-            timestamp=datetime.datetime.utcnow(),
+            timestamp=discord.utils.utcnow(),
         )
         embed.set_author(name=before.name, icon_url=before.avatar.url)
         embed.add_field(name="Previous Nickname", value=f"{before.nick}", inline=True)

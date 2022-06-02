@@ -35,7 +35,7 @@ class Help(commands.Cog):
                 title="Kurzbot Help",
                 description=f"To see more info do help [command].",
                 color=discord.Color.green(),
-                timestamp=datetime.datetime.utcnow(),
+                timestamp=discord.utils.utcnow(),
             )
             for i in cogs:
                 cog = self.bot.get_cog(i)
@@ -59,7 +59,7 @@ class Help(commands.Cog):
                     title=command.name,
                     description=f"```{command.help}```",
                     color=discord.Color.green(),
-                    timestamp=datetime.datetime.utcnow(),
+                    timestamp=discord.utils.utcnow(),
                 )
                 if command.aliases:
                     embed.add_field(
