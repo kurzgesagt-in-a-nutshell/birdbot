@@ -115,7 +115,7 @@ class Topic(commands.Cog):
         embed = discord.Embed(description=f"**{topic}**", color=0xC8A2C8)
         embed.set_author(
             name=ctx.author.name + "#" + ctx.author.discriminator,
-            icon_url=ctx.author.avatar,
+            icon_url=ctx.author.display_avatar.url,
         )
         embed.set_footer(text="topic")
         message = await automated_channel.send(embed=embed)

@@ -74,7 +74,7 @@ class Moderation(commands.Cog):
 
                 mod_embed = discord.Embed(title="New Report", color=0x00FF00)
                 mod_embed.set_author(
-                    name=interaction.user.name, icon_url=interaction.user.avatar
+                    name=interaction.user.name, icon_url=interaction.user.display_avatar.url
                 )
 
                 mod_embed.description = f"**Report description: ** {description}\n**User: ** {self.member}\n**Message Link: ** [click to jump]({message_link})"
