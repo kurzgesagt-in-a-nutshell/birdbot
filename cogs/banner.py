@@ -152,7 +152,7 @@ class Banner(commands.Cog):
         embed = discord.Embed(color=0xC8A2C8)
         embed.set_author(
             name=ctx.author.name + "#" + ctx.author.discriminator,
-            icon_url=ctx.author.avatar.url,
+            icon_url=ctx.author.avatar,
         )
         embed.set_image(url="attachment://banner.png")
         embed.set_footer(text="banner")
