@@ -141,10 +141,7 @@ class GuildLogger(commands.Cog):
         embed.add_field(name="Content", value=message.content)
         search_terms = f"```Deleted in {message.channel.id}"
 
-        latest_logged_delete = await message.guild.audit_logs(
-            limit=1, action=discord.AuditLogAction.message_delete
-        ).flatten()
-        latest_logged_delete = latest_logged_delete[0]
+        latest_logged_delete = [log async for log in await message.guild.audit_logs(limit=1, action=discord.AuditLogAction.message_delete)][0]
 
         self_deleted = False
         if message.author == latest_logged_delete.target:
