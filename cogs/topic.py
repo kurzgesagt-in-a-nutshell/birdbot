@@ -9,7 +9,13 @@ import copy
 import discord
 from discord.ext import commands
 
-from utils.helper import mod_and_above, general_only, bot_commands_only, role_and_above
+from utils.helper import (
+    mod_and_above,
+    general_only,
+    bot_commands_only,
+    patreon_only,
+    role_and_above,
+)
 
 
 class Topic(commands.Cog):
@@ -39,8 +45,10 @@ class Topic(commands.Cog):
 
     @commands.group(invoke_without_command=True)
     @general_only()
-    @role_and_above(637114897544511488)  # duck role id
-    @commands.cooldown(1, 60)
+    @commands.check_any(
+        role_and_above(637114897544511488), patreon_only()
+    )  # duck and above or patrons
+    @commands.cooldown(1, 300, commands.BucketType.user)
     async def topic(self, ctx: commands.Context):
         """Get a topic to talk about."""
 
@@ -51,7 +59,7 @@ class Topic(commands.Cog):
             self.topics_list = copy.deepcopy(self.topics)
 
     @mod_and_above()
-    @topic.command()
+    @topic.command(aliases=["search", "find"])
     async def get(self, ctx: commands.Context, *, search_string: str):
         """
         Get a topic by search string.
@@ -68,7 +76,7 @@ class Topic(commands.Cog):
             return await ctx.send("No match found.", delete_after=6)
 
         embed_desc = "".join(
-            f"{self.topics.index(tp) + 1}. {tp}\n" for index, tp in enumerate(t)
+            f"{self.topics.index(tp) + 1}. {tp}\n" for _, tp in enumerate(t)
         )
 
         embed = discord.Embed(
@@ -84,7 +92,7 @@ class Topic(commands.Cog):
     async def add(self, ctx: commands.Context, *, topic: str):
         """
         Add a topic to the list.
-        Usage: topic add topic_string
+        Usage: topic add actual_topic
         """
 
         self.topics.append(topic)
@@ -100,7 +108,7 @@ class Topic(commands.Cog):
     async def suggest(self, ctx: commands.Context, *, topic: str):
         """
         Suggest a topic.
-        Usage: topic suggest topic_string
+        Usage: topic suggest actual_topic
         """
 
         automated_channel = self.bot.get_channel(self.automated_channel)
@@ -112,8 +120,8 @@ class Topic(commands.Cog):
         embed.set_footer(text="topic")
         message = await automated_channel.send(embed=embed)
 
-        await message.add_reaction("<:kgsYes:580164400691019826>")
-        await message.add_reaction("<:kgsNo:610542174127259688>")
+        await message.add_reaction("<:kgsYes:955703069516128307>")
+        await message.add_reaction("<:kgsNo:955703108565098496>")
 
         await ctx.send("Topic suggested.", delete_after=4)
         await ctx.message.delete(delay=4)
@@ -129,7 +137,7 @@ class Topic(commands.Cog):
                     payload.message_id
                 )
                 if message.embeds and message.embeds[0].footer.text == "topic":
-                    if payload.emoji.id == 580164400691019826:
+                    if payload.emoji.id == 955703069516128307:
                         topic = message.embeds[0].description
                         author = message.embeds[0].author
                         self.topics.append(topic.strip("*"))
@@ -150,7 +158,7 @@ class Topic(commands.Cog):
                         except discord.Forbidden:
                             pass
 
-                    elif payload.emoji.id == 610542174127259688:
+                    elif payload.emoji.id == 955703108565098496:
                         message = await self.bot.get_channel(
                             payload.channel_id
                         ).fetch_message(payload.message_id)

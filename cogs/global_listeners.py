@@ -21,8 +21,33 @@ from utils.helper import (
     WrongChannel,
     patreon_only,
     create_user_infraction,
-    is_internal_command
+    is_internal_command,
 )
+
+#janky fix for server memories, will make permanent once out of experimentation
+async def check_server_memories(message):
+
+    if message.channel.id == 960927545639972994:  # server memories // media only
+        if any(_id in [role.id for role in message.author.roles] for _id in [414092550031278091,414029841101225985]): #mod or admin
+            return
+        if message.author.bot:
+            return
+        if len(message.attachments) == 0 and len(message.embeds) == 0:
+            await message.delete()
+            await message.channel.send(
+                f"{message.author.mention} You can only send screenshots in this channel. ",
+                delete_after=5,
+            )
+            return
+        else:
+            for e in message.embeds:
+                if e.type != "image":
+                    await message.delete()
+                    await message.channel.send(
+                        f"{message.author.mention} You can only send screenshots in this channel. ",
+                        delete_after=5,
+                    )
+                    return
 
 
 class GuildLogger(commands.Cog):
@@ -50,6 +75,8 @@ class GuildLogger(commands.Cog):
             return
         if before.author.bot:
             return
+
+        await check_server_memories(after)
         if (
             before.channel.category.id == 414095379156434945
             or before.channel.category.id == 879399341561892905
@@ -84,6 +111,7 @@ class GuildLogger(commands.Cog):
         )
         await message_logging_channel.send(embed=embed)
 
+
     @commands.Cog.listener()
     async def on_message_delete(self, message):
 
@@ -100,7 +128,7 @@ class GuildLogger(commands.Cog):
 
         if is_internal_command(self.bot, message):
             return
- 
+
         embed = discord.Embed(
             title="Message Deleted",
             description=f"Message deleted in {message.channel.mention}",
@@ -150,13 +178,14 @@ class GuildLogger(commands.Cog):
         if self.bot.user.id != 471705718957801483:
             return
 
-        #remind mods to screenshot milestone
+        # remind mods to screenshot milestone
         if len(member.guild.members) == 69410:
 
             mod_channel = self.bot.get_channel(414095428573986816)
-            await mod_channel.send('<@&414092550031278091> we are ten members away for 69420!! Someone get the screenshot')
-
-
+            await mod_channel.send(
+                "<@&414092550031278091> <@&905510680763969536> We are ten members away for 69420!! Someone get the screenshot",
+                allowed_mentions=discord.AllowedMentions(roles=True)
+            )
 
         embed = discord.Embed(
             title="Member joined",
@@ -198,7 +227,6 @@ class GuildLogger(commands.Cog):
             timestamp=datetime.datetime.utcnow(),
         )
         embed.set_author(name=member.name, icon_url=member.avatar.url)
-        acc_age = datetime.datetime.utcnow() - member.created_at
 
         embed.add_field(
             name="Account Created",
@@ -292,9 +320,13 @@ class GuildChores(commands.Cog):
     async def on_ready(self):
         self.logger.info("Loaded Guild Chores")
 
+
+
     @commands.Cog.listener()
     async def on_message(self, message):
         """Remind mods to use correct prefix, alert mod pings etc"""
+
+        await check_server_memories(message)
         if any(
             x in message.raw_role_mentions
             for x in [414092550031278091, 905510680763969536]
@@ -343,6 +375,8 @@ class GuildChores(commands.Cog):
             if re.match("^-(kick|ban|mute|warn)", message.content):
                 await message.channel.send(f"ahem.. {message.author.mention}")
 
+
+
     @commands.Cog.listener()
     async def on_member_update(self, before, after):
         """Grant roles upon passing membership screening"""
@@ -386,7 +420,7 @@ class GuildChores(commands.Cog):
                     title="Hey there patron! Annoyed about auto-joining the server?",
                     description="Unfortunately Patreon doesn't natively support a way to disable this- "
                     "but you have the choice of getting volutarily banned from the server "
-                    "therby preventing your account from rejoining. To do so simply type ```!unenroll```"
+                    "therby preventing your account from rejoining. To do so simply type ```!unenrol```"
                     "If you change your mind in the future just fill out [this form!](https://forms.gle/m4KPj2Szk1FKGE6F8)",
                     color=0xFFFFFF,
                 )
@@ -414,7 +448,7 @@ class GuildChores(commands.Cog):
 
     @patreon_only()
     @commands.command()
-    async def unenroll(self, ctx):
+    async def unenrol(self, ctx):
         embed = discord.Embed(
             title="We're sorry to see you go",
             description="Are you sure you want to get banned from the server?"
@@ -436,13 +470,13 @@ class GuildChores(commands.Cog):
 
         try:
             confirm_msg = await ctx.author.send(embed=embed)
-            await confirm_msg.add_reaction("<:kgsYes:580164400691019826>")
-            await confirm_msg.add_reaction(":kgsNo:610542174127259688>")
+            await confirm_msg.add_reaction("<:kgsYes:955703069516128307>")
+            await confirm_msg.add_reaction("<:kgsNo:955703108565098496>")
             reaction, user = await self.bot.wait_for(
                 "reaction_add", timeout=120, check=check
             )
 
-            if reaction.emoji.id == 580164400691019826:
+            if reaction.emoji.id == 955703069516128307:
 
                 member = discord.utils.get(
                     self.bot.guilds, id=414027124836532234
@@ -462,7 +496,7 @@ class GuildChores(commands.Cog):
                 await ctx.author.send("Success! You've been banned from the server.")
                 await member.ban(reason="Patron Voluntary Removal")
                 return
-            if reaction.emoji.id == 610542174127259688:
+            if reaction.emoji.id == 955703108565098496:
                 await confirm_msg.edit(embed=fallback_embed)
                 return
 
@@ -511,22 +545,29 @@ class Errors(commands.Cog):
         channel = await self.bot.fetch_channel(self.dev_logging_channel)
 
         if isinstance(
-            err, (errors.MissingPermissions, NoAuthorityError, errors.NotOwner)
+            err,
+            (
+                errors.MissingPermissions,
+                NoAuthorityError,
+                errors.NotOwner,
+                errors.CheckAnyFailure,
+                errors.CheckFailure,
+            ),
         ):
-            await self.react_send_delete(ctx, reaction="<:kgsNo:610542174127259688>")
+            await self.react_send_delete(ctx, reaction="<:kgsNo:955703108565098496>")
 
         elif isinstance(err, DevBotOnly):
             await self.react_send_delete(
                 ctx,
                 message="This command can only be run on the main bot",
-                reaction="<:kgsNo:610542174127259688>",
+                reaction="<:kgsNo:955703108565098496>",
             )
 
         elif isinstance(err, commands.MissingRequiredArgument):
             await self.react_send_delete(
                 ctx,
                 message=f"You're missing the {err.param.name} argument. Please check syntax using the help command.",
-                reaction="<:kgsNo:610542174127259688>",
+                reaction="<:kgsNo:955703108565098496>",
             )
 
         elif isinstance(err, commands.CommandNotFound):
@@ -539,7 +580,7 @@ class Errors(commands.Cog):
             await self.react_send_delete(
                 ctx,
                 message=err,
-                reaction="<:kgsNo:610542174127259688>",
+                reaction="<:kgsNo:955703108565098496>",
                 delay=4,
             )
 
@@ -547,7 +588,7 @@ class Errors(commands.Cog):
             self.logger.exception(traceback_txt)
             await ctx.message.add_reaction("<:kgsStop:579824947959169024>")
             await ctx.send(
-                "Uh oh, an unhandled exception occured, if this issue persists please contact FC or sloth"
+                "Uh oh, an unhandled exception occured, if this issue persists please contact any of bot devs (Sloth, FC, Austin, Orav)."
             )
             description = (
                 f"An [**unhandled exception**]({ctx.message.jump_url}) occured in <#{ctx.message.channel.id}> when "

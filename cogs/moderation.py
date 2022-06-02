@@ -1,3 +1,4 @@
+from ast import alias
 import json
 import io
 import re
@@ -12,7 +13,16 @@ from discord.channel import DMChannel
 
 from utils import custom_converters
 from utils import helper
-from utils.helper import create_user_infraction, devs_only, mod_and_above, calc_time
+from utils.helper import (
+    append_infraction,
+    devs_only,
+    get_single_infraction_type,
+    mod_and_above,
+    calc_time,
+    get_active_staff,
+    blacklist_member,
+    whitelist_member,
+)
 
 import discord
 from discord.ext import commands, tasks
@@ -89,7 +99,7 @@ class Moderation(commands.Cog):
         msg_count: int = None,
         channel: discord.TextChannel = None,
     ):
-        """Clean messages. \nUsage: clean <@member(s)/ id(s)> number_of_messages <#channel>"""
+        """Clean messages. \nUsage: clean <@member(s)/id(s)> number_of_messages <#channel>"""
         messsage_count = msg_count  # used to display number of messages deleted
         if msg_count is None:
             return await ctx.send(
@@ -201,14 +211,19 @@ class Moderation(commands.Cog):
         embed.add_field(name="Reason", value=f"{reason}", inline=False)
 
         await logging_channel.send(embed=embed)
-        await ctx.message.add_reaction("<:kgsYes:580164400691019826>")
+        await ctx.message.add_reaction("<:kgsYes:955703069516128307>")
 
         await ctx.message.delete(delay=6)
 
     @commands.command(aliases=["yeet"])
     @mod_and_above()
-    async def ban(self, ctx: commands.Context, *args):
-        """Ban a member.\nUsage: ban @member(s) reason"""
+    async def ban(self, ctx: commands.Context, inf_level: int, *args):
+        """Ban a member.\nUsage: ban infraction_level [@member(s)/id(s)] reason"""
+
+        if inf_level not in range(1, 6):
+            raise commands.BadArgument(
+                message="Infraction level must be between 1 and 5"
+            )
 
         logging_channel = discord.utils.get(ctx.guild.channels, id=self.logging_channel)
 
@@ -222,6 +237,7 @@ class Moderation(commands.Cog):
             raise commands.BadArgument(
                 message="Please provide a reason and re-run the command"
             )
+
         reason = " ".join(extra)
 
         failed_ban = False
@@ -245,10 +261,14 @@ class Moderation(commands.Cog):
         if len(members) == 0:
             return
 
-        await ctx.message.add_reaction("<:kgsYes:580164400691019826>")
+        await ctx.message.add_reaction("<:kgsYes:955703069516128307>")
 
         helper.create_infraction(
-            author=ctx.author, users=members, action="ban", reason=reason
+            author=ctx.author,
+            users=members,
+            action="ban",
+            reason=reason,
+            inf_level=inf_level,
         )
 
         embed = helper.create_embed(
@@ -257,6 +277,7 @@ class Moderation(commands.Cog):
             users=members,
             reason=reason,
             color=discord.Color.dark_red(),
+            inf_level=inf_level,
         )
 
         await logging_channel.send(embed=embed)
@@ -278,42 +299,42 @@ class Moderation(commands.Cog):
 
         logging_channel = discord.utils.get(ctx.guild.channels, id=self.logging_channel)
 
-        ban_list = await ctx.guild.bans()
-
         mem = []  # for listing members in embed
 
-        for b in ban_list:
-            if b.user.id in member_id:
-                mem.append(b.user)
-                if reason is None:
-                    reason = b.reason
-
-                await ctx.guild.unban(b.user, reason=reason)
-                member_id.remove(b.user.id)
-
         for m in member_id:
-            await ctx.send(f"Member with ID {m} has not been banned before.")
+            try:
+                user = discord.Object(m)
+                await ctx.guild.unban(user, reason=reason)
+                mem.append(user)
+            except discord.errors.NotFound:
+                await ctx.send(f"Member with ID {m} has not been banned before.")
 
-        embed = helper.create_embed(
-            author=ctx.author,
-            action="Unbanned user(s)",
-            users=mem,
-            reason=reason,
-            color=discord.Color.dark_red(),
-        )
-        await logging_channel.send(embed=embed)
-        await ctx.message.add_reaction("<:kgsYes:580164400691019826>")
+        if mem:
+            embed = helper.create_embed(
+                author=ctx.author,
+                action="Unbanned user(s)",
+                users=mem,
+                reason=reason,
+                color=discord.Color.dark_red(),
+            )
+            await logging_channel.send(embed=embed)
+        await ctx.message.add_reaction("<:kgsYes:955703069516128307>")
 
     @commands.command()
     @mod_and_above()
-    async def kick(self, ctx: commands.Context, *args):
-        """Kick member(s).\nUsage: kick @member(s) reason"""
+    async def kick(self, ctx: commands.Context, inf_level: int, *args):
+        """Kick member(s).\nUsage: kick infraction_level [@member(s)/id(s)] reason"""
 
         members, reason = custom_converters.get_members(ctx, *args)
 
         if reason is None:
             raise commands.BadArgument(
                 message="Please provide a reason and re-run the command"
+            )
+
+        if inf_level not in range(1, 6):
+            raise commands.BadArgument(
+                message="Infraction level must be between 1 and 5"
             )
 
         if members is None:
@@ -330,7 +351,7 @@ class Moderation(commands.Cog):
                 failed_kick = True
                 members.remove(i)
 
-        await ctx.message.add_reaction("<:kgsYes:580164400691019826>")
+        await ctx.message.add_reaction("<:kgsYes:955703069516128307>")
         if failed_kick:
             await ctx.send(
                 "Could not kick certain users due to your clearance", delete_after=6
@@ -344,19 +365,24 @@ class Moderation(commands.Cog):
             users=members,
             reason=reason,
             color=discord.Color.red(),
+            inf_level=inf_level,
         )
         await logging_channel.send(embed=embed)
 
         helper.create_infraction(
-            author=ctx.author, users=members, action="kick", reason=reason
+            author=ctx.author,
+            users=members,
+            action="kick",
+            reason=reason,
+            inf_level=inf_level,
         )
 
         await ctx.message.delete(delay=6)
 
     @commands.command()
     @mod_and_above()
-    async def mute(self, ctx: commands.Context, *args):
-        """Mute member(s). \nUsage: mute @member(s) <time> reason"""
+    async def mute(self, ctx: commands.Context, inf_level: int, *args):
+        """Mute member(s). \nUsage: mute infraction_level [@member(s) / user_id(s)] time reason"""
 
         tot_time = 0
 
@@ -366,6 +392,10 @@ class Moderation(commands.Cog):
 
         if members is None:
             raise commands.BadArgument(message="Improper member passed")
+        if inf_level not in range(1, 6):
+            raise commands.BadArgument(
+                message="Infraction level must be between 1 and 5"
+            )
 
         tot_time, reason = helper.calc_time(extra)
 
@@ -377,6 +407,12 @@ class Moderation(commands.Cog):
             raise commands.BadArgument(
                 message="Please provide a reason and re-run the command"
             )
+
+        final_warn = True if reason.startswith("--final") else False
+        default_msg = "(Note: Accumulation of warns may lead to permanent removal from the server)"
+        if final_warn:
+            reason = reason[7:]
+            default_msg = "**(This is your final warning, future infractions will lead to a non negotiable ban from the server)**"
 
         if tot_time > 2419200:
             raise commands.BadArgument(message="Can't mute for longer than 28 days!")
@@ -393,8 +429,7 @@ class Moderation(commands.Cog):
 
                 try:
                     await i.send(
-                        f"You have been muted for {time_str}.\nGiven reason: {reason}\n"
-                        "(Note: Accumulation of mutes may lead to permanent removal from the server)"
+                        f"You have been muted for {time_str}.\nGiven reason: {reason}\n{default_msg}"
                     )
 
                 except discord.Forbidden:
@@ -403,7 +438,7 @@ class Moderation(commands.Cog):
                 failed_mute = True
                 members.remove(i)
 
-        await ctx.message.add_reaction("<:kgsYes:580164400691019826>")
+        await ctx.message.add_reaction("<:kgsYes:955703069516128307>")
         if failed_mute:
             await ctx.send(
                 "Certain members could not be muted due to your clearance",
@@ -414,11 +449,12 @@ class Moderation(commands.Cog):
 
         embed = helper.create_embed(
             author=ctx.author,
-            action="Muted User(s)",
+            action="Muted User(s)" + (" (FINAL WARNING)" if final_warn else ""),
             users=members,
             reason=reason,
             extra=f"Mute Duration: {time_str} or {tot_time} seconds",
             color=discord.Color.red(),
+            inf_level=inf_level,
         )
         await logging_channel.send(embed=embed)
 
@@ -428,6 +464,8 @@ class Moderation(commands.Cog):
             action="mute",
             reason=reason,
             time=time_str,
+            inf_level=inf_level,
+            final_warn=final_warn,
         )
 
         await ctx.message.delete(delay=6)
@@ -437,7 +475,7 @@ class Moderation(commands.Cog):
     async def unmute(
         self, ctx: commands.Context, members: commands.Greedy[discord.Member]
     ):
-        """Unmute member(s). \nUsage: unmute @member(s) <reason>"""
+        """Unmute member(s). \nUsage: unmute [@member(s)/id(s)] <reason>"""
 
         logging_channel = discord.utils.get(ctx.guild.channels, id=self.logging_channel)
 
@@ -447,7 +485,7 @@ class Moderation(commands.Cog):
         for i in members:
             await i.edit(timed_out_until=None)
 
-        await ctx.message.add_reaction("<:kgsYes:580164400691019826>")
+        await ctx.message.add_reaction("<:kgsYes:955703069516128307>")
         embed = helper.create_embed(
             author=ctx.author,
             action="Unmuted User(s)",
@@ -467,7 +505,7 @@ class Moderation(commands.Cog):
         *,
         role_name: str = None,
     ):
-        """Add/Remove a role from a member. \nUsage: role @member role_name"""
+        """Add/Remove a role from a member. \nUsage: role @member/user_id role_name"""
 
         logging_channel = discord.utils.get(ctx.guild.channels, id=self.logging_channel)
 
@@ -511,8 +549,8 @@ class Moderation(commands.Cog):
 
     @commands.command()
     @mod_and_above()
-    async def warn(self, ctx: commands.Context, *args):
-        """Warn user(s) \nUsage: warn @member(s) reason"""
+    async def warn(self, ctx: commands.Context, inf_level: int, *args):
+        """Warn user(s) \nUsage: warn infraction_level [@member(s)/id(s)] reason"""
         logging_channel = discord.utils.get(ctx.guild.channels, id=self.logging_channel)
 
         members, reason = custom_converters.get_members(ctx, *args)
@@ -524,15 +562,24 @@ class Moderation(commands.Cog):
                 message="No reason provided, please re-run the command with a reaso"
             )
 
-        reason = " ".join(reason)
+        if inf_level not in range(1, 6):
+            raise commands.BadArgument(
+                message="Infraction level must be between 1 and 5"
+            )
+
+        final_warn = True if reason[0] == "--final" else False
+        default_msg = "(Note: Accumulation of warns may lead to permanent removal from the server)"
+        if final_warn:
+            reason = " ".join(reason[1:])
+            default_msg = "**(This is your final warning, future infractions will lead to a non negotiable ban from the server)**"
+        else:
+            reason = " ".join(reason)
 
         failed_warn = False
         for m in members:
             if m.top_role.name == "Muted" or m.top_role < ctx.author.top_role:
                 try:
-                    await m.send(
-                        f"You have been warned for {reason} (Note: Accumulation of warns may lead to permanent removal from the server)"
-                    )
+                    await m.send(f"You have been warned for {reason} {default_msg}")
                 except discord.Forbidden:
                     pass
             else:
@@ -548,19 +595,25 @@ class Moderation(commands.Cog):
             return
 
         helper.create_infraction(
-            author=ctx.author, users=members, action="warn", reason=reason
+            author=ctx.author,
+            users=members,
+            action="warn",
+            reason=reason,
+            inf_level=inf_level,
+            final_warn=final_warn,
         )
 
         embed = helper.create_embed(
             author=ctx.author,
-            action="Warned User(s)",
+            action="Warned User(s)" + (" (FINAL WARNING)" if final_warn else ""),
             users=members,
             reason=reason,
             color=discord.Color.red(),
+            inf_level=inf_level,
         )
         await logging_channel.send(embed=embed)
 
-        await ctx.message.add_reaction("<:kgsYes:580164400691019826>")
+        await ctx.message.add_reaction("<:kgsYes:955703069516128307>")
         await ctx.message.delete(delay=6)
 
     @commands.command(aliases=["unwarn", "removewarn"])
@@ -785,6 +838,135 @@ class Moderation(commands.Cog):
         view.interaction_check = interaction_check
         msg = await ctx.send(embed=infs_embed, view=view)
 
+    @commands.command(aliases=["dinfr", "inf_details","infr_details", "details"])
+    @mod_and_above()
+    async def detailed_infr(
+        self,
+        ctx: commands.Context,
+        user: typing.Optional[discord.User],
+        infr_type: str,
+        infr_id: int,
+    ):
+        """Get detailed single Infractions. \nUsage: dinfr @member/member_id w/m/k/b infraction_id"""
+
+        infr_type = infr_type.lower()
+
+        if infr_type not in ["w", "b", "m", "k"]:
+            return await ctx.reply("Infraction can only be any of these: w, m, k, b")
+
+        if infr_type == "w":
+            infr_type = "warn"
+        elif infr_type == "m":
+            infr_type = "mute"
+        elif infr_type == "b":
+            infr_type = "ban"
+        else:
+            infr_type = "kick"
+
+        result = get_single_infraction_type(user.id, infr_type)
+
+        if result == -1:
+            await ctx.reply("Invalid command format.", delete_after=6)
+            await ctx.message.add_reaction("<:kgsNo:955703108565098496>")
+
+        elif result:
+
+            if infr_id not in range(0, len(result)):
+                await ctx.message.add_reaction("<:kgsNo:955703108565098496>")
+                return await ctx.reply("Invalid infraction ID.", delete_after=6)
+
+            result = result[infr_id]
+            embed = discord.Embed(
+                title=f"Detailed infraction for {user.name} ({user.id}) ",
+                description=f"**Infraction Type:** {infr_type}",
+                color=discord.Color.green(),
+                timestamp=datetime.datetime.utcnow(),
+            )
+            embed.add_field(
+                name=f"Author", value=f"<@{result['author_id']}>", inline=False
+            )
+            embed.add_field(
+                name="Date (UTC)",
+                value=result["datetime"].replace(microsecond=0),
+                inline=False,
+            )
+            embed.add_field(name="Base Reason", value=result["reason"], inline=False)
+            if "infraction_level" in result:
+                embed.add_field(
+                    name="Infraction Level",
+                    value=result["infraction_level"],
+                    inline=False,
+                )
+                del result["infraction_level"]
+
+            del (
+                result["author_id"],
+                result["author_name"],
+                result["datetime"],
+                result["reason"],
+            )
+
+            for key in result:
+                embed.add_field(name=key, value=result[key], inline=False)
+
+            await ctx.send(embed=embed)
+            await ctx.message.add_reaction("<:kgsYes:955703069516128307>")
+
+    @commands.command(aliases=["einf", "einfr", "edit_infr", "editinfr"])
+    @mod_and_above()
+    async def edit_infraction(
+        self,
+        ctx: commands.Context,
+        user: discord.User,
+        infr_type: str,
+        infr_id: int,
+        title: str,
+        *,
+        description: str,
+    ):
+        """Add details to an infraction. \nUsage: edit_infr @user/id w/m/k/b infraction_id title description"""
+
+        infr_type = infr_type.lower()
+
+        if infr_type not in ["w", "b", "m", "k"]:
+            return await ctx.reply("Infraction can only be any of these: w, m, k, b")
+
+        if infr_type == "w":
+            infr_type = "warn"
+        elif infr_type == "m":
+            infr_type = "mute"
+        elif infr_type == "b":
+            infr_type = "ban"
+        else:
+            infr_type = "kick"
+
+        result = append_infraction(user.id, infr_type, infr_id, title, description)
+
+        if result == -1:
+            await ctx.reply(
+                "Infraction with given id and type not found.", delete_after=6
+            )
+            await ctx.message.add_reaction("<:kgsNo:955703108565098496>")
+
+        else:
+            await ctx.message.add_reaction("<:kgsYes:955703069516128307>")
+            await ctx.reply("Infraction updated successfully.", delete_after=6)
+
+            extra = f"Title: {title}\nDescription: {description} \nID: {infr_id}"
+
+            embed = helper.create_embed(
+                author=ctx.author,
+                action=f"Appended details to {infr_type} ",
+                users=[user],
+                extra=extra,
+                color=discord.Color.red(),
+            )
+
+            logging_channel = discord.utils.get(
+                ctx.guild.channels, id=self.logging_channel
+            )
+            await logging_channel.send(embed=embed)
+
     @commands.command(aliases=["slothmode"])
     @mod_and_above()
     async def slowmode(
@@ -824,6 +1006,38 @@ class Moderation(commands.Cog):
         await logging_channel.send(embed=embed)
 
         await ctx.send(f"Slowmode of {time}s added to {ch.mention}.")
+
+    @commands.command(aliases=["blacklist_command", "commandblacklist"])
+    @mod_and_above()
+    async def nocmd(self, ctx, member: discord.Member, command_name: str):
+        """
+        Blacklists a member from a command
+        Usage: nocmd @user/user_ID command_name
+        """
+
+        command = discord.utils.get(self.bot.commands, name=command_name)
+        if command is None:
+            raise commands.BadArgument(message=f"{command_name} is not a valid command")
+        if ctx.author.top_role > member.top_role:
+            blacklist_member(self.bot, member, command)
+            await ctx.send(f"{member.name} can no longer use {command_name}")
+        else:
+            await ctx.send(f"You cannot blacklist someone higher or equal to you smh")
+
+    @commands.command(aliases=["whitelist_command", "commandwhitelist"])
+    @mod_and_above()
+    async def yescmd(self, ctx, member: discord.Member, command_name: str):
+        """
+        Whitelists a member from a command
+        Usage: yescmd @user/user_ID command_name
+        """
+        command = discord.utils.get(self.bot.commands, name=command_name)
+        if command is None:
+            raise commands.BadArgument(message=f"{command_name} is not a valid command")
+        if whitelist_member(member, command):
+            await ctx.send(f"{member.name} can now use {command.name}")
+        else:
+            await ctx.send(f"{member.name} is not blacklisted from {command.name}")
 
 
 def setup(bot):

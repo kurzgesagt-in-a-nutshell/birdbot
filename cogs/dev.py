@@ -109,9 +109,9 @@ class Dev(commands.Cog):
         else:
             value = stdout.getvalue()
             try:
-                await ctx.message.add_reaction("<:kgsYes:580164400691019826>")
+                await ctx.message.add_reaction("<:kgsYes:955703069516128307>")
             except Exception as _:
-                await ctx.message.add_reaction("<:kgsNo:610542174127259688>")
+                await ctx.message.add_reaction("<:kgsNo:955703108565098496>")
                 pass
 
             if ret is None:
@@ -233,6 +233,11 @@ class Dev(commands.Cog):
         _g.fetch()
         message = _g.pull("origin", "master")
         await ctx.send(f"```{message}```")
+
+    @commands.command()
+    @mod_and_above()
+    async def send(self, ctx, channel: discord.TextChannel, *, msg: str):
+        await channel.send(msg)
 
 
 def setup(bot):

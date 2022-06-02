@@ -21,7 +21,7 @@ def setup():
         logging.getLogger("discord.http").setLevel(logging.INFO)
 
         logger = logging.getLogger()
-        logger.setLevel(logging.INFO)
+        logger.setLevel(logging.DEBUG)
         dtfmt = "%Y-%m-%d %H:%M:%S"
         if not os.path.isdir("logs/"):
             os.mkdir("logs/")
@@ -71,9 +71,13 @@ class BirdBot(commands.AutoShardedBot):
             webhooks=True,
             messages=True,
             reactions=True,
+<<<<<<< HEAD
             message_content=True,
+=======
+            presences=True,
+>>>>>>> master
         )
-        max_messages  = 1000
+        max_messages = 1000
         if args.beta:
             prefix = "b!"
             owner_ids = {
@@ -105,7 +109,7 @@ class BirdBot(commands.AutoShardedBot):
             )
         x = cls(
             loop=loop,
-            max_messages = max_messages,
+            max_messages=max_messages,
             command_prefix=commands.when_mentioned_or(prefix),
             owner_ids=owner_ids,
             activity=activity,
@@ -133,7 +137,9 @@ class BirdBot(commands.AutoShardedBot):
     def load_extensions(self, args):
         """Loads all cogs from cogs/ without the '_' prefix"""
         for filename in os.listdir("cogs/"):
-            if not (filename[:-3] in ("antiraid", "automod") and (args.beta or args.alpha)):
+            if not (
+                filename[:-3] in ("antiraid", "automod") and (args.beta or args.alpha)
+            ):
                 if not filename.startswith("_"):
                     logger.info(f"loading {f'cogs.{filename[:-3]}'}")
                     try:

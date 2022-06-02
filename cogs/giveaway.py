@@ -5,7 +5,7 @@ import numpy as np
 import json
 
 import discord
-from discord.ext import commands
+from discord.ext import commands, tasks
 
 from utils.helper import (
     calc_time,
@@ -31,31 +31,33 @@ class Giveaway(commands.Cog):
     async def on_ready(self):
         self.logger.info("loaded Giveaway")
 
-        for giveaway in self.giveaway_db.find():
-            if giveaway["giveaway_over"] == False:
-                self.active_giveaways[giveaway["pin"]] = giveaway
-                time = giveaway["end_time"] - datetime.utcnow().timestamp()
-                if time < 0:
-                    time = 1
-                giveaway_task = asyncio.create_task(
-                    self.start_giveaway(giveaway), name=giveaway["pin"]
-                )
-                await giveaway_task
+        for giveaway in self.giveaway_db.find({"giveaway_over": False}):
+            self.active_giveaways[giveaway["message_id"]] = giveaway
 
+        self.giveaway_task.start()
+
+    def cog_unload(self):
+        self.giveaway_task.cancel()
+
+    @mod_and_above()
     @commands.group(hidden=True)
     async def giveaway(self, ctx):
         """
         giveaway commands
-        Usage: giveaway < start | end | cancel | reroll | list>
+        Usage: giveaway start/end/cancel/reroll/list
         """
 
     async def choose_winner(self, giveaway):
         """does the giveaway logic"""
-
+        messagefound = False
         try:
             channel = await self.bot.fetch_channel(giveaway["channel_id"])
             message = await channel.fetch_message(giveaway["message_id"])
+            messagefound = True
+        except:
+            messagefound = False
 
+        if messagefound:
             embed = message.embeds[0].to_dict()
 
             embed["title"] = "Giveaway ended"
@@ -63,7 +65,7 @@ class Giveaway(commands.Cog):
             embed["footer"]["text"] = "Giveaway Ended"
 
             users = []
-
+            self.logger.debug("Fetching reactions from users")
             for reaction in message.reactions:
                 if reaction.emoji == "🎉":
                     users = await reaction.users().flatten()
@@ -76,7 +78,10 @@ class Giveaway(commands.Cog):
                         except discord.errors.NotFound:
                             pass
 
+            self.logger.debug("Fetched users")
+
             if users != []:
+                self.logger.debug("Calculating weights")
                 weights = []
                 for user in users:
                     bias = self.giveaway_bias["default"]
@@ -98,47 +103,86 @@ class Giveaway(commands.Cog):
                 if len(users) < size:
                     size = len(users)
 
+                self.logger.debug("Choosing winner(s)")
                 choice = np.random.choice(users, size=size, replace=False, p=prob)
-                winners = ""
-                winnerids = ", ".join([str(i) for i in choice])
+                winners = []
+                winnerids = ", ".join([str(i.id) for i in choice])
+                self.logger.debug(f"Fetched winner(s): {winnerids}")
                 for winner in choice:
-                    await message.channel.send(f"{winner.mention} won {giveaway['prize']}!")
-                    winners += winner.mention + "\n"
+                    await message.reply(
+                        f"{winner.mention} won **{giveaway['prize']}**!"
+                    )
+                    winners.append(f"> {winner.mention}")
+                winners = "\n".join(winners)
 
             else:
-                winners = "Nobody participated :("
+                winners = "> Nobody participated :("
                 winnerids = ""
 
-            for i in embed["fields"]:
-                if i["name"].startswith("winners"):
-                    i["value"] = winners
+            self.logger.debug("Sending new embed")
+            newdescription = embed["description"].splitlines()
+            for i in range(len(newdescription)):
+                if newdescription[i].startswith("> **Winners"):
+                    newdescription.insert(i + 1, winners)
+                    break
+
+            embed["description"] = "\n".join(newdescription)
 
             embed = discord.Embed.from_dict(embed)
             await message.edit(embed=embed)
 
-        except discord.errors.NotFound:
-            del self.active_giveaways[giveaway["pin"]]
-            self.giveaway_db.update_one(giveaway, {"$set": {"giveaway_cancelled": True}})
-            pass
+        else:
+            self.logger.debug("Message not found")
+            self.logger.debug("Deleting giveaway")
+            del self.active_giveaways[giveaway["message_id"]]
+            self.giveaway_db.update_one(
+                giveaway, {"$set": {"giveaway_cancelled": True}}
+            )
+            return
 
-        if giveaway["pin"] in self.active_giveaways:
-            del self.active_giveaways[giveaway["pin"]]
+        if giveaway["message_id"] in self.active_giveaways:
+            self.logger.debug("Deleting giveaway")
+            del self.active_giveaways[giveaway["message_id"]]
             self.giveaway_db.update_one(
                 giveaway,
                 {"$set": {"giveaway_over": True, "winners": winnerids}},
             )
+        else:
+            self.logger.debug("Appending old winners and updating giveaway")
+            winnerids += f", old: {giveaway['winners']}"
+            self.giveaway_db.update_one(giveaway, {"$set": {"winners": winnerids}})
 
-    async def start_giveaway(self, giveaway):
-        """Sets up a giveaway task"""
-        time = giveaway["end_time"] - datetime.utcnow().timestamp()
-        await asyncio.sleep(time)
-        await self.choose_winner(giveaway)
+    @tasks.loop()
+    async def giveaway_task(self):
+        templist = list(self.active_giveaways)
+        firstgiveaway = {}
 
-    @mod_and_above()
+        self.logger.debug("Checking for giveaways")
+        self.logger.debug(f"{len(templist)} giveaways found: {templist}")
+        for i in templist:
+            giveaway = self.active_giveaways[i]
+            if giveaway["end_time"] - datetime.utcnow() <= timedelta():
+                await self.choose_winner(giveaway)
+            else:
+                if not firstgiveaway:
+                    firstgiveaway = giveaway
+                if giveaway["end_time"] < firstgiveaway["end_time"]:
+                    firstgiveaway = giveaway
+
+        self.logger.debug(f"Checking for first giveaway, {firstgiveaway}")
+        if firstgiveaway:
+            self.logger.debug(f"Sleeping for: {firstgiveaway['end_time']}")
+            await discord.utils.sleep_until(firstgiveaway["end_time"])
+            self.logger.debug(f"Choosing winner for {firstgiveaway}")
+            await self.choose_winner(firstgiveaway)
+        else:
+            self.giveaway_task.cancel()
+
     @giveaway.command()
     async def start(self, ctx, time, *, giveaway_msg):
         """Starts a new giveaway
-        Usage: giveaway start time (dash arguments) prize \n dash args: -w no_of_winners -s sponsor -r rigged"""
+        Usage: giveaway start time (dash arguments) prize \n dash args: -w no_of_winners -s sponsor -r rigged
+        default values for dash arguments: -w 1 -s host -r y"""
 
         time, giveaway_msg = calc_time([time, giveaway_msg])
         if time == 0:
@@ -158,16 +202,16 @@ class Giveaway(commands.Cog):
                 dash_args.append([arguments[i], arguments[i + 1]])
 
         fields = {
-            "winners": {"name": "winners: 1", "value": "ㅤ"},
-            "sponsor": {"name": "hosted by", "value": ctx.author.mention},
+            "winners": "> **Winners: 1**",
+            "sponsor": f"> **Hosted by**\n> {ctx.author.mention}",
         }
 
         for a in dash_args:
             if a[0] == "-w":
-                fields["winners"] = {"name": f"winners: {a[1]}", "value": "ㅤ"}
-                try:
+                fields["winners"] = f"> **Winners: {a[1]}**"
+                if a[1].isdigit():
                     winners = int(a[1])
-                except:
+                else:
                     raise commands.BadArgument(
                         message="No of winners must be an integer"
                     )
@@ -176,7 +220,7 @@ class Giveaway(commands.Cog):
                     sponsor = member_converter(ctx, a[1]).mention
                 except:
                     raise commands.BadArgument(message="Improper mention of user")
-                fields["sponsor"] = {"name": "sponsored by", "value": sponsor}
+                fields["sponsor"] = f"> **Sponsored by**\n> {sponsor}"
                 sponsor = member_converter(ctx, a[1]).id
             elif a[0] == "-r":
                 if a[1].lower() == "y" or a[1].lower() == "yes":
@@ -185,40 +229,43 @@ class Giveaway(commands.Cog):
                     rigged = False
                 else:
                     raise commands.BadArgument(message="Argument must be y/n")
-            arguments.remove(a[0])
-            arguments.remove(a[1])
-
-        giveaway_msg = " ".join(arguments)
+            if a[0] in ["-w", "-s", "-r"]:
+                arg = " ".join(a)
+                if arg + " " in giveaway_msg:
+                    giveaway_msg = giveaway_msg.replace(arg + " ", "")
+                else:
+                    giveaway_msg = giveaway_msg.replace(arg, "")
 
         if time is None:
             raise commands.BadArgument(message="Wrong time syntax")
 
+        time = datetime.utcnow() + timedelta(seconds=time)
+
         embed = discord.Embed(
             title="Giveaway started!",
-            description=f"**{giveaway_msg}**",
-            timestamp=datetime.now(timezone.utc) + timedelta(seconds=time),
+            timestamp=time,
             colour=discord.Colour.green(),
         )
+        riggedinfo = ""
+        if rigged:
+            riggedinfo = "[rigged](https://discord.com/channels/414027124836532234/414452106129571842/714496884844134401)"
+
+        description = (
+            f"**{giveaway_msg}**\nReact with 🎉 to join the {riggedinfo} giveaway\n"
+        )
         for field in fields:
-            embed.add_field(
-                name=fields[field]["name"], value=fields[field]["value"], inline=False
-            )
+            description += "\n" + fields[field]
 
-        uid = str(datetime.utcnow().timestamp())[-3:] + "0"
-        c = 0
-        while uid in self.active_giveaways:
-            c += 1
-            uid = uid[:3] + str(c)
+        embed.description = description
 
-        embed.set_footer(text=f"PIN: {uid} | Giveaway Ends")
+        embed.set_footer(text="Giveaway Ends")
 
         message = await ctx.send(embed=embed)
         await message.add_reaction("🎉")
 
         doc = {
-            "pin": uid,
             "prize": giveaway_msg,
-            "end_time": datetime.utcnow().timestamp() + time,
+            "end_time": time,
             "message_id": message.id,
             "channel_id": message.channel.id,
             "winners_no": winners,
@@ -230,55 +277,59 @@ class Giveaway(commands.Cog):
             "giveaway_cancelled": False,
         }
 
-        giveaway = asyncio.create_task(self.start_giveaway(doc), name=uid)
+        self.active_giveaways[doc["message_id"]] = doc
 
-        self.active_giveaways[uid] = doc
         self.giveaway_db.insert_one(doc)
 
-        await giveaway
+        if self.giveaway_task.is_running():
+            self.giveaway_task.restart()
+        else:
+            self.giveaway_task.start()
 
-    @mod_and_above()
+        await ctx.message.add_reaction("<:kgsYes:955703069516128307>")
+
     @giveaway.command()
-    async def end(self, ctx, pin: str):
+    async def end(self, ctx, messageid: int):
         """Ends the giveaway early
-        Usage: giveaway end pin"""
+        Usage: giveaway end messageid"""
 
-        if pin in self.active_giveaways:
-            await self.choose_winner(self.active_giveaways[pin])
+        if messageid in self.active_giveaways:
+            await self.choose_winner(self.active_giveaways[messageid])
+            self.giveaway_task.restart()
+            await ctx.message.add_reaction("<:kgsYes:955703069516128307>")
+            return
 
-            for i in asyncio.all_tasks():
-                if i.get_name() == pin:
-                    i.cancel()
-                    break
-        else:
-            await ctx.send("Giveaway not found!", delete_after=6)
-            await ctx.message.delete(delay=6)
+        await ctx.send("Giveaway not found!", delete_after=6)
+        await ctx.message.delete(delay=6)
 
-    @mod_and_above()
     @giveaway.command()
-    async def cancel(self, ctx, pin: str):
+    async def cancel(self, ctx, messageid: int):
         """Cancel a giveaway
-        Usage: giveaway cancel pin"""
-        if pin in self.active_giveaways:
-            giveaway = self.active_giveaways[pin]
-            message = await ctx.guild.get_channel(giveaway["channel_id"]).fetch_message(
-                giveaway["message_id"]
+        Usage: giveaway cancel messageid"""
+
+        if messageid in self.active_giveaways:
+            giveaway = self.active_giveaways[messageid]
+
+            try:
+                message = await ctx.guild.get_channel(
+                    giveaway["channel_id"]
+                ).fetch_message(giveaway["message_id"])
+                await message.delete()
+            except:
+                pass
+
+            del self.active_giveaways[messageid]
+            self.giveaway_task.restart()
+            self.giveaway_db.update_one(
+                giveaway, {"$set": {"giveaway_cancelled": True}}
             )
-            await message.delete()
-            del self.active_giveaways[pin]
-            self.giveaway_db.update_one(giveaway, {"$set": {"giveaway_cancelled": True}})
-
-            for i in asyncio.all_tasks():
-                if i.get_name() == pin:
-                    i.cancel()
-                    break
-
             await ctx.send("Giveaway cancelled!", delete_after=6)
-        else:
-            await ctx.send("Giveaway not found!", delete_after=6)
-            await ctx.message.delete(delay=6)
+            await ctx.message.add_reaction("<:kgsYes:955703069516128307>")
+            return
 
-    @mod_and_above()
+        await ctx.send("Giveaway not found!", delete_after=6)
+        await ctx.message.delete(delay=6)
+
     @giveaway.command()
     async def reroll(
         self,
@@ -288,32 +339,46 @@ class Giveaway(commands.Cog):
         rigged: typing.Optional[str] = None,
     ):
         """Pick a new winner
-        Usage: giveaway reroll pin <no_of_winners> <rigged>"""
-        for i in self.giveaway_db.find():
-            if i["message_id"] == giveaway:
-                doc = i
-                if winners != None:
-                    doc["winners_no"] = winners
-                if rigged != None:
-                    doc["rigged"] = rigged
-                await self.choose_winner(doc)
-                break
-        await ctx.send("Giveaway not found!", delete_after=6)
+        Usage: giveaway reroll messageid <no_of_winners> <rigged>"""
+        if rigged != None:
+            if rigged.lower() == "y" or rigged.lower() == "yes":
+                rigged = True
+            elif rigged.lower() == "n" or rigged.lower() == "no":
+                rigged = False
+            else:
+                raise commands.BadArgument(message="Rigged argument must be y/n")
 
-    @mod_and_above()
+        doc = self.giveaway_db.find_one({"giveaway_over": True, "message_id": giveaway})
+        if doc:
+            if winners != None:
+                doc["winners_no"] = winners
+            if rigged != None:
+                doc["rigged"] = rigged
+            await self.choose_winner(doc)
+            await ctx.message.add_reaction("<:kgsYes:955703069516128307>")
+            return
+
+        await ctx.send("Giveaway not found!", delete_after=6)
+        await ctx.message.delete(delay=6)
+
     @giveaway.command()
     async def list(self, ctx):
         """Lists all active giveaways
         Usage: giveaway list"""
-        giveaways = []
-        for i in self.active_giveaways:
-            i = self.active_giveaways[i]
-            msg = f'{i["prize"]} | {round((i["end_time"] - datetime.utcnow().timestamp())/60)}min left | PIN: {i["pin"]}'
-            giveaways.append(msg)
+        embed = discord.Embed(title="Active giveaways:")
+        for messageid in self.active_giveaways:
+            giveaway = self.active_giveaways[messageid]
+            try:
+                time = giveaway["end_time"] - datetime.utcnow()
+                embed.add_field(
+                    name=giveaway["prize"],
+                    value=f"[Giveaway](https://discord.com/channels/414027124836532234/{giveaway['channel_id']}/{giveaway['message_id']}) ends in {int(time.total_seconds()/60)} minutes",
+                )
+            except:
+                pass
 
-        giveaways = "\n".join(giveaways)
-        embed = discord.Embed(title="Active giveaways:", description=giveaways)
         await ctx.send(embed=embed)
+        await ctx.message.add_reaction("<:kgsYes:955703069516128307>")
 
 
 def setup(bot):
