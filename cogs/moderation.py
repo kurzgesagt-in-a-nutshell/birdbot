@@ -1099,6 +1099,8 @@ class Moderation(commands.Cog):
                 ctx.guild.channels, id=self.logging_channel
             )
             await logging_channel.send(embed=embed)
+        
+        await ctx.message.delete(delay=6)
 
     @commands.command(aliases=["slothmode"])
     @mod_and_above()
