@@ -29,6 +29,45 @@ class Misc(commands.Cog):
     async def on_ready(self):
         self.logger.info("Loaded Misc Cog")
 
+    @commands.Cog.listener()
+    async def on_member_update(self, before, after):
+        if before.nick != after.nick:
+            return
+
+        self.kgs_guild = self.bot.get_guild(414027124836532234)
+        subreddit_role = discord.utils.get(before.guild.roles, id=681812574026727471) 
+        if not after.top_role >= subreddit_role:
+            return
+
+        intro = self.intro_db.find_one({"_id":before.id}) 
+        intro_channel = self.kgs_guild.get_channel(
+            self.config["logging"]["intro_channel"]
+        )
+        msg = await intro_channel.fetch_message(intro["message_id"])
+        embed = msg.embeds[0]
+        embed.set_author(name=before.display_name, icon_url=before.avatar_url)
+        await msg.edit(embed=embed)
+
+    @commands.Cog.listener()
+    async def on_user_update(self, before, after):
+
+        self.kgs_guild = self.bot.get_guild(414027124836532234)
+        member = await self.kgs_guild.get_member(before.id)
+        subreddit_role = discord.utils.get(self.kgs_guild.roles, id=681812574026727471) 
+        if not after.top_role >= subreddit_role:
+            return
+
+        intro = self.intro_db.find_one({"_id":before.id}) 
+        intro_channel = self.kgs_guild.get_channel(
+            self.config["logging"]["intro_channel"]
+        )
+        msg = await intro_channel.fetch_message(intro["message_id"])
+        embed = msg.embeds[0]
+        embed.set_author(name=member.display_name, icon_url=after.avatar_url)
+        await msg.edit(embed=embed)
+
+
+
     def parse_info(self, user_id, tz_text, bio, bird_icon):
         """Get all the neccesary info and return an introduction embed"""
         user = self.kgs_guild.get_member(user_id)
