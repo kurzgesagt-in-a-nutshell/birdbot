@@ -253,12 +253,15 @@ class Moderation(commands.Cog):
     async def fban(self, ctx, member: int, *, reason: str):
         """Force ban a member who is not in the server.\nUsage: fban user_id reason"""
         if reason is None:
-            raise commands.BadArgument("Provide a reason and re-run the command")
+            raise commands.BadArgument(message="Provide a reason and re-run the command")
 
         logging_channel = discord.utils.get(ctx.guild.channels, id=self.logging_channel)
 
         # TODO Make helper.create_infraction compatible with IDs
-        await ctx.guild.ban(discord.Object(member))
+        try:
+            await ctx.guild.ban(discord.Object(member))
+        except discord.NotFound:
+            raise commands.BadArgument(message="Provided ID is not for an user.")
 
         embed = discord.Embed(
             title="Force Ban",
