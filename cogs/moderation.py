@@ -250,29 +250,42 @@ class Moderation(commands.Cog):
 
     @commands.command(aliases=["forceban"])
     @mod_and_above()
-    async def fban(self, ctx, member: int, *, reason: str):
+    async def fban(self, ctx, inf_level: int, member: int, *, reason: str):
         """Force ban a member who is not in the server.\nUsage: fban user_id reason"""
         if reason is None:
             raise commands.BadArgument(message="Provide a reason and re-run the command")
 
+        if inf_level not in range(1, 6):
+            raise commands.BadArgument(
+                message="Infraction level must be between 1 and 5"
+            )
+
         logging_channel = discord.utils.get(ctx.guild.channels, id=self.logging_channel)
 
-        # TODO Make helper.create_infraction compatible with IDs
         try:
             await ctx.guild.ban(discord.Object(member))
         except discord.NotFound:
             raise commands.BadArgument(message="Provided ID is not for an user.")
 
-        embed = discord.Embed(
-            title="Force Ban",
-            description=f"Action By: {ctx.author.mention}",
-            color=0xFF0000,
-            timestamp=datetime.datetime.utcnow(),
+        embed = helper.create_embed(
+            author=ctx.author,
+            action="Force banned user",
+            users=[member],
+            reason=reason,
+            color=discord.Color.dark_red(),
+            inf_level=inf_level,
         )
-        embed.add_field(name="User(s) Affected ", value=f"{member}", inline=False)
-        embed.add_field(name="Reason", value=f"{reason}", inline=False)
 
         await logging_channel.send(embed=embed)
+
+        helper.create_infraction(
+            author=ctx.author,
+            users=[member],
+            action="ban",
+            reason=reason,
+            inf_level=inf_level,
+        )
+
         await ctx.message.add_reaction("<:kgsYes:955703069516128307>")
 
         await ctx.message.delete(delay=6)
@@ -322,6 +335,8 @@ class Moderation(commands.Cog):
             )
         if len(members) == 0:
             return
+        
+        members = [member.id for member in members]
 
         await ctx.message.add_reaction("<:kgsYes:955703069516128307>")
 
@@ -365,9 +380,8 @@ class Moderation(commands.Cog):
 
         for m in member_id:
             try:
-                user = discord.Object(m)
-                await ctx.guild.unban(user, reason=reason)
-                mem.append(user)
+                await ctx.guild.unban(discord.Object(m), reason=reason)
+                mem.append(m)
             except discord.errors.NotFound:
                 await ctx.send(f"Member with ID {m} has not been banned before.")
 
@@ -420,6 +434,8 @@ class Moderation(commands.Cog):
             )
         if len(members) == 0:
             return
+        
+        members = [member.id for member in members]
 
         embed = helper.create_embed(
             author=ctx.author,
@@ -514,6 +530,8 @@ class Moderation(commands.Cog):
             )
         if len(members) == 0:
             return
+        
+        members = [member.id for member in members]
 
         embed = helper.create_embed(
             author=ctx.author,
@@ -543,7 +561,7 @@ class Moderation(commands.Cog):
     async def unmute(
         self, ctx: commands.Context, members: commands.Greedy[discord.Member]
     ):
-        """Unmute member(s). \nUsage: unmute [@member(s)/id(s)] <reason>"""
+        """Unmute member(s). \nUsage: unmute [@member(s)/id(s)]"""
 
         logging_channel = discord.utils.get(ctx.guild.channels, id=self.logging_channel)
 
@@ -560,6 +578,7 @@ class Moderation(commands.Cog):
             )
 
         await ctx.message.add_reaction("<:kgsYes:955703069516128307>")
+        members = [member.id for member in members]
         embed = helper.create_embed(
             author=ctx.author,
             action="Unmuted User(s)",
@@ -604,7 +623,7 @@ class Moderation(commands.Cog):
             embed = helper.create_embed(
                 author=ctx.author,
                 action="Gave role",
-                users=[member],
+                users=[member.id],
                 extra=f"Role: {role.mention}",
                 color=discord.Color.purple(),
             )
@@ -615,7 +634,7 @@ class Moderation(commands.Cog):
         embed = helper.create_embed(
             author=ctx.author,
             action="Removed role",
-            users=[member],
+            users=[member.id],
             extra=f"Role: {role.mention}",
             color=discord.Color.purple(),
         )
@@ -667,6 +686,8 @@ class Moderation(commands.Cog):
             )
         if len(members) == 0:
             return
+
+        members = [member.id for member in members]
 
         helper.create_infraction(
             author=ctx.author,
@@ -1093,7 +1114,7 @@ class Moderation(commands.Cog):
             embed = helper.create_embed(
                 author=ctx.author,
                 action=f"Appended details to {infr_type} ",
-                users=[user],
+                users=[user.id],
                 extra=extra,
                 color=discord.Color.red(),
             )
