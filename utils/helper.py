@@ -261,7 +261,7 @@ def is_external_command(message: discord.Message):
 def create_embed(
     author: Union[discord.User, discord.Member],
     action: str,
-    users: List[Union[discord.User, discord.Member]] = None,
+    users: List[int] = None,
     reason=None,
     extra=None,
     color=discord.Color.blurple,
@@ -274,7 +274,7 @@ def create_embed(
     Args:
         author (discord.User or discord.Member): The author of the action (eg ctx.author)
         action (str): Action/Command Performed
-        users (list(discord.User or discord.Member)): List of users affected. Defaults to None
+        users (list(int)): List of user ids affected. Defaults to None
         reason (str, optional): Reason. Defaults to None.
         extra (str, optional): Any additional info. Defaults to None.
         color (discord.Color, optional): Embed color. Defaults to discord.Color.blurple.
@@ -286,8 +286,8 @@ def create_embed(
     user_str = "None"
     if users is not None:
         user_str = ""
-        for u in users:
-            user_str = f"{user_str} <@{u.id}>  ({u.id}) \n"
+        for uid in users:
+            user_str = f"{user_str} <@{uid}>  ({uid}) \n"
 
     embed = discord.Embed(
         title=f"{action}",
@@ -334,7 +334,7 @@ def create_user_infraction(user: Union[discord.User, discord.Member]):
 
 def create_infraction(
     author: Union[discord.User, discord.Member],
-    users: List[Union[discord.User, discord.Member]],
+    users: List[int],
     action: str,
     reason: str,
     inf_level: int,
@@ -345,19 +345,19 @@ def create_infraction(
 
     Args:
         author (Union[discord.User, discord.Member]): The author of the action (eg. ctx.author)
-        users (List[Union[discord.User, discord.Member]]): List of affected users
+        users (int): List of affected user ids
         action (str): Action ("mute", "ban", "warn", "kick")
         reason (str): Reasen
         inf_level (int): The level of infraction (1-5)
         time (str, optional): Time strirng (applies for mutes). Defaults to None.
     """
-    for u in users:
+    for uid in users:
 
-        inf = infraction_db.find_one({"user_id": u.id})
+        inf = infraction_db.find_one({"user_id": uid})
 
         if inf is None:
             create_user_infraction(u)
-            inf = infraction_db.find_one({"user_id": u.id})
+            inf = infraction_db.find_one({"user_id": uid})
 
         if final_warn:
             inf["final_warn"] = True
@@ -409,7 +409,7 @@ def create_infraction(
 
         inf["last_updated"] = datetime.datetime.utcnow()
 
-        infraction_db.update_one({"user_id": u.id}, {"$set": inf})
+        infraction_db.update_one({"user_id": uid}, {"$set": inf})
 
 
 def get_infractions(member_id: int, inf_type: str) -> discord.Embed:
