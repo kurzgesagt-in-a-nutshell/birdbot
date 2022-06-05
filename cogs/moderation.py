@@ -262,20 +262,19 @@ class Moderation(commands.Cog):
 
         logging_channel = discord.utils.get(ctx.guild.channels, id=self.logging_channel)
 
-        # TODO Use helper.create_embed
         try:
             await ctx.guild.ban(discord.Object(member))
         except discord.NotFound:
             raise commands.BadArgument(message="Provided ID is not for an user.")
 
-        embed = discord.Embed(
-            title="Force Ban",
-            description=f"Action By: {ctx.author.mention}",
-            color=0xFF0000,
-            timestamp=datetime.datetime.utcnow(),
+        embed = helper.create_embed(
+            author=ctx.author,
+            action="Force banned user",
+            users=[member],
+            reason=reason,
+            color=discord.Color.dark_red(),
+            inf_level=inf_level,
         )
-        embed.add_field(name="User(s) Affected ", value=f"{member}", inline=False)
-        embed.add_field(name="Reason", value=f"{reason}", inline=False)
 
         await logging_channel.send(embed=embed)
 
@@ -381,9 +380,8 @@ class Moderation(commands.Cog):
 
         for m in member_id:
             try:
-                user = discord.Object(m)
-                await ctx.guild.unban(user, reason=reason)
-                mem.append(user)
+                await ctx.guild.unban(discord.Object(m), reason=reason)
+                mem.append(m)
             except discord.errors.NotFound:
                 await ctx.send(f"Member with ID {m} has not been banned before.")
 
