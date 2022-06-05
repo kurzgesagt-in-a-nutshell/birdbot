@@ -5,7 +5,8 @@
         "message_logging_channel": 879399217511161887,
         "member_logging_channel":939570758903005296, 
         "dev_logging_channel": 865321589919055882,
-        "automated_channel": 546689491486769163
+        "automated_channel": 546689491486769163,
+        "intro_channel": 981620309163655218 
     },
     "roles": {
         "mute_role": 681323126252240899,
@@ -46,5 +47,11 @@
             }
         ],
         "default": 1
+    },
+    "roleicons": {
+        "915629257470906369":"https://cdn.discordapp.com/attachments/414179142020366336/981591366805119006/officialkurzgesagt.png",
+        "414029841101225985":"https://cdn.discordapp.com/attachments/414179142020366336/981591366201126963/administratorkurzgesagt.png",
+        "414092550031278091":"https://cdn.discordapp.com/attachments/414179142020366336/981591366524084244/moderatorkurzgesagt.png",
+        "681812574026727471":"https://cdn.discordapp.com/emojis/892827414097440839.png"
     }
 }
