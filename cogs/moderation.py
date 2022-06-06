@@ -262,14 +262,11 @@ class Moderation(commands.Cog):
 
         logging_channel = discord.utils.get(ctx.guild.channels, id=self.logging_channel)
 
-<<<<<<< HEAD
         if ctx.guild.get_member(member) != None:
             member = ctx.guild.get_member(member)
         else:
             member = discord.Object(member)
 
-=======
->>>>>>> master
         try:
             await ctx.guild.ban(member)
         except discord.NotFound:
