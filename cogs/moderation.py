@@ -262,8 +262,13 @@ class Moderation(commands.Cog):
 
         logging_channel = discord.utils.get(ctx.guild.channels, id=self.logging_channel)
 
+        if ctx.guild.get_member(member) != None:
+            member = ctx.guild.get_member(member)
+        else:
+            member = discord.Object(member)
+
         try:
-            await ctx.guild.ban(discord.Object(member))
+            await ctx.guild.ban(member)
         except discord.NotFound:
             raise commands.BadArgument(message="Provided ID is not for an user.")
 
@@ -335,8 +340,6 @@ class Moderation(commands.Cog):
             )
         if len(members) == 0:
             return
-        
-        members = [member.id for member in members]
 
         await ctx.message.add_reaction("<:kgsYes:955703069516128307>")
 
@@ -380,8 +383,9 @@ class Moderation(commands.Cog):
 
         for m in member_id:
             try:
-                await ctx.guild.unban(discord.Object(m), reason=reason)
-                mem.append(m)
+                user = discord.Object(m)
+                await ctx.guild.unban(user, reason=reason)
+                mem.append(user)
             except discord.errors.NotFound:
                 await ctx.send(f"Member with ID {m} has not been banned before.")
 
@@ -434,8 +438,6 @@ class Moderation(commands.Cog):
             )
         if len(members) == 0:
             return
-        
-        members = [member.id for member in members]
 
         embed = helper.create_embed(
             author=ctx.author,
@@ -530,8 +532,6 @@ class Moderation(commands.Cog):
             )
         if len(members) == 0:
             return
-        
-        members = [member.id for member in members]
 
         embed = helper.create_embed(
             author=ctx.author,
@@ -578,7 +578,6 @@ class Moderation(commands.Cog):
             )
 
         await ctx.message.add_reaction("<:kgsYes:955703069516128307>")
-        members = [member.id for member in members]
         embed = helper.create_embed(
             author=ctx.author,
             action="Unmuted User(s)",
@@ -623,7 +622,7 @@ class Moderation(commands.Cog):
             embed = helper.create_embed(
                 author=ctx.author,
                 action="Gave role",
-                users=[member.id],
+                users=[member],
                 extra=f"Role: {role.mention}",
                 color=discord.Color.purple(),
             )
@@ -634,7 +633,7 @@ class Moderation(commands.Cog):
         embed = helper.create_embed(
             author=ctx.author,
             action="Removed role",
-            users=[member.id],
+            users=[member],
             extra=f"Role: {role.mention}",
             color=discord.Color.purple(),
         )
@@ -686,8 +685,6 @@ class Moderation(commands.Cog):
             )
         if len(members) == 0:
             return
-
-        members = [member.id for member in members]
 
         helper.create_infraction(
             author=ctx.author,
@@ -1114,7 +1111,7 @@ class Moderation(commands.Cog):
             embed = helper.create_embed(
                 author=ctx.author,
                 action=f"Appended details to {infr_type} ",
-                users=[user.id],
+                users=[user],
                 extra=extra,
                 color=discord.Color.red(),
             )
