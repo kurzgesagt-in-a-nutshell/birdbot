@@ -587,6 +587,8 @@ class Errors(commands.Cog):
         else:
             self.logger.exception(traceback_txt)
             await ctx.message.add_reaction("<:kgsStop:579824947959169024>")
+            if self.bot.user.id != 471705718957801483:
+                return
             await ctx.send(
                 "Uh oh, an unhandled exception occured, if this issue persists please contact any of bot devs (Sloth, FC, Austin, Orav)."
             )

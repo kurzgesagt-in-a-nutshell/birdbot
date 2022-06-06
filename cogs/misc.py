@@ -31,11 +31,11 @@ class Misc(commands.Cog):
 
     @commands.Cog.listener()
     async def on_member_update(self, before, after):
-        if before.nick != after.nick:
+        if before.nick == after.nick:
             return
 
         self.kgs_guild = self.bot.get_guild(414027124836532234)
-        subreddit_role = discord.utils.get(before.guild.roles, id=681812574026727471) 
+        subreddit_role = discord.utils.get(self.kgs_guild.roles, id=681812574026727471) 
         if not after.top_role >= subreddit_role:
             return
 
@@ -52,9 +52,12 @@ class Misc(commands.Cog):
     async def on_user_update(self, before, after):
 
         self.kgs_guild = self.bot.get_guild(414027124836532234)
-        member = await self.kgs_guild.get_member(before.id)
+
+        member = self.kgs_guild.get_member(before.id)
+        if not member:
+            return
         subreddit_role = discord.utils.get(self.kgs_guild.roles, id=681812574026727471) 
-        if not after.top_role >= subreddit_role:
+        if not member.top_role >= subreddit_role:
             return
 
         intro = self.intro_db.find_one({"_id":before.id}) 
