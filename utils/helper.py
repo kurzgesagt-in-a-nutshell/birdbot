@@ -320,7 +320,7 @@ def create_user_infraction(user: Union[discord.User, discord.Member]):
     """
     u = {
         "user_id": user.id,
-        "user_name": user.name,
+        "user_name": "",
         "last_updated": datetime.datetime.utcnow(),
         "banned_patron": False,
         "final_warn": False,
@@ -329,6 +329,12 @@ def create_user_infraction(user: Union[discord.User, discord.Member]):
         "kick": [],
         "ban": [],
     }
+
+    if "name" in dir(user):
+        u["user_name"] = user.name
+    else:
+        del u["user_name"]
+
     infraction_db.insert_one(u)
 
 
