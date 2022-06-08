@@ -15,6 +15,7 @@ from utils import custom_converters
 from utils import helper
 from utils.helper import (
     append_infraction,
+    bot_commands_only,
     devs_only,
     get_single_infraction_type,
     mod_and_above,
@@ -460,9 +461,66 @@ class Moderation(commands.Cog):
         await ctx.message.delete(delay=6)
 
     @commands.command()
+    @bot_commands_only()
+    async def selfmute(self, ctx: commands.Context, *args):
+        
+        logging_channel = discord.utils.get(ctx.guild.channels, id=self.logging_channel)
+
+        tot_time = 0       
+        time_str = "unspecified duration"
+        e = list(args)
+        e.append("Self Mute")
+        args = tuple(e)
+
+        tot_time, reason = helper.calc_time(args)
+        
+        if tot_time is not None:
+            time_str = helper.get_time_string(tot_time)
+
+        if tot_time > 604800:
+            raise commands.BadArgument(message="Can't mute for longer than 7 days!")
+        if tot_time <= 0:
+            raise commands.BadArgument(message="Improper time provided!")
+        if tot_time <= 300:
+            raise commands.BadArgument(message="Can't mute for shorter than 5 minutes!")
+
+        member_id = ctx.author.id
+        time = (
+            datetime.datetime.utcnow() + datetime.timedelta(seconds=tot_time)
+        ).isoformat()
+        route = http.Route(
+            "PATCH", f"/guilds/414027124836532234/members/{member_id}"
+        )
+        await self.bot.http.request(
+            route, json={"communication_disabled_until": time}, reason=reason
+        )
+
+        try:
+            await ctx.author.send(
+                f"You have been muted for {time_str}.\nGiven reason: {reason}"
+            )
+        except discord.Forbidden:
+            pass
+
+        await ctx.message.add_reaction("<:kgsYes:955703069516128307>")
+
+        embed = helper.create_embed(
+            author=ctx.author,
+            action="Self Mute",
+            users=[ctx.author],
+            reason=reason,
+            extra=f"Mute Duration: {tot_time}",
+            color=discord.Color.red(),
+            inf_level=0
+        )
+
+        await logging_channel.send(embed=embed)      
+
+        await ctx.message.delete(delay=6)
+    @commands.command()
     @mod_and_above()
     async def mute(self, ctx: commands.Context, inf_level: int, *args):
-        """Mute member(s). \nUsage: mute infraction_level [@member(s) / user_id(s)] time reason"""
+        """Mute yourself. \nUsage: selfmute time reason"""
 
         tot_time = 0
 
