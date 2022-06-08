@@ -463,7 +463,7 @@ class Moderation(commands.Cog):
     @commands.command()
     @bot_commands_only()
     async def selfmute(self, ctx: commands.Context, *args):
-        
+        """Mute yourself. \nUsage: selfmute time reason"""        
         logging_channel = discord.utils.get(ctx.guild.channels, id=self.logging_channel)
 
         tot_time = 0       
@@ -477,11 +477,11 @@ class Moderation(commands.Cog):
         if tot_time is not None:
             time_str = helper.get_time_string(tot_time)
 
-        if tot_time > 604800:
+        if tot_time > 604799:
             raise commands.BadArgument(message="Can't mute for longer than 7 days!")
         if tot_time <= 0:
             raise commands.BadArgument(message="Improper time provided!")
-        if tot_time <= 300:
+        if tot_time < 300:
             raise commands.BadArgument(message="Can't mute for shorter than 5 minutes!")
 
         member_id = ctx.author.id
@@ -520,7 +520,7 @@ class Moderation(commands.Cog):
     @commands.command()
     @mod_and_above()
     async def mute(self, ctx: commands.Context, inf_level: int, *args):
-        """Mute yourself. \nUsage: selfmute time reason"""
+        """Mute member(s). \nUsage: mute infraction_level [@member(s) / user_id(s)] time reason"""
 
         tot_time = 0
 
