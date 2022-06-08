@@ -469,15 +469,17 @@ class Moderation(commands.Cog):
         tot_time = 0       
         time_str = "unspecified duration"
         e = list(args)
+
         e.append("Self Mute")
         args = tuple(e)
 
         tot_time, reason = helper.calc_time(args)
-        
+        if reason != "Self Mute":
+            reason = str.replace('Self Mute', ' ') 
         if tot_time is not None:
             time_str = helper.get_time_string(tot_time)
 
-        if tot_time > 604799:
+        if tot_time > 604801:
             raise commands.BadArgument(message="Can't mute for longer than 7 days!")
         if tot_time <= 0:
             raise commands.BadArgument(message="Improper time provided!")
@@ -497,7 +499,7 @@ class Moderation(commands.Cog):
 
         try:
             await ctx.author.send(
-                f"You have been muted for {time_str}.\nGiven reason: {reason}"
+                f"You have been Self muted for {time_str}.\nGiven reason: {reason} mods will not unmute you :) think twice about doing the command next time"
             )
         except discord.Forbidden:
             pass
