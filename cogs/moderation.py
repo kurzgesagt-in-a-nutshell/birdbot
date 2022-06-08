@@ -463,8 +463,8 @@ class Moderation(commands.Cog):
     @commands.command()
     @bot_commands_only()
     async def selfmute(self, ctx: commands.Context, *args):
-        """Mute yourself. \nUsage: selfmute time reason"""        
-        logging_channel = discord.utils.get(ctx.guild.channels, id=self.logging_channel)
+        """Mute yourself. \nUsage: selfmute time"""        
+        logging_channel = discord.utils.get(ctx.guild.channels, id=713107972737204236)
 
         tot_time = 0       
         time_str = "unspecified duration"
