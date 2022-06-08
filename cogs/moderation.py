@@ -499,7 +499,7 @@ class Moderation(commands.Cog):
 
         try:
             await ctx.author.send(
-                f"You have been Self muted for {time_str}.\nGiven reason: {reason} mods will not unmute you :) think twice about doing the command next time"
+                f"You have been Self muted for {time_str}.\nGiven reason: {reason} \n mods will not unmute you :) think twice about doing the command next time"
             )
         except discord.Forbidden:
             pass
