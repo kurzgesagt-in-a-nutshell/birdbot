@@ -466,16 +466,11 @@ class Moderation(commands.Cog):
         """Mute yourself. \nUsage: selfmute time"""        
         logging_channel = discord.utils.get(ctx.guild.channels, id=713107972737204236)
 
-        tot_time = 0       
+        tot_time = 0
         time_str = "unspecified duration"
-        e = list(args)
-
-        e.append("Self Mute")
-        args = tuple(e)
-
-        tot_time, reason = helper.calc_time(args)
+        tot_time, reason = helper.calc_time(args + ("Self Mute",))
         if reason != "Self Mute":
-            reason = str.replace('Self Mute', ' ') 
+            reason = reason[:-10]
         if tot_time is not None:
             time_str = helper.get_time_string(tot_time)
 
