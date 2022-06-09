@@ -3,6 +3,7 @@ import asyncio
 import json
 import discord
 import pymongo
+import pandas as pd
 from discord.ext import commands
 
 from utils.helper import role_and_above
@@ -45,7 +46,7 @@ class Misc(commands.Cog):
         )
         msg = await intro_channel.fetch_message(intro["message_id"])
         embed = msg.embeds[0]
-        embed.set_author(name=before.display_name, icon_url=before.avatar_url)
+        embed.set_author(name=after.display_name, icon_url=after.avatar_url)
         await msg.edit(embed=embed)
 
     @commands.Cog.listener()
