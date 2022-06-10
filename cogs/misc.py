@@ -4,7 +4,7 @@ import json
 import discord
 import pymongo
 
-import pandas as pd
+# import pandas as pd
 from discord.ext import commands
 
 from utils.helper import role_and_above
