@@ -3,6 +3,7 @@ import asyncio
 import json
 import discord
 import pymongo
+
 # import pandas as pd
 from discord.ext import commands
 
@@ -36,11 +37,11 @@ class Misc(commands.Cog):
             return
 
         self.kgs_guild = self.bot.get_guild(414027124836532234)
-        subreddit_role = discord.utils.get(self.kgs_guild.roles, id=681812574026727471) 
+        subreddit_role = discord.utils.get(self.kgs_guild.roles, id=681812574026727471)
         if not after.top_role >= subreddit_role:
             return
 
-        intro = self.intro_db.find_one({"_id":before.id}) 
+        intro = self.intro_db.find_one({"_id": before.id})
         intro_channel = self.kgs_guild.get_channel(
             self.config["logging"]["intro_channel"]
         )
@@ -57,11 +58,11 @@ class Misc(commands.Cog):
         member = self.kgs_guild.get_member(before.id)
         if not member:
             return
-        subreddit_role = discord.utils.get(self.kgs_guild.roles, id=681812574026727471) 
+        subreddit_role = discord.utils.get(self.kgs_guild.roles, id=681812574026727471)
         if not member.top_role >= subreddit_role:
             return
 
-        intro = self.intro_db.find_one({"_id":before.id}) 
+        intro = self.intro_db.find_one({"_id": before.id})
         intro_channel = self.kgs_guild.get_channel(
             self.config["logging"]["intro_channel"]
         )
@@ -69,8 +70,6 @@ class Misc(commands.Cog):
         embed = msg.embeds[0]
         embed.set_author(name=member.display_name, icon_url=after.avatar_url)
         await msg.edit(embed=embed)
-
-
 
     def parse_info(self, user_id, tz_text, bio, bird_icon):
         """Get all the neccesary info and return an introduction embed"""

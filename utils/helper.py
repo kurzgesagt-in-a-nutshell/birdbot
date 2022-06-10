@@ -98,7 +98,7 @@ possible_commands = [
     r"toggleskip",
     r"togglereminder ",
     r"palette",
-    r"colours"
+    r"colours",
 ]
 
 
@@ -305,7 +305,7 @@ def create_embed(
 
     if link:
         embed.add_field(name="Link", value=link, inline=False)
-    
+
     if inf_level:
         embed.add_field(name="Level", value=inf_level, inline=False)
 
@@ -446,7 +446,7 @@ def get_infractions(member_id: int, inf_type: str) -> discord.Embed:
 
         if "final_warn" in infr and infr["final_warn"]:
             value += "\nUSER IS ON FINAL WARNING"
-       
+
         inflevels = {"legacy": 0}
 
         for key in infr:
@@ -464,14 +464,15 @@ def get_infractions(member_id: int, inf_type: str) -> discord.Embed:
             2: "II",
             3: "III",
             4: "IV",
-            5: "V",}
+            5: "V",
+        }
 
         valuelist = []
         if inflevels["legacy"] != 0:
             valuelist.append(f'{inflevels["legacy"]}xLegacy')
         del inflevels["legacy"]
         for key in sorted(inflevels):
-            valuelist.append(f'{inflevels[key]}x{dectoroman[key]}')
+            valuelist.append(f"{inflevels[key]}x{dectoroman[key]}")
 
         value += "\n" + ", ".join(valuelist)
 
@@ -492,7 +493,7 @@ def get_infractions(member_id: int, inf_type: str) -> discord.Embed:
                     "Reason: {}".format(warn["reason"]),
                     "Date: {}".format(warn["datetime"].replace(microsecond=0)),
                 )
-                if 'infraction_level' in warn:
+                if "infraction_level" in warn:
                     warn_str += f"Infraction Level: {warn['infraction_level']}\n"
 
                 warn_str += f"Warn ID: {idx}\n\n"
@@ -519,9 +520,8 @@ def get_infractions(member_id: int, inf_type: str) -> discord.Embed:
                     "Date: {}".format(mute["datetime"].replace(microsecond=0)),
                 )
 
-                if 'infraction_level' in mute:
+                if "infraction_level" in mute:
                     mute_str += f"Infraction Level: {mute['infraction_level']}\n"
-
 
                 mute_str += f"Mute ID: {idx}\n\n"
 
@@ -546,9 +546,8 @@ def get_infractions(member_id: int, inf_type: str) -> discord.Embed:
                     "Date: {}".format(ban["datetime"].replace(microsecond=0)),
                 )
 
-                if 'infraction_level' in ban:
+                if "infraction_level" in ban:
                     ban_str += f"Infraction Level: {ban['infraction_level']}\n"
-
 
                 ban_str += f"Ban ID: {idx}\n"
 
@@ -564,16 +563,15 @@ def get_infractions(member_id: int, inf_type: str) -> discord.Embed:
         elif inf_type == "kick":
             kick_str = ""
             for idx, kick in enumerate(infr["kick"]):
-                kick_str = "{0}\n{1}\n{2}\n".format(
+                kick_str = "{0}\n{1}\n{2}\n{3}".format(
                     kick_str,
                     "Author: {} ({})".format(kick["author_name"], kick["author_id"]),
                     "Reason: {}".format(kick["reason"]),
                     "Date: {}".format(kick["datetime"].replace(microsecond=0)),
                 )
 
-                if 'infraction_level' in kick:
+                if "infraction_level" in kick:
                     kick_str += f"Infraction Level: {kick['infraction_level']}\n"
-
 
                 kick_str += f"Kick ID: {idx}\n\n"
 
@@ -871,7 +869,7 @@ def get_active_staff(bot: commands.AutoShardedBot) -> str:
                         # check for active mods
                         mods_active = True
 
-    mention_str = ' '.join([staff.mention for staff in active_staff])
+    mention_str = " ".join([staff.mention for staff in active_staff])
 
     if not mods_active:
         mention_str += (

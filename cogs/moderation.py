@@ -254,7 +254,9 @@ class Moderation(commands.Cog):
     async def fban(self, ctx, inf_level: int, member: int, *, reason: str):
         """Force ban a member who is not in the server.\nUsage: fban user_id reason"""
         if reason is None:
-            raise commands.BadArgument(message="Provide a reason and re-run the command")
+            raise commands.BadArgument(
+                message="Provide a reason and re-run the command"
+            )
 
         if inf_level not in range(1, 6):
             raise commands.BadArgument(
@@ -463,7 +465,7 @@ class Moderation(commands.Cog):
     @commands.command()
     @bot_commands_only()
     async def selfmute(self, ctx: commands.Context, *args):
-        """Mute yourself. \nUsage: selfmute time"""        
+        """Mute yourself. \nUsage: selfmute time"""
         logging_channel = discord.utils.get(ctx.guild.channels, id=713107972737204236)
 
         tot_time = 0
@@ -485,9 +487,7 @@ class Moderation(commands.Cog):
         time = (
             datetime.datetime.utcnow() + datetime.timedelta(seconds=tot_time)
         ).isoformat()
-        route = http.Route(
-            "PATCH", f"/guilds/414027124836532234/members/{member_id}"
-        )
+        route = http.Route("PATCH", f"/guilds/414027124836532234/members/{member_id}")
         await self.bot.http.request(
             route, json={"communication_disabled_until": time}, reason=reason
         )
@@ -508,12 +508,13 @@ class Moderation(commands.Cog):
             reason=reason,
             extra=f"Mute Duration: {tot_time}",
             color=discord.Color.red(),
-            inf_level=0
+            inf_level=0,
         )
 
-        await logging_channel.send(embed=embed)      
+        await logging_channel.send(embed=embed)
 
         await ctx.message.delete(delay=6)
+
     @commands.command()
     @mod_and_above()
     async def mute(self, ctx: commands.Context, inf_level: int, *args):
@@ -1047,7 +1048,7 @@ class Moderation(commands.Cog):
             if msg:
                 await msg.clear_reactions()
 
-    @commands.command(aliases=["dinfr", "inf_details","infr_details", "details"])
+    @commands.command(aliases=["dinfr", "inf_details", "infr_details", "details"])
     @mod_and_above()
     async def detailed_infr(
         self,
@@ -1175,7 +1176,7 @@ class Moderation(commands.Cog):
                 ctx.guild.channels, id=self.logging_channel
             )
             await logging_channel.send(embed=embed)
-        
+
         await ctx.message.delete(delay=6)
 
     @commands.command(aliases=["slothmode"])

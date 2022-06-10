@@ -15,6 +15,7 @@ parser.add_argument(
     "-a", "--alpha", help="Run the alpha instance of the bot", action="store_true"
 )
 
+
 def is_member_whitelisted(ctx) -> bool:
     cmd_blacklist_db = BirdBot.db.CommandBlacklist
     cmd = cmd_blacklist_db.find_one({"command_name": ctx.command.name})

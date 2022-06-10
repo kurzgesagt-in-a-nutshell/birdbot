@@ -1,11 +1,9 @@
 import logging
-import pickle
 import numpy as np
 import os
 import asyncio
 from utils.helper import admin_and_above
 
-import discord
 import pymongo
 from discord.ext import commands
 
@@ -77,12 +75,15 @@ class Quiz(commands.Cog):
 
                 # check if user has any leveled roles
                 to_boost = [
-                    role for role in list(role_boosts.keys())
+                    role
+                    for role in list(role_boosts.keys())
                     if role in [user_role.id for user_role in user.roles]
                 ]
                 if len(to_boost) != 0:
-                    self.logger.info(f"boosting {user.name} for having role {to_boost[0]} by {role_boosts[to_boost[0]]}")
-                    i['tickets'] += round(i['tickets'] * role_boosts[to_boost[0]])
+                    self.logger.info(
+                        f"boosting {user.name} for having role {to_boost[0]} by {role_boosts[to_boost[0]]}"
+                    )
+                    i["tickets"] += round(i["tickets"] * role_boosts[to_boost[0]])
 
         await process_users()
 

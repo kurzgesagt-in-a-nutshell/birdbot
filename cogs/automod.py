@@ -97,8 +97,10 @@ class Filter(commands.Cog):
         """
 
         if word in self.white_list:
-            raise commands.BadArgument(message=f"`{word}` already exists in whitelist.", delete_after=6)
-        
+            raise commands.BadArgument(
+                message=f"`{word}` already exists in whitelist.", delete_after=6
+            )
+
         self.bot.db.filterlist.update_one(
             {"name": "whitelist"}, {"$push": {"filter": word}}
         )
@@ -115,7 +117,9 @@ class Filter(commands.Cog):
         """
 
         if word not in self.white_list:
-            raise commands.BadArgument(message=f"`{word}` doesn't exist in whitelist.", delete_after=6)
+            raise commands.BadArgument(
+                message=f"`{word}` doesn't exist in whitelist.", delete_after=6
+            )
 
         self.bot.db.filterlist.update_one(
             {"name": "whitelist"}, {"$pull": {"filter": word}}
@@ -194,7 +198,9 @@ class Filter(commands.Cog):
         old_words = await self.choose_list(list_type)
 
         if word in old_words:
-            raise commands.BadArgument(message=f"`{word}` already exists in blacklist.", delete_after=6)
+            raise commands.BadArgument(
+                message=f"`{word}` already exists in blacklist.", delete_after=6
+            )
 
         self.bot.db.filterlist.update_one(
             {"name": list_type}, {"$push": {"filter": word}}
@@ -214,8 +220,9 @@ class Filter(commands.Cog):
         old_words = await self.choose_list(list_type)
 
         if word not in old_words:
-            raise commands.BadArgument(message=f"`{word}` doesn't exists in blacklist.", delete_after=6)
-
+            raise commands.BadArgument(
+                message=f"`{word}` doesn't exists in blacklist.", delete_after=6
+            )
 
         self.bot.db.filterlist.update_one(
             {"name": list_type}, {"$pull": {"filter": word}}
@@ -237,7 +244,7 @@ class Filter(commands.Cog):
             # print(self.white_list)
             word_list = copy.copy(ref_word_list)
             profanity.load_censor_words(word_list)
-            #print(profanity.CENSOR_WORDSET)
+            # print(profanity.CENSOR_WORDSET)
             regex_list = self.generate_regex(word_list)
             # stores all words that are aparently profanity
             offending_list = []
@@ -271,7 +278,7 @@ class Filter(commands.Cog):
             indexes = [x.start() for x in re.finditer(r"\?", message_clean)]
             # get rid of all other non ascii charcters
             message_clean = demoji.replace(message_clean, "*")
-            #print(message_clean)
+            # print(message_clean)
             message_clean = (
                 str(message_clean)
                 .encode("ascii", "replace")
@@ -286,26 +293,29 @@ class Filter(commands.Cog):
             message_clean = "".join(message_clean)
             # sub out discord emojis
             message_clean = re.sub(r"(<[A-z]*:[^\s]+:[0-9]*>)", "*", message_clean)
-            #print(message_clean)
-            #print(profanity.contains_profanity(message_clean))
+            # print(message_clean)
+            # print(profanity.contains_profanity(message_clean))
             if profanity.contains_profanity(message_clean):
                 offending_list = []
                 for w in word_list:
                     if re.search(re.escape(w), message_clean):
                         offending_list.append(w)
-                if self.exception_list_check(offending_list) and not offending_list == []:
+                if (
+                    self.exception_list_check(offending_list)
+                    and not offending_list == []
+                ):
                     return False
                 else:
                     return True
             else:
-                #print("here")
+                # print("here")
                 for regex in regex_list:
                     if re.search(regex, message_clean):
                         found_items = re.findall(regex[:-3] + "[A-z]*)", message_clean)
                         for e in found_items:
                             offending_list.append(e)
                         toReturn = True
-                        #print(found_items)
+                        # print(found_items)
             if toReturn:
                 if not self.exception_list_check(offending_list):
                     return [True, offending_list]
@@ -569,14 +579,17 @@ class Filter(commands.Cog):
             message_clean = "".join(message_clean)
             # sub out discord emojis
             message_clean = re.sub(r"(<[A-z]*:[^\s]+:[0-9]*>)", "*", message_clean)
-            #print(message_clean)
+            # print(message_clean)
             if profanity.contains_profanity(message_clean):
                 offending_list = []
                 for w in local_word_list:
                     if re.search(re.escape(w), message_clean):
                         offending_list.append(w)
-                #print(offending_list)
-                if self.exception_list_check(offending_list) and not offending_list == []:
+                # print(offending_list)
+                if (
+                    self.exception_list_check(offending_list)
+                    and not offending_list == []
+                ):
                     return False
                 else:
                     return True

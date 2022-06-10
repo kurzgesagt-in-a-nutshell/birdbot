@@ -24,11 +24,14 @@ from utils.helper import (
     is_internal_command,
 )
 
-#janky fix for server memories, will make permanent once out of experimentation
+# janky fix for server memories, will make permanent once out of experimentation
 async def check_server_memories(message):
 
     if message.channel.id == 960927545639972994:  # server memories // media only
-        if any(_id in [role.id for role in message.author.roles] for _id in [414092550031278091,414029841101225985]): #mod or admin
+        if any(
+            _id in [role.id for role in message.author.roles]
+            for _id in [414092550031278091, 414029841101225985]
+        ):  # mod or admin
             return
         if message.author.bot:
             return
@@ -111,7 +114,6 @@ class GuildLogger(commands.Cog):
         )
         await message_logging_channel.send(embed=embed)
 
-
     @commands.Cog.listener()
     async def on_message_delete(self, message):
 
@@ -184,7 +186,7 @@ class GuildLogger(commands.Cog):
             mod_channel = self.bot.get_channel(414095428573986816)
             await mod_channel.send(
                 "<@&414092550031278091> <@&905510680763969536> We are ten members away for 69420!! Someone get the screenshot",
-                allowed_mentions=discord.AllowedMentions(roles=True)
+                allowed_mentions=discord.AllowedMentions(roles=True),
             )
 
         embed = discord.Embed(
@@ -320,8 +322,6 @@ class GuildChores(commands.Cog):
     async def on_ready(self):
         self.logger.info("Loaded Guild Chores")
 
-
-
     @commands.Cog.listener()
     async def on_message(self, message):
         """Remind mods to use correct prefix, alert mod pings etc"""
@@ -374,8 +374,6 @@ class GuildChores(commands.Cog):
                 return
             if re.match("^-(kick|ban|mute|warn)", message.content):
                 await message.channel.send(f"ahem.. {message.author.mention}")
-
-
 
     @commands.Cog.listener()
     async def on_member_update(self, before, after):
