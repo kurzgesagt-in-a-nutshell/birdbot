@@ -123,10 +123,6 @@ class DevBotOnly(commands.CheckFailure):
 # ------Custom checks begin-------#
 
 
-def is_whitelisted(ctx: commands.Context):
-    return is_member_whitelisted(ctx.author, ctx.command)
-
-
 def general_only():
     async def predicate(ctx: commands.Context):
         if (
