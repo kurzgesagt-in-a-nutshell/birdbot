@@ -252,7 +252,7 @@ class Moderation(commands.Cog):
     @commands.command(aliases=["forceban"])
     @mod_and_above()
     async def fban(self, ctx, inf_level: int, member: int, *, reason: str):
-        """Force ban a member who is not in the server.\nUsage: fban user_id reason"""
+        """Force ban a member who is not in the server.\nUsage: fban infraction_level user_id reason"""
         if reason is None:
             raise commands.BadArgument(
                 message="Provide a reason and re-run the command"
