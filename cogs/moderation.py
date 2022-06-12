@@ -520,6 +520,11 @@ class Moderation(commands.Cog):
     async def mute(self, ctx: commands.Context, inf_level: int, *args):
         """Mute member(s). \nUsage: mute infraction_level [@member(s) / user_id(s)] time reason"""
 
+        if inf_level not in range(1, 6):
+            raise commands.BadArgument(
+                message="Infraction level must be between 1 and 5"
+            )
+
         tot_time = 0
 
         logging_channel = discord.utils.get(ctx.guild.channels, id=self.logging_channel)
@@ -528,10 +533,6 @@ class Moderation(commands.Cog):
 
         if members is None:
             raise commands.BadArgument(message="Improper member passed")
-        if inf_level not in range(1, 6):
-            raise commands.BadArgument(
-                message="Infraction level must be between 1 and 5"
-            )
 
         tot_time, reason = helper.calc_time(extra)
 
