@@ -58,6 +58,11 @@ class Giveaway(commands.Cog):
             messagefound = False
 
         if messagefound:
+            if message.author != self.bot.user:
+                if giveaway["message_id"] in self.active_giveaways:
+                    del self.active_giveaways[giveaway["message_id"]]
+                return
+
             embed = message.embeds[0].to_dict()
 
             embed["title"] = "Giveaway ended"
