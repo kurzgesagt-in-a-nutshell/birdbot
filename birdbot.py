@@ -134,7 +134,7 @@ class BirdBot(commands.AutoShardedBot):
         """Loads all cogs from cogs/ without the '_' prefix"""
         for filename in os.listdir("cogs/"):
             if not (
-                filename[:-3] in ("antiraid", "automod") and (args.beta or args.alpha)
+                filename[:-3] in ("antiraid", "automod", "giveaway") and (args.beta or args.alpha)
             ):
                 if not filename.startswith("_"):
                     logger.info(f"loading {f'cogs.{filename[:-3]}'}")
