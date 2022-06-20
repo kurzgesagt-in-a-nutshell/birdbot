@@ -679,6 +679,7 @@ class Filter(commands.Cog):
                     elif e.image:
                         if any(s in e.image.url for s in filetypes):
                             return True
+            if message.attachments:
                 for e in message.attachments:
                     if any(s in e.filename for s in filetypes):
                         return True
