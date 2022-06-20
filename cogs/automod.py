@@ -341,11 +341,11 @@ class Filter(commands.Cog):
 
     @commands.Cog.listener()
     async def on_message(self, message):
-        #if (
-            #message.channel.category.id == 414095379156434945  # mod category
-            #and message.channel.id != 414179142020366336  # bot testing
-        #):
-            #return
+        if (
+            message.channel.category.id == 414095379156434945  # mod category
+            and message.channel.id != 414179142020366336  # bot testing
+        ):
+            return
 
         if message.content == "":
             return
@@ -665,7 +665,6 @@ class Filter(commands.Cog):
                 414027124836532236,
                 414179142020366336,
                 546315063745839115,
-                988514859199107142
             ):
                 return
             print(message.embeds)
