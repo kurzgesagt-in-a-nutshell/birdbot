@@ -341,11 +341,11 @@ class Filter(commands.Cog):
 
     @commands.Cog.listener()
     async def on_message(self, message):
-        if (
-            message.channel.category.id == 414095379156434945  # mod category
-            and message.channel.id != 414179142020366336  # bot testing
-        ):
-            return
+        #if (
+            #message.channel.category.id == 414095379156434945  # mod category
+            #and message.channel.id != 414179142020366336  # bot testing
+        #):
+            #return
 
         if message.content == "":
             return
@@ -517,7 +517,7 @@ class Filter(commands.Cog):
             414029841101225985,  # admin
             414954904382210049,  # offical
             414155501518061578,  # robobird
-            240254129333731328,  # stealth
+            240254129333731328  # stealth
         ]
         if author.bot:
             return True
@@ -665,8 +665,10 @@ class Filter(commands.Cog):
                 414027124836532236,
                 414179142020366336,
                 546315063745839115,
+                988514859199107142
             ):
                 return
+            print(message.embeds)
 
             if message.embeds:
                 for e in message.embeds:
@@ -678,6 +680,11 @@ class Filter(commands.Cog):
                     elif e.image:
                         if any(s in e.image.url for s in filetypes):
                             return True
+                for e in message.attachments:
+                    if any(s in e.filename for s in filetypes):
+                        return True
+                    elif any(s in e.url for s in filetypes):
+                        return True
             return False
 
         # run checks
