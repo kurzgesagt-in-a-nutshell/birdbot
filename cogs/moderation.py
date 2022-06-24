@@ -545,7 +545,7 @@ class Moderation(commands.Cog):
                 message="Please provide a reason and re-run the command"
             )
 
-        final_warn = True if reason.startswith("--final") else False
+        final_warn = True if reason.startswith("--final") or reason.startswith("—final") else False
         default_msg = "(Note: Accumulation of warns may lead to permanent removal from the server)"
         if final_warn:
             reason = reason[7:]
@@ -716,7 +716,7 @@ class Moderation(commands.Cog):
                 message="Infraction level must be between 1 and 5"
             )
 
-        final_warn = True if reason[0] == "--final" else False
+        final_warn = True if reason[0] == "--final" or reason[0] == "—final" else False
         default_msg = "(Note: Accumulation of warns may lead to permanent removal from the server)"
         if final_warn:
             reason = " ".join(reason[1:])
