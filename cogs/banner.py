@@ -7,16 +7,19 @@ import io
 
 import discord
 from discord.ext import commands, tasks
-from utils.helper import mod_and_above, calc_time, get_time_string, bot_commands_only
+from utils.helper import (
+    devs_only,
+    mod_and_above,
+    calc_time,
+    get_time_string,
+    bot_commands_only,
+)
 
 
 class Banner(commands.Cog):
     def __init__(self, bot):
         self.logger = logging.getLogger("Banners")
         self.bot = bot
-
-        with open("banners.json", "r") as banners:
-            self.banners = json.loads(banners.read())["banners"]
 
         with open("config.json", "r") as config_file:
             config_json = json.loads(config_file.read())
@@ -26,12 +29,18 @@ class Banner(commands.Cog):
 
         self.index = 0
 
+        self.banner_db = self.bot.db.Banners
+
     def cog_unload(self):
         self.timed_banner_rotation.cancel()
 
     @commands.Cog.listener()
     async def on_ready(self):
         self.logger.info("loaded Banners")
+
+        self.banners = self.banner_db.find_one({"name": "banners"})["banners"]
+
+        self.logger.debug(self.banners)
 
     @commands.group(hidden=True)
     async def banner(self, ctx: commands.Context):
@@ -89,9 +98,11 @@ class Banner(commands.Cog):
         for i in url:
             self.banners.append(await self.verify_url(i))
 
+        self.banner_db.update_one(
+            {"name": "banners"}, {"$set": {"banners": self.banners}}
+        )
+
         await ctx.send("Banner added!")
-        with open("banners.json", "w") as banners:
-            banners.write(json.dumps({"banners": self.banners}, indent=4))
 
     @mod_and_above()
     @banner.command()
@@ -227,10 +238,10 @@ class Banner(commands.Cog):
                         banner = await channel.send(file=file)
                         url = banner.attachments[0].url
                         self.banners.append(url)
-                        with open("banners.json", "w") as banners:
-                            banners.write(
-                                json.dumps({"banners": self.banners}, indent=4)
-                            )
+                        self.banner_db.update_one(
+                            {"name": "banners"}, {"$set": {"banners": self.banners}}
+                        )
+
                         await message.edit(embed=embed, delete_after=6)
                         member = guild.get_member_named(author.name)
                         try:
