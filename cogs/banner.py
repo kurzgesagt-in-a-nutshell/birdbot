@@ -28,7 +28,6 @@ class Banner(commands.Cog):
         self.automated_channel = config_json["logging"]["automated_channel"]
 
         self.index = 0
-
         self.banner_db = self.bot.db.Banners
 
     def cog_unload(self):
@@ -39,8 +38,6 @@ class Banner(commands.Cog):
         self.logger.info("loaded Banners")
 
         self.banners = self.banner_db.find_one({"name": "banners"})["banners"]
-
-        self.logger.debug(self.banners)
 
     @commands.group(hidden=True)
     async def banner(self, ctx: commands.Context):
