@@ -381,10 +381,10 @@ class Filter(commands.Cog):
         if member.bot:
             return
 
-        nickname_lock = discord.utils.get(member.guild.roles,name='Nickname Lock' )
+        nickname_lock = discord.utils.get(member.guild.roles, name="Nickname Lock")
         if nickname_lock in member.roles:
-            if member.name != 'Kurzgesagt Fan':
-                await member.edit(nick='Kurzgesagt Fan')
+            if member.name != "Kurzgesagt Fan":
+                await member.edit(nick="Kurzgesagt Fan")
 
         if member.nick is None:
             if not re.search(
@@ -512,7 +512,7 @@ class Filter(commands.Cog):
             await self.logging_channel.send(embed=embed)
 
     def get_word_list(self, message):
-        if message.channel == 546315063745839115:
+        if message.channel.id == 546315063745839115:
             return self.humanities_list + self.general_list
         else:
             return self.general_list
@@ -523,7 +523,7 @@ class Filter(commands.Cog):
             414029841101225985,  # admin
             414954904382210049,  # offical
             414155501518061578,  # robobird
-            240254129333731328  # stealth
+            240254129333731328,  # stealth
         ]
         if author.bot:
             return True
