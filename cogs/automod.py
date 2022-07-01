@@ -380,6 +380,12 @@ class Filter(commands.Cog):
 
         if member.bot:
             return
+
+        nickname_lock = discord.utils.get(member.guild.roles,name='Nickname Lock' )
+        if nickname_lock in member.roles:
+            if member.name != 'Kurzgesagt Fan':
+                await member.edit(nick='Kurzgesagt Fan')
+
         if member.nick is None:
             if not re.search(
                 r"[a-zA-Z0-9~!@#$%^&*()_+`;':\",./<>?]{3,}", member.name, re.IGNORECASE
