@@ -474,8 +474,12 @@ def get_infractions(member_id: int, inf_type: str) -> discord.Embed:
 
         value += "```"
 
+        if "user_name" in infr:
+            name = "{} ({})".format(infr["user_name"], infr["user_id"])
+        else:
+            name = f'({infr["user_id"]})'
         embed.add_field(
-            name="{} ({})".format(infr["user_name"], infr["user_id"]),
+            name=name,
             value=value,
             inline=False,
         )
