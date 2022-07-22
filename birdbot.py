@@ -71,7 +71,6 @@ class BirdBot(commands.AutoShardedBot):
             webhooks=True,
             messages=True,
             reactions=True,
-            message_content=True,
             presences=True,
         )
         max_messages = 1000
@@ -131,7 +130,7 @@ class BirdBot(commands.AutoShardedBot):
         logger.info("Connected to mongoDB")
         cls.db = db
 
-    async def load_extensions(self, args):
+    def load_extensions(self, args):
         """Loads all cogs from cogs/ without the '_' prefix"""
         for filename in os.listdir("cogs/"):
             if not (
@@ -140,7 +139,7 @@ class BirdBot(commands.AutoShardedBot):
                 if not filename.startswith("_"):
                     logger.info(f"loading {f'cogs.{filename[:-3]}'}")
                     try:
-                        await self.load_extension(f"cogs.{filename[:-3]}")
+                        self.load_extension(f"cogs.{filename[:-3]}")
                     except Exception as e:
                         logger.error(f"cogs.{filename[:-3]} cannot be loaded. [{e}]")
                         logger.exception(f"Cannot load cog {f'cogs.{filename[:-3]}'}")
@@ -149,11 +148,11 @@ class BirdBot(commands.AutoShardedBot):
         """Close the Discord connection and the aiohttp sessions if any (future perhaps?)."""
         for ext in list(self.extensions):
             with suppress(Exception):
-                await self.unload_extension(ext)
+                self.unload_extension(ext)
 
         for cog in list(self.cogs):
             with suppress(Exception):
-                await self.remove_cog(cog)
+                self.remove_cog(cog)
 
         await super().close()
 

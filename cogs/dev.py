@@ -149,11 +149,11 @@ class Dev(commands.Cog):
         """Reload a module"""
         try:
             try:
-                await self.bot.unload_extension(module_name)
+                self.bot.unload_extension(module_name)
             except discord.ext.commands.errors.ExtensionNotLoaded as enl:
                 await ctx.send(f"Module not loaded. Trying to load it.", delete_after=6)
 
-            await self.bot.load_extension(module_name)
+            self.bot.load_extension(module_name)
             await ctx.send("Module Loaded")
 
         except ExtensionNotFound as enf:
@@ -240,5 +240,5 @@ class Dev(commands.Cog):
         await channel.send(msg)
 
 
-async def setup(bot):
-    await bot.add_cog(Dev(bot))
+def setup(bot):
+    bot.add_cog(Dev(bot))

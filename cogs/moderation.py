@@ -27,7 +27,6 @@ from utils.helper import (
 
 import discord
 from discord.ext import commands, tasks
-from discord import app_commands
 
 
 class Moderation(commands.Cog):
@@ -50,46 +49,106 @@ class Moderation(commands.Cog):
     async def on_ready(self):
         self.logger.info("loaded Moderation")
 
-    @app_commands.guilds(414027124836532234)
-    @app_commands.command()
-    async def report(self, interaction: discord.Interaction, member: discord.Member):  
-        class Modal(discord.ui.Modal):
-            def __init__(self, member):
-                super().__init__(title="Report")
-                self.member = member
+    @commands.command()
+    async def report(
+        self,
+        ctx,
+        user_id: str = None,
+        message_link: str = None,
+        *,
+        extras: str = None,
+    ):
+        """Report an issue to the authorites. Use this command in the bots DMs\n Usage: report\nreport <user_ID> <message_link> <description_of_issue>"""
 
-            text = discord.ui.TextInput(
-                label="Briefly describe your issue",
-                style=discord.TextStyle.long,
+        if message_link and not message_link.startswith("http"):
+            if extras:
+                extras = f"{message_link} {extras}"
+            else:
+                extras = f"{message_link}"
+
+        mod_embed = discord.Embed(title="New Report", color=0x00FF00)
+        mod_embed.set_author(name=ctx.author.name, icon_url=ctx.author.avatar_url)
+
+        def check(msg):
+            return msg.author == ctx.author and isinstance(
+                msg.channel, discord.DMChannel
             )
-            message = discord.ui.TextInput(
-                label="Message link",
-                style=discord.TextStyle.short,
-                placeholder="https://discord.com/channels/414027124836532234/414268041787080708/937750299165208607",
-                required=False,
-            )
 
-            async def on_submit(self, interaction):
-                description = self.children[0].value
-                message_link = self.children[1].value
+        if user_id is None:
+            try:
+                msg = await ctx.author.send(
+                    embed=discord.Embed(
+                        title="Thanks for reaching out!",
+                        description="Briefly describe your issue",
+                        color=0xFF69B4,
+                    )
+                )
+                report_desc = await self.bot.wait_for(
+                    "message", timeout=120, check=check
+                )
+                extras = report_desc.content
 
-                mod_embed = discord.Embed(title="New Report", color=0x00FF00)
-                mod_embed.set_author(
-                    name=interaction.user.name, icon_url=interaction.user.display_avatar.url
+                await msg.edit(
+                    embed=discord.Embed(
+                        title="Report description noted!",
+                        description='If you have a [User ID](https://support.discord.com/hc/en-us/articles/206346498-Where-can-I-find-my-User-Server-Message-ID-) for the person you\'re reporting against please enter them, else type "no"',
+                    )
+                )
+                user_id_desc = await self.bot.wait_for(
+                    "message", timeout=120, check=check
+                )
+                if not "no" in user_id_desc.content.lower():
+                    report_user = self.bot.get_user(int(user_id_desc.content))
+                    if report_user is not None:
+                        user_id = f"({user_id_desc.content}) {report_user.name}"
+
+                await msg.edit(
+                    embed=discord.Embed(
+                        title="Got it!",
+                        description='Finally do you happen to have a message link? type "no" if not',
+                    )
                 )
 
-                mod_embed.description = f"**Report description: ** {description}\n**User: ** {self.member}\n**Message Link: ** [click to jump]({message_link})"
+                link_desc = await self.bot.wait_for("message", timeout=120, check=check)
+                if not "no" in link_desc.content.lower():
+                    message_link = link_desc.content
 
-                mod_channel = interaction.guild.get_channel(414095428573986816)
-                await mod_channel.send(embed=mod_embed)
-
-                await interaction.response.send_message(
-                    "Report has been sent!", ephemeral=True
+                await msg.edit(
+                    embed=discord.Embed(
+                        title="Report Successful!",
+                        description="Your report has been sent to the proper authorities.",
+                        color=0x00FF00,
+                    )
                 )
 
-        memberid = member.id
-        await interaction.response.send_modal(Modal(member=memberid))
-        
+            except discord.Forbidden:
+                await ctx.send(
+                    "I can't seem to DM you, please check your privacy settings and try again"
+                )
+                return
+            except asyncio.TimeoutError:
+                await msg.edit(
+                    embed=discord.Embed(
+                        title="Report timed out",
+                        description="Oops please try again",
+                        color=0xFF0000,
+                    )
+                )
+                return
+
+        if isinstance(ctx.channel, discord.DMChannel):
+            channel = "User DM"
+        else:
+            channel = ctx.channel.mention
+
+        mod_embed.description = f"**Report description: ** {extras}\n**User: ** {user_id}\n**Message Link: ** [click to jump]({message_link})\n**Channel: ** {channel}"
+
+        mod_channel = self.bot.get_channel(414095428573986816)
+        await mod_channel.send(
+            content=get_active_staff(self.bot),
+            embed=mod_embed,
+            allowed_mentions=discord.AllowedMentions(roles=True, users=True),
+        )
 
     @mod_and_above()
     @commands.command(aliases=["purge", "prune", "clear"])
@@ -500,10 +559,16 @@ class Moderation(commands.Cog):
         failed_mute = False
         for i in members:
             if i.top_role < ctx.author.top_role:
+                member_id = i.id
                 time = (
-                    discord.utils.utcnow() + datetime.timedelta(seconds=tot_time)
+                    datetime.datetime.utcnow() + datetime.timedelta(seconds=tot_time)
+                ).isoformat()
+                route = http.Route(
+                    "PATCH", f"/guilds/414027124836532234/members/{member_id}"
                 )
-                await i.edit(timed_out_until=time)
+                await self.bot.http.request(
+                    route, json={"communication_disabled_until": time}, reason=reason
+                )
 
                 try:
                     await i.send(
@@ -561,7 +626,13 @@ class Moderation(commands.Cog):
             raise commands.BadArgument(message="Provide members to mute")
 
         for i in members:
-            await i.edit(timed_out_until=None)
+            member_id = i.id
+            route = http.Route(
+                "PATCH", f"/guilds/414027124836532234/members/{member_id}"
+            )
+            await self.bot.http.request(
+                route, json={"communication_disabled_until": None}
+            )
 
         await ctx.message.add_reaction("<:kgsYes:955703069516128307>")
         embed = helper.create_embed(
@@ -696,71 +767,84 @@ class Moderation(commands.Cog):
 
     @commands.command(aliases=["unwarn", "removewarn"])
     @mod_and_above()
-    async def delwarn(self, ctx: commands.context, member: discord.Member):      
-        class View(discord.ui.View):
-            def __init__(self, warns):
-                super().__init__(timeout=20)
-                self.delete_warn_idx = -1
-                self.page = 0
-                self.warns = warns
-                self.warn_len = len(warns)
+    async def delwarn(self, ctx: commands.context, member: discord.Member):
+        """Remove warn for a user.\nUsage: delwarn @member/id"""
+        warns = helper.get_warns(member_id=member.id)
 
-                for i in range(5):
-                    disabled=False
-                    if i >= self.warn_len:
-                        disabled = True
-                    self.add_item(Button(label=str(i), disabled=disabled))
+        if warns is None:
+            return await ctx.reply("User has no warns.", delete_after=10)
 
-            @discord.ui.button(label="<", style=discord.ButtonStyle.blurple, row=1)
-            async def back(self, button: discord.ui.Button, interaction: discord.Interaction):
-                self.delete_warn_idx = -1
-                if self.page >= 1:
-                    self.page -= 1
-                else:
-                    self.page = (self.warn_len - 1) // 5
-                await self.write_msg(interaction)
-            @discord.ui.button(label=">", style=discord.ButtonStyle.blurple, row=1)
-            async def forward(self, button: discord.ui.Button, interaction: discord.Interaction):
-                self.delete_warn_idx = -1
-                if self.page < (self.warn_len - 1) // 5:
-                    self.page += 1
-                else:
-                    self.page = 0
-                await self.write_msg(interaction)
-            @discord.ui.button(label="x", style=discord.ButtonStyle.red, row=1)
-            async def exit(self, button: discord.ui.Button, interaction: discord.Interaction):
-                await interaction.message.edit(content="Exited!!!", embed=None, view=None, delete_after=5)
-                self.stop()
-                return
-            @discord.ui.button(label="✓", style=discord.ButtonStyle.green, row=1, disabled=True)
-            async def confirm(self, button: discord.ui.Button, interaction: discord.Interaction):
-                if self.delete_warn_idx != -1:
+        embed = discord.Embed(
+            title=f"Warns for {member.name}",
+            description=f"Showing atmost 5 warns at a time. (Total warns: {len(warns)})",
+            color=discord.Colour.magenta(),
+            timestamp=datetime.datetime.utcnow(),
+        )
 
-                    del self.warns[self.delete_warn_idx]
-                    helper.update_warns(member.id, self.warns)
+        warn_len = len(warns)
+        page = 0
+        start = 0
+        end = start + 5 if start + 5 < warn_len else warn_len
+        delete_warn_idx = -1
 
-                    await interaction.message.edit(
-                        content="Warning deleted successfully.",
-                        embed=None,
-                        view=None,
-                        delete_after=5,
-                    )
-                    self.stop()
-                return
+        for idx, warn in enumerate(warns[start:end]):
+            embed.add_field(
+                name=f"ID: {idx}",
+                value="```{0}\n{1}\n{2}```".format(
+                    "Author: {} ({})".format(warn["author_name"], warn["author_id"]),
+                    "Reason: {}".format(warn["reason"]),
+                    "Date: {}".format(warn["datetime"].replace(microsecond=0)),
+                ),
+                inline=False,
+            )
 
-            async def write_msg(self, interaction):
-                delete_warn_idx = self.delete_warn_idx
-                page = self.page
-                warn_len = self.warn_len
+        msg = await ctx.send(embed=embed)
 
-                embed = discord.Embed(
-                    title=f"Warns for {member.name}",
-                    color=discord.Colour.magenta(),
-                    timestamp=discord.utils.utcnow(),
+        emote_list = [
+            "\u0030\uFE0F\u20E3",
+            "\u0031\uFE0F\u20E3",
+            "\u0032\uFE0F\u20E3",
+            "\u0033\uFE0F\u20E3",
+            "\u0034\uFE0F\u20E3",
+        ]
+        left_arrow = "\u2B05\uFE0F"
+        right_arrow = "\u27A1\uFE0F"
+        cross = "\u274C"
+        yes = "\u2705"
+
+        await msg.add_reaction(left_arrow)
+        for i in emote_list[0 : end - start]:
+            await msg.add_reaction(i)
+        await msg.add_reaction(right_arrow)
+        await msg.add_reaction(cross)
+
+        def check(reaction, user):
+            return user == ctx.author and (
+                str(reaction.emoji) in emote_list
+                or str(reaction.emoji) == right_arrow
+                or str(reaction.emoji) == left_arrow
+                or str(reaction.emoji) == cross
+                or str(reaction.emoji) == yes
+            )
+
+        try:
+            while True:
+                reaction, user = await self.bot.wait_for(
+                    "reaction_add", timeout=30.0, check=check
                 )
 
-                if delete_warn_idx != -1:
-                    embed.description=f"Confirm removal of warn"
+                if str(reaction.emoji) in emote_list:
+                    await msg.clear_reactions()
+
+                    delete_warn_idx = (page * 5) + emote_list.index(str(reaction.emoji))
+
+                    embed = discord.Embed(
+                        title=f"Warns for {member.name}",
+                        description=f"Confirm removal of warn",
+                        color=discord.Colour.magenta(),
+                        timestamp=datetime.datetime.utcnow(),
+                    )
+
                     embed.add_field(
                         name="Delete Warn?",
                         value="```{0}\n{1}\n{2}```".format(
@@ -776,28 +860,49 @@ class Moderation(commands.Cog):
                             ),
                         ),
                     )
-                    for button in self.children:
-                        if button.label == "✓":
-                            button.disabled=False
-                        elif button.row == 0:
-                            button.disabled=True
+
+                    await msg.edit(embed=embed)
+                    await msg.add_reaction(yes)
+                    await msg.add_reaction(cross)
+
+                elif str(reaction.emoji) == yes:
+                    if delete_warn_idx != -1:
+
+                        del warns[delete_warn_idx]
+                        helper.update_warns(member.id, warns)
+
+                        await msg.edit(
+                            content="Warning deleted successfully.",
+                            embed=None,
+                            delete_after=5,
+                        )
+                        break
+
+                elif str(reaction.emoji) == cross:
+                    await msg.edit(content="Exited!!!", embed=None, delete_after=5)
+                    break
+
                 else:
+                    await msg.clear_reactions()
+
+                    if str(reaction.emoji) == left_arrow:
+                        if page >= 1:
+                            page -= 1
+
+                    elif str(reaction.emoji) == right_arrow:
+                        if page < (warn_len - 1) // 5:
+                            page += 1
+
                     start = page * 5
                     end = start + 5 if start + 5 < warn_len else warn_len
 
-                    for button in self.children:
-                        if button.row == 0:
-                            if int(button.label) >= (end - start):
-                                button.disabled=True
-                            else:
-                                button.disabled=False
-                        elif button.label == "✓":
-                            button.disabled=True
-
-                    embed.description=f"Showing atmost 5 warns at a time. (Total warns: {warn_len})"
-                    embed.set_footer(text=f"Page {page+1}/{(warn_len-1)//5+1}")
-
-                    for idx, warn in enumerate(self.warns[start:end]):
+                    embed = discord.Embed(
+                        title=f"Warns for {member.name}",
+                        description=f"Showing atmost 5 warns at a time",
+                        color=discord.Colour.magenta(),
+                        timestamp=datetime.datetime.utcnow(),
+                    )
+                    for idx, warn in enumerate(warns[start:end]):
                         embed.add_field(
                             name=f"ID: {idx}",
                             value="```{0}\n{1}\n{2}```".format(
@@ -812,59 +917,20 @@ class Moderation(commands.Cog):
                             inline=False,
                         )
 
-                await interaction.message.edit(embed=embed, view=view)
+                    await msg.edit(embed=embed)
 
+                    await msg.add_reaction(left_arrow)
+                    for i in emote_list[0 : end - start]:
+                        await msg.add_reaction(i)
+                    await msg.add_reaction(right_arrow)
+                    await msg.add_reaction(cross)
 
-            async def on_timeout(self):
-                await msg.edit(view=None, delete_after=5)
+        except asyncio.TimeoutError:
+            await msg.clear_reactions()
+            await ctx.message.delete(delay=5)
+            return
 
-            async def interaction_check(self, interaction):
-                if interaction.user == ctx.author:
-                    return True
-                else:
-                    await interaction.response.send_message(
-                        "You can't use that", ephemeral=True
-                    )
-
-        class Button(discord.ui.Button):
-            def __init__(self, label, disabled):
-                super().__init__(label=label, style=discord.ButtonStyle.gray, row=0, disabled=disabled)
-
-            async def callback(self, interaction: discord.Interaction):
-                view.delete_warn_idx = int(self.label)
-                await view.write_msg(interaction)
-                return
-
-        warns = helper.get_warns(member_id=member.id)
-        #warns might not get deleted properly, temp fix
-        if warns is None or warns == []:
-            return await ctx.reply("User has no warns.", delete_after=10)
-
-        view = View(warns=warns)
-
-        warn_len = len(warns)
-
-        embed = discord.Embed(
-            title=f"Warns for {member.name}",
-            description=f"Showing atmost 5 warns at a time. (Total warns: {warn_len})",
-            color=discord.Colour.magenta(),
-            timestamp=discord.utils.utcnow(),
-        )
-        embed.set_footer(text=f"Page 1/{(warn_len-1)//5+1}")
-        
-        end = 5 if 5 < warn_len else warn_len
-        
-        for idx, warn in enumerate(warns[0:end]):
-            embed.add_field(
-                name=f"ID: {idx}",
-                value="```{0}\n{1}\n{2}```".format(
-                    "Author: {} ({})".format(warn["author_name"], warn["author_id"]),
-                    "Reason: {}".format(warn["reason"]),
-                    "Date: {}".format(warn["datetime"].replace(microsecond=0)),
-                ),
-                inline=False,
-            )
-        msg = await ctx.send(embed=embed, view=view)
+        await ctx.message.delete(delay=5)
 
     @commands.command(aliases=["infr", "inf", "infraction"])
     @mod_and_above()
@@ -873,48 +939,115 @@ class Moderation(commands.Cog):
         ctx: commands.Context,
         member: typing.Optional[discord.Member] = None,
         mem_id: typing.Optional[int] = None,
+        inf_type: str = None,
     ):
-        """Get Infractions.
-        Usage: infr <@member / member_id> <infraction_type>"""
-        if member is None and mem_id is None:
-            raise commands.BadArgument(
-                message="Provide user.\n`Usage: infr <@member / member_id>`"
-            )
+        """Get Infractions. \nUsage: infr <@member/member_id> <infraction_type>"""
+        try:
 
-        if member is not None:
-            mem_id = member.id
-
-        infs_embed = helper.get_infractions(member_id=mem_id, inf_type="warn")
-
-        async def on_timeout():
-            await msg.edit(view=None)
-
-        async def interaction_check(interaction):
-            if interaction.user == ctx.author:
-                return True
-            else:
-                await interaction.response.send_message(
-                    "You can't use that", ephemeral=True
+            if member is None and mem_id is None:
+                return await ctx.send(
+                    "Provide user.\n`Usage: infr <@member / member_id> <infraction_type>`"
                 )
 
-        class Button(discord.ui.Button):
-            def __init__(self, label, inf_type):
-                super().__init__(label=label)
-                self.inf_type = inf_type
+            if inf_type is not None:
+                if (
+                    inf_type == "w"
+                    or inf_type == "W"
+                    or re.match("warn", inf_type, re.IGNORECASE)
+                ):
+                    inf_type = "warn"
+                elif (
+                    inf_type == "m"
+                    or inf_type == "M"
+                    or re.match("mute", inf_type, re.IGNORECASE)
+                ):
+                    inf_type = "mute"
+                elif (
+                    inf_type == "b"
+                    or inf_type == "B"
+                    or re.match("ban", inf_type, re.IGNORECASE)
+                ):
+                    inf_type = "ban"
+                elif (
+                    inf_type == "k"
+                    or inf_type == "K"
+                    or re.match("kick", inf_type, re.IGNORECASE)
+                ):
+                    inf_type = "kick"
 
-            async def callback(self, interaction):
-                inf_type = self.inf_type
-                infs_embed = helper.get_infractions(member_id=mem_id, inf_type=inf_type)
-                await msg.edit(embed=infs_embed)
+            else:
+                inf_type = "warn"
 
-        view = discord.ui.View(timeout=20.0)
-        view.add_item(Button(label="Warns", inf_type="warn"))
-        view.add_item(Button(label="Mutes", inf_type="mute"))
-        view.add_item(Button(label="Bans", inf_type="ban"))
-        view.add_item(Button(label="Kicks", inf_type="kick"))
-        view.on_timeout = on_timeout
-        view.interaction_check = interaction_check
-        msg = await ctx.send(embed=infs_embed, view=view)
+            if member is not None:
+                mem_id = member.id
+
+            infs_embed = helper.get_infractions(member_id=mem_id, inf_type=inf_type)
+
+            msg = None
+            msg = await ctx.send(embed=infs_embed)
+            await msg.add_reaction("\U0001F1FC")
+            await msg.add_reaction("\U0001F1F2")
+            await msg.add_reaction("\U0001F1E7")
+            await msg.add_reaction("\U0001F1F0")
+
+            while True:
+                try:
+                    reaction, user = await self.bot.wait_for(
+                        "reaction_add",
+                        check=lambda reaction, user: user == ctx.author
+                        and reaction.emoji
+                        in [
+                            "\U0001F1FC",
+                            "\U0001F1F2",
+                            "\U0001F1E7",
+                            "\U0001F1F0",
+                        ],
+                        timeout=20.0,
+                    )
+
+                except asyncio.exceptions.TimeoutError:
+                    if msg:
+                        await msg.clear_reactions()
+                    break
+
+                else:
+                    em = reaction.emoji
+                    if em == "\U0001F1FC":
+                        inf_type = "warn"
+                        infs_embed = helper.get_infractions(
+                            member_id=mem_id, inf_type=inf_type
+                        )
+                        await msg.edit(embed=infs_embed)
+                        await msg.remove_reaction(emoji=em, member=user)
+
+                    elif em == "\U0001F1F2":
+                        inf_type = "mute"
+                        infs_embed = helper.get_infractions(
+                            member_id=mem_id, inf_type=inf_type
+                        )
+                        await msg.edit(embed=infs_embed)
+                        await msg.remove_reaction(emoji=em, member=user)
+
+                    elif em == "\U0001F1E7":
+                        inf_type = "ban"
+                        infs_embed = helper.get_infractions(
+                            member_id=mem_id, inf_type=inf_type
+                        )
+                        await msg.edit(embed=infs_embed)
+                        await msg.remove_reaction(emoji=em, member=user)
+
+                    elif em == "\U0001F1F0":
+                        inf_type = "kick"
+                        infs_embed = helper.get_infractions(
+                            member_id=mem_id, inf_type=inf_type
+                        )
+                        await msg.edit(embed=infs_embed)
+                        await msg.remove_reaction(emoji=em, member=user)
+
+        except asyncio.exceptions.TimeoutError:
+            await ctx.send("Embed Timed Out.", delete_after=3.0)
+            if msg:
+                await msg.clear_reactions()
 
     @commands.command(aliases=["dinfr", "inf_details", "infr_details", "details"])
     @mod_and_above()
@@ -958,7 +1091,7 @@ class Moderation(commands.Cog):
                 title=f"Detailed infraction for {user.name} ({user.id}) ",
                 description=f"**Infraction Type:** {infr_type}",
                 color=discord.Color.green(),
-                timestamp=discord.utils.utcnow(),
+                timestamp=datetime.datetime.utcnow(),
             )
             embed.add_field(
                 name=f"Author", value=f"<@{result['author_id']}>", inline=False
@@ -1120,5 +1253,5 @@ class Moderation(commands.Cog):
             await ctx.send(f"{member.name} is not blacklisted from {command.name}")
 
 
-async def setup(bot):
-    await bot.add_cog(Moderation(bot))
+def setup(bot):
+    bot.add_cog(Moderation(bot))

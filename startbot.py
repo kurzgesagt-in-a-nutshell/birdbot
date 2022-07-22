@@ -2,7 +2,6 @@ import logging
 import os
 import dotenv
 import argparse
-import asyncio
 
 from birdbot import BirdBot
 from birdbot import setup
@@ -29,14 +28,14 @@ def is_member_whitelisted(ctx) -> bool:
     return ctx.author.id not in cmd["blacklisted_users"]
 
 
-async def main():
+def main():
     with setup():
 
         logger = logging.getLogger("Startbot")
         dotenv.load_dotenv()
         args = parser.parse_args()
         bot = BirdBot.from_parseargs(args)
-        await bot.load_extensions(args)
+        bot.load_extensions(args)
         bot.add_check(is_member_whitelisted)
         if args.beta:
             token = os.environ.get("BETA_BOT_TOKEN")
@@ -44,9 +43,8 @@ async def main():
             token = os.environ.get("ALPHA_BOT_TOKEN")
         else:
             token = os.environ.get("MAIN_BOT_TOKEN")
-        async with bot:
-            await bot.start(token, reconnect=True)
+        bot.run(token, reconnect=True)
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    main()

@@ -73,7 +73,8 @@ class Giveaway(commands.Cog):
             self.logger.debug("Fetching reactions from users")
             for reaction in message.reactions:
                 if reaction.emoji == "🎉":
-                    userids = [user.id async for user in reaction.users() if user.id != self.bot.user.id]
+                    users = await reaction.users().flatten()
+                    userids = [user.id for user in users if user.id != self.bot.user.id]
                     users = []
                     for userid in userids:
                         try:
@@ -385,5 +386,5 @@ class Giveaway(commands.Cog):
         await ctx.message.add_reaction("<:kgsYes:955703069516128307>")
 
 
-async def setup(bot):
-    await bot.add_cog(Giveaway(bot))
+def setup(bot):
+    bot.add_cog(Giveaway(bot))

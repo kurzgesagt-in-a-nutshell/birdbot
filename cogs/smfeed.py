@@ -55,5 +55,5 @@ class Smfeed(commands.Cog):
                                 break
 
 
-async def setup(bot):
-    await bot.add_cog(Smfeed(bot))
+def setup(bot):
+    bot.add_cog(Smfeed(bot))
