@@ -130,5 +130,5 @@ class Antiraid(commands.Cog):
                 BirdBot.currently_raided = False
 
 
-def setup(bot):
-    bot.add_cog(Antiraid(bot))
+async def setup(bot):
+    await bot.add_cog(Antiraid(bot))
