@@ -266,7 +266,8 @@ class Moderation(commands.Cog):
         logging_channel = discord.utils.get(ctx.guild.channels, id=self.logging_channel)
 
         if ctx.guild.get_member(member) != None:
-            member = ctx.guild.get_member(member)
+            await ctx.send("User already exists in the server, use the regular ban command.")
+            return
         else:
             member = discord.Object(member)
 
