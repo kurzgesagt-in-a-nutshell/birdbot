@@ -346,7 +346,6 @@ class Filter(commands.Cog):
             and message.channel.id != 414179142020366336  # bot testing
         ):
             return
-
         if message.content == "":
             return
 
@@ -405,7 +404,16 @@ class Filter(commands.Cog):
     async def moderate(self, message):
 
         if self.is_member_excluded(message.author):
-            return
+            if message.author.id == 406877119088558122:
+                wordlist = self.get_word_list(message)
+                event = await self.check_message(message, wordlist)
+                if event[1] == "bypass":
+                    await message.channel.send("https://tenor.com/view/chuck-testa-nope-deer-gif-12031261")
+                    await message.delete()
+                    return
+                return
+            else:
+                return
 
         wordlist = self.get_word_list(message)
         event = await self.check_message(message, wordlist)
@@ -667,13 +675,15 @@ class Filter(commands.Cog):
             filetypes = ["mp4", "gif", "webm", "gifv"]
 
             # general, bot-testing and humanities
-            if not message.channel.id in (
+            if message.channel.id not in (
                 414027124836532236,
                 414179142020366336,
                 546315063745839115,
             ):
                 return
-            print(message.embeds)
+            for f in filetypes:
+                if "/." + f in message.content:
+                    return True
 
             if message.embeds:
                 for e in message.embeds:
