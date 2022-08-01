@@ -404,16 +404,7 @@ class Filter(commands.Cog):
     async def moderate(self, message):
 
         if self.is_member_excluded(message.author):
-            if message.author.id == 406877119088558122:
-                wordlist = self.get_word_list(message)
-                event = await self.check_message(message, wordlist)
-                if event[1] == "bypass":
-                    await message.channel.send("https://tenor.com/view/chuck-testa-nope-deer-gif-12031261")
-                    await message.delete()
-                    return
-                return
-            else:
-                return
+            return
 
         wordlist = self.get_word_list(message)
         event = await self.check_message(message, wordlist)
