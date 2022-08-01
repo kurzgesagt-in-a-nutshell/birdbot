@@ -81,6 +81,7 @@ class BirdBot(commands.AutoShardedBot):
                 424843380342784011,  # Oeav
                 248790213386567680,  # Austin
                 183092910495891467,  # Sloth
+                229779964898181120,  # Source
             }
             activity = discord.Activity(
                 type=discord.ActivityType.watching, name="for bugs"
@@ -92,6 +93,7 @@ class BirdBot(commands.AutoShardedBot):
                 424843380342784011,  # Oeav
                 248790213386567680,  # Austin
                 183092910495891467,  # Sloth
+                229779964898181120,  # Source
             }
             activity = discord.Activity(
                 type=discord.ActivityType.playing, name="imagine being a beta"
