@@ -682,7 +682,7 @@ class Filter(commands.Cog):
             ):
                 return
             for f in filetypes:
-                if "/." + f in message.content:
+                if "." + f in message.content:
                     return True
 
             if message.embeds:
