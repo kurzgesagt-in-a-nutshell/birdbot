@@ -25,6 +25,12 @@ class Misc(commands.Cog):
         self.bot = bot
         self.intro_db = self.bot.db.StaffIntros
         self.kgs_guild = None
+        self.role_precendence = (
+            915629257470906369,
+            414029841101225985,
+            414092550031278091,
+            681812574026727471,
+        )
         with open("config.json", "r") as f:
             self.config = json.load(f)
 
@@ -88,6 +94,23 @@ class Misc(commands.Cog):
         embed.set_thumbnail(url=bird_icon)
         return embed
 
+    async def reorder_intros(self, role, intro_channel) -> tuple:
+        """Deletes intros that are before role_id and returns list of tuples of the form
+        (mongodb.document, discord.Embed)"""
+        embeds = []
+        async for message in intro_channel.history():
+            if not message.embeds:
+                break
+
+            if message.embeds[0].footer.text == role.name:
+                break
+
+            doc = self.intro_db.find_one({"message_id": message.id})
+            embeds.append((doc, message.embeds[0]))
+            await message.delete()
+
+        return embeds
+
     @role_and_above(681812574026727471)  # subreddit mods and above | exludes trainees
     @commands.group(hidden=True)
     async def intro(self, ctx):
@@ -122,9 +145,14 @@ class Misc(commands.Cog):
                 "Neat bio. Now give me the image link for your personal bird. The image should be fully transparent"
             )
             img = await self.bot.wait_for("message", check=check, timeout=240)
+            if not img.content.startswith("http"):  # dont wanna use regex
+                await ctx.send(
+                    "That does not appear to be a valid link. Please run the command again"
+                )
+                return
         except asyncio.TimeoutError:
             await ctx.send(
-                "You took too long to respond :(\n Please run the command again"
+                "You took too long to respond :(\nPlease run the command again"
             )
             return
         else:
@@ -133,6 +161,10 @@ class Misc(commands.Cog):
             )
             intro_channel = self.kgs_guild.get_channel(
                 self.config["logging"]["intro_channel"]
+            )
+
+            embeds_to_add = await self.reorder_intros(
+                ctx.author.top_role, intro_channel
             )
             msg = await intro_channel.send(embed=embed)
             self.intro_db.insert_one(
@@ -143,6 +175,14 @@ class Misc(commands.Cog):
                     "message_id": msg.id,
                 }
             )
+
+            if embeds_to_add:
+                for doc, embed in embeds_to_add:
+                    msg = await intro_channel.send(embed=embed)
+                    self.intro_db.update_one(
+                        {"_id": doc["_id"]}, {"$set": {"message_id": msg.id}}
+                    )
+
             await ctx.send("Success.")
 
     @intro.command()
