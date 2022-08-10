@@ -97,9 +97,7 @@ class Filter(commands.Cog):
         """
 
         if word in self.white_list:
-            raise commands.BadArgument(
-                message=f"`{word}` already exists in whitelist.", delete_after=6
-            )
+            raise commands.BadArgument(message=f"`{word}` already exists in whitelist.")
 
         self.bot.db.filterlist.update_one(
             {"name": "whitelist"}, {"$push": {"filter": word}}
@@ -117,9 +115,7 @@ class Filter(commands.Cog):
         """
 
         if word not in self.white_list:
-            raise commands.BadArgument(
-                message=f"`{word}` doesn't exist in whitelist.", delete_after=6
-            )
+            raise commands.BadArgument(message=f"`{word}` doesn't exist in whitelist.")
 
         self.bot.db.filterlist.update_one(
             {"name": "whitelist"}, {"$pull": {"filter": word}}
@@ -341,6 +337,7 @@ class Filter(commands.Cog):
 
     @commands.Cog.listener()
     async def on_message(self, message):
+
         if (
             message.channel.category.id == 414095379156434945  # mod category
             and message.channel.id != 414179142020366336  # bot testing
