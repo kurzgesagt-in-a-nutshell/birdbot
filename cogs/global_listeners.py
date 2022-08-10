@@ -389,14 +389,10 @@ class GuildChores(commands.Cog):
             return
 
         # temp fix to remove clonex bots and Apàche guy
-        if (
-            "clonex" in str(member.name).lower()
-            or "apà" in str(member.name).lower()
-            or "apa" in str(member.name).lower()
-        ):
+        if "clonex" in str(member.name).lower() or "Apà" in str(member.name).lower():
             guild = discord.utils.get(self.bot.guilds, id=414027124836532234)
             await member.send(
-                "The account with this name is trolling, if you are falsly kicked please DM FormulaCoin#6808"
+                "This account is trolling, if you are falsly kicked please DM FormulaCoin#6808"
             )
             await guild.kick(member)
             return
