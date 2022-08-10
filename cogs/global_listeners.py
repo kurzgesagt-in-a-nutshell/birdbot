@@ -180,15 +180,6 @@ class GuildLogger(commands.Cog):
         if self.bot.user.id != 471705718957801483:
             return
 
-        # remind mods to screenshot milestone
-        if len(member.guild.members) == 69410:
-
-            mod_channel = self.bot.get_channel(414095428573986816)
-            await mod_channel.send(
-                "<@&414092550031278091> <@&905510680763969536> We are ten members away for 69420!! Someone get the screenshot",
-                allowed_mentions=discord.AllowedMentions(roles=True),
-            )
-
         embed = discord.Embed(
             title="Member joined",
             description=f"{member.name}#{member.discriminator} ({member.id}) {member.mention}",
@@ -397,9 +388,16 @@ class GuildChores(commands.Cog):
         if self.bot.user.id != 471705718957801483:
             return
 
-        # temp fix to remove clonex bots
-        if "clonex" in str(member.name).lower():
+        # temp fix to remove clonex bots and Apàche guy
+        if (
+            "clonex" in str(member.name).lower()
+            or "apà" in str(member.name).lower()
+            or "apa" in str(member.name).lower()
+        ):
             guild = discord.utils.get(self.bot.guilds, id=414027124836532234)
+            await member.send(
+                "The account with this name is trolling, if you are falsly kicked please DM FormulaCoin#6808"
+            )
             await guild.kick(member)
             return
 
