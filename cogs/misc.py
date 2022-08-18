@@ -1,6 +1,8 @@
 import logging
 import asyncio
 import json
+import re
+
 import discord
 import pymongo
 
@@ -8,7 +10,8 @@ import pymongo
 # import pandas as pd
 from discord.ext import commands
 
-from utils.helper import role_and_above
+from utils.helper import role_and_above, bot_commands_only
+
 
 # Mongo schema to store intros
 # {
@@ -266,6 +269,25 @@ class Misc(commands.Cog):
                 )
             except pymongo.errors.DuplicateKeyError:
                 pass
+
+    @bot_commands_only()
+    @commands.command(aliases = ["bg", "bigemoji", "bigemote"])
+    async def big_emote(self, ctx, *args):
+        emojis = []
+        if len(args) > 5:
+            ctx.send("No more than 5 emojis at a time")
+        print(args)
+        for item in args:
+            if re.match(r"<a:\w+:(\d{17,19})>", str(item)):
+                emojis.append(re.findall(r"<a:\w+:(\d{17,19})>", str(item))[0] + ".gif")
+            elif re.match(r"<:\w+:(\d{17,19})>", str(item)):
+                emojis.append(re.findall(r"<:\w+:(\d{17,19})>", str(item))[0] + ".png")
+        print(emojis)
+        if len(emojis) == 0:
+            await ctx.send("Please send an emoji that is not a default emoji")
+        else:
+            for e in emojis:
+                await ctx.send("https://cdn.discordapp.com/emojis/" + str(e))
 
 
 def setup(bot):
