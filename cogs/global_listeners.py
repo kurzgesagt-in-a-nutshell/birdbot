@@ -1,5 +1,7 @@
 import io
 import asyncio
+import requests
+from requests.models import PreparedRequest
 import json
 import aiohttp
 import logging
@@ -23,6 +25,49 @@ from utils.helper import (
     create_user_infraction,
     is_internal_command,
 )
+
+
+async def translate_bannsystem(message: discord.Message):
+    """Translate incoming bannsystem reports"""
+    if not (
+        message.channel.id == 1009138597221372044  # bannsystem channel
+        and message.author.id == 697374082509045800  # bannsystem bot
+    ):
+        return
+
+    embed = message.embeds[0].to_dict()
+    to_translate = sum(
+        [[embed["description"]], [field["value"] for field in embed["fields"]]], []
+    )  # flatten without numpy
+
+    embed["fields"][0]["name"] = "Reason"
+    embed["fields"][1]["name"] = "Proof"
+
+    url = "https://translate.birdbot.xyz/translate?"
+
+    #TODO add keys in the future
+    payload = {
+        "q": " ### ".join(to_translate),
+        "target": "en",
+        "source": "de",
+        "format": "text",
+    }
+
+    req = PreparedRequest()
+    req.prepare_url(url, payload)
+    response = requests.request("POST", req.url, verify=False).json()
+    replace_str = response["translatedText"].split(" ### ")
+    embed["description"] = replace_str[0]
+    embed["fields"][0]["value"] = replace_str[1]
+    embed["fields"][1]["value"] = replace_str[2]
+    to_send = discord.Embed.from_dict(embed)
+
+    translated_msg = await message.channel.send(embed=to_send)
+
+    await translated_msg.add_reaction("<:kgsYes:955703069516128307>")
+    await translated_msg.add_reaction("<:kgsNo:955703108565098496>")
+    # await message.delete()
+
 
 # janky fix for server memories, will make permanent once out of experimentation
 async def check_server_memories(message):
@@ -318,6 +363,7 @@ class GuildChores(commands.Cog):
         """Remind mods to use correct prefix, alert mod pings etc"""
 
         await check_server_memories(message)
+        await translate_bannsystem(message)
         if any(
             x in message.raw_role_mentions
             for x in [414092550031278091, 905510680763969536]
@@ -434,6 +480,12 @@ class GuildChores(commands.Cog):
                     avatar_url=random.choice(self.pfp_list),
                     allowed_mentions=discord.AllowedMentions(users=True, roles=True),
                 )
+
+    @commands.command()
+    async def translate(self, ctx, msg_id):
+        msg = await ctx.channel.fetch_message(msg_id)
+        embed = await translate_bannsystem(msg)
+        # await ctx.send(embed=embed)
 
     @patreon_only()
     @commands.command()

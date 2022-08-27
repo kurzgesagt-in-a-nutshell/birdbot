@@ -271,7 +271,7 @@ class Misc(commands.Cog):
                 pass
 
     @bot_commands_only()
-    @commands.command(aliases = ["bg", "bigemoji", "bigemote"])
+    @commands.command(aliases=["bg", "bigemoji", "bigemote"])
     async def big_emote(self, ctx, *args):
         emojis = []
         if len(args) > 5:
@@ -288,6 +288,32 @@ class Misc(commands.Cog):
         else:
             for e in emojis:
                 await ctx.send("https://cdn.discordapp.com/emojis/" + str(e))
+
+    @commands.Cog.listener()
+    async def on_reaction_add(self, reaction, user):
+        """
+        Provide mods with command to forceban users instead of self banning because I dont want to rework the entire command
+        """
+        if (
+            user.bot or reaction.message.channel.id != 1009138597221372044
+        ):  # bannsystem channel
+            return
+        embed = reaction.message.embeds[0]
+
+        if embed.footer.text.startswith(
+            "Report-"
+        ):  # TODO account for multireports with interactions
+
+            if reaction.emoji.id == 955703069516128307:  # kgsYes
+                reported_user = re.findall(
+                    r"[0-9]{11,}", reaction.message.embeds[0].description
+                )[1]
+                await reaction.message.channel.send(
+                    "Copy the command below to ban the user from the server:\n"
+                    f"```!fban {reported_user} {embed.fields[0].value} "
+                    f"|| bannsystem ID: {embed.footer.text.split()[1]}```",
+                    delete_after=15,
+                )
 
 
 def setup(bot):
