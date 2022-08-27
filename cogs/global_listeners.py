@@ -66,7 +66,7 @@ async def translate_bannsystem(message: discord.Message):
 
     await translated_msg.add_reaction("<:kgsYes:955703069516128307>")
     await translated_msg.add_reaction("<:kgsNo:955703108565098496>")
-    # await message.delete()
+    await message.delete()
 
 
 # janky fix for server memories, will make permanent once out of experimentation
