@@ -307,7 +307,7 @@ class Misc(commands.Cog):
             if reaction.emoji.id == 955703069516128307:  # kgsYes
                 reported_user = re.findall(
                     r"[0-9]{11,}", reaction.message.embeds[0].description
-                )[1]
+                )[0]
                 await reaction.message.channel.send(
                     "Copy the command below to ban the user from the server:\n"
                     f"```!fban {reported_user} {embed.fields[0].value} "
