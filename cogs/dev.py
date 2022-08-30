@@ -243,6 +243,7 @@ class Dev(commands.Cog):
     @devs_only()
     async def sync_apps(self, ctx: commands.Context):
 
+        await ctx.bot.tree.sync()
         synced = await ctx.bot.tree.sync(guild=discord.Object(414027124836532234))
         self.logger.debug(synced)
         
