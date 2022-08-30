@@ -190,26 +190,27 @@ class Moderation(commands.Cog):
         reason:str
     ):
         """Bans a member"""
-        
-        if member:=await interaction.guild.fetch_member(user.id) is not None:
+
+        try:
+            # fetch_member throws not_found error if not found
+            member = await interaction.guild.fetch_member(user.id)
             if member.top_role >= interaction.user.top_role:
-            
                 raise app_errors.InvalidAuthorizationError(
                     "user could not be banned due to your clearance"
                 )
 
-            try:
-                await member.send(
-                    f"You have been permanently removed from the server for reason: {reason}"
-                )
-            except discord.Forbidden:
-                pass
+            await member.send(
+                f"You have been permanently removed from the server for reason: {reason}"
+            )
+        except discord.NotFound:
+            pass
+
         
-        await member.ban(reason=reason)
+        await interaction.guild.ban(user=user, reason=reason)
 
         helper.create_infraction(
             author=interaction.user,
-            users=[member],
+            users=[user],
             action="ban",
             reason=reason,
             inf_level=inf_level,
@@ -220,7 +221,7 @@ class Moderation(commands.Cog):
         embed = helper.create_embed(
             author=interaction.user,
             action="Banned user(s)",
-            users=[member],
+            users=[user],
             reason=reason,
             color=discord.Color.dark_red(),
             inf_level=inf_level,
