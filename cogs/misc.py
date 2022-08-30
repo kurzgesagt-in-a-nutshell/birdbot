@@ -147,6 +147,11 @@ class Misc(commands.Cog):
                 "Neat bio. Now give me the image link for your personal bird. The image should be fully transparent"
             )
             img = await self.bot.wait_for("message", check=check, timeout=240)
+            if not img.content.startswith("http"):  # dont wanna use regex
+                await ctx.send(
+                    "That does not appear to be a valid link. Please run the command again"
+                )
+                return
         except asyncio.TimeoutError:
             await ctx.send(
                 "You took too long to respond :(\nPlease run the command again"
