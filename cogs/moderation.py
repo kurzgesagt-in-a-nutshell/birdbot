@@ -972,7 +972,7 @@ class Moderation(commands.Cog):
     ):
         """Add or remove slowmode in a channel"""
 
-        seconds, _ = helper.calc_time(time)
+        seconds, _ = helper.calc_time([time, ""])
 
         if seconds is None:
             seconds = 0
@@ -980,7 +980,7 @@ class Moderation(commands.Cog):
         if seconds > 21600:
             await interaction.response.send_message(
                 "Slowmode can't be over 6 hours",
-                ephemeral=True
+                ephemeral=is_public_channel(interaction.channel)
             )
             return
 
