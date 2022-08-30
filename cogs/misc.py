@@ -1,9 +1,9 @@
 import logging
 import asyncio
 import json
+import discord
 import re
 
-import discord
 import pymongo
 
 # Do not import panda for VM.
@@ -11,7 +11,6 @@ import pymongo
 from discord.ext import commands
 
 from utils.helper import role_and_above, bot_commands_only
-
 
 # Mongo schema to store intros
 # {
@@ -148,11 +147,6 @@ class Misc(commands.Cog):
                 "Neat bio. Now give me the image link for your personal bird. The image should be fully transparent"
             )
             img = await self.bot.wait_for("message", check=check, timeout=240)
-            if not img.content.startswith("http"):  # dont wanna use regex
-                await ctx.send(
-                    "That does not appear to be a valid link. Please run the command again"
-                )
-                return
         except asyncio.TimeoutError:
             await ctx.send(
                 "You took too long to respond :(\nPlease run the command again"
@@ -316,5 +310,5 @@ class Misc(commands.Cog):
                 )
 
 
-def setup(bot):
-    bot.add_cog(Misc(bot))
+async def setup(bot):
+    await bot.add_cog(Misc(bot))

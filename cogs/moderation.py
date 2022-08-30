@@ -12,7 +12,7 @@ from discord.channel import DMChannel
 
 
 from utils import custom_converters
-from utils import helper
+from utils import helper, app_checks, app_errors
 from utils.helper import (
     append_infraction,
     bot_commands_only,
@@ -23,10 +23,12 @@ from utils.helper import (
     get_active_staff,
     blacklist_member,
     whitelist_member,
+    is_public_channel
 )
 
 import discord
 from discord.ext import commands, tasks
+from discord import app_commands
 
 
 class Moderation(commands.Cog):
@@ -49,463 +51,323 @@ class Moderation(commands.Cog):
     async def on_ready(self):
         self.logger.info("loaded Moderation")
 
-    @commands.command()
+    # TODO OPEN THIS COMMAND FOR REGULAR USERS AND ENABLE ACTIVE MOD PING
+    @app_commands.command()
+    @app_commands.guilds(414027124836532234)
+    @app_checks.devs_only()
     async def report(
-        self,
-        ctx,
-        user_id: str = None,
-        message_link: str = None,
-        *,
-        extras: str = None,
-    ):
-        """Report an issue to the authorites. Use this command in the bots DMs\n Usage: report\nreport <user_ID> <message_link> <description_of_issue>"""
+        self, 
+        interaction: discord.Interaction, 
+        member: typing.Optional[discord.Member]
+    ):  
+        """
+        This command is currently locked please use `!report` to report an incident
+        """
+        
+        class Modal(discord.ui.Modal):
+            def __init__(self, member):
+                super().__init__(title="Report")
+                self.member = member
 
-        if message_link and not message_link.startswith("http"):
-            if extras:
-                extras = f"{message_link} {extras}"
-            else:
-                extras = f"{message_link}"
-
-        mod_embed = discord.Embed(title="New Report", color=0x00FF00)
-        mod_embed.set_author(name=ctx.author.name, icon_url=ctx.author.avatar_url)
-
-        def check(msg):
-            return msg.author == ctx.author and isinstance(
-                msg.channel, discord.DMChannel
+            text = discord.ui.TextInput(
+                label="Briefly describe your issue",
+                style=discord.TextStyle.long,
+            )
+            message = discord.ui.TextInput(
+                label="Message link",
+                style=discord.TextStyle.short,
+                placeholder="https://discord.com/channels/414027124836532234/414268041787080708/937750299165208607",
+                required=False,
             )
 
-        if user_id is None:
-            try:
-                msg = await ctx.author.send(
-                    embed=discord.Embed(
-                        title="Thanks for reaching out!",
-                        description="Briefly describe your issue",
-                        color=0xFF69B4,
-                    )
-                )
-                report_desc = await self.bot.wait_for(
-                    "message", timeout=120, check=check
-                )
-                extras = report_desc.content
+            async def on_submit(self, interaction):
+                description = self.children[0].value
+                message_link = self.children[1].value
 
-                await msg.edit(
-                    embed=discord.Embed(
-                        title="Report description noted!",
-                        description='If you have a [User ID](https://support.discord.com/hc/en-us/articles/206346498-Where-can-I-find-my-User-Server-Message-ID-) for the person you\'re reporting against please enter them, else type "no"',
-                    )
+                mod_embed = discord.Embed(
+                    title="New Report", 
+                    color=0x00FF00,
+                    description=f"""
+                    **Report description:** {description}
+                    **User:** {self.member}
+                    **Message Link:** [click to jump]({message_link})
+                    """
                 )
-                user_id_desc = await self.bot.wait_for(
-                    "message", timeout=120, check=check
-                )
-                if not "no" in user_id_desc.content.lower():
-                    report_user = self.bot.get_user(int(user_id_desc.content))
-                    if report_user is not None:
-                        user_id = f"({user_id_desc.content}) {report_user.name}"
-
-                await msg.edit(
-                    embed=discord.Embed(
-                        title="Got it!",
-                        description='Finally do you happen to have a message link? type "no" if not',
-                    )
+                mod_embed.set_author(
+                    name=f"{interaction.user.name} ({interaction.user.id})", 
+                    icon_url=interaction.user.display_avatar.url
                 )
 
-                link_desc = await self.bot.wait_for("message", timeout=120, check=check)
-                if not "no" in link_desc.content.lower():
-                    message_link = link_desc.content
+                mod_channel = interaction.guild.get_channel(414095428573986816)
+                await mod_channel.send(embed=mod_embed)
 
-                await msg.edit(
-                    embed=discord.Embed(
-                        title="Report Successful!",
-                        description="Your report has been sent to the proper authorities.",
-                        color=0x00FF00,
-                    )
+                await interaction.response.send_message(
+                    "Report has been sent!", ephemeral=True
                 )
 
-            except discord.Forbidden:
-                await ctx.send(
-                    "I can't seem to DM you, please check your privacy settings and try again"
-                )
-                return
-            except asyncio.TimeoutError:
-                await msg.edit(
-                    embed=discord.Embed(
-                        title="Report timed out",
-                        description="Oops please try again",
-                        color=0xFF0000,
-                    )
-                )
-                return
+        await interaction.response.send_modal(Modal(member=member))
 
-        if isinstance(ctx.channel, discord.DMChannel):
-            channel = "User DM"
-        else:
-            channel = ctx.channel.mention
-
-        mod_embed.description = f"**Report description: ** {extras}\n**User: ** {user_id}\n**Message Link: ** [click to jump]({message_link})\n**Channel: ** {channel}"
-
-        mod_channel = self.bot.get_channel(414095428573986816)
-        await mod_channel.send(
-            content=get_active_staff(self.bot),
-            embed=mod_embed,
-            allowed_mentions=discord.AllowedMentions(roles=True, users=True),
-        )
-
-    @mod_and_above()
-    @commands.command(aliases=["purge", "prune", "clear"])
-    async def clean(
+    @app_commands.command(name="clean")
+    @app_commands.guilds(414027124836532234)
+    @app_checks.mod_and_above()
+    @app_commands.rename(_from="from")
+    async def _clean(
         self,
-        ctx: commands.Context,
-        member: commands.Greedy[discord.Member] = None,
-        msg_count: int = None,
-        channel: discord.TextChannel = None,
+        interaction: discord.Interaction,
+        limit: app_commands.Range[int, 1, 100],
+        _from: typing.Optional[discord.User], 
+        channel: typing.Union[discord.TextChannel, discord.Thread, None] = None
     ):
-        """Clean messages. \nUsage: clean <@member(s)/id(s)> number_of_messages <#channel>"""
-        messsage_count = msg_count  # used to display number of messages deleted
-        if msg_count is None:
-            return await ctx.send(
-                f"**Usage:** `clean <@member(s)/ id(s)> number_of_messages <#channel>`"
-            )
+        """Cleans messages with certain parameters"""
 
-        if msg_count > 200:
-            return await ctx.send(f"Provided number is too big. (Max limit 100)")
+        if channel is None: 
+            channel = interaction.channel
 
-        if msg_count <= 0:
-            return await ctx.channel.purge(limit=1)
-
-        if channel is None:
-            channel = ctx.channel
-
-        # check if message sent is by a user who is in command argument
-        def check(m):
-            if m.author in member:
-                nonlocal messsage_count
-                messsage_count -= 1
-                if messsage_count >= 0:
-                    return True
+        def check(message):
+            if _from is not None and _from.id == message.author.id:
+                return True
             return False
 
-        if not member:
-            deleted_messages = await channel.purge(limit=msg_count + 1)
-        else:
-            deleted_messages = await channel.purge(limit=150, check=check)
-
-        await ctx.send(
-            f"Deleted {len(deleted_messages) - 1} message(s)", delete_after=3.0
+        deleted_messages = await channel.purge(
+            limit=limit, 
+            check=check,
+            bulk=limit!=1 # if count is 1 then dont bulk delete
         )
+
+        deleted_count = len(deleted_messages)
+
+        await interaction.response.send_message(
+            f"deleted {deleted_count} messages{'s' if deleted_count > 1 else ''}",
+            ephemeral=True
+        )
+
+        # no need to manually log a single delete
+        if limit == 1: return
+
+        # format the log
+        row_format = lambda x: "{author:<70} | {datetime:<20} | {content}".format(**x)
+
+        message_log = [row_format({
+            "author":"Author (ID)",
+            "datetime": "Message Creation Time (UTC)",
+            "content": "Content"
+        })]
+
+        # TODO save attachments and upload to logging channel
+        for m in deleted_messages:
+            author = f"{m.author.name}#{m.author.discriminator} ({m.author.id})"
+            
+            content = m.content
+            if m.attachments and len(m.attachments) > 0:
+                attachments = "; ".join(f.filename for f in m.attachments)
+                content = f"Attachments Included: {attachments}; {content}"
+            
+            message_log.append(row_format({
+                "author": author,
+                "datetime": f"{m.created_at.replace(microsecond=0)}",
+                "content": content
+            }))
 
         message_logging_channel = discord.utils.get(
-            ctx.guild.channels, id=self.message_logging_channel
+            interaction.guild.channels, id=self.message_logging_channel
         )
 
-        if msg_count == 1:
-
-            embed = helper.create_embed(
-                author=ctx.author,
-                action="1 message deleted",
-                users=None,
-                extra=f"""Message Content: {deleted_messages[-1].content} 
-                                              \nSender: {deleted_messages[-1].author.mention} 
-                                              \nTime: {deleted_messages[-1].created_at.replace(microsecond=0)} 
-                                              \nID: {deleted_messages[-1].id} 
-                                              \nChannel: {channel.mention}""",
-                color=discord.Color.green(),
+        await message_logging_channel.send(
+            f"{len(deleted_messages)} messages deleted in {channel.mention}",
+            file=discord.File(
+                io.BytesIO("\n".join(message_log).encode()),
+                filename=f"clean_content_{interaction.id}.txt",
             )
+        )
 
-            await message_logging_channel.send(embed=embed)
-
-        else:
-            # formatting string to be sent as file for logging
-            log_str = (
-                "Author (ID)".ljust(70)
-                + " | "
-                + "Message Creation Time (UTC)".ljust(30)
-                + " | "
-                + "Content"
-                + "\n\n"
-            )
-
-            for msg in deleted_messages:
-                author = f"{msg.author.name}#{msg.author.discriminator} ({msg.author.id})".ljust(
-                    70
+    @app_commands.command(name="ban")
+    @app_commands.guilds(414027124836532234)
+    @app_commands.default_permissions(manage_messages=True)
+    @app_checks.mod_and_above()
+    async def _ban(
+        self, 
+        interaction: discord.Interaction,
+        inf_level:app_commands.Range[int, 1, 5],
+        user: discord.User,
+        reason:str
+    ):
+        """Bans a member"""
+        
+        if member:=await interaction.guild.fetch_member(user.id) is not None:
+            if member.top_role >= interaction.user.top_role:
+            
+                raise app_errors.InvalidAuthorizationError(
+                    "user could not be banned due to your clearance"
                 )
-                time = f"{msg.created_at.replace(microsecond=0)}".ljust(30)
 
-                content = f"{msg.content}"
-                # TODO save attachments and upload to logging channel
-                if msg.attachments:
-                    content = "Attachment(s): "
-                    for a in msg.attachments:
-                        content = f"{content} {a.filename} "
+            try:
+                await member.send(
+                    f"You have been permanently removed from the server for reason: {reason}"
+                )
+            except discord.Forbidden:
+                pass
+        
+        # await member.ban(reason=reason)
+        await interaction.channel.send(f"I would ban {user.name} here")
 
-                log_str = f"{log_str} {author} | {time} | {content} \n"
+        helper.create_infraction(
+            author=interaction.user,
+            users=[member],
+            action="ban",
+            reason=reason,
+            inf_level=inf_level,
+        )
 
-            await message_logging_channel.send(
-                f"{len(deleted_messages)} messages deleted in {channel.mention}",
-                file=discord.File(
-                    io.BytesIO(f"{log_str}".encode()),
-                    filename=f"{len(deleted_messages)} messages deleted in {channel.name}.txt",
-                ),
-            )
+        logging_channel = discord.utils.get(interaction.guild.channels, id=self.logging_channel)
 
-        await ctx.message.delete(delay=4)
+        embed = helper.create_embed(
+            author=interaction.user,
+            action="Banned user(s)",
+            users=[member],
+            reason=reason,
+            color=discord.Color.dark_red(),
+            inf_level=inf_level,
+        )
 
-    @commands.command(aliases=["forceban"])
-    @mod_and_above()
-    async def fban(self, ctx, inf_level: int, member: int, *, reason: str):
-        """Force ban a member who is not in the server.\nUsage: fban infraction_level user_id reason"""
-        if reason is None:
-            raise commands.BadArgument(
-                message="Provide a reason and re-run the command"
-            )
+        await logging_channel.send(embed=embed)
 
-        if inf_level not in range(1, 6):
-            raise commands.BadArgument(
-                message="Infraction level must be between 1 and 5"
-            )
+        await interaction.response.send_message(
+            "user has been banned", 
+            ephemeral=is_public_channel(interaction.channel)
+        )
 
-        logging_channel = discord.utils.get(ctx.guild.channels, id=self.logging_channel)
-
-        if ctx.guild.get_member(member) != None:
-            await ctx.send("User already exists in the server, use the regular ban command.")
-            return
-        else:
-            member = discord.Object(member)
+    @app_commands.command(name="unban")
+    @app_commands.guilds(414027124836532234)
+    @app_commands.default_permissions(manage_messages=True)
+    @app_checks.mod_and_above()
+    async def _unban(
+        self,
+        interaction: discord.Interaction,
+        user: discord.User,
+        reason: typing.Optional[str] = None
+    ):
+        """Unban a member"""
 
         try:
-            await ctx.guild.ban(member)
+            # await interaction.guild.unban(user, reason=reason)
+            await interaction.channel.send("I would unban here")
         except discord.NotFound:
-            raise commands.BadArgument(message="Provided ID is not for an user.")
-
-        embed = helper.create_embed(
-            author=ctx.author,
-            action="Force banned user",
-            users=[member],
-            reason=reason,
-            color=discord.Color.dark_red(),
-            inf_level=inf_level,
-        )
-
-        await logging_channel.send(embed=embed)
-
-        helper.create_infraction(
-            author=ctx.author,
-            users=[member],
-            action="ban",
-            reason=reason,
-            inf_level=inf_level,
-        )
-
-        await ctx.message.add_reaction("<:kgsYes:955703069516128307>")
-
-        await ctx.message.delete(delay=6)
-
-    @commands.command(aliases=["yeet"])
-    @mod_and_above()
-    async def ban(self, ctx: commands.Context, inf_level: int, *args):
-        """Ban a member.\nUsage: ban infraction_level [@member(s)/id(s)] reason"""
-
-        if inf_level not in range(1, 6):
-            raise commands.BadArgument(
-                message="Infraction level must be between 1 and 5"
+            await interaction.response.send_message(
+                f"User <@{id}> has not been banned before.",
+                ephemeral=is_public_channel(interaction.channel)
             )
-
-        logging_channel = discord.utils.get(ctx.guild.channels, id=self.logging_channel)
-
-        members, extra = custom_converters.get_members(ctx, *args)
-
-        if members is None or members == []:
-            raise commands.BadArgument(
-                message="Could not find the user please verify if they're still in the server"
-            )
-        if extra is None:
-            raise commands.BadArgument(
-                message="Please provide a reason and re-run the command"
-            )
-
-        reason = " ".join(extra)
-
-        failed_ban = False
-        for m in members:
-            if m.top_role < ctx.author.top_role:
-                try:
-                    await m.send(
-                        f"You have been permanently removed from the server for reason: {reason}"
-                    )
-                except discord.Forbidden:
-                    pass
-                await m.ban(reason=reason)
-            else:
-                members.remove(m)
-                failed_ban = True
-        if failed_ban:
-            await ctx.send(
-                "Certain users could not be banned due to your clearance",
-                delete_after=6,
-            )
-        if len(members) == 0:
             return
 
-        await ctx.message.add_reaction("<:kgsYes:955703069516128307>")
-
-        helper.create_infraction(
-            author=ctx.author,
-            users=members,
-            action="ban",
-            reason=reason,
-            inf_level=inf_level,
-        )
+        logging_channel = discord.utils.get(interaction.guild.channels, id=self.logging_channel)
 
         embed = helper.create_embed(
-            author=ctx.author,
-            action="Banned user(s)",
-            users=members,
+            author=interaction.user,
+            action="Unbanned user(s)",
+            users=[user],
             reason=reason,
             color=discord.Color.dark_red(),
-            inf_level=inf_level,
         )
-
         await logging_channel.send(embed=embed)
 
-        await ctx.message.delete(delay=6)
+        await interaction.response.send_message(
+            "user was unbanned", 
+            ephemeral=is_public_channel(interaction.channel)
+        )
 
-    @commands.command()
-    @mod_and_above()
-    async def unban(
+    @app_commands.command(name="kick")
+    @app_commands.guilds(414027124836532234)
+    @app_commands.default_permissions(manage_messages=True)
+    @app_checks.mod_and_above()
+    async def _kick(
         self,
-        ctx: commands.Context,
-        member_id: commands.Greedy[int] = None,
-        *,
-        reason: str = None,
+        interaction: discord.Interaction,
+        inf_level: app_commands.Range[int, 1, 5],
+        member: discord.Member,
+        reason: str
     ):
-        """Unban a member. \nUsage: unban member_id <reason>"""
-        if member_id is None:
-            raise commands.BadArgument(message="Invalid member ID provided")
+        """Kicks a member"""
 
-        logging_channel = discord.utils.get(ctx.guild.channels, id=self.logging_channel)
-
-        mem = []  # for listing members in embed
-
-        for m in member_id:
-            try:
-                user = discord.Object(m)
-                await ctx.guild.unban(user, reason=reason)
-                mem.append(user)
-            except discord.errors.NotFound:
-                await ctx.send(f"Member with ID {m} has not been banned before.")
-
-        if mem:
-            embed = helper.create_embed(
-                author=ctx.author,
-                action="Unbanned user(s)",
-                users=mem,
-                reason=reason,
-                color=discord.Color.dark_red(),
-            )
-            await logging_channel.send(embed=embed)
-        await ctx.message.add_reaction("<:kgsYes:955703069516128307>")
-
-    @commands.command()
-    @mod_and_above()
-    async def kick(self, ctx: commands.Context, inf_level: int, *args):
-        """Kick member(s).\nUsage: kick infraction_level [@member(s)/id(s)] reason"""
-
-        members, reason = custom_converters.get_members(ctx, *args)
-
-        if reason is None:
-            raise commands.BadArgument(
-                message="Please provide a reason and re-run the command"
+        if member.top_role >= interaction.user.top_role:
+            
+            raise app_errors.InvalidAuthorizationError(
+                "user could not be kicked due to your clearance"
             )
 
-        if inf_level not in range(1, 6):
-            raise commands.BadArgument(
-                message="Infraction level must be between 1 and 5"
-            )
+        # await member.kick(reason=reason)
+        await interaction.channel.send("I would kick here")
 
-        if members is None:
-            raise commands.BadArgument(message="Improper members passed")
+        helper.create_infraction(
+            author=interaction.user,
+            users=[member],
+            action="kick",
+            reason=reason,
+            inf_level=inf_level,
+        )
 
-        reason = " ".join(reason)
-        logging_channel = discord.utils.get(ctx.guild.channels, id=self.logging_channel)
-
-        failed_kick = False
-        for i in members:
-            if i.top_role < ctx.author.top_role:
-                await i.kick(reason=reason)
-            else:
-                failed_kick = True
-                members.remove(i)
-
-        await ctx.message.add_reaction("<:kgsYes:955703069516128307>")
-        if failed_kick:
-            await ctx.send(
-                "Could not kick certain users due to your clearance", delete_after=6
-            )
-        if len(members) == 0:
-            return
+        logging_channel = discord.utils.get(interaction.guild.channels, id=self.logging_channel)
 
         embed = helper.create_embed(
-            author=ctx.author,
+            author=interaction.user,
             action="Kicked User(s)",
-            users=members,
+            users=[member],
             reason=reason,
             color=discord.Color.red(),
             inf_level=inf_level,
         )
         await logging_channel.send(embed=embed)
 
-        helper.create_infraction(
-            author=ctx.author,
-            users=members,
-            action="kick",
-            reason=reason,
-            inf_level=inf_level,
+        await interaction.response.send_message(
+            "member has been kicked", 
+            ephemeral=is_public_channel(interaction.channel)
         )
+    
+    @app_commands.command(name="selfmute")
+    @app_commands.guilds(414027124836532234)
+    async def _selfmute(
+        self,
+        interaction: discord.Interaction,
+        time: str,
+        reason: typing.Optional[str] = "Self Mute"
+    ):
+        """Mute yourself"""
 
-        await ctx.message.delete(delay=6)
+        tot_time, _ = helper.calc_time([time, ""])
 
-    @commands.command()
-    @bot_commands_only()
-    async def selfmute(self, ctx: commands.Context, *args):
-        """Mute yourself. \nUsage: selfmute time"""
-        logging_channel = discord.utils.get(ctx.guild.channels, id=713107972737204236)
-
-        tot_time = 0
-        time_str = "unspecified duration"
-        tot_time, reason = helper.calc_time(args + ("Self Mute",))
-        if reason != "Self Mute":
-            reason = reason[:-10]
-        if tot_time is not None:
-            time_str = helper.get_time_string(tot_time)
-
-        if tot_time > 604801:
-            raise commands.BadArgument(message="Can't mute for longer than 7 days!")
-        if tot_time <= 0:
-            raise commands.BadArgument(message="Improper time provided!")
-        if tot_time < 300:
-            raise commands.BadArgument(message="Can't mute for shorter than 5 minutes!")
-
-        member_id = ctx.author.id
-        time = (
-            datetime.datetime.utcnow() + datetime.timedelta(seconds=tot_time)
-        ).isoformat()
-        route = http.Route("PATCH", f"/guilds/414027124836532234/members/{member_id}")
-        await self.bot.http.request(
-            route, json={"communication_disabled_until": time}, reason=reason
-        )
-
-        try:
-            await ctx.author.send(
-                f"You have been Self muted for {time_str}.\nGiven reason: {reason} \n mods will not unmute you :) think twice about doing the command next time"
+        if tot_time is None or tot_time <= 0:
+            raise app_errors.InvalidInvocationError(
+                "Improper time provided"
             )
-        except discord.Forbidden:
-            pass
+        elif tot_time > 604801:
+            raise app_errors.InvalidInvocationError(
+                "Can't mute for longer than 7 days!"
+            )
+        elif tot_time < 300:
+            raise app_errors.InvalidInvocationError(
+                "Can't mute for shorter than 5 minutes!"
+            )
 
-        await ctx.message.add_reaction("<:kgsYes:955703069516128307>")
+        duration = datetime.timedelta(seconds=tot_time)
+        finished = discord.utils.utcnow() + duration
+
+        time_str = helper.get_time_string(tot_time)
+
+        await interaction.user.timeout(finished)
+
+        await interaction.response.send_message(
+            f"""
+            You have been self muted for {time_str} until <t:{int(finished.timestamp())}>.
+            Given reason: {reason}
+            mods will not unmute you :) think twice about doing the command next time
+            """,
+            ephemeral=True
+        )
+
+        logging_channel = discord.utils.get(interaction.guild.channels, id=713107972737204236)
 
         embed = helper.create_embed(
-            author=ctx.author,
+            author=interaction.user,
             action="Self Mute",
-            users=[ctx.author],
+            users=[interaction.user],
             reason=reason,
             extra=f"Mute Duration: {tot_time}",
             color=discord.Color.red(),
@@ -514,87 +376,79 @@ class Moderation(commands.Cog):
 
         await logging_channel.send(embed=embed)
 
-        await ctx.message.delete(delay=6)
+    @app_commands.command(name="mute")
+    @app_commands.guilds(414027124836532234)
+    @app_commands.default_permissions(manage_messages=True)
+    @app_checks.mod_and_above()
+    async def _mute(
+        self,
+        interaction: discord.Interaction,
+        inf_level: app_commands.Range[int, 1, 5],
+        member: discord.Member,
+        time: str,
+        reason: str,
+        final: typing.Optional[bool] = False
+    ):
+        """Mutes a member"""
 
-    @commands.command()
-    @mod_and_above()
-    async def mute(self, ctx: commands.Context, inf_level: int, *args):
-        """Mute member(s). \nUsage: mute infraction_level [@member(s) / user_id(s)] time reason"""
+        if member.top_role >= interaction.user.top_role:
 
-        if inf_level not in range(1, 6):
-            raise commands.BadArgument(
-                message="Infraction level must be between 1 and 5"
+            raise app_errors.InvalidAuthorizationError(
+                "user could not be muted due to your clearance"
             )
 
-        tot_time = 0
+        # time calculation
+        tot_time, _ = helper.calc_time([time, ""])
 
-        logging_channel = discord.utils.get(ctx.guild.channels, id=self.logging_channel)
-
-        members, extra = custom_converters.get_members(ctx, *args)
-
-        if members is None:
-            raise commands.BadArgument(message="Improper member passed")
-
-        tot_time, reason = helper.calc_time(extra)
-
-        time_str = "unspecified duration"
-        if tot_time is not None:
-            time_str = helper.get_time_string(tot_time)
-
-        if reason is None:
-            raise commands.BadArgument(
-                message="Please provide a reason and re-run the command"
+        if tot_time is None:
+            raise app_errors.InvalidInvocationError(
+                "no valid time provided"
+            )
+        elif tot_time <= 0:
+            raise app_errors.InvalidInvocationError(
+                "time can not be 0 or less"
+            )
+        elif tot_time > 2419200:
+            raise app_errors.InvalidInvocationError(
+                "time can not be longer than 28 days (2419200 seconds)"
             )
 
-        final_warn = True if reason.startswith("--final") or reason.startswith("—final") else False
+        duration = datetime.timedelta(seconds=tot_time)
+        finished = discord.utils.utcnow() + duration
+
+        time_str = helper.get_time_string(tot_time)
+
+
         default_msg = "(Note: Accumulation of warns may lead to permanent removal from the server)"
-        if final_warn:
-            reason = reason[7:]
-            default_msg = "**(This is your final warning, future infractions will lead to a non negotiable ban from the server)**"
+        final_msg = "**(This is your final warning, future infractions will lead to a non negotiable ban from the server)**"
+        if final:
+            default_msg = final_msg
 
-        if tot_time > 2419200:
-            raise commands.BadArgument(message="Can't mute for longer than 28 days!")
-        if tot_time <= 0:
-            raise commands.BadArgument(message="Improper time provided")
-
-        failed_mute = False
-        for i in members:
-            if i.top_role < ctx.author.top_role:
-                member_id = i.id
-                time = (
-                    datetime.datetime.utcnow() + datetime.timedelta(seconds=tot_time)
-                ).isoformat()
-                route = http.Route(
-                    "PATCH", f"/guilds/414027124836532234/members/{member_id}"
-                )
-                await self.bot.http.request(
-                    route, json={"communication_disabled_until": time}, reason=reason
-                )
-
-                try:
-                    await i.send(
-                        f"You have been muted for {time_str}.\nGiven reason: {reason}\n{default_msg}"
-                    )
-
-                except discord.Forbidden:
-                    pass
-            else:
-                failed_mute = True
-                members.remove(i)
-
-        await ctx.message.add_reaction("<:kgsYes:955703069516128307>")
-        if failed_mute:
-            await ctx.send(
-                "Certain members could not be muted due to your clearance",
-                delete_after=6,
+        try:
+            await member.send(
+                f"You have been muted for {time_str}.\nGiven reason: {reason}\n{default_msg}"
             )
-        if len(members) == 0:
-            return
+        except discord.Forbidden:
+            pass
+
+        await member.timeout(finished)
+
+        helper.create_infraction(
+            author=interaction.user,
+            users=[member],
+            action="mute",
+            reason=reason,
+            time=time_str,
+            inf_level=inf_level,
+            final_warn=final,
+        )
+
+        logging_channel = discord.utils.get(interaction.guild.channels, id=self.logging_channel)
 
         embed = helper.create_embed(
-            author=ctx.author,
-            action="Muted User(s)" + (" (FINAL WARNING)" if final_warn else ""),
-            users=members,
+            author=interaction.user,
+            action="Muted User(s)" + (" (FINAL WARNING)" if final else ""),
+            users=[member],
             reason=reason,
             extra=f"Mute Duration: {time_str} or {tot_time} seconds",
             color=discord.Color.red(),
@@ -602,250 +456,214 @@ class Moderation(commands.Cog):
         )
         await logging_channel.send(embed=embed)
 
-        helper.create_infraction(
-            author=ctx.author,
-            users=members,
-            action="mute",
-            reason=reason,
-            time=time_str,
-            inf_level=inf_level,
-            final_warn=final_warn,
+        await interaction.response.send_message(
+            "member has been muted", 
+            ephemeral=is_public_channel(interaction.channel)
         )
 
-        await ctx.message.delete(delay=6)
-
-    @commands.command()
-    @mod_and_above()
-    async def unmute(
-        self, ctx: commands.Context, members: commands.Greedy[discord.Member]
+    @app_commands.command(name="unmute")
+    @app_commands.guilds(414027124836532234)
+    @app_commands.default_permissions(manage_messages=True)
+    @app_checks.mod_and_above()
+    async def _unmute(
+        self,
+        interaction: discord.Interaction,
+        member: discord.Member,
+        reason: typing.Optional[str]
     ):
-        """Unmute member(s). \nUsage: unmute [@member(s)/id(s)]"""
+        """Unmutes a member"""
 
-        logging_channel = discord.utils.get(ctx.guild.channels, id=self.logging_channel)
+        logging_channel = discord.utils.get(interaction.guild.channels, id=self.logging_channel)
 
-        if not members:
-            raise commands.BadArgument(message="Provide members to mute")
+        await member.timeout(None)
 
-        for i in members:
-            member_id = i.id
-            route = http.Route(
-                "PATCH", f"/guilds/414027124836532234/members/{member_id}"
-            )
-            await self.bot.http.request(
-                route, json={"communication_disabled_until": None}
-            )
-
-        await ctx.message.add_reaction("<:kgsYes:955703069516128307>")
         embed = helper.create_embed(
-            author=ctx.author,
+            author=interaction.user,
             action="Unmuted User(s)",
-            users=members,
+            users=[member],
             color=discord.Color.red(),
         )
 
         await logging_channel.send(embed=embed)
-        await ctx.message.delete(delay=6)
 
-    @commands.command()
-    @mod_and_above()
-    async def role(
+        await interaction.response.send_message(
+            "member has been unmuted", 
+            ephemeral=is_public_channel(interaction.channel)
+        )
+
+    @app_commands.command(name="role")
+    @app_commands.guilds(414027124836532234)
+    @app_commands.default_permissions(manage_messages=True)
+    @app_checks.mod_and_above()
+    async def _role(
         self,
-        ctx: commands.Context,
-        member: discord.Member = None,
-        *,
-        role_name: str = None,
+        interaction: discord.Interaction,
+        member: discord.Member,
+        role: discord.Role
     ):
-        """Add/Remove a role from a member. \nUsage: role @member/user_id role_name"""
+        """Add/Remove a role from a member"""
 
-        logging_channel = discord.utils.get(ctx.guild.channels, id=self.logging_channel)
+        if role >= interaction.user.top_role:
 
-        if member is None:
-            raise commands.BadArgument(message="No members provided")
-        if role_name is None:
-            raise commands.BadArgument(message="No role provided")
-
-        role = discord.utils.get(ctx.guild.roles, name=role_name)
-
-        if role is None:
-            return await ctx.send("Role not found")
-
-        if ctx.author.top_role < role:
-            raise commands.BadArgument(message="You don't have clearance to do that")
-
-        r = discord.utils.get(member.roles, name=role.name)
-        if r is None:
-            await member.add_roles(role)
-            await ctx.send(f"Gave role {role.name} to {member.name}")
-
-            embed = helper.create_embed(
-                author=ctx.author,
-                action="Gave role",
-                users=[member],
-                extra=f"Role: {role.mention}",
-                color=discord.Color.purple(),
+            raise app_errors.InvalidAuthorizationError(
+                "you do not have clearance to do that"
             )
-            return await logging_channel.send(embed=embed)
 
-        await member.remove_roles(role)
-        await ctx.send(f"Removed role {role.name} from {member.name}")
+        # check if member has role
+        action, preposition = "", ""
+        if role in member.roles:
+            # remove role
+            await member.remove_roles(role)
+            action = "Removed role"
+            preposition = "from"
+        else:
+            # add role
+            await member.add_roles(role)
+            action = "Gave role"
+            preposition = "to"
+
+        logging_channel = discord.utils.get(interaction.guild.channels, id=self.logging_channel)
+
         embed = helper.create_embed(
-            author=ctx.author,
-            action="Removed role",
+            author=interaction.user,
+            action=action,
             users=[member],
             extra=f"Role: {role.mention}",
             color=discord.Color.purple(),
         )
-        return await logging_channel.send(embed=embed)
+        await logging_channel.send(embed=embed)
 
-    @commands.command()
-    @mod_and_above()
-    async def warn(self, ctx: commands.Context, inf_level: int, *args):
-        """Warn user(s) \nUsage: warn infraction_level [@member(s)/id(s)] reason"""
-        logging_channel = discord.utils.get(ctx.guild.channels, id=self.logging_channel)
+        await interaction.response.send_message(
+            f"{action.lower()} {role.name} {preposition} {member.name}", 
+            ephemeral=is_public_channel(interaction.channel),
+            allowed_mentions=discord.AllowedMentions.none()
+        )
 
-        members, reason = custom_converters.get_members(ctx, *args)
+    @app_commands.command(name="warn")
+    @app_commands.guilds(414027124836532234)
+    @app_commands.default_permissions(manage_messages=True)
+    @app_checks.mod_and_above()
+    async def _warn(
+        self,
+        interaction: discord.Interaction,
+        inf_level: app_commands.Range[int, 1, 5],
+        member: discord.Member,
+        reason: str,
+        final: typing.Optional[bool] = False
+    ):
+        """Warns a user"""
 
-        if members is None:
-            raise commands.BadArgument(message="No members provided")
-        if reason is None:
-            raise commands.BadArgument(
-                message="No reason provided, please re-run the command with a reaso"
+        if member.top_role >= interaction.user.top_role:
+
+            raise app_errors.InvalidAuthorizationError(
+                "user could not be warned due to your clearance"
             )
 
-        if inf_level not in range(1, 6):
-            raise commands.BadArgument(
-                message="Infraction level must be between 1 and 5"
-            )
-
-        final_warn = True if reason[0] == "--final" or reason[0] == "—final" else False
+        # TODO make this more modular
         default_msg = "(Note: Accumulation of warns may lead to permanent removal from the server)"
-        if final_warn:
-            reason = " ".join(reason[1:])
-            default_msg = "**(This is your final warning, future infractions will lead to a non negotiable ban from the server)**"
-        else:
-            reason = " ".join(reason)
+        final_msg = "**(This is your final warning, future infractions will lead to a non negotiable ban from the server)**"
+        if final:
+            default_msg = final_msg
 
-        failed_warn = False
-        for m in members:
-            if m.top_role.name == "Muted" or m.top_role < ctx.author.top_role:
-                try:
-                    await m.send(f"You have been warned for {reason} {default_msg}")
-                except discord.Forbidden:
-                    pass
-            else:
-                failed_warn = True
-                members.remove(m)
-
-        if failed_warn:
-            await ctx.send(
-                "Certain members could not be warned due to your clearance",
-                delete_after=6,
-            )
-        if len(members) == 0:
-            return
+        try:
+            await member.send(f"You have been warned for {reason} {default_msg}")
+        except discord.Forbidden:
+            pass
 
         helper.create_infraction(
-            author=ctx.author,
-            users=members,
+            author=interaction.user,
+            users=[member],
             action="warn",
             reason=reason,
             inf_level=inf_level,
-            final_warn=final_warn,
+            final_warn=final,
         )
 
+        logging_channel = discord.utils.get(interaction.guild.channels, id=self.logging_channel)
+
         embed = helper.create_embed(
-            author=ctx.author,
-            action="Warned User(s)" + (" (FINAL WARNING)" if final_warn else ""),
-            users=members,
+            author=interaction.user,
+            action="Warned User(s)" + (" (FINAL WARNING)" if final else ""),
+            users=[member],
             reason=reason,
             color=discord.Color.red(),
             inf_level=inf_level,
         )
         await logging_channel.send(embed=embed)
 
-        await ctx.message.add_reaction("<:kgsYes:955703069516128307>")
-        await ctx.message.delete(delay=6)
-
-    @commands.command(aliases=["unwarn", "removewarn"])
-    @mod_and_above()
-    async def delwarn(self, ctx: commands.context, member: discord.Member):
-        """Remove warn for a user.\nUsage: delwarn @member/id"""
-        warns = helper.get_warns(member_id=member.id)
-
-        if warns is None:
-            return await ctx.reply("User has no warns.", delete_after=10)
-
-        embed = discord.Embed(
-            title=f"Warns for {member.name}",
-            description=f"Showing atmost 5 warns at a time. (Total warns: {len(warns)})",
-            color=discord.Colour.magenta(),
-            timestamp=datetime.datetime.utcnow(),
+        await interaction.response.send_message(
+            "user has been warned", 
+            ephemeral=is_public_channel(interaction.channel)
         )
 
-        warn_len = len(warns)
-        page = 0
-        start = 0
-        end = start + 5 if start + 5 < warn_len else warn_len
-        delete_warn_idx = -1
+    # TODO CONVERT THIS COMMAND
+    @commands.command(aliases=["unwarn", "removewarn"])
+    @mod_and_above()
+    async def delwarn(self, ctx: commands.context, member: discord.Member):      
+        class View(discord.ui.View):
+            def __init__(self, warns):
+                super().__init__(timeout=20)
+                self.delete_warn_idx = -1
+                self.page = 0
+                self.warns = warns
+                self.warn_len = len(warns)
 
-        for idx, warn in enumerate(warns[start:end]):
-            embed.add_field(
-                name=f"ID: {idx}",
-                value="```{0}\n{1}\n{2}```".format(
-                    "Author: {} ({})".format(warn["author_name"], warn["author_id"]),
-                    "Reason: {}".format(warn["reason"]),
-                    "Date: {}".format(warn["datetime"].replace(microsecond=0)),
-                ),
-                inline=False,
-            )
+                for i in range(5):
+                    disabled=False
+                    if i >= self.warn_len:
+                        disabled = True
+                    self.add_item(Button(label=str(i), disabled=disabled))
 
-        msg = await ctx.send(embed=embed)
+            @discord.ui.button(label="<", style=discord.ButtonStyle.blurple, row=1)
+            async def back(self, button: discord.ui.Button, interaction: discord.Interaction):
+                self.delete_warn_idx = -1
+                if self.page >= 1:
+                    self.page -= 1
+                else:
+                    self.page = (self.warn_len - 1) // 5
+                await self.write_msg(interaction)
+            @discord.ui.button(label=">", style=discord.ButtonStyle.blurple, row=1)
+            async def forward(self, button: discord.ui.Button, interaction: discord.Interaction):
+                self.delete_warn_idx = -1
+                if self.page < (self.warn_len - 1) // 5:
+                    self.page += 1
+                else:
+                    self.page = 0
+                await self.write_msg(interaction)
+            @discord.ui.button(label="x", style=discord.ButtonStyle.red, row=1)
+            async def exit(self, button: discord.ui.Button, interaction: discord.Interaction):
+                await interaction.message.edit(content="Exited!!!", embed=None, view=None, delete_after=5)
+                self.stop()
+                return
+            @discord.ui.button(label="✓", style=discord.ButtonStyle.green, row=1, disabled=True)
+            async def confirm(self, button: discord.ui.Button, interaction: discord.Interaction):
+                if self.delete_warn_idx != -1:
 
-        emote_list = [
-            "\u0030\uFE0F\u20E3",
-            "\u0031\uFE0F\u20E3",
-            "\u0032\uFE0F\u20E3",
-            "\u0033\uFE0F\u20E3",
-            "\u0034\uFE0F\u20E3",
-        ]
-        left_arrow = "\u2B05\uFE0F"
-        right_arrow = "\u27A1\uFE0F"
-        cross = "\u274C"
-        yes = "\u2705"
+                    del self.warns[self.delete_warn_idx]
+                    helper.update_warns(member.id, self.warns)
 
-        await msg.add_reaction(left_arrow)
-        for i in emote_list[0 : end - start]:
-            await msg.add_reaction(i)
-        await msg.add_reaction(right_arrow)
-        await msg.add_reaction(cross)
+                    await interaction.message.edit(
+                        content="Warning deleted successfully.",
+                        embed=None,
+                        view=None,
+                        delete_after=5,
+                    )
+                    self.stop()
+                return
 
-        def check(reaction, user):
-            return user == ctx.author and (
-                str(reaction.emoji) in emote_list
-                or str(reaction.emoji) == right_arrow
-                or str(reaction.emoji) == left_arrow
-                or str(reaction.emoji) == cross
-                or str(reaction.emoji) == yes
-            )
+            async def write_msg(self, interaction):
+                delete_warn_idx = self.delete_warn_idx
+                page = self.page
+                warn_len = self.warn_len
 
-        try:
-            while True:
-                reaction, user = await self.bot.wait_for(
-                    "reaction_add", timeout=30.0, check=check
+                embed = discord.Embed(
+                    title=f"Warns for {member.name}",
+                    color=discord.Colour.magenta(),
+                    timestamp=discord.utils.utcnow(),
                 )
 
-                if str(reaction.emoji) in emote_list:
-                    await msg.clear_reactions()
-
-                    delete_warn_idx = (page * 5) + emote_list.index(str(reaction.emoji))
-
-                    embed = discord.Embed(
-                        title=f"Warns for {member.name}",
-                        description=f"Confirm removal of warn",
-                        color=discord.Colour.magenta(),
-                        timestamp=datetime.datetime.utcnow(),
-                    )
-
+                if delete_warn_idx != -1:
+                    embed.description=f"Confirm removal of warn"
                     embed.add_field(
                         name="Delete Warn?",
                         value="```{0}\n{1}\n{2}```".format(
@@ -861,49 +679,28 @@ class Moderation(commands.Cog):
                             ),
                         ),
                     )
-
-                    await msg.edit(embed=embed)
-                    await msg.add_reaction(yes)
-                    await msg.add_reaction(cross)
-
-                elif str(reaction.emoji) == yes:
-                    if delete_warn_idx != -1:
-
-                        del warns[delete_warn_idx]
-                        helper.update_warns(member.id, warns)
-
-                        await msg.edit(
-                            content="Warning deleted successfully.",
-                            embed=None,
-                            delete_after=5,
-                        )
-                        break
-
-                elif str(reaction.emoji) == cross:
-                    await msg.edit(content="Exited!!!", embed=None, delete_after=5)
-                    break
-
+                    for button in self.children:
+                        if button.label == "✓":
+                            button.disabled=False
+                        elif button.row == 0:
+                            button.disabled=True
                 else:
-                    await msg.clear_reactions()
-
-                    if str(reaction.emoji) == left_arrow:
-                        if page >= 1:
-                            page -= 1
-
-                    elif str(reaction.emoji) == right_arrow:
-                        if page < (warn_len - 1) // 5:
-                            page += 1
-
                     start = page * 5
                     end = start + 5 if start + 5 < warn_len else warn_len
 
-                    embed = discord.Embed(
-                        title=f"Warns for {member.name}",
-                        description=f"Showing atmost 5 warns at a time",
-                        color=discord.Colour.magenta(),
-                        timestamp=datetime.datetime.utcnow(),
-                    )
-                    for idx, warn in enumerate(warns[start:end]):
+                    for button in self.children:
+                        if button.row == 0:
+                            if int(button.label) >= (end - start):
+                                button.disabled=True
+                            else:
+                                button.disabled=False
+                        elif button.label == "✓":
+                            button.disabled=True
+
+                    embed.description=f"Showing atmost 5 warns at a time. (Total warns: {warn_len})"
+                    embed.set_footer(text=f"Page {page+1}/{(warn_len-1)//5+1}")
+
+                    for idx, warn in enumerate(self.warns[start:end]):
                         embed.add_field(
                             name=f"ID: {idx}",
                             value="```{0}\n{1}\n{2}```".format(
@@ -918,138 +715,123 @@ class Moderation(commands.Cog):
                             inline=False,
                         )
 
-                    await msg.edit(embed=embed)
+                await interaction.message.edit(embed=embed, view=view)
 
-                    await msg.add_reaction(left_arrow)
-                    for i in emote_list[0 : end - start]:
-                        await msg.add_reaction(i)
-                    await msg.add_reaction(right_arrow)
-                    await msg.add_reaction(cross)
 
-        except asyncio.TimeoutError:
-            await msg.clear_reactions()
-            await ctx.message.delete(delay=5)
-            return
+            async def on_timeout(self):
+                await msg.edit(view=None, delete_after=5)
 
-        await ctx.message.delete(delay=5)
-
-    @commands.command(aliases=["infr", "inf", "infraction"])
-    @mod_and_above()
-    async def infractions(
-        self,
-        ctx: commands.Context,
-        member: typing.Optional[discord.Member] = None,
-        mem_id: typing.Optional[int] = None,
-        inf_type: str = None,
-    ):
-        """Get Infractions. \nUsage: infr <@member/member_id> <infraction_type>"""
-        try:
-
-            if member is None and mem_id is None:
-                return await ctx.send(
-                    "Provide user.\n`Usage: infr <@member / member_id> <infraction_type>`"
-                )
-
-            if inf_type is not None:
-                if (
-                    inf_type == "w"
-                    or inf_type == "W"
-                    or re.match("warn", inf_type, re.IGNORECASE)
-                ):
-                    inf_type = "warn"
-                elif (
-                    inf_type == "m"
-                    or inf_type == "M"
-                    or re.match("mute", inf_type, re.IGNORECASE)
-                ):
-                    inf_type = "mute"
-                elif (
-                    inf_type == "b"
-                    or inf_type == "B"
-                    or re.match("ban", inf_type, re.IGNORECASE)
-                ):
-                    inf_type = "ban"
-                elif (
-                    inf_type == "k"
-                    or inf_type == "K"
-                    or re.match("kick", inf_type, re.IGNORECASE)
-                ):
-                    inf_type = "kick"
-
-            else:
-                inf_type = "warn"
-
-            if member is not None:
-                mem_id = member.id
-
-            infs_embed = helper.get_infractions(member_id=mem_id, inf_type=inf_type)
-
-            msg = None
-            msg = await ctx.send(embed=infs_embed)
-            await msg.add_reaction("\U0001F1FC")
-            await msg.add_reaction("\U0001F1F2")
-            await msg.add_reaction("\U0001F1E7")
-            await msg.add_reaction("\U0001F1F0")
-
-            while True:
-                try:
-                    reaction, user = await self.bot.wait_for(
-                        "reaction_add",
-                        check=lambda reaction, user: user == ctx.author
-                        and reaction.emoji
-                        in [
-                            "\U0001F1FC",
-                            "\U0001F1F2",
-                            "\U0001F1E7",
-                            "\U0001F1F0",
-                        ],
-                        timeout=20.0,
+            async def interaction_check(self, interaction):
+                if interaction.user == ctx.author:
+                    return True
+                else:
+                    await interaction.response.send_message(
+                        "You can't use that", ephemeral=True
                     )
 
-                except asyncio.exceptions.TimeoutError:
-                    if msg:
-                        await msg.clear_reactions()
-                    break
+        class Button(discord.ui.Button):
+            def __init__(self, label, disabled):
+                super().__init__(label=label, style=discord.ButtonStyle.gray, row=0, disabled=disabled)
 
-                else:
-                    em = reaction.emoji
-                    if em == "\U0001F1FC":
-                        inf_type = "warn"
-                        infs_embed = helper.get_infractions(
-                            member_id=mem_id, inf_type=inf_type
-                        )
-                        await msg.edit(embed=infs_embed)
-                        await msg.remove_reaction(emoji=em, member=user)
+            async def callback(self, interaction: discord.Interaction):
+                view.delete_warn_idx = int(self.label)
+                await view.write_msg(interaction)
+                return
 
-                    elif em == "\U0001F1F2":
-                        inf_type = "mute"
-                        infs_embed = helper.get_infractions(
-                            member_id=mem_id, inf_type=inf_type
-                        )
-                        await msg.edit(embed=infs_embed)
-                        await msg.remove_reaction(emoji=em, member=user)
+        warns = helper.get_warns(member_id=member.id)
+        #warns might not get deleted properly, temp fix
+        if warns is None or warns == []:
+            return await ctx.reply("User has no warns.", delete_after=10)
 
-                    elif em == "\U0001F1E7":
-                        inf_type = "ban"
-                        infs_embed = helper.get_infractions(
-                            member_id=mem_id, inf_type=inf_type
-                        )
-                        await msg.edit(embed=infs_embed)
-                        await msg.remove_reaction(emoji=em, member=user)
+        view = View(warns=warns)
 
-                    elif em == "\U0001F1F0":
-                        inf_type = "kick"
-                        infs_embed = helper.get_infractions(
-                            member_id=mem_id, inf_type=inf_type
-                        )
-                        await msg.edit(embed=infs_embed)
-                        await msg.remove_reaction(emoji=em, member=user)
+        warn_len = len(warns)
 
-        except asyncio.exceptions.TimeoutError:
-            await ctx.send("Embed Timed Out.", delete_after=3.0)
-            if msg:
-                await msg.clear_reactions()
+        embed = discord.Embed(
+            title=f"Warns for {member.name}",
+            description=f"Showing atmost 5 warns at a time. (Total warns: {warn_len})",
+            color=discord.Colour.magenta(),
+            timestamp=discord.utils.utcnow(),
+        )
+        embed.set_footer(text=f"Page 1/{(warn_len-1)//5+1}")
+        
+        end = 5 if 5 < warn_len else warn_len
+        
+        for idx, warn in enumerate(warns[0:end]):
+            embed.add_field(
+                name=f"ID: {idx}",
+                value="```{0}\n{1}\n{2}```".format(
+                    "Author: {} ({})".format(warn["author_name"], warn["author_id"]),
+                    "Reason: {}".format(warn["reason"]),
+                    "Date: {}".format(warn["datetime"].replace(microsecond=0)),
+                ),
+                inline=False,
+            )
+        msg = await ctx.send(embed=embed, view=view)
 
+    @app_commands.command(name="infractions")
+    @app_commands.guilds(414027124836532234)
+    @app_commands.default_permissions(manage_messages=True)
+    @app_checks.mod_and_above()
+    async def _infractions(
+        self,
+        interaction: discord.Interaction,
+        user: discord.User
+    ):
+        """
+        Checks a users infractions. Allows the checking of infractions of
+        members not currently in the server. Prioritizes user_id if both user
+        and user_id are provided.
+        """
+
+        class InfButton(discord.ui.Button):
+            """
+            Represents a button to switch pages on an infraction embed view
+            """
+            
+            def __init__(self, label, inf_type, **kwargs):
+                super().__init__(label=label, **kwargs)
+                self.inf_type = inf_type
+
+            async def callback(self, interaction):
+                
+                infs_embed = helper.get_infractions(
+                    member_id=user.id, 
+                    inf_type=self.inf_type
+                )
+                # might need to utilize this if original message is ephemeral
+                # https://discordpy.readthedocs.io/en/latest/interactions/api.html#discord.Interaction.edit_original_message
+                await interaction.response.edit_message(embed=infs_embed)
+
+        class InfractionView(discord.ui.View):
+            """
+            Represents an infraction embed view
+            """
+
+            def __init__(self, initial_interaction: discord.Interaction):
+                super().__init__(timeout=60)
+
+                self.interaction = initial_interaction
+
+                self.add_item(InfButton(label="Warns", inf_type="warn"))
+                self.add_item(InfButton(label="Mutes", inf_type="mute"))
+                self.add_item(InfButton(label="Bans", inf_type="ban"))
+                self.add_item(InfButton(label="Kicks", inf_type="kick"))
+
+            async def on_timeout(self):
+                """Remove view"""
+
+                await self.interaction.edit_original_message(view=None)
+
+        infs_embed = helper.get_infractions(member_id=user.id, inf_type="warn")
+
+        await interaction.response.send_message(
+            embed=infs_embed, 
+            view=InfractionView(interaction),
+            ephemeral=is_public_channel(interaction.channel)
+        )
+
+    # TODO CONVERT THIS COMMAND
     @commands.command(aliases=["dinfr", "inf_details", "infr_details", "details"])
     @mod_and_above()
     async def detailed_infr(
@@ -1092,7 +874,7 @@ class Moderation(commands.Cog):
                 title=f"Detailed infraction for {user.name} ({user.id}) ",
                 description=f"**Infraction Type:** {infr_type}",
                 color=discord.Color.green(),
-                timestamp=datetime.datetime.utcnow(),
+                timestamp=discord.utils.utcnow(),
             )
             embed.add_field(
                 name=f"Author", value=f"<@{result['author_id']}>", inline=False
@@ -1124,6 +906,7 @@ class Moderation(commands.Cog):
             await ctx.send(embed=embed)
             await ctx.message.add_reaction("<:kgsYes:955703069516128307>")
 
+    # TODO CONVERT THIS COMMAND
     @commands.command(aliases=["einf", "einfr", "edit_infr", "editinfr"])
     @mod_and_above()
     async def edit_infraction(
@@ -1181,46 +964,53 @@ class Moderation(commands.Cog):
 
         await ctx.message.delete(delay=6)
 
-    @commands.command(aliases=["slothmode"])
-    @mod_and_above()
-    async def slowmode(
+    @app_commands.command(name="slowmode")
+    @app_commands.guilds(414027124836532234)
+    @app_commands.default_permissions(manage_messages=True)
+    @app_checks.mod_and_above()
+    async def _slowmode(
         self,
-        ctx: commands.Context,
-        time=None,
-        channel: typing.Optional[discord.TextChannel] = None,
-        *,
-        reason: str = None,
+        interaction: discord.Interaction,
+        time: str,
+        channel: typing.Union[discord.TextChannel, discord.Thread, None],
+        reason: typing.Optional[str]
     ):
-        """Add/Remove slowmode. \nUsage: slowmode <slowmode_time> <#channel> <reason>"""
+        """Add or remove slowmode in a channel"""
 
-        time = calc_time([time, ""])[0]
+        seconds, _ = helper.calc_time(time)
 
-        if time is None:
-            time = 0
+        if seconds is None:
+            seconds = 0
 
-        if time > 21600:
-            raise commands.BadArgument(message="Slowmode can't be over 6 hours.")
+        if seconds > 21600:
+            await interaction.response.send_message(
+                "Slowmode can't be over 6 hours",
+                ephemeral=True
+            )
+            return
 
-        ch = ctx.channel
+        if channel is None:
+            channel = interaction.channel
 
-        if channel is not None:
-            ch = channel
+        await channel.edit(slowmode_delay=seconds, reason=reason)
 
-        await ch.edit(slowmode_delay=time, reason=reason)
-
-        logging_channel = discord.utils.get(ctx.guild.channels, id=self.logging_channel)
+        logging_channel = discord.utils.get(interaction.guild.channels, id=self.logging_channel)
         embed = helper.create_embed(
-            author=ctx.author,
+            author=interaction.user,
             action="Added slow mode.",
             users=None,
             reason=reason,
-            extra=f"Channel: {ch.mention}\nSlowmode Duration: {time} seconds",
+            extra=f"Channel: {channel.mention}\nSlowmode Duration: {seconds} seconds",
             color=discord.Color.orange(),
         )
         await logging_channel.send(embed=embed)
 
-        await ctx.send(f"Slowmode of {time}s added to {ch.mention}.")
+        await interaction.response.send_message(
+            f"slowmode of {seconds} seconds added to {channel.mention}.", 
+            ephemeral=True
+        )
 
+    # TODO CONVERT THIS COMMAND
     @commands.command(aliases=["blacklist_command", "commandblacklist"])
     @mod_and_above()
     async def nocmd(self, ctx, member: discord.Member, command_name: str):
@@ -1238,6 +1028,7 @@ class Moderation(commands.Cog):
         else:
             await ctx.send(f"You cannot blacklist someone higher or equal to you smh")
 
+    # TODO CONVERT THIS COMMAND
     @commands.command(aliases=["whitelist_command", "commandwhitelist"])
     @mod_and_above()
     async def yescmd(self, ctx, member: discord.Member, command_name: str):
@@ -1254,5 +1045,5 @@ class Moderation(commands.Cog):
             await ctx.send(f"{member.name} is not blacklisted from {command.name}")
 
 
-def setup(bot):
-    bot.add_cog(Moderation(bot))
+async def setup(bot):
+    await bot.add_cog(Moderation(bot))

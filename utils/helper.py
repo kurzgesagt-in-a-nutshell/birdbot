@@ -154,6 +154,7 @@ def devs_only():
             424843380342784011,  # Oeav
             183092910495891467,  # Sloth
             248790213386567680,  # Austin
+            229779964898181120,  # source
         ]:
             raise NoAuthorityError
         return True
@@ -911,3 +912,15 @@ def whitelist_member(member: discord.Member, command: commands.Command) -> bool:
         {"command_name": command.name}, {"$pull": {"blacklisted_users": member.id}}
     )
     return True
+
+def is_public_channel(
+    channel:typing.Union[discord.TextChannel, discord.Thread]
+) -> bool:
+    """
+    Returns true for all channels except those under the moderation category
+
+    Currently used within the moderation cog to determine if an interaction
+    should be ephemeral
+    """
+    # check if channel is underneath the moderation category
+    return channel.category_id != 414095379156434945 # mod category id

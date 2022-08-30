@@ -26,7 +26,6 @@ from utils.helper import (
     is_internal_command,
 )
 
-
 async def translate_bannsystem(message: discord.Message):
     """Translate incoming bannsystem reports"""
     if not (
@@ -67,6 +66,7 @@ async def translate_bannsystem(message: discord.Message):
     await translated_msg.add_reaction("<:kgsYes:955703069516128307>")
     await translated_msg.add_reaction("<:kgsNo:955703108565098496>")
     await message.delete()
+
 
 
 # janky fix for server memories, will make permanent once out of experimentation
@@ -138,10 +138,10 @@ class GuildLogger(commands.Cog):
             title="Message Edited",
             description=f"Message edited in {before.channel.mention}",
             color=0xEE7600,
-            timestamp=datetime.datetime.utcnow(),
+            timestamp=discord.utils.utcnow(),
         )
         embed.set_author(
-            name=before.author.display_name, icon_url=before.author.avatar_url
+            name=before.author.display_name, icon_url=before.author.display_avatar.url
         )
         embed.add_field(name="Before", value=before.content, inline=False)
         embed.add_field(name="After", value=after.content, inline=False)
@@ -180,18 +180,15 @@ class GuildLogger(commands.Cog):
             title="Message Deleted",
             description=f"Message deleted in {message.channel.mention}",
             color=0xC9322C,
-            timestamp=datetime.datetime.utcnow(),
+            timestamp=discord.utils.utcnow(),
         )
         embed.set_author(
-            name=message.author.display_name, icon_url=message.author.avatar_url
+            name=message.author.display_name, icon_url=message.author.display_avatar.url
         )
         embed.add_field(name="Content", value=message.content)
         search_terms = f"```Deleted in {message.channel.id}"
 
-        latest_logged_delete = await message.guild.audit_logs(
-            limit=1, action=discord.AuditLogAction.message_delete
-        ).flatten()
-        latest_logged_delete = latest_logged_delete[0]
+        latest_logged_delete = [log async for log in await message.guild.audit_logs(limit=1, action=discord.AuditLogAction.message_delete)][0]
 
         self_deleted = False
         if message.author == latest_logged_delete.target:
@@ -229,9 +226,9 @@ class GuildLogger(commands.Cog):
             title="Member joined",
             description=f"{member.name}#{member.discriminator} ({member.id}) {member.mention}",
             color=0x45E65A,
-            timestamp=datetime.datetime.utcnow(),
+            timestamp=discord.utils.utcnow(),
         )
-        embed.set_author(name=member.name, icon_url=member.avatar_url)
+        embed.set_author(name=member.name, icon_url=member.display_avatar.url)
 
         embed.add_field(
             name="Account Created",
@@ -262,9 +259,9 @@ class GuildLogger(commands.Cog):
             title="Member Left",
             description=f"{member.name}#{member.discriminator} ({member.id})",
             color=0xFF0004,
-            timestamp=datetime.datetime.utcnow(),
+            timestamp=discord.utils.utcnow(),
         )
-        embed.set_author(name=member.name, icon_url=member.avatar_url)
+        embed.set_author(name=member.name, icon_url=member.display_avatar.url)
 
         embed.add_field(
             name="Account Created",
@@ -308,9 +305,9 @@ class GuildLogger(commands.Cog):
             title="Nickname changed",
             description=f"{before.name}#{before.discriminator} ({before.id})",
             color=0xFF6633,
-            timestamp=datetime.datetime.utcnow(),
+            timestamp=discord.utils.utcnow(),
         )
-        embed.set_author(name=before.name, icon_url=before.avatar_url)
+        embed.set_author(name=before.name, icon_url=before.display_avatar.url)
         embed.add_field(name="Previous Nickname", value=f"{before.nick}", inline=True)
         embed.add_field(name="Current Nickname", value=f"{after.nick}", inline=True)
 
@@ -384,7 +381,7 @@ class GuildChores(commands.Cog):
                 color=0x00FF00,
             )
             embed.set_author(
-                name=message.author.display_name, icon_url=message.author.avatar_url
+                name=message.author.display_name, icon_url=message.author.display_avatar.url
             )
             embed.set_footer(
                 text="Last 50 messages in the channel are attached for reference"
@@ -472,7 +469,7 @@ class GuildChores(commands.Cog):
             async with aiohttp.ClientSession() as session:
                 hook = discord.Webhook.from_url(
                     self.greeting_webhook_url,
-                    adapter=discord.AsyncWebhookAdapter(session),
+                    session=session,
                 )
                 await hook.send(
                     f"Welcome hatchling {member.mention}!\n"
@@ -646,7 +643,7 @@ class Errors(commands.Cog):
             await channel.send(embed=embed, file=file)
 
 
-def setup(bot):
-    bot.add_cog(Errors(bot))
-    bot.add_cog(GuildChores(bot))
-    bot.add_cog(GuildLogger(bot))
+async def setup(bot):
+    await bot.add_cog(Errors(bot))
+    await bot.add_cog(GuildChores(bot))
+    await bot.add_cog(GuildLogger(bot))

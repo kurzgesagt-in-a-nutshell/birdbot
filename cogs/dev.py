@@ -149,11 +149,11 @@ class Dev(commands.Cog):
         """Reload a module"""
         try:
             try:
-                self.bot.unload_extension(module_name)
+                await self.bot.unload_extension(module_name)
             except discord.ext.commands.errors.ExtensionNotLoaded as enl:
                 await ctx.send(f"Module not loaded. Trying to load it.", delete_after=6)
 
-            self.bot.load_extension(module_name)
+            await self.bot.load_extension(module_name)
             await ctx.send("Module Loaded")
 
         except ExtensionNotFound as enf:
@@ -239,6 +239,15 @@ class Dev(commands.Cog):
     async def send(self, ctx, channel: discord.TextChannel, *, msg: str):
         await channel.send(msg)
 
+    @commands.command()
+    @devs_only()
+    async def sync_apps(self, ctx: commands.Context):
 
-def setup(bot):
-    bot.add_cog(Dev(bot))
+        synced = await ctx.bot.tree.sync(guild=discord.Object(414027124836532234))
+        self.logger.debug(synced)
+        
+        await ctx.send("synced local guild commands")
+
+
+async def setup(bot):
+    await bot.add_cog(Dev(bot))

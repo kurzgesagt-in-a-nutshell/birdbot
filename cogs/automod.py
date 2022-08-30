@@ -337,12 +337,12 @@ class Filter(commands.Cog):
 
     @commands.Cog.listener()
     async def on_message(self, message):
-
         if (
             message.channel.category.id == 414095379156434945  # mod category
             and message.channel.id != 414179142020366336  # bot testing
         ):
             return
+
         if message.content == "":
             return
 
@@ -477,15 +477,8 @@ class Filter(commands.Cog):
                 await message.delete()
 
         if "mute" in actions:
-            time = (
-                datetime.datetime.utcnow() + datetime.timedelta(seconds=actions["mute"])
-            ).isoformat()
-            route = http.Route(
-                "PATCH", f"/guilds/414027124836532234/members/{message.author.id}"
-            )
-            await self.bot.http.request(
-                route, json={"communication_disabled_until": time}, reason="spam"
-            )
+            time = datetime.timedelta(seconds=actions["mute"])
+            await message.author.timeout(time, reason="spam")
 
             try:
                 await message.author.send(
@@ -876,5 +869,5 @@ class Filter(commands.Cog):
         return regexlist
 
 
-def setup(bot):
-    bot.add_cog(Filter(bot))
+async def setup(bot):
+    await bot.add_cog(Filter(bot))

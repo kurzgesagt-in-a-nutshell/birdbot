@@ -10,6 +10,9 @@ from logging.handlers import TimedRotatingFileHandler
 from discord.ext import commands
 from rich.logging import RichHandler
 
+from discord import app_commands, Interaction
+from utils import app_errors
+
 logger = logging.getLogger("BirdBot")
 
 
@@ -46,6 +49,65 @@ def setup():
             logger.removeHandler(handler)
 
 
+# TODO Move to separate file once util is organized
+# currently would throw a circular import error
+async def maybe_responded(interaction: Interaction, *args, **kwargs):
+    """
+    Either responds or sends a followup on an interaction response
+    """
+    if interaction.response.is_done():
+        await interaction.followup.send(*args, **kwargs)
+
+        return
+
+    await interaction.response.send_message(*args, **kwargs)
+    
+
+class BirdTree(app_commands.CommandTree):
+    """
+    Subclass of app_commands.CommandTree to define the behavior for the birdbot
+    tree. 
+
+    Handles thrown errors within the tree and interactions between all commands
+    """
+
+    async def on_error(
+        self, 
+        interaction: Interaction, 
+        error: app_commands.AppCommandError
+    ):
+        """Handles errors thrown within the command tree"""
+
+        if isinstance(error, app_commands.CheckFailure):
+            # Inform user of failure ephemerally
+
+            if isinstance(error, app_errors.InvalidAuthorizationError):
+
+                msg = f"<:kgsNo:955703108565098496> {str(error)}"
+                await maybe_responded(interaction, msg, ephemeral=True)
+
+                return
+
+        elif isinstance(error, app_errors.InvalidInvocationError):
+            # inform user of invalid interaction input ephemerally
+
+            msg = f"<:kgsNo:955703108565098496> {str(error)}"
+            await maybe_responded(interaction, msg, ephemeral=True)
+
+            return
+
+        # most cases this will consist of errors thrown by the actual code
+        # TODO send in <#865321589919055882>
+
+        msg = f"an internal error occurred. if this continues please inform an active bot dev"
+        await maybe_responded(
+            interaction, msg, 
+            ephemeral= interaction.channel.category_id != 414095379156434945# is_public_channel(interaction.channel)
+        )
+
+        return
+
+
 class BirdBot(commands.AutoShardedBot):
     """Main Bot"""
 
@@ -71,6 +133,7 @@ class BirdBot(commands.AutoShardedBot):
             webhooks=True,
             messages=True,
             reactions=True,
+            message_content=True,
             presences=True,
         )
         max_messages = 1000
@@ -114,6 +177,7 @@ class BirdBot(commands.AutoShardedBot):
             case_insensitive=True,
             allowed_mentions=allowed_mentions,
             intents=intents,
+            tree_cls=BirdTree
         )
 
         x.get_database()
@@ -132,7 +196,7 @@ class BirdBot(commands.AutoShardedBot):
         logger.info("Connected to mongoDB")
         cls.db = db
 
-    def load_extensions(self, args):
+    async def load_extensions(self, args):
         """Loads all cogs from cogs/ without the '_' prefix"""
         for filename in os.listdir("cogs/"):
             if not (
@@ -141,7 +205,7 @@ class BirdBot(commands.AutoShardedBot):
                 if not filename.startswith("_"):
                     logger.info(f"loading {f'cogs.{filename[:-3]}'}")
                     try:
-                        self.load_extension(f"cogs.{filename[:-3]}")
+                        await self.load_extension(f"cogs.{filename[:-3]}")
                     except Exception as e:
                         logger.error(f"cogs.{filename[:-3]} cannot be loaded. [{e}]")
                         logger.exception(f"Cannot load cog {f'cogs.{filename[:-3]}'}")
@@ -150,11 +214,11 @@ class BirdBot(commands.AutoShardedBot):
         """Close the Discord connection and the aiohttp sessions if any (future perhaps?)."""
         for ext in list(self.extensions):
             with suppress(Exception):
-                self.unload_extension(ext)
+                await self.unload_extension(ext)
 
         for cog in list(self.cogs):
             with suppress(Exception):
-                self.remove_cog(cog)
+                await self.remove_cog(cog)
 
         await super().close()
 
