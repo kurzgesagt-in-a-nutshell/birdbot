@@ -51,16 +51,14 @@ class Moderation(commands.Cog):
     async def on_ready(self):
         self.logger.info("loaded Moderation")
 
-    # TODO OPEN THIS COMMAND FOR REGULAR USERS AND ENABLE ACTIVE MOD PING
     @app_commands.command()
-    @app_commands.guilds(414027124836532234)
     async def report(
         self, 
         interaction: discord.Interaction, 
         member: typing.Optional[discord.Member]
     ):  
         """
-        This command is currently locked please use `!report` to report an incident
+        Use this command to report issues to the moderation team.
         """
         
         class Modal(discord.ui.Modal):
@@ -98,7 +96,7 @@ class Moderation(commands.Cog):
                 )
 
                 mod_channel = interaction.guild.get_channel(414095428573986816)
-                await mod_channel.send(embed=mod_embed)
+                await mod_channel.send(get_active_staff(interaction.client), embed=mod_embed)
 
                 await interaction.response.send_message(
                     "Report has been sent!", ephemeral=True
