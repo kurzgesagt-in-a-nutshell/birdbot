@@ -54,7 +54,6 @@ class Moderation(commands.Cog):
     # TODO OPEN THIS COMMAND FOR REGULAR USERS AND ENABLE ACTIVE MOD PING
     @app_commands.command()
     @app_commands.guilds(414027124836532234)
-    @app_checks.devs_only()
     async def report(
         self, 
         interaction: discord.Interaction, 
@@ -110,6 +109,7 @@ class Moderation(commands.Cog):
     @app_commands.command(name="clean")
     @app_commands.guilds(414027124836532234)
     @app_checks.mod_and_above()
+    @app_commands.default_permissions(manage_messages=True)
     @app_commands.rename(_from="from")
     async def _clean(
         self,
