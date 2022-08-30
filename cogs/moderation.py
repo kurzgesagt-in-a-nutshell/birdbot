@@ -122,7 +122,7 @@ class Moderation(commands.Cog):
             channel = interaction.channel
 
         def check(message):
-            if _from is not None and _from.id == message.author.id:
+            if _from is None or _from.id == message.author.id:
                 return True
             return False
 
@@ -136,7 +136,7 @@ class Moderation(commands.Cog):
 
         await interaction.response.send_message(
             f"deleted {deleted_count} messages{'s' if deleted_count > 1 else ''}",
-            ephemeral=True
+            ephemeral=is_public_channel(interaction.channel)
         )
 
         # no need to manually log a single delete
