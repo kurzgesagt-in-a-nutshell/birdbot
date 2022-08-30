@@ -207,7 +207,7 @@ class Moderation(commands.Cog):
             except discord.Forbidden:
                 pass
         
-        # await member.ban(reason=reason)
+        await member.ban(reason=reason)
         await interaction.channel.send(f"I would ban {user.name} here")
 
         helper.create_infraction(
@@ -249,7 +249,7 @@ class Moderation(commands.Cog):
         """Unban a member"""
 
         try:
-            # await interaction.guild.unban(user, reason=reason)
+            await interaction.guild.unban(user, reason=reason)
             await interaction.channel.send("I would unban here")
         except discord.NotFound:
             await interaction.response.send_message(
@@ -293,7 +293,7 @@ class Moderation(commands.Cog):
                 "user could not be kicked due to your clearance"
             )
 
-        # await member.kick(reason=reason)
+        await member.kick(reason=reason)
         await interaction.channel.send("I would kick here")
 
         helper.create_infraction(
