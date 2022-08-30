@@ -206,7 +206,6 @@ class Moderation(commands.Cog):
                 pass
         
         await member.ban(reason=reason)
-        await interaction.channel.send(f"I would ban {user.name} here")
 
         helper.create_infraction(
             author=interaction.user,
@@ -248,7 +247,6 @@ class Moderation(commands.Cog):
 
         try:
             await interaction.guild.unban(user, reason=reason)
-            await interaction.channel.send("I would unban here")
         except discord.NotFound:
             await interaction.response.send_message(
                 f"User <@{id}> has not been banned before.",
@@ -292,7 +290,6 @@ class Moderation(commands.Cog):
             )
 
         await member.kick(reason=reason)
-        await interaction.channel.send("I would kick here")
 
         helper.create_infraction(
             author=interaction.user,
