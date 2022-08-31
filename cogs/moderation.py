@@ -842,9 +842,11 @@ class Moderation(commands.Cog):
                 self.add_item(InfButton(label="Kicks", inf_type="kick"))
 
             async def on_timeout(self):
-                """Remove view"""
+                """
+                Removes the view on timeout for visual aid
+                """
 
-                await self.interaction.edit_original_message(view=None)
+                await self.interaction.edit_original_response(view=None)
 
         infs_embed = helper.get_infractions(member_id=user.id, inf_type="warn")
 
