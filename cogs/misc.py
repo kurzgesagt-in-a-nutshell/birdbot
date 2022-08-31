@@ -3,6 +3,7 @@ import asyncio
 import json
 import re
 
+import demoji
 import discord
 import pymongo
 
@@ -273,22 +274,25 @@ class Misc(commands.Cog):
     @bot_commands_only()
     @commands.command(aliases=["bg", "bigemoji", "bigemote"])
     async def big_emote(self, ctx, *args):
-        emojis = []
-        if len(args) > 5:
-            ctx.send("No more than 5 emojis at a time")
-        print(args)
-        for item in args:
-            if re.match(r"<a:\w+:(\d{17,19})>", str(item)):
-                emojis.append(re.findall(r"<a:\w+:(\d{17,19})>", str(item))[0] + ".gif")
-            elif re.match(r"<:\w+:(\d{17,19})>", str(item)):
-                emojis.append(re.findall(r"<:\w+:(\d{17,19})>", str(item))[0] + ".png")
-        print(emojis)
-        if len(emojis) == 0:
-            await ctx.send("Please send an emoji that is not a default emoji")
-        else:
-            for e in emojis:
-                await ctx.send("https://cdn.discordapp.com/emojis/" + str(e))
+        if len(args) > 1:
+            ctx.send("Please only send one emoji at a time")
 
+        if len(demoji.findall_list(ctx.message.content)) > 0:
+            print(args[0].encode('unicode-escape'))
+            code = str(args[0].encode('unicode-escape')
+                ).replace('U000','-').replace('\\','').replace('\'','').replace('u','-')[2:]
+            print(code)
+            name = demoji.replace_with_desc(args[0]).replace(' ','-').replace(":","").replace("_","-")
+            await ctx.send("https://emojipedia-us.s3.dualstack.us-west-1.amazonaws.com/thumbs/120/twitter/322/" + name\
+                           + "_" + code + ".png")
+        else:
+            if re.match(r"<a:\w+:(\d{17,19})>", str(args[0])):
+                emoji = (re.findall(r"<a:\w+:(\d{17,19})>", str(args[0]))[0] + ".gif")
+            elif re.match(r"<:\w+:(\d{17,19})>", str(args[0])):
+                emoji = (re.findall(r"<:\w+:(\d{17,19})>", str(args[0]))[0] + ".png")
+
+            await ctx.send("https://cdn.discordapp.com/emojis/" + str(emoji))
+            
     @commands.Cog.listener()
     async def on_reaction_add(self, reaction, user):
         """
