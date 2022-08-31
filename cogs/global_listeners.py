@@ -26,6 +26,7 @@ from utils.helper import (
     is_internal_command,
 )
 
+
 async def translate_bannsystem(message: discord.Message):
     """Translate incoming bannsystem reports"""
     if not (
@@ -44,7 +45,7 @@ async def translate_bannsystem(message: discord.Message):
 
     url = "https://translate.birdbot.xyz/translate?"
 
-    #TODO add keys in the future
+    # TODO add keys in the future
     payload = {
         "q": " ### ".join(to_translate),
         "target": "en",
@@ -66,7 +67,6 @@ async def translate_bannsystem(message: discord.Message):
     await translated_msg.add_reaction("<:kgsYes:955703069516128307>")
     await translated_msg.add_reaction("<:kgsNo:955703108565098496>")
     await message.delete()
-
 
 
 # janky fix for server memories, will make permanent once out of experimentation
@@ -188,7 +188,12 @@ class GuildLogger(commands.Cog):
         embed.add_field(name="Content", value=message.content)
         search_terms = f"```Deleted in {message.channel.id}"
 
-        latest_logged_delete = [log async for log in message.guild.audit_logs(limit=1, action=discord.AuditLogAction.message_delete)][0]
+        latest_logged_delete = [
+            log
+            async for log in message.guild.audit_logs(
+                limit=1, action=discord.AuditLogAction.message_delete
+            )
+        ][0]
 
         self_deleted = False
         if message.author == latest_logged_delete.target:
@@ -381,7 +386,8 @@ class GuildChores(commands.Cog):
                 color=0x00FF00,
             )
             embed.set_author(
-                name=message.author.display_name, icon_url=message.author.display_avatar.url
+                name=message.author.display_name,
+                icon_url=message.author.display_avatar.url,
             )
             embed.set_footer(
                 text="Last 50 messages in the channel are attached for reference"

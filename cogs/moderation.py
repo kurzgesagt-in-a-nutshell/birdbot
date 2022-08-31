@@ -23,7 +23,7 @@ from utils.helper import (
     get_active_staff,
     blacklist_member,
     whitelist_member,
-    is_public_channel
+    is_public_channel,
 )
 
 import discord
@@ -53,14 +53,12 @@ class Moderation(commands.Cog):
 
     @app_commands.command()
     async def report(
-        self, 
-        interaction: discord.Interaction, 
-        member: typing.Optional[discord.Member]
-    ):  
+        self, interaction: discord.Interaction, member: typing.Optional[discord.Member]
+    ):
         """
         Use this command to report issues to the moderation team.
         """
-        
+
         class Modal(discord.ui.Modal):
             def __init__(self, member):
                 super().__init__(title="Report")
@@ -82,21 +80,23 @@ class Moderation(commands.Cog):
                 message_link = self.children[1].value
 
                 mod_embed = discord.Embed(
-                    title="New Report", 
+                    title="New Report",
                     color=0x00FF00,
                     description=f"""
                     **Report description:** {description}
                     **User:** {self.member}
                     **Message Link:** [click to jump]({message_link})
-                    """
+                    """,
                 )
                 mod_embed.set_author(
-                    name=f"{interaction.user.name} ({interaction.user.id})", 
-                    icon_url=interaction.user.display_avatar.url
+                    name=f"{interaction.user.name} ({interaction.user.id})",
+                    icon_url=interaction.user.display_avatar.url,
                 )
 
                 mod_channel = interaction.guild.get_channel(414095428573986816)
-                await mod_channel.send(get_active_staff(interaction.client), embed=mod_embed)
+                await mod_channel.send(
+                    get_active_staff(interaction.client), embed=mod_embed
+                )
 
                 await interaction.response.send_message(
                     "Report has been sent!", ephemeral=True
@@ -113,12 +113,12 @@ class Moderation(commands.Cog):
         self,
         interaction: discord.Interaction,
         limit: app_commands.Range[int, 1, 100],
-        _from: typing.Optional[discord.User], 
-        channel: typing.Union[discord.TextChannel, discord.Thread, None] = None
+        _from: typing.Optional[discord.User],
+        channel: typing.Union[discord.TextChannel, discord.Thread, None] = None,
     ):
         """Cleans messages with certain parameters"""
 
-        if channel is None: 
+        if channel is None:
             channel = interaction.channel
 
         def check(message):
@@ -127,44 +127,53 @@ class Moderation(commands.Cog):
             return False
 
         deleted_messages = await channel.purge(
-            limit=limit, 
+            limit=limit,
             check=check,
-            bulk=limit!=1 # if count is 1 then dont bulk delete
+            bulk=limit != 1,  # if count is 1 then dont bulk delete
         )
 
         deleted_count = len(deleted_messages)
 
         await interaction.response.send_message(
             f"deleted {deleted_count} messages{'s' if deleted_count > 1 else ''}",
-            ephemeral=is_public_channel(interaction.channel)
+            ephemeral=is_public_channel(interaction.channel),
         )
 
         # no need to manually log a single delete
-        if limit == 1: return
+        if limit == 1:
+            return
 
         # format the log
         row_format = lambda x: "{author:<70} | {datetime:<20} | {content}".format(**x)
 
-        message_log = [row_format({
-            "author":"Author (ID)",
-            "datetime": "Message Creation Time (UTC)",
-            "content": "Content"
-        })]
+        message_log = [
+            row_format(
+                {
+                    "author": "Author (ID)",
+                    "datetime": "Message Creation Time (UTC)",
+                    "content": "Content",
+                }
+            )
+        ]
 
         # TODO save attachments and upload to logging channel
         for m in deleted_messages:
             author = f"{m.author.name}#{m.author.discriminator} ({m.author.id})"
-            
+
             content = m.content
             if m.attachments and len(m.attachments) > 0:
                 attachments = "; ".join(f.filename for f in m.attachments)
                 content = f"Attachments Included: {attachments}; {content}"
-            
-            message_log.append(row_format({
-                "author": author,
-                "datetime": f"{m.created_at.replace(microsecond=0)}",
-                "content": content
-            }))
+
+            message_log.append(
+                row_format(
+                    {
+                        "author": author,
+                        "datetime": f"{m.created_at.replace(microsecond=0)}",
+                        "content": content,
+                    }
+                )
+            )
 
         message_logging_channel = discord.utils.get(
             interaction.guild.channels, id=self.message_logging_channel
@@ -175,7 +184,7 @@ class Moderation(commands.Cog):
             file=discord.File(
                 io.BytesIO("\n".join(message_log).encode()),
                 filename=f"clean_content_{interaction.id}.txt",
-            )
+            ),
         )
 
     @app_commands.command(name="ban")
@@ -183,11 +192,11 @@ class Moderation(commands.Cog):
     @app_commands.default_permissions(manage_messages=True)
     @app_checks.mod_and_above()
     async def _ban(
-        self, 
+        self,
         interaction: discord.Interaction,
-        inf_level:app_commands.Range[int, 1, 5],
+        inf_level: app_commands.Range[int, 1, 5],
         user: discord.User,
-        reason:str
+        reason: str,
     ):
         """Bans a member"""
 
@@ -205,7 +214,6 @@ class Moderation(commands.Cog):
         except discord.NotFound:
             pass
 
-        
         await interaction.guild.ban(user=user, reason=reason)
 
         helper.create_infraction(
@@ -216,7 +224,9 @@ class Moderation(commands.Cog):
             inf_level=inf_level,
         )
 
-        logging_channel = discord.utils.get(interaction.guild.channels, id=self.logging_channel)
+        logging_channel = discord.utils.get(
+            interaction.guild.channels, id=self.logging_channel
+        )
 
         embed = helper.create_embed(
             author=interaction.user,
@@ -230,8 +240,7 @@ class Moderation(commands.Cog):
         await logging_channel.send(embed=embed)
 
         await interaction.response.send_message(
-            "user has been banned", 
-            ephemeral=is_public_channel(interaction.channel)
+            "user has been banned", ephemeral=is_public_channel(interaction.channel)
         )
 
     @app_commands.command(name="unban")
@@ -242,7 +251,7 @@ class Moderation(commands.Cog):
         self,
         interaction: discord.Interaction,
         user: discord.User,
-        reason: typing.Optional[str] = None
+        reason: typing.Optional[str] = None,
     ):
         """Unban a member"""
 
@@ -251,11 +260,13 @@ class Moderation(commands.Cog):
         except discord.NotFound:
             await interaction.response.send_message(
                 f"User <@{id}> has not been banned before.",
-                ephemeral=is_public_channel(interaction.channel)
+                ephemeral=is_public_channel(interaction.channel),
             )
             return
 
-        logging_channel = discord.utils.get(interaction.guild.channels, id=self.logging_channel)
+        logging_channel = discord.utils.get(
+            interaction.guild.channels, id=self.logging_channel
+        )
 
         embed = helper.create_embed(
             author=interaction.user,
@@ -267,8 +278,7 @@ class Moderation(commands.Cog):
         await logging_channel.send(embed=embed)
 
         await interaction.response.send_message(
-            "user was unbanned", 
-            ephemeral=is_public_channel(interaction.channel)
+            "user was unbanned", ephemeral=is_public_channel(interaction.channel)
         )
 
     @app_commands.command(name="kick")
@@ -280,12 +290,12 @@ class Moderation(commands.Cog):
         interaction: discord.Interaction,
         inf_level: app_commands.Range[int, 1, 5],
         member: discord.Member,
-        reason: str
+        reason: str,
     ):
         """Kicks a member"""
 
         if member.top_role >= interaction.user.top_role:
-            
+
             raise app_errors.InvalidAuthorizationError(
                 "user could not be kicked due to your clearance"
             )
@@ -300,7 +310,9 @@ class Moderation(commands.Cog):
             inf_level=inf_level,
         )
 
-        logging_channel = discord.utils.get(interaction.guild.channels, id=self.logging_channel)
+        logging_channel = discord.utils.get(
+            interaction.guild.channels, id=self.logging_channel
+        )
 
         embed = helper.create_embed(
             author=interaction.user,
@@ -313,26 +325,23 @@ class Moderation(commands.Cog):
         await logging_channel.send(embed=embed)
 
         await interaction.response.send_message(
-            "member has been kicked", 
-            ephemeral=is_public_channel(interaction.channel)
+            "member has been kicked", ephemeral=is_public_channel(interaction.channel)
         )
-    
+
     @app_commands.command(name="selfmute")
     @app_commands.guilds(414027124836532234)
     async def _selfmute(
         self,
         interaction: discord.Interaction,
         time: str,
-        reason: typing.Optional[str] = "Self Mute"
+        reason: typing.Optional[str] = "Self Mute",
     ):
         """Mute yourself"""
 
         tot_time, _ = helper.calc_time([time, ""])
 
         if tot_time is None or tot_time <= 0:
-            raise app_errors.InvalidInvocationError(
-                "Improper time provided"
-            )
+            raise app_errors.InvalidInvocationError("Improper time provided")
         elif tot_time > 604801:
             raise app_errors.InvalidInvocationError(
                 "Can't mute for longer than 7 days!"
@@ -355,10 +364,12 @@ class Moderation(commands.Cog):
             Given reason: {reason}
             mods will not unmute you :) think twice about doing the command next time
             """,
-            ephemeral=True
+            ephemeral=True,
         )
 
-        logging_channel = discord.utils.get(interaction.guild.channels, id=713107972737204236)
+        logging_channel = discord.utils.get(
+            interaction.guild.channels, id=713107972737204236
+        )
 
         embed = helper.create_embed(
             author=interaction.user,
@@ -383,7 +394,7 @@ class Moderation(commands.Cog):
         member: discord.Member,
         time: str,
         reason: str,
-        final: typing.Optional[bool] = False
+        final: typing.Optional[bool] = False,
     ):
         """Mutes a member"""
 
@@ -397,13 +408,9 @@ class Moderation(commands.Cog):
         tot_time, _ = helper.calc_time([time, ""])
 
         if tot_time is None:
-            raise app_errors.InvalidInvocationError(
-                "no valid time provided"
-            )
+            raise app_errors.InvalidInvocationError("no valid time provided")
         elif tot_time <= 0:
-            raise app_errors.InvalidInvocationError(
-                "time can not be 0 or less"
-            )
+            raise app_errors.InvalidInvocationError("time can not be 0 or less")
         elif tot_time > 2419200:
             raise app_errors.InvalidInvocationError(
                 "time can not be longer than 28 days (2419200 seconds)"
@@ -413,7 +420,6 @@ class Moderation(commands.Cog):
         finished = discord.utils.utcnow() + duration
 
         time_str = helper.get_time_string(tot_time)
-
 
         default_msg = "(Note: Accumulation of warns may lead to permanent removal from the server)"
         final_msg = "**(This is your final warning, future infractions will lead to a non negotiable ban from the server)**"
@@ -439,7 +445,9 @@ class Moderation(commands.Cog):
             final_warn=final,
         )
 
-        logging_channel = discord.utils.get(interaction.guild.channels, id=self.logging_channel)
+        logging_channel = discord.utils.get(
+            interaction.guild.channels, id=self.logging_channel
+        )
 
         embed = helper.create_embed(
             author=interaction.user,
@@ -453,8 +461,7 @@ class Moderation(commands.Cog):
         await logging_channel.send(embed=embed)
 
         await interaction.response.send_message(
-            "member has been muted", 
-            ephemeral=is_public_channel(interaction.channel)
+            "member has been muted", ephemeral=is_public_channel(interaction.channel)
         )
 
     @app_commands.command(name="unmute")
@@ -465,11 +472,13 @@ class Moderation(commands.Cog):
         self,
         interaction: discord.Interaction,
         member: discord.Member,
-        reason: typing.Optional[str]
+        reason: typing.Optional[str],
     ):
         """Unmutes a member"""
 
-        logging_channel = discord.utils.get(interaction.guild.channels, id=self.logging_channel)
+        logging_channel = discord.utils.get(
+            interaction.guild.channels, id=self.logging_channel
+        )
 
         await member.timeout(None)
 
@@ -483,8 +492,7 @@ class Moderation(commands.Cog):
         await logging_channel.send(embed=embed)
 
         await interaction.response.send_message(
-            "member has been unmuted", 
-            ephemeral=is_public_channel(interaction.channel)
+            "member has been unmuted", ephemeral=is_public_channel(interaction.channel)
         )
 
     @app_commands.command(name="role")
@@ -495,7 +503,7 @@ class Moderation(commands.Cog):
         self,
         interaction: discord.Interaction,
         member: discord.Member,
-        role: discord.Role
+        role: discord.Role,
     ):
         """Add/Remove a role from a member"""
 
@@ -518,7 +526,9 @@ class Moderation(commands.Cog):
             action = "Gave role"
             preposition = "to"
 
-        logging_channel = discord.utils.get(interaction.guild.channels, id=self.logging_channel)
+        logging_channel = discord.utils.get(
+            interaction.guild.channels, id=self.logging_channel
+        )
 
         embed = helper.create_embed(
             author=interaction.user,
@@ -530,9 +540,9 @@ class Moderation(commands.Cog):
         await logging_channel.send(embed=embed)
 
         await interaction.response.send_message(
-            f"{action.lower()} {role.name} {preposition} {member.name}", 
+            f"{action.lower()} {role.name} {preposition} {member.name}",
             ephemeral=is_public_channel(interaction.channel),
-            allowed_mentions=discord.AllowedMentions.none()
+            allowed_mentions=discord.AllowedMentions.none(),
         )
 
     @app_commands.command(name="warn")
@@ -545,7 +555,7 @@ class Moderation(commands.Cog):
         inf_level: app_commands.Range[int, 1, 5],
         member: discord.Member,
         reason: str,
-        final: typing.Optional[bool] = False
+        final: typing.Optional[bool] = False,
     ):
         """Warns a user"""
 
@@ -575,7 +585,9 @@ class Moderation(commands.Cog):
             final_warn=final,
         )
 
-        logging_channel = discord.utils.get(interaction.guild.channels, id=self.logging_channel)
+        logging_channel = discord.utils.get(
+            interaction.guild.channels, id=self.logging_channel
+        )
 
         embed = helper.create_embed(
             author=interaction.user,
@@ -588,14 +600,13 @@ class Moderation(commands.Cog):
         await logging_channel.send(embed=embed)
 
         await interaction.response.send_message(
-            "user has been warned", 
-            ephemeral=is_public_channel(interaction.channel)
+            "user has been warned", ephemeral=is_public_channel(interaction.channel)
         )
 
     # TODO CONVERT THIS COMMAND
     @commands.command(aliases=["unwarn", "removewarn"])
     @mod_and_above()
-    async def delwarn(self, ctx: commands.context, member: discord.Member):      
+    async def delwarn(self, ctx: commands.context, member: discord.Member):
         class View(discord.ui.View):
             def __init__(self, warns):
                 super().__init__(timeout=20)
@@ -605,34 +616,49 @@ class Moderation(commands.Cog):
                 self.warn_len = len(warns)
 
                 for i in range(5):
-                    disabled=False
+                    disabled = False
                     if i >= self.warn_len:
                         disabled = True
                     self.add_item(Button(label=str(i), disabled=disabled))
 
             @discord.ui.button(label="<", style=discord.ButtonStyle.blurple, row=1)
-            async def back(self, button: discord.ui.Button, interaction: discord.Interaction):
+            async def back(
+                self, button: discord.ui.Button, interaction: discord.Interaction
+            ):
                 self.delete_warn_idx = -1
                 if self.page >= 1:
                     self.page -= 1
                 else:
                     self.page = (self.warn_len - 1) // 5
                 await self.write_msg(interaction)
+
             @discord.ui.button(label=">", style=discord.ButtonStyle.blurple, row=1)
-            async def forward(self, button: discord.ui.Button, interaction: discord.Interaction):
+            async def forward(
+                self, button: discord.ui.Button, interaction: discord.Interaction
+            ):
                 self.delete_warn_idx = -1
                 if self.page < (self.warn_len - 1) // 5:
                     self.page += 1
                 else:
                     self.page = 0
                 await self.write_msg(interaction)
+
             @discord.ui.button(label="x", style=discord.ButtonStyle.red, row=1)
-            async def exit(self, button: discord.ui.Button, interaction: discord.Interaction):
-                await interaction.message.edit(content="Exited!!!", embed=None, view=None, delete_after=5)
+            async def exit(
+                self, button: discord.ui.Button, interaction: discord.Interaction
+            ):
+                await interaction.message.edit(
+                    content="Exited!!!", embed=None, view=None, delete_after=5
+                )
                 self.stop()
                 return
-            @discord.ui.button(label="✓", style=discord.ButtonStyle.green, row=1, disabled=True)
-            async def confirm(self, button: discord.ui.Button, interaction: discord.Interaction):
+
+            @discord.ui.button(
+                label="✓", style=discord.ButtonStyle.green, row=1, disabled=True
+            )
+            async def confirm(
+                self, button: discord.ui.Button, interaction: discord.Interaction
+            ):
                 if self.delete_warn_idx != -1:
 
                     del self.warns[self.delete_warn_idx]
@@ -659,7 +685,7 @@ class Moderation(commands.Cog):
                 )
 
                 if delete_warn_idx != -1:
-                    embed.description=f"Confirm removal of warn"
+                    embed.description = f"Confirm removal of warn"
                     embed.add_field(
                         name="Delete Warn?",
                         value="```{0}\n{1}\n{2}```".format(
@@ -677,9 +703,9 @@ class Moderation(commands.Cog):
                     )
                     for button in self.children:
                         if button.label == "✓":
-                            button.disabled=False
+                            button.disabled = False
                         elif button.row == 0:
-                            button.disabled=True
+                            button.disabled = True
                 else:
                     start = page * 5
                     end = start + 5 if start + 5 < warn_len else warn_len
@@ -687,13 +713,15 @@ class Moderation(commands.Cog):
                     for button in self.children:
                         if button.row == 0:
                             if int(button.label) >= (end - start):
-                                button.disabled=True
+                                button.disabled = True
                             else:
-                                button.disabled=False
+                                button.disabled = False
                         elif button.label == "✓":
-                            button.disabled=True
+                            button.disabled = True
 
-                    embed.description=f"Showing atmost 5 warns at a time. (Total warns: {warn_len})"
+                    embed.description = (
+                        f"Showing atmost 5 warns at a time. (Total warns: {warn_len})"
+                    )
                     embed.set_footer(text=f"Page {page+1}/{(warn_len-1)//5+1}")
 
                     for idx, warn in enumerate(self.warns[start:end]):
@@ -713,7 +741,6 @@ class Moderation(commands.Cog):
 
                 await interaction.message.edit(embed=embed, view=view)
 
-
             async def on_timeout(self):
                 await msg.edit(view=None, delete_after=5)
 
@@ -727,7 +754,12 @@ class Moderation(commands.Cog):
 
         class Button(discord.ui.Button):
             def __init__(self, label, disabled):
-                super().__init__(label=label, style=discord.ButtonStyle.gray, row=0, disabled=disabled)
+                super().__init__(
+                    label=label,
+                    style=discord.ButtonStyle.gray,
+                    row=0,
+                    disabled=disabled,
+                )
 
             async def callback(self, interaction: discord.Interaction):
                 view.delete_warn_idx = int(self.label)
@@ -735,7 +767,7 @@ class Moderation(commands.Cog):
                 return
 
         warns = helper.get_warns(member_id=member.id)
-        #warns might not get deleted properly, temp fix
+        # warns might not get deleted properly, temp fix
         if warns is None or warns == []:
             return await ctx.reply("User has no warns.", delete_after=10)
 
@@ -750,9 +782,9 @@ class Moderation(commands.Cog):
             timestamp=discord.utils.utcnow(),
         )
         embed.set_footer(text=f"Page 1/{(warn_len-1)//5+1}")
-        
+
         end = 5 if 5 < warn_len else warn_len
-        
+
         for idx, warn in enumerate(warns[0:end]):
             embed.add_field(
                 name=f"ID: {idx}",
@@ -769,11 +801,7 @@ class Moderation(commands.Cog):
     @app_commands.guilds(414027124836532234)
     @app_commands.default_permissions(manage_messages=True)
     @app_checks.mod_and_above()
-    async def _infractions(
-        self,
-        interaction: discord.Interaction,
-        user: discord.User
-    ):
+    async def _infractions(self, interaction: discord.Interaction, user: discord.User):
         """
         Checks a users infractions. Allows the checking of infractions of
         members not currently in the server. Prioritizes user_id if both user
@@ -784,16 +812,15 @@ class Moderation(commands.Cog):
             """
             Represents a button to switch pages on an infraction embed view
             """
-            
+
             def __init__(self, label, inf_type, **kwargs):
                 super().__init__(label=label, **kwargs)
                 self.inf_type = inf_type
 
             async def callback(self, interaction):
-                
+
                 infs_embed = helper.get_infractions(
-                    member_id=user.id, 
-                    inf_type=self.inf_type
+                    member_id=user.id, inf_type=self.inf_type
                 )
                 # might need to utilize this if original message is ephemeral
                 # https://discordpy.readthedocs.io/en/latest/interactions/api.html#discord.Interaction.edit_original_message
@@ -822,9 +849,9 @@ class Moderation(commands.Cog):
         infs_embed = helper.get_infractions(member_id=user.id, inf_type="warn")
 
         await interaction.response.send_message(
-            embed=infs_embed, 
+            embed=infs_embed,
             view=InfractionView(interaction),
-            ephemeral=is_public_channel(interaction.channel)
+            ephemeral=is_public_channel(interaction.channel),
         )
 
     # TODO CONVERT THIS COMMAND
@@ -969,7 +996,7 @@ class Moderation(commands.Cog):
         interaction: discord.Interaction,
         time: str,
         channel: typing.Union[discord.TextChannel, discord.Thread, None],
-        reason: typing.Optional[str]
+        reason: typing.Optional[str],
     ):
         """Add or remove slowmode in a channel"""
 
@@ -981,7 +1008,7 @@ class Moderation(commands.Cog):
         if seconds > 21600:
             await interaction.response.send_message(
                 "Slowmode can't be over 6 hours",
-                ephemeral=is_public_channel(interaction.channel)
+                ephemeral=is_public_channel(interaction.channel),
             )
             return
 
@@ -990,7 +1017,9 @@ class Moderation(commands.Cog):
 
         await channel.edit(slowmode_delay=seconds, reason=reason)
 
-        logging_channel = discord.utils.get(interaction.guild.channels, id=self.logging_channel)
+        logging_channel = discord.utils.get(
+            interaction.guild.channels, id=self.logging_channel
+        )
         embed = helper.create_embed(
             author=interaction.user,
             action="Added slow mode.",
@@ -1002,8 +1031,7 @@ class Moderation(commands.Cog):
         await logging_channel.send(embed=embed)
 
         await interaction.response.send_message(
-            f"slowmode of {seconds} seconds added to {channel.mention}.", 
-            ephemeral=True
+            f"slowmode of {seconds} seconds added to {channel.mention}.", ephemeral=True
         )
 
     # TODO CONVERT THIS COMMAND

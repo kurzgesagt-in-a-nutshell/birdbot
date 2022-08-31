@@ -62,12 +62,12 @@ async def maybe_responded(interaction: Interaction, *args, **kwargs):
         return
 
     await interaction.response.send_message(*args, **kwargs)
-    
+
 
 class BirdTree(app_commands.CommandTree):
     """
     Subclass of app_commands.CommandTree to define the behavior for the birdbot
-    tree. 
+    tree.
 
     Handles thrown errors within the tree and interactions between all commands
     """
@@ -82,21 +82,18 @@ class BirdTree(app_commands.CommandTree):
         content = traceback.format_exc()
 
         file = discord.File(
-            io.BytesIO(bytes(content, encoding="UTF-8")), 
-            filename=f"{type(error)}.py"
+            io.BytesIO(bytes(content, encoding="UTF-8")), filename=f"{type(error)}.py"
         )
 
         embed = discord.Embed(
             title="Unhandled Exception Alert",
-            description=f"```\nContext: \nguild:{repr(interaction.guild)}\n{repr(interaction.channel)}\n{repr(interaction.user)}\n```" #f"```py\n{content[2000:].strip()}\n```"
+            description=f"```\nContext: \nguild:{repr(interaction.guild)}\n{repr(interaction.channel)}\n{repr(interaction.user)}\n```",  # f"```py\n{content[2000:].strip()}\n```"
         )
 
         await channel.send(embed=embed, file=file)
 
     async def on_error(
-        self, 
-        interaction: Interaction, 
-        error: app_commands.AppCommandError
+        self, interaction: Interaction, error: app_commands.AppCommandError
     ):
         """Handles errors thrown within the command tree"""
 
@@ -123,12 +120,16 @@ class BirdTree(app_commands.CommandTree):
 
         msg = f"an internal error occurred. if this continues please inform an active bot dev"
         await maybe_responded(
-            interaction, msg, 
-            ephemeral= interaction.channel.category_id != 414095379156434945# is_public_channel(interaction.channel)
+            interaction,
+            msg,
+            ephemeral=interaction.channel.category_id
+            != 414095379156434945,  # is_public_channel(interaction.channel)
         )
 
-        try: await self.alert(interaction, error)
-        except Exception as e: await super().on_error(interaction, e)
+        try:
+            await self.alert(interaction, error)
+        except Exception as e:
+            await super().on_error(interaction, e)
 
 
 class BirdBot(commands.AutoShardedBot):
@@ -200,7 +201,7 @@ class BirdBot(commands.AutoShardedBot):
             case_insensitive=True,
             allowed_mentions=allowed_mentions,
             intents=intents,
-            tree_cls=BirdTree
+            tree_cls=BirdTree,
         )
 
         x.get_database()
@@ -223,7 +224,8 @@ class BirdBot(commands.AutoShardedBot):
         """Loads all cogs from cogs/ without the '_' prefix"""
         for filename in os.listdir("cogs/"):
             if not (
-                filename[:-3] in ("antiraid", "automod", "giveaway") and (args.beta or args.alpha)
+                filename[:-3] in ("antiraid", "automod", "giveaway")
+                and (args.beta or args.alpha)
             ):
                 if not filename.startswith("_"):
                     logger.info(f"loading {f'cogs.{filename[:-3]}'}")

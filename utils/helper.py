@@ -913,8 +913,9 @@ def whitelist_member(member: discord.Member, command: commands.Command) -> bool:
     )
     return True
 
+
 def is_public_channel(
-    channel:typing.Union[discord.TextChannel, discord.Thread]
+    channel: typing.Union[discord.TextChannel, discord.Thread]
 ) -> bool:
     """
     Returns true for all channels except those under the moderation category
@@ -923,4 +924,4 @@ def is_public_channel(
     should be ephemeral
     """
     # check if channel is underneath the moderation category
-    return channel.category_id != 414095379156434945 # mod category id
+    return channel.category_id != 414095379156434945  # mod category id

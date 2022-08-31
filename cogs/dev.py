@@ -246,7 +246,7 @@ class Dev(commands.Cog):
         await ctx.bot.tree.sync()
         synced = await ctx.bot.tree.sync(guild=discord.Object(414027124836532234))
         self.logger.debug(synced)
-        
+
         await ctx.send("synced local guild commands")
 
 

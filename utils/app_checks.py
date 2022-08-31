@@ -1,8 +1,8 @@
-
 from .helper import config_roles
 from .app_errors import InvalidAuthorizationError
 
 from discord import Interaction, app_commands
+
 
 def mod_and_above():
     async def predicate(interaction: Interaction):
@@ -18,6 +18,7 @@ def mod_and_above():
         return True
 
     return app_commands.check(predicate)
+
 
 def devs_only():
     async def predicate(interaction: Interaction):
