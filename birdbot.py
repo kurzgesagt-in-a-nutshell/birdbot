@@ -4,6 +4,7 @@ import os
 import discord
 import dotenv
 import certifi
+import traceback, io
 
 from contextlib import contextmanager, suppress
 from logging.handlers import TimedRotatingFileHandler
@@ -71,6 +72,27 @@ class BirdTree(app_commands.CommandTree):
     Handles thrown errors within the tree and interactions between all commands
     """
 
+    async def alert(self, interaction: Interaction, error: Exception):
+        """
+        Attempts to altert the discord channel logs of an exception
+        """
+
+        channel = await interaction.client.fetch_channel(865321589919055882)
+
+        content = traceback.format_exc()
+
+        file = discord.File(
+            io.BytesIO(bytes(content, encoding="UTF-8")), 
+            filename=f"{type(error)}.py"
+        )
+
+        embed = discord.Embed(
+            title="Unhandled Exception Alert",
+            description=f"```\nContext: \nguild:{repr(interaction.guild)}\n{repr(interaction.channel)}\n{repr(interaction.user)}\n```" #f"```py\n{content[2000:].strip()}\n```"
+        )
+
+        await channel.send(embed=embed, file=file)
+
     async def on_error(
         self, 
         interaction: Interaction, 
@@ -105,7 +127,8 @@ class BirdTree(app_commands.CommandTree):
             ephemeral= interaction.channel.category_id != 414095379156434945# is_public_channel(interaction.channel)
         )
 
-        return
+        try: await self.alert(interaction, error)
+        except Exception as e: await super().on_error(interaction, e)
 
 
 class BirdBot(commands.AutoShardedBot):

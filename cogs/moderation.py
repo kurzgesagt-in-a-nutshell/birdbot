@@ -51,16 +51,14 @@ class Moderation(commands.Cog):
     async def on_ready(self):
         self.logger.info("loaded Moderation")
 
-    # TODO OPEN THIS COMMAND FOR REGULAR USERS AND ENABLE ACTIVE MOD PING
     @app_commands.command()
-    @app_commands.guilds(414027124836532234)
     async def report(
         self, 
         interaction: discord.Interaction, 
         member: typing.Optional[discord.Member]
     ):  
         """
-        This command is currently locked please use `!report` to report an incident
+        Use this command to report issues to the moderation team.
         """
         
         class Modal(discord.ui.Modal):
@@ -98,7 +96,7 @@ class Moderation(commands.Cog):
                 )
 
                 mod_channel = interaction.guild.get_channel(414095428573986816)
-                await mod_channel.send(embed=mod_embed)
+                await mod_channel.send(get_active_staff(interaction.client), embed=mod_embed)
 
                 await interaction.response.send_message(
                     "Report has been sent!", ephemeral=True
@@ -124,7 +122,7 @@ class Moderation(commands.Cog):
             channel = interaction.channel
 
         def check(message):
-            if _from is not None and _from.id == message.author.id:
+            if _from is None or _from.id == message.author.id:
                 return True
             return False
 
@@ -138,7 +136,7 @@ class Moderation(commands.Cog):
 
         await interaction.response.send_message(
             f"deleted {deleted_count} messages{'s' if deleted_count > 1 else ''}",
-            ephemeral=True
+            ephemeral=is_public_channel(interaction.channel)
         )
 
         # no need to manually log a single delete
@@ -192,27 +190,27 @@ class Moderation(commands.Cog):
         reason:str
     ):
         """Bans a member"""
-        
-        if member:=await interaction.guild.fetch_member(user.id) is not None:
+
+        try:
+            # fetch_member throws not_found error if not found
+            member = await interaction.guild.fetch_member(user.id)
             if member.top_role >= interaction.user.top_role:
-            
                 raise app_errors.InvalidAuthorizationError(
                     "user could not be banned due to your clearance"
                 )
 
-            try:
-                await member.send(
-                    f"You have been permanently removed from the server for reason: {reason}"
-                )
-            except discord.Forbidden:
-                pass
+            await member.send(
+                f"You have been permanently removed from the server for reason: {reason}"
+            )
+        except discord.NotFound:
+            pass
+
         
-        await member.ban(reason=reason)
-        await interaction.channel.send(f"I would ban {user.name} here")
+        await interaction.guild.ban(user=user, reason=reason)
 
         helper.create_infraction(
             author=interaction.user,
-            users=[member],
+            users=[user],
             action="ban",
             reason=reason,
             inf_level=inf_level,
@@ -223,7 +221,7 @@ class Moderation(commands.Cog):
         embed = helper.create_embed(
             author=interaction.user,
             action="Banned user(s)",
-            users=[member],
+            users=[user],
             reason=reason,
             color=discord.Color.dark_red(),
             inf_level=inf_level,
@@ -250,7 +248,6 @@ class Moderation(commands.Cog):
 
         try:
             await interaction.guild.unban(user, reason=reason)
-            await interaction.channel.send("I would unban here")
         except discord.NotFound:
             await interaction.response.send_message(
                 f"User <@{id}> has not been banned before.",
@@ -294,7 +291,6 @@ class Moderation(commands.Cog):
             )
 
         await member.kick(reason=reason)
-        await interaction.channel.send("I would kick here")
 
         helper.create_infraction(
             author=interaction.user,
@@ -977,7 +973,7 @@ class Moderation(commands.Cog):
     ):
         """Add or remove slowmode in a channel"""
 
-        seconds, _ = helper.calc_time(time)
+        seconds, _ = helper.calc_time([time, ""])
 
         if seconds is None:
             seconds = 0
@@ -985,7 +981,7 @@ class Moderation(commands.Cog):
         if seconds > 21600:
             await interaction.response.send_message(
                 "Slowmode can't be over 6 hours",
-                ephemeral=True
+                ephemeral=is_public_channel(interaction.channel)
             )
             return
 
