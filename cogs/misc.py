@@ -278,10 +278,8 @@ class Misc(commands.Cog):
             ctx.send("Please only send one emoji at a time")
 
         if len(demoji.findall_list(ctx.message.content)) > 0:
-            print(args[0].encode('unicode-escape'))
             code = str(args[0].encode('unicode-escape')
                 ).replace('U000','-').replace('\\','').replace('\'','').replace('u','-')[2:]
-            print(code)
             name = demoji.replace_with_desc(args[0]).replace(' ','-').replace(":","").replace("_","-")
             await ctx.send("https://emojipedia-us.s3.dualstack.us-west-1.amazonaws.com/thumbs/120/twitter/322/" + name\
                            + "_" + code + ".png")
@@ -292,7 +290,7 @@ class Misc(commands.Cog):
                 emoji = (re.findall(r"<:\w+:(\d{17,19})>", str(args[0]))[0] + ".png")
 
             await ctx.send("https://cdn.discordapp.com/emojis/" + str(emoji))
-            
+
     @commands.Cog.listener()
     async def on_reaction_add(self, reaction, user):
         """
