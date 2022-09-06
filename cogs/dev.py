@@ -249,6 +249,17 @@ class Dev(commands.Cog):
 
         await ctx.send("synced local guild commands")
 
+    @commands.command()
+    @devs_only()
+    async def clear_apps(self, ctx: commands.Context):
+
+        ctx.bot.tree.clear_commands(guild=discord.Object(414027124836532234))
+        ctx.bot.tree.clear_commands()
+        await ctx.bot.tree.sync(guild=discord.Object(414027124836532234))
+        await ctx.bot.tree.sync()
+
+        await ctx.send("cleared all commands")
+
 
 async def setup(bot):
     await bot.add_cog(Dev(bot))
