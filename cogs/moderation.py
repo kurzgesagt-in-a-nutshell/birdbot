@@ -604,9 +604,11 @@ class Moderation(commands.Cog):
         )
 
     # TODO CONVERT THIS COMMAND
-    @commands.command(aliases=["unwarn", "removewarn"])
-    @mod_and_above()
-    async def delwarn(self, ctx: commands.context, member: discord.Member):
+    @app_commands.command(name="delwarn")
+    @app_commands.guilds(414027124836532234)
+    @app_commands.default_permissions(manage_messages=True)
+    @app_checks.mod_and_above()
+    async def _delwarn(self, interaction: discord.Interaction, member: discord.User):
         class View(discord.ui.View):
             def __init__(self, warns):
                 super().__init__(timeout=20)
@@ -623,7 +625,7 @@ class Moderation(commands.Cog):
 
             @discord.ui.button(label="<", style=discord.ButtonStyle.blurple, row=1)
             async def back(
-                self, button: discord.ui.Button, interaction: discord.Interaction
+                self, interaction: discord.Interaction, button: discord.ui.Button
             ):
                 self.delete_warn_idx = -1
                 if self.page >= 1:
@@ -634,7 +636,7 @@ class Moderation(commands.Cog):
 
             @discord.ui.button(label=">", style=discord.ButtonStyle.blurple, row=1)
             async def forward(
-                self, button: discord.ui.Button, interaction: discord.Interaction
+                self, interaction: discord.Interaction, button: discord.ui.Button
             ):
                 self.delete_warn_idx = -1
                 if self.page < (self.warn_len - 1) // 5:
@@ -645,7 +647,7 @@ class Moderation(commands.Cog):
 
             @discord.ui.button(label="x", style=discord.ButtonStyle.red, row=1)
             async def exit(
-                self, button: discord.ui.Button, interaction: discord.Interaction
+                self, interaction: discord.Interaction, button: discord.ui.Button
             ):
                 await interaction.message.edit(
                     content="Exited!!!", embed=None, view=None, delete_after=5
@@ -657,18 +659,15 @@ class Moderation(commands.Cog):
                 label="✓", style=discord.ButtonStyle.green, row=1, disabled=True
             )
             async def confirm(
-                self, button: discord.ui.Button, interaction: discord.Interaction
+                self, interaction: discord.Interaction, button: discord.ui.Button
             ):
                 if self.delete_warn_idx != -1:
 
                     del self.warns[self.delete_warn_idx]
                     helper.update_warns(member.id, self.warns)
 
-                    await interaction.message.edit(
-                        content="Warning deleted successfully.",
-                        embed=None,
-                        view=None,
-                        delete_after=5,
+                    await interaction.response.edit_message(
+                        content="Warning deleted successfully.", embed=None, view=None
                     )
                     self.stop()
                 return
@@ -739,13 +738,15 @@ class Moderation(commands.Cog):
                             inline=False,
                         )
 
-                await interaction.message.edit(embed=embed, view=view)
+                await interaction.response.edit_message(embed=embed, view=view)
 
             async def on_timeout(self):
-                await msg.edit(view=None, delete_after=5)
+                """Removes the view on timeout"""
 
-            async def interaction_check(self, interaction):
-                if interaction.user == ctx.author:
+                await interaction.edit_original_response(view=None)
+
+            async def interaction_check(self, new_interaction):
+                if new_interaction.user.id == interaction.user.id:
                     return True
                 else:
                     await interaction.response.send_message(
@@ -769,7 +770,9 @@ class Moderation(commands.Cog):
         warns = helper.get_warns(member_id=member.id)
         # warns might not get deleted properly, temp fix
         if warns is None or warns == []:
-            return await ctx.reply("User has no warns.", delete_after=10)
+            return await interaction.response.send_message(
+                "User has no warns.", ephemeral=True
+            )
 
         view = View(warns=warns)
 
@@ -795,7 +798,9 @@ class Moderation(commands.Cog):
                 ),
                 inline=False,
             )
-        msg = await ctx.send(embed=embed, view=view)
+        await interaction.response.send_message(
+            embed=embed, view=view, ephemeral=is_public_channel(interaction.channel)
+        )
 
     @app_commands.command(name="infractions")
     @app_commands.guilds(414027124836532234)
@@ -842,9 +847,11 @@ class Moderation(commands.Cog):
                 self.add_item(InfButton(label="Kicks", inf_type="kick"))
 
             async def on_timeout(self):
-                """Remove view"""
+                """
+                Removes the view on timeout for visual aid
+                """
 
-                await self.interaction.edit_original_message(view=None)
+                await self.interaction.edit_original_response(view=None)
 
         infs_embed = helper.get_infractions(member_id=user.id, inf_type="warn")
 
@@ -855,42 +862,36 @@ class Moderation(commands.Cog):
         )
 
     # TODO CONVERT THIS COMMAND
-    @commands.command(aliases=["dinfr", "inf_details", "infr_details", "details"])
-    @mod_and_above()
-    async def detailed_infr(
+    @app_commands.command(name="detailedinfr")
+    @app_commands.guilds(414027124836532234)
+    @app_commands.default_permissions(manage_messages=True)
+    @app_checks.mod_and_above()
+    async def _detailed_infr(
         self,
-        ctx: commands.Context,
-        user: typing.Optional[discord.User],
-        infr_type: str,
+        interaction: discord.Interaction,
+        user: discord.User,
+        infr_type: typing.Literal["warn", "ban", "mute", "kick"],
         infr_id: int,
     ):
-        """Get detailed single Infractions. \nUsage: dinfr @member/member_id w/m/k/b infraction_id"""
-
-        infr_type = infr_type.lower()
-
-        if infr_type not in ["w", "b", "m", "k"]:
-            return await ctx.reply("Infraction can only be any of these: w, m, k, b")
-
-        if infr_type == "w":
-            infr_type = "warn"
-        elif infr_type == "m":
-            infr_type = "mute"
-        elif infr_type == "b":
-            infr_type = "ban"
-        else:
-            infr_type = "kick"
+        """Get detailed single Infractions"""
 
         result = get_single_infraction_type(user.id, infr_type)
 
         if result == -1:
-            await ctx.reply("Invalid command format.", delete_after=6)
-            await ctx.message.add_reaction("<:kgsNo:955703108565098496>")
+            await interaction.response.send_message(
+                "Invalid command format.",
+                ephemeral=is_public_channel(interaction.channel),
+            )
+            return
 
         elif result:
 
             if infr_id not in range(0, len(result)):
-                await ctx.message.add_reaction("<:kgsNo:955703108565098496>")
-                return await ctx.reply("Invalid infraction ID.", delete_after=6)
+                await interaction.response.send_message(
+                    "Invalid infraction ID.",
+                    ephemeral=is_public_channel(interaction.channel),
+                )
+                return
 
             result = result[infr_id]
             embed = discord.Embed(
@@ -926,54 +927,45 @@ class Moderation(commands.Cog):
             for key in result:
                 embed.add_field(name=key, value=result[key], inline=False)
 
-            await ctx.send(embed=embed)
-            await ctx.message.add_reaction("<:kgsYes:955703069516128307>")
+            await interaction.response.send_message(
+                embed=embed, ephemeral=is_public_channel(interaction.channel)
+            )
 
     # TODO CONVERT THIS COMMAND
-    @commands.command(aliases=["einf", "einfr", "edit_infr", "editinfr"])
-    @mod_and_above()
-    async def edit_infraction(
+    @app_commands.command(name="editinfr")
+    @app_commands.guilds(414027124836532234)
+    @app_commands.default_permissions(manage_messages=True)
+    @app_checks.mod_and_above()
+    async def _editinfr(
         self,
-        ctx: commands.Context,
+        interaction: discord.Interaction,
         user: discord.User,
-        infr_type: str,
+        infr_type: typing.Literal["warn", "ban", "mute", "kick"],
         infr_id: int,
         title: str,
-        *,
         description: str,
     ):
         """Add details to an infraction. \nUsage: edit_infr @user/id w/m/k/b infraction_id title description"""
 
-        infr_type = infr_type.lower()
-
-        if infr_type not in ["w", "b", "m", "k"]:
-            return await ctx.reply("Infraction can only be any of these: w, m, k, b")
-
-        if infr_type == "w":
-            infr_type = "warn"
-        elif infr_type == "m":
-            infr_type = "mute"
-        elif infr_type == "b":
-            infr_type = "ban"
-        else:
-            infr_type = "kick"
-
         result = append_infraction(user.id, infr_type, infr_id, title, description)
 
         if result == -1:
-            await ctx.reply(
-                "Infraction with given id and type not found.", delete_after=6
+            await interaction.response.send_message(
+                "Infraction with given id and type not found.", ephemeral=True
             )
-            await ctx.message.add_reaction("<:kgsNo:955703108565098496>")
+            return
 
         else:
-            await ctx.message.add_reaction("<:kgsYes:955703069516128307>")
-            await ctx.reply("Infraction updated successfully.", delete_after=6)
+
+            await interaction.response.send_message(
+                "Infraction updated successfully.",
+                ephemeral=is_public_channel(interaction.channel),
+            )
 
             extra = f"Title: {title}\nDescription: {description} \nID: {infr_id}"
 
             embed = helper.create_embed(
-                author=ctx.author,
+                author=interaction.user,
                 action=f"Appended details to {infr_type} ",
                 users=[user],
                 extra=extra,
@@ -981,11 +973,9 @@ class Moderation(commands.Cog):
             )
 
             logging_channel = discord.utils.get(
-                ctx.guild.channels, id=self.logging_channel
+                interaction.guild.channels, id=self.logging_channel
             )
             await logging_channel.send(embed=embed)
-
-        await ctx.message.delete(delay=6)
 
     @app_commands.command(name="slowmode")
     @app_commands.guilds(414027124836532234)
