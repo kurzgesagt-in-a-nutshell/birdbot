@@ -463,14 +463,15 @@ class Filter(commands.Cog):
         # run checks
         isprofanity = self.check_profanity(word_list, message.content)
         if isprofanity:
-            '''await self.execute_action_on_message(
+            await self.execute_action_on_message(
                 message,
                 {
                     "ping": "Be nice, Don't say bad things",
                     "delete_after": 30,
                     "delete_message": "",
                 },
-            )'''
+            )
+
             embed = create_automod_embed(
                 message=message, automod_type="profanity"
             )
