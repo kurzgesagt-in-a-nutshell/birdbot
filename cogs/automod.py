@@ -102,34 +102,32 @@ class Filter(commands.Cog):
                 return
             await interaction.response.send_message(f"`{word}` added to the {listtype}{' list' if listtype != 'whitelist' else ''}.")
 
-            #self.bot.db.filterlist.update_one(
-            #    {"name": listtype}, {"$push": {"filter": word}}
-            #)
+            self.bot.db.filterlist.update_one(
+                {"name": listtype}, {"$push": {"filter": word}}
+            )
         elif action == "remove":
             if word not in filelist:
                 await interaction.response.send_message(f"`{word}` doesn't exists in {listtype}{' list' if listtype != 'whitelist' else ''}.", ephemeral=True)
                 return
             await interaction.response.send_message(f"`{word}` removed from the {listtype}{' list' if listtype != 'whitelist' else ''}.")
 
-            #self.bot.db.filterlist.update_one(
-            #    {"name": listtype}, {"$pull": {"filter": word}}
-            #)
-        #await self.update_list(listtype)
+            self.bot.db.filterlist.update_one(
+                {"name": listtype}, {"$pull": {"filter": word}}
+            )
 
-    async def update_list(self, list_type):
-        """Updates filter list from Mongo based on list_type"""
+        #Updates filter list from Mongo based on listtype
 
-        if list_type == "whitelist":
+        if listtype == "whitelist":
             self.white_list = self.bot.db.filterlist.find_one({"name": "whitelist"})[
                 "filter"
             ]
 
-        elif list_type == "general":
+        elif listtype == "general":
             self.general_list = self.bot.db.filterlist.find_one({"name": "general"})[
                 "filter"
             ]
 
-        elif list_type == "humanities":
+        elif listtype == "humanities":
             self.humanities_list = self.bot.db.filterlist.find_one(
                 {"name": "humanities"}
             )["filter"]
