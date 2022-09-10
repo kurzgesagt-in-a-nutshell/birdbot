@@ -461,18 +461,6 @@ class Filter(commands.Cog):
         word_list = self.get_word_list(message)
 
         # run checks
-        #gif bypass was moved to message event
-        '''if self.check_gif_bypass(message):
-            await self.execute_action_on_message(
-                message,
-                {
-                    "ping": "Please do not post gifs/videos in general",
-                    "delete_after": 15,
-                    "delete_message": "",
-                    "log": "Media in #general",
-                },
-            )
-            return'''
         isprofanity = self.check_profanity(word_list, message.content)
         if isprofanity:
             '''await self.execute_action_on_message(
@@ -506,6 +494,17 @@ class Filter(commands.Cog):
         if self.check_ping_spam(message):
             #why is nothing here
             return [True, "ping"]
+        if self.check_gif_bypass(message):
+            await self.execute_action_on_message(
+                message,
+                {
+                    "ping": "Please do not post gifs/videos in general",
+                    "delete_after": 15,
+                    "delete_message": "",
+                    "log": "Media in #general",
+                },
+            )
+            return
 
         # this one goes last due to lock
         async with self.message_history_lock:
