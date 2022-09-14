@@ -56,67 +56,20 @@ class Filter(commands.Cog):
         self.logger.info("loaded Automod")
         self.logging_channel = await self.bot.fetch_channel(self.logging_channel_id)
 
+    #declare command group
+    filterCommands = app_commands.Group(name="filter", description="...", guild_ids=[414027124836532234])
 
-    @app_commands.command(name="filter")
-    @app_commands.guilds(414027124836532234)
-    async def _filter(self, interaction: discord.Interaction, action: typing.Literal["show", "add", "remove", "check"], listtype: typing.Literal["whitelist", "general", "humanities"], word: typing.Optional[str]):
+    #return the required list
+    def returnlist(self, listtype):        
         if listtype == "whitelist":
-            filelist = self.white_list
+            return self.white_list
         elif listtype == "general":
-            filelist = self.general_list
+            return self.general_list
         elif listtype == "humanities":
-            filelist = self.humanities_list
+            return self.humanities_list
 
-        if action == "show":
-            await interaction.response.send_message(
-                f"These are the words which are in the {listtype}{'blacklist' if listtype != 'whitelist' else ''}",
-                file=discord.File(
-                    io.BytesIO("\n".join(filelist).encode("UTF-8")), f"{listtype}.txt"
-                ),
-            )
-            return
-
-        if word == None:
-            await interaction.response.send_message("You must provide a word", ephemeral=True)
-            return
-
-        if action == "check":
-            if listtype == "whitelist":
-                await interaction.response.send_message("Can't check whitelist", ephemeral=True)
-                return
-            
-            word_list = filelist
-            if listtype == "humanities":
-                word_list += self.general_list
-            
-            profanity = self.check_profanity(word_list, word)
-            if profanity:
-                await interaction.response.send_message(profanity)
-            else:
-                await interaction.response.send_message("No profanity.")
-            return
-
-        if action == "add":
-            if word in filelist:
-                await interaction.response.send_message(f"`{word}` already exists in {listtype}{' list' if listtype != 'whitelist' else ''}.", ephemeral=True)
-                return
-            await interaction.response.send_message(f"`{word}` added to the {listtype}{' list' if listtype != 'whitelist' else ''}.")
-
-            self.bot.db.filterlist.update_one(
-                {"name": listtype}, {"$push": {"filter": word}}
-            )
-        elif action == "remove":
-            if word not in filelist:
-                await interaction.response.send_message(f"`{word}` doesn't exists in {listtype}{' list' if listtype != 'whitelist' else ''}.", ephemeral=True)
-                return
-            await interaction.response.send_message(f"`{word}` removed from the {listtype}{' list' if listtype != 'whitelist' else ''}.")
-
-            self.bot.db.filterlist.update_one(
-                {"name": listtype}, {"$pull": {"filter": word}}
-            )
-
-        #Updates filter list from Mongo based on listtype
-
+    #Updates filter list from Mongo based on listtype
+    async def updatelist(self, listtype):
         if listtype == "whitelist":
             self.white_list = self.bot.db.filterlist.find_one({"name": "whitelist"})[
                 "filter"
@@ -131,6 +84,58 @@ class Filter(commands.Cog):
             self.humanities_list = self.bot.db.filterlist.find_one(
                 {"name": "humanities"}
             )["filter"]
+
+    @filterCommands.command()
+    async def show(self, interaction: discord.Interaction, listtype: typing.Literal["whitelist", "general", "humanities"]):
+        filelist = self.returnlist(listtype)
+        await interaction.response.send_message(
+            f"These are the words which are in the {listtype}{'blacklist' if listtype != 'whitelist' else ''}",
+            file=discord.File(
+                io.BytesIO("\n".join(filelist).encode("UTF-8")), f"{listtype}.txt"
+            ),
+        )
+
+    @filterCommands.command()
+    async def add(self, interaction: discord.Interaction, listtype: typing.Literal["whitelist", "general", "humanities"], word: str):
+        filelist = self.returnlist(listtype)
+        if word in filelist:
+            await interaction.response.send_message(f"`{word}` already exists in {listtype}{' list' if listtype != 'whitelist' else ''}.", ephemeral=True)
+            return
+        await interaction.response.send_message(f"`{word}` added to the {listtype}{' list' if listtype != 'whitelist' else ''}.")
+
+        self.bot.db.filterlist.update_one(
+            {"name": listtype}, {"$push": {"filter": word}}
+        )
+
+        await self.updatelist(listtype)
+
+    @filterCommands.command()
+    async def remove(self, interaction: discord.Interaction, listtype: typing.Literal["whitelist", "general", "humanities"], word: str):
+        filelist = self.returnlist(listtype)
+        if word not in filelist:
+            await interaction.response.send_message(f"`{word}` doesn't exists in {listtype}{' list' if listtype != 'whitelist' else ''}.", ephemeral=True)
+            return
+        await interaction.response.send_message(f"`{word}` removed from the {listtype}{' list' if listtype != 'whitelist' else ''}.")
+
+        self.bot.db.filterlist.update_one(
+            {"name": listtype}, {"$pull": {"filter": word}}
+        )
+
+        await self.updatelist(listtype)
+
+    @filterCommands.command()
+    async def check(self, interaction: discord.Interaction, listtype: typing.Literal["general", "humanities"], word: str):
+        filelist = self.returnlist(listtype)
+        
+        word_list = filelist
+        if listtype == "humanities":
+            word_list += self.general_list
+        
+        profanity = self.check_profanity(word_list, word)
+        if profanity:
+            await interaction.response.send_message(profanity)
+        else:
+            await interaction.response.send_message("No profanity.")
 
 
     @commands.Cog.listener()
