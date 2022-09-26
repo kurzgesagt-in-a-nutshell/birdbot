@@ -437,9 +437,10 @@ class Filter(commands.Cog):
             546315063745839115,
         ):
             return
-        for f in filetypes:
+        #This is too aggressive and shouldn't be necessary. Leaving it commented for now though.
+        '''for f in filetypes:
             if "." + f in message.content:
-                return True
+                return True'''
 
         if message.embeds:
             for e in message.embeds:
