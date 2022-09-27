@@ -152,6 +152,9 @@ class Filter(commands.Cog):
         ):
             return
 
+        if self.is_member_excluded(message.author):
+            return
+
         if message.content == "":
             if self.check_gif_bypass(message):
                 await self.execute_action_on_message(
@@ -163,7 +166,7 @@ class Filter(commands.Cog):
                         "log": "Media in #general",
                     },
                 )
-                return
+            return
 
         if is_internal_command(self.bot, message):
             return
@@ -180,6 +183,10 @@ class Filter(commands.Cog):
     async def on_message_edit(self, before, after):
         if after.channel.id == 414452106129571842:
             return
+
+        if self.is_member_excluded(after.author):
+            return
+
         if (
             before.channel.category.id == 414095379156434945  # mod category
             and before.channel.id != 414179142020366336  # bot testing
@@ -196,7 +203,7 @@ class Filter(commands.Cog):
                         "log": "Media in #general",
                     },
                 )
-                return
+            return
         if not isinstance(after.channel, discord.DMChannel):
             await self.check_message(after)
 
@@ -461,8 +468,6 @@ class Filter(commands.Cog):
         return False
 
     async def check_message(self, message):
-        if self.is_member_excluded(message.author):
-            return
 
         word_list = self.get_word_list(message)
 
