@@ -30,6 +30,7 @@ class Help(commands.Cog):
         cogs.remove("GuildLogger")
         cogs.remove("Smfeed")
         cogs.remove("Roleassign")
+        cogs.remove("Filter")
 
         if cmnd is None:
             embed = discord.Embed(
