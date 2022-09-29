@@ -1,25 +1,15 @@
-from ast import alias
 import json
 import io
-import re
 import typing
 import datetime
-import asyncio
 import logging
 
-from discord import http
-from discord.channel import DMChannel
 
-
-from utils import custom_converters
 from utils import helper, app_checks, app_errors
 from utils.helper import (
     append_infraction,
-    bot_commands_only,
-    devs_only,
     get_single_infraction_type,
     mod_and_above,
-    calc_time,
     get_active_staff,
     blacklist_member,
     whitelist_member,
@@ -27,7 +17,7 @@ from utils.helper import (
 )
 
 import discord
-from discord.ext import commands, tasks
+from discord.ext import commands
 from discord import app_commands
 
 
@@ -53,11 +43,19 @@ class Moderation(commands.Cog):
 
     @app_commands.command()
     async def report(
-        self, interaction: discord.Interaction, member: typing.Optional[discord.Member]
+        self,
+        interaction: discord.Interaction,
+        member: typing.Optional[typing.Union[discord.Member, discord.User]] = None,
     ):
         """
         Use this command to report issues to the moderation team.
         """
+
+        if interaction.guild:
+            mod_channel = interaction.guild.get_channel(414095428573986816)
+        else:
+            kgs_guild = self.bot.get_guild(414027124836532234)
+            mod_channel = await kgs_guild.fetch_channel(414095428573986816)
 
         class Modal(discord.ui.Modal):
             def __init__(self, member):
@@ -93,7 +91,6 @@ class Moderation(commands.Cog):
                     icon_url=interaction.user.display_avatar.url,
                 )
 
-                mod_channel = interaction.guild.get_channel(414095428573986816)
                 await mod_channel.send(
                     get_active_staff(interaction.client), embed=mod_embed
                 )
