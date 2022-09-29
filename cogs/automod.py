@@ -56,11 +56,13 @@ class Filter(commands.Cog):
         self.logger.info("loaded Automod")
         self.logging_channel = await self.bot.fetch_channel(self.logging_channel_id)
 
-    #declare command group
-    filterCommands = app_commands.Group(name="filter", description="...", guild_ids=[414027124836532234])
+    # declare command group
+    filterCommands = app_commands.Group(
+        name="filter", description="...", guild_ids=[414027124836532234]
+    )
 
-    #return the required list
-    def returnlist(self, listtype):        
+    # return the required list
+    def returnlist(self, listtype):
         if listtype == "whitelist":
             return self.white_list
         elif listtype == "general":
@@ -68,7 +70,7 @@ class Filter(commands.Cog):
         elif listtype == "humanities":
             return self.humanities_list
 
-    #Updates filter list from Mongo based on listtype
+    # Updates filter list from Mongo based on listtype
     async def updatelist(self, listtype):
         if listtype == "whitelist":
             self.white_list = self.bot.db.filterlist.find_one({"name": "whitelist"})[
@@ -86,7 +88,13 @@ class Filter(commands.Cog):
             )["filter"]
 
     @filterCommands.command()
-    async def show(self, interaction: discord.Interaction, listtype: typing.Literal["whitelist", "general", "humanities"]):
+    @app_checks.mod_and_above()
+    @app_commands.default_permissions(manage_messages=True)
+    async def show(
+        self,
+        interaction: discord.Interaction,
+        listtype: typing.Literal["whitelist", "general", "humanities"],
+    ):
         filelist = self.returnlist(listtype)
         await interaction.response.send_message(
             f"These are the words which are in the {listtype}{'blacklist' if listtype != 'whitelist' else ''}",
@@ -95,13 +103,25 @@ class Filter(commands.Cog):
             ),
         )
 
+    @app_checks.mod_and_above()
+    @app_commands.default_permissions(manage_messages=True)
     @filterCommands.command()
-    async def add(self, interaction: discord.Interaction, listtype: typing.Literal["whitelist", "general", "humanities"], word: str):
+    async def add(
+        self,
+        interaction: discord.Interaction,
+        listtype: typing.Literal["whitelist", "general", "humanities"],
+        word: str,
+    ):
         filelist = self.returnlist(listtype)
         if word in filelist:
-            await interaction.response.send_message(f"`{word}` already exists in {listtype}{' list' if listtype != 'whitelist' else ''}.", ephemeral=True)
+            await interaction.response.send_message(
+                f"`{word}` already exists in {listtype}{' list' if listtype != 'whitelist' else ''}.",
+                ephemeral=True,
+            )
             return
-        await interaction.response.send_message(f"`{word}` added to the {listtype}{' list' if listtype != 'whitelist' else ''}.")
+        await interaction.response.send_message(
+            f"`{word}` added to the {listtype}{' list' if listtype != 'whitelist' else ''}."
+        )
 
         self.bot.db.filterlist.update_one(
             {"name": listtype}, {"$push": {"filter": word}}
@@ -109,13 +129,25 @@ class Filter(commands.Cog):
 
         await self.updatelist(listtype)
 
+    @app_checks.mod_and_above()
+    @app_commands.default_permissions(manage_messages=True)
     @filterCommands.command()
-    async def remove(self, interaction: discord.Interaction, listtype: typing.Literal["whitelist", "general", "humanities"], word: str):
+    async def remove(
+        self,
+        interaction: discord.Interaction,
+        listtype: typing.Literal["whitelist", "general", "humanities"],
+        word: str,
+    ):
         filelist = self.returnlist(listtype)
         if word not in filelist:
-            await interaction.response.send_message(f"`{word}` doesn't exists in {listtype}{' list' if listtype != 'whitelist' else ''}.", ephemeral=True)
+            await interaction.response.send_message(
+                f"`{word}` doesn't exists in {listtype}{' list' if listtype != 'whitelist' else ''}.",
+                ephemeral=True,
+            )
             return
-        await interaction.response.send_message(f"`{word}` removed from the {listtype}{' list' if listtype != 'whitelist' else ''}.")
+        await interaction.response.send_message(
+            f"`{word}` removed from the {listtype}{' list' if listtype != 'whitelist' else ''}."
+        )
 
         self.bot.db.filterlist.update_one(
             {"name": listtype}, {"$pull": {"filter": word}}
@@ -123,20 +155,26 @@ class Filter(commands.Cog):
 
         await self.updatelist(listtype)
 
+    @app_checks.mod_and_above()
+    @app_commands.default_permissions(manage_messages=True)
     @filterCommands.command()
-    async def check(self, interaction: discord.Interaction, listtype: typing.Literal["general", "humanities"], word: str):
+    async def check(
+        self,
+        interaction: discord.Interaction,
+        listtype: typing.Literal["general", "humanities"],
+        word: str,
+    ):
         filelist = self.returnlist(listtype)
-        
+
         word_list = filelist
         if listtype == "humanities":
             word_list += self.general_list
-        
+
         profanity = self.check_profanity(word_list, word)
         if profanity:
             await interaction.response.send_message(profanity)
         else:
             await interaction.response.send_message("No profanity.")
-
 
     @commands.Cog.listener()
     async def on_member_update(self, before, after):
@@ -305,7 +343,6 @@ class Filter(commands.Cog):
             return True
         return False
 
-
     # check for profanity
     def check_profanity(self, ref_word_list, message_clean):
         # print(self.white_list)
@@ -364,10 +401,7 @@ class Filter(commands.Cog):
                 if re.search(re.escape(w), message_clean):
                     offending_list.append(w)
             # print(offending_list)
-            if (
-                self.exception_list_check(offending_list)
-                and not offending_list == []
-            ):
+            if self.exception_list_check(offending_list) and not offending_list == []:
                 return False
             else:
                 return True
@@ -444,10 +478,10 @@ class Filter(commands.Cog):
             546315063745839115,
         ):
             return
-        #This is too aggressive and shouldn't be necessary. Leaving it commented for now though.
-        '''for f in filetypes:
+        # This is too aggressive and shouldn't be necessary. Leaving it commented for now though.
+        """for f in filetypes:
             if "." + f in message.content:
-                return True'''
+                return True"""
 
         if message.embeds:
             for e in message.embeds:
@@ -483,13 +517,11 @@ class Filter(commands.Cog):
                 },
             )
 
-            embed = create_automod_embed(
-                message=message, automod_type="profanity"
+            embed = create_automod_embed(message=message, automod_type="profanity")
+            embed.add_field(
+                name="Blacklisted Word", value=isprofanity[:1024], inline=False
             )
-            embed.add_field(name="Blacklisted Word", value=isprofanity[:1024], inline=False)
-            file = discord.File(
-                    io.BytesIO(message.content.encode("UTF-8")), f"log.txt"
-                )
+            file = discord.File(io.BytesIO(message.content.encode("UTF-8")), f"log.txt")
             await self.logging_channel.send(embed=embed, file=file)
             return
         if self.check_emoji_spam(message):
@@ -504,7 +536,7 @@ class Filter(commands.Cog):
             )
             return
         if self.check_ping_spam(message):
-            #why is nothing here
+            # why is nothing here
             return [True, "ping"]
         if self.check_gif_bypass(message):
             await self.execute_action_on_message(
