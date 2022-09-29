@@ -244,10 +244,8 @@ class Dev(commands.Cog):
     async def sync_apps(self, ctx: commands.Context):
 
         await ctx.bot.tree.sync()
-        synced = await ctx.bot.tree.sync(guild=discord.Object(414027124836532234))
-        self.logger.debug(synced)
-
-        await ctx.send("synced local guild commands")
+        await ctx.bot.tree.sync(guild=discord.Object(414027124836532234))
+        await ctx.reply("Synced local guild commands")
 
     @commands.command()
     @devs_only()

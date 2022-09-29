@@ -10,10 +10,10 @@ import demoji
 from better_profanity import profanity
 
 import discord
-from discord import http, app_commands
+from discord import app_commands
 from discord.ext import commands
 
-from utils import app_checks, app_errors
+from utils import app_checks
 from utils.helper import (
     create_automod_embed,
     devs_only,
@@ -57,8 +57,11 @@ class Filter(commands.Cog):
         self.logging_channel = await self.bot.fetch_channel(self.logging_channel_id)
 
     # declare command group
-    filterCommands = app_commands.Group(
-        name="filter", description="...", guild_ids=[414027124836532234]
+    filter_commands = app_commands.Group(
+        name="filter",
+        description="...",
+        guild_ids=[414027124836532234],
+        default_permissions=discord.permissions.Permissions(manage_messages=True),
     )
 
     # return the required list
@@ -87,9 +90,8 @@ class Filter(commands.Cog):
                 {"name": "humanities"}
             )["filter"]
 
-    @filterCommands.command()
     @app_checks.mod_and_above()
-    @app_commands.default_permissions(manage_messages=True)
+    @filter_commands.command()
     async def show(
         self,
         interaction: discord.Interaction,
@@ -104,8 +106,7 @@ class Filter(commands.Cog):
         )
 
     @app_checks.mod_and_above()
-    @app_commands.default_permissions(manage_messages=True)
-    @filterCommands.command()
+    @filter_commands.command()
     async def add(
         self,
         interaction: discord.Interaction,
@@ -130,8 +131,7 @@ class Filter(commands.Cog):
         await self.updatelist(listtype)
 
     @app_checks.mod_and_above()
-    @app_commands.default_permissions(manage_messages=True)
-    @filterCommands.command()
+    @filter_commands.command()
     async def remove(
         self,
         interaction: discord.Interaction,
@@ -156,8 +156,7 @@ class Filter(commands.Cog):
         await self.updatelist(listtype)
 
     @app_checks.mod_and_above()
-    @app_commands.default_permissions(manage_messages=True)
-    @filterCommands.command()
+    @filter_commands.command()
     async def check(
         self,
         interaction: discord.Interaction,
