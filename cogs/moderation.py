@@ -976,7 +976,7 @@ class Moderation(commands.Cog):
 
     @app_commands.command(name="slowmode")
     @app_commands.guilds(414027124836532234)
-    @app_commands.default_permissions(manage_channels=True)
+    @app_commands.default_permissions(manage_messages=True)
     @app_checks.mod_and_above()
     async def _slowmode(
         self,
