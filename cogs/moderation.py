@@ -205,16 +205,20 @@ class Moderation(commands.Cog):
             member = await interaction.guild.fetch_member(user.id)
             if member.top_role >= interaction.user.top_role:
                 raise app_errors.InvalidAuthorizationError(
-                    "user could not be banned due to your clearance"
+                    "User could not be banned due to your clearance."
                 )
 
             await member.send(
-                f"You have been permanently removed from the server for reason: {reason}"
+                f"You have been permanently removed from the server for following reason: \n{reason}"
             )
         except discord.NotFound:
             pass
 
         await interaction.guild.ban(user=user, reason=reason)
+
+        await interaction.response.send_message(
+            "User has been banned", ephemeral=is_public_channel(interaction.channel)
+        )
 
         helper.create_infraction(
             author=interaction.user,
@@ -239,10 +243,6 @@ class Moderation(commands.Cog):
 
         await logging_channel.send(embed=embed)
 
-        await interaction.response.send_message(
-            "user has been banned", ephemeral=is_public_channel(interaction.channel)
-        )
-
     @app_commands.command(name="unban")
     @app_commands.guilds(414027124836532234)
     @app_commands.default_permissions(manage_messages=True)
@@ -264,6 +264,10 @@ class Moderation(commands.Cog):
             )
             return
 
+        await interaction.response.send_message(
+            "user was unbanned", ephemeral=is_public_channel(interaction.channel)
+        )
+
         logging_channel = discord.utils.get(
             interaction.guild.channels, id=self.logging_channel
         )
@@ -276,10 +280,6 @@ class Moderation(commands.Cog):
             color=discord.Color.dark_red(),
         )
         await logging_channel.send(embed=embed)
-
-        await interaction.response.send_message(
-            "user was unbanned", ephemeral=is_public_channel(interaction.channel)
-        )
 
     @app_commands.command(name="kick")
     @app_commands.guilds(414027124836532234)
@@ -297,10 +297,14 @@ class Moderation(commands.Cog):
         if member.top_role >= interaction.user.top_role:
 
             raise app_errors.InvalidAuthorizationError(
-                "user could not be kicked due to your clearance"
+                "User could not be kicked due to your clearance."
             )
 
         await member.kick(reason=reason)
+
+        await interaction.response.send_message(
+            "member has been kicked", ephemeral=is_public_channel(interaction.channel)
+        )
 
         helper.create_infraction(
             author=interaction.user,
@@ -323,10 +327,6 @@ class Moderation(commands.Cog):
             inf_level=inf_level,
         )
         await logging_channel.send(embed=embed)
-
-        await interaction.response.send_message(
-            "member has been kicked", ephemeral=is_public_channel(interaction.channel)
-        )
 
     @app_commands.command(name="selfmute")
     @app_commands.guilds(414027124836532234)
@@ -435,6 +435,10 @@ class Moderation(commands.Cog):
 
         await member.timeout(finished)
 
+        await interaction.response.send_message(
+            "member has been muted", ephemeral=is_public_channel(interaction.channel)
+        )
+
         helper.create_infraction(
             author=interaction.user,
             users=[member],
@@ -460,10 +464,6 @@ class Moderation(commands.Cog):
         )
         await logging_channel.send(embed=embed)
 
-        await interaction.response.send_message(
-            "member has been muted", ephemeral=is_public_channel(interaction.channel)
-        )
-
     @app_commands.command(name="unmute")
     @app_commands.guilds(414027124836532234)
     @app_commands.default_permissions(manage_messages=True)
@@ -487,6 +487,7 @@ class Moderation(commands.Cog):
             action="Unmuted User(s)",
             users=[member],
             color=discord.Color.red(),
+            reason=reason,
         )
 
         await logging_channel.send(embed=embed)
@@ -526,6 +527,12 @@ class Moderation(commands.Cog):
             action = "Gave role"
             preposition = "to"
 
+        await interaction.response.send_message(
+            f"{action.lower()} {role.name} {preposition} {member.name}",
+            ephemeral=is_public_channel(interaction.channel),
+            allowed_mentions=discord.AllowedMentions.none(),
+        )
+
         logging_channel = discord.utils.get(
             interaction.guild.channels, id=self.logging_channel
         )
@@ -538,12 +545,6 @@ class Moderation(commands.Cog):
             color=discord.Color.purple(),
         )
         await logging_channel.send(embed=embed)
-
-        await interaction.response.send_message(
-            f"{action.lower()} {role.name} {preposition} {member.name}",
-            ephemeral=is_public_channel(interaction.channel),
-            allowed_mentions=discord.AllowedMentions.none(),
-        )
 
     @app_commands.command(name="warn")
     @app_commands.guilds(414027124836532234)
@@ -576,6 +577,10 @@ class Moderation(commands.Cog):
         except discord.Forbidden:
             pass
 
+        await interaction.response.send_message(
+            "user has been warned", ephemeral=is_public_channel(interaction.channel)
+        )
+
         helper.create_infraction(
             author=interaction.user,
             users=[member],
@@ -598,10 +603,6 @@ class Moderation(commands.Cog):
             inf_level=inf_level,
         )
         await logging_channel.send(embed=embed)
-
-        await interaction.response.send_message(
-            "user has been warned", ephemeral=is_public_channel(interaction.channel)
-        )
 
     # TODO CONVERT THIS COMMAND
     @app_commands.command(name="delwarn")
@@ -663,7 +664,7 @@ class Moderation(commands.Cog):
             ):
                 if self.delete_warn_idx != -1:
 
-                    del self.warns[self.delete_warn_idx]
+                    del self.warns[self.page * 5 + self.delete_warn_idx]
                     helper.update_warns(member.id, self.warns)
 
                     await interaction.response.edit_message(
@@ -684,19 +685,18 @@ class Moderation(commands.Cog):
                 )
 
                 if delete_warn_idx != -1:
+                    warn_idx = page * 5 + delete_warn_idx
                     embed.description = f"Confirm removal of warn"
                     embed.add_field(
                         name="Delete Warn?",
                         value="```{0}\n{1}\n{2}```".format(
                             "Author: {} ({})".format(
-                                warns[delete_warn_idx]["author_name"],
-                                warns[delete_warn_idx]["author_id"],
+                                warns[warn_idx]["author_name"],
+                                warns[warn_idx]["author_id"],
                             ),
-                            "Reason: {}".format(warns[delete_warn_idx]["reason"]),
+                            "Reason: {}".format(warns[warn_idx]["reason"]),
                             "Date: {}".format(
-                                warns[delete_warn_idx]["datetime"].replace(
-                                    microsecond=0
-                                )
+                                warns[warn_idx]["datetime"].replace(microsecond=0)
                             ),
                         ),
                     )
