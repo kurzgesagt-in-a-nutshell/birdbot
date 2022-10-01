@@ -31,7 +31,9 @@ class Giveaway(commands.Cog):
     async def on_ready(self):
         self.logger.info("loaded Giveaway")
 
-        for giveaway in self.giveaway_db.find({"giveaway_over": False, "giveaway_cancelled": False}):
+        for giveaway in self.giveaway_db.find(
+            {"giveaway_over": False, "giveaway_cancelled": False}
+        ):
             self.active_giveaways[giveaway["message_id"]] = giveaway
 
         self.giveaway_task.start()

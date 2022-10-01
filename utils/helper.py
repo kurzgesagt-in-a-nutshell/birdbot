@@ -831,7 +831,11 @@ def create_automod_embed(
         timestamp=datetime.datetime.utcnow(),
     )
     embed.add_field(
-        name="Message Content", value=f"{message.content[:1024]}" if message.content else "it's an attachment/embed", inline=False
+        name="Message Content",
+        value=f"{message.content[:1024]}"
+        if message.content
+        else "it's an attachment/embed",
+        inline=False,
     )
     return embed
 
