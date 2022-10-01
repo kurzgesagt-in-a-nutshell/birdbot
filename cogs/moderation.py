@@ -9,7 +9,6 @@ from utils import helper, app_checks, app_errors
 from utils.helper import (
     append_infraction,
     get_single_infraction_type,
-    mod_and_above,
     get_active_staff,
     blacklist_member,
     whitelist_member,
@@ -1018,10 +1017,16 @@ class Moderation(commands.Cog):
         )
         await logging_channel.send(embed=embed)
 
-    # TODO CONVERT THIS COMMAND
-    @commands.command(aliases=["blacklist_command", "commandblacklist"])
-    @mod_and_above()
-    async def nocmd(self, ctx, member: discord.Member, command_name: str):
+    @app_commands.command(name="nocmd")
+    @app_commands.guilds(414027124836532234)
+    @app_commands.default_permissions(manage_messages=True)
+    @app_checks.mod_and_above()
+    async def nocmd(
+        self,
+        interaction: discord.Interaction,
+        member: discord.Member,
+        command_name: str,
+    ):
         """
         Blacklists a member from a command
         Usage: nocmd @user/user_ID command_name
@@ -1029,28 +1034,47 @@ class Moderation(commands.Cog):
 
         command = discord.utils.get(self.bot.commands, name=command_name)
         if command is None:
-            raise commands.BadArgument(message=f"{command_name} is not a valid command")
-        if ctx.author.top_role > member.top_role:
+            return await interaction.response.send_message(
+                f"{command_name} is not a valid command", ephemeral=True
+            )
+        if interaction.user.top_role > member.top_role:
             blacklist_member(self.bot, member, command)
-            await ctx.send(f"{member.name} can no longer use {command_name}")
+            await interaction.response.send_message(
+                f"{member.name} can no longer use {command_name}", ephemeral=True
+            )
         else:
-            await ctx.send(f"You cannot blacklist someone higher or equal to you smh")
+            await interaction.response.send_message(
+                f"You cannot blacklist someone higher or equal to you smh.",
+                ephemeral=True,
+            )
 
-    # TODO CONVERT THIS COMMAND
-    @commands.command(aliases=["whitelist_command", "commandwhitelist"])
-    @mod_and_above()
-    async def yescmd(self, ctx, member: discord.Member, command_name: str):
+    @app_commands.command(name="yescmd")
+    @app_commands.guilds(414027124836532234)
+    @app_commands.default_permissions(manage_messages=True)
+    @app_checks.mod_and_above()
+    async def yescmd(
+        self,
+        interaction: discord.Interaction,
+        member: discord.Member,
+        command_name: str,
+    ):
         """
         Whitelists a member from a command
         Usage: yescmd @user/user_ID command_name
         """
         command = discord.utils.get(self.bot.commands, name=command_name)
         if command is None:
-            raise commands.BadArgument(message=f"{command_name} is not a valid command")
+            return await interaction.response.send_message(
+                f"{command_name} is not a valid command", ephemeral=True
+            )
         if whitelist_member(member, command):
-            await ctx.send(f"{member.name} can now use {command.name}")
+            await interaction.response.send_message(
+                f"{member.name} can now use {command.name}", ephemeral=True
+            )
         else:
-            await ctx.send(f"{member.name} is not blacklisted from {command.name}")
+            await interaction.response.send_message(
+                f"{member.name} is not blacklisted from {command.name}", ephemeral=True
+            )
 
 
 async def setup(bot):
