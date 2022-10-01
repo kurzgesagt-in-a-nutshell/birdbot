@@ -109,7 +109,7 @@ class Moderation(commands.Cog):
     async def _clean(
         self,
         interaction: discord.Interaction,
-        limit: app_commands.Range[int, 1, 100],
+        count: app_commands.Range[int, 1, 200],
         _from: typing.Optional[discord.User],
         channel: typing.Union[discord.TextChannel, discord.Thread, None] = None,
     ):
@@ -118,27 +118,30 @@ class Moderation(commands.Cog):
         if channel is None:
             channel = interaction.channel
 
+        await interaction.response.defer(ephemeral=True)
+
         def check(message):
+            # Note:
+            # This is conditional to check if the `message` is the interaction message that invoked the clean command.
+            # The purge function works perfectly regardless of this conditional, but commenting it if it's needed in future.
+            # if message.interaction and interaction.id == message.interaction.id:
+            #     return False
+
             if _from is None or _from.id == message.author.id:
                 return True
             return False
 
         deleted_messages = await channel.purge(
-            limit=limit,
+            limit=count,
             check=check,
-            bulk=limit != 1,  # if count is 1 then dont bulk delete
+            bulk=count != 1,  # if count is 1 then dont bulk delete
         )
 
         deleted_count = len(deleted_messages)
 
-        await interaction.response.send_message(
-            f"deleted {deleted_count} messages{'s' if deleted_count > 1 else ''}",
-            ephemeral=is_public_channel(interaction.channel),
+        await interaction.edit_original_response(
+            content=f"Deleted {deleted_count} message{'s' if deleted_count > 1 else ''}{f' from {_from.mention}' if _from else ''} in channel {channel.mention}",
         )
-
-        # no need to manually log a single delete
-        if limit == 1:
-            return
 
         # format the log
         row_format = lambda x: "{author:<70} | {datetime:<20} | {content}".format(**x)
