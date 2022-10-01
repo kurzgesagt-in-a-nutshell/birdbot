@@ -861,7 +861,6 @@ class Moderation(commands.Cog):
             ephemeral=is_public_channel(interaction.channel),
         )
 
-    # TODO CONVERT THIS COMMAND
     @app_commands.command(name="detailedinfr")
     @app_commands.guilds(414027124836532234)
     @app_commands.default_permissions(manage_messages=True)
@@ -931,7 +930,6 @@ class Moderation(commands.Cog):
                 embed=embed, ephemeral=is_public_channel(interaction.channel)
             )
 
-    # TODO CONVERT THIS COMMAND
     @app_commands.command(name="editinfr")
     @app_commands.guilds(414027124836532234)
     @app_commands.default_permissions(manage_messages=True)
@@ -979,50 +977,46 @@ class Moderation(commands.Cog):
 
     @app_commands.command(name="slowmode")
     @app_commands.guilds(414027124836532234)
-    @app_commands.default_permissions(manage_messages=True)
+    @app_commands.default_permissions(manage_channels=True)
     @app_checks.mod_and_above()
     async def _slowmode(
         self,
         interaction: discord.Interaction,
-        time: str,
+        duration: app_commands.Range[int, 0, 360],
         channel: typing.Union[discord.TextChannel, discord.Thread, None],
         reason: typing.Optional[str],
     ):
-        """Add or remove slowmode in a channel"""
+        """Add or remove slowmode in a channel
 
-        seconds, _ = helper.calc_time([time, ""])
-
-        if seconds is None:
-            seconds = 0
-
-        if seconds > 21600:
-            await interaction.response.send_message(
-                "Slowmode can't be over 6 hours",
-                ephemeral=is_public_channel(interaction.channel),
-            )
-            return
+        Parameters
+        -----------
+        duration: int
+            Duration in seconds (0 - 360)
+        """
 
         if channel is None:
             channel = interaction.channel
 
-        await channel.edit(slowmode_delay=seconds, reason=reason)
+        await channel.edit(slowmode_delay=duration, reason=reason)
+
+        await interaction.response.send_message(
+            f"slowmode of {duration} seconds added to {channel.mention}.",
+            ephemeral=True,
+        )
 
         logging_channel = discord.utils.get(
             interaction.guild.channels, id=self.logging_channel
         )
+
         embed = helper.create_embed(
             author=interaction.user,
             action="Added slow mode.",
             users=None,
             reason=reason,
-            extra=f"Channel: {channel.mention}\nSlowmode Duration: {seconds} seconds",
+            extra=f"Channel: {channel.mention}\nSlowmode Duration: {duration} seconds",
             color=discord.Color.orange(),
         )
         await logging_channel.send(embed=embed)
-
-        await interaction.response.send_message(
-            f"slowmode of {seconds} seconds added to {channel.mention}.", ephemeral=True
-        )
 
     # TODO CONVERT THIS COMMAND
     @commands.command(aliases=["blacklist_command", "commandblacklist"])
