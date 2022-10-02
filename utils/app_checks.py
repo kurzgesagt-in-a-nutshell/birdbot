@@ -33,3 +33,37 @@ def devs_only():
         return True
 
     return app_commands.check(predicate)
+
+
+def general_only():
+    async def predicate(interaction: Interaction):
+        if (
+            interaction.channel.category_id
+            != 414095379156434945  # Mod channel category
+            and interaction.channel_id != 414027124836532236  # general id
+        ):
+            raise InvalidAuthorizationError
+        return True
+
+    return app_commands.check(predicate)
+
+
+def topic_perm_check():
+    # check for role >= Duck(637114897544511488) and Patron
+    async def predicate(interaction: Interaction):
+        check_role = interaction.guild.get_role(637114897544511488)
+
+        user = interaction.guild.get_member(interaction.user.id)
+        user_role_ids = [x.id for x in user.roles]
+        check_role_ids = [
+            config_roles["patreon_blue_role"],
+            config_roles["patreon_green_role"],
+            config_roles["patreon_orange_role"],
+        ]
+        if interaction.user.top_role >= check_role or any(
+            x in user_role_ids for x in check_role_ids
+        ):
+            return True
+        raise InvalidAuthorizationError
+
+    return app_commands.check(predicate)

@@ -8,14 +8,9 @@ import copy
 
 import discord
 from discord.ext import commands
+from discord import app_commands
 
-from utils.helper import (
-    mod_and_above,
-    general_only,
-    bot_commands_only,
-    patreon_only,
-    role_and_above,
-)
+from utils import app_checks
 
 
 class Topic(commands.Cog):
@@ -43,37 +38,42 @@ class Topic(commands.Cog):
     async def on_ready(self):
         self.logger.info("loaded Topic")
 
-    @commands.group(invoke_without_command=True)
-    @general_only()
-    @commands.check_any(
-        role_and_above(637114897544511488), patreon_only()
-    )  # duck and above or patrons
-    @commands.cooldown(1, 300, commands.BucketType.user)
-    async def topic(self, ctx: commands.Context):
-        """Get a topic to talk about."""
+    topics_command = app_commands.Group(
+        name="topics",
+        description="Topic commands",
+        guild_ids=[414027124836532234],
+        default_permissions=discord.permissions.Permissions(manage_messages=True),
+    )
 
+    @app_commands.command(name="topic")
+    @app_commands.default_permissions(send_messages=True)
+    @app_commands.guilds(414027124836532234)
+    @app_checks.general_only()
+    @app_checks.topic_perm_check()
+    @app_commands.checks.cooldown(1, 300, key=lambda i: (i.guild_id, i.user.id))
+    async def topic(self, interaction: discord.Interaction):
         random_index = random.randint(0, len(self.topics_list) - 1)
-        await ctx.send(f"{self.topics_list.pop(random_index)}")
+        await interaction.response.send_message(f"{self.topics_list.pop(random_index)}")
 
         if self.topics_list == []:
             self.topics_list = copy.deepcopy(self.topics)
 
-    @mod_and_above()
-    @topic.command(aliases=["search", "find"])
-    async def get(self, ctx: commands.Context, *, search_string: str):
+    @topics_command.command(name="search")
+    @app_checks.mod_and_above()
+    async def get(self, interaction: discord.Interaction, text: str):
         """
         Get a topic by search string.
         Usage: topic get search_string
         """
 
-        await ctx.message.delete(delay=6)
+        await interaction.response.defer(ephemeral=True)
 
-        search_result = process.extractBests(search_string, self.topics, limit=9)
+        search_result = process.extractBests(text, self.topics, limit=9)
 
         t = [topic[0] for topic in search_result if topic[1] > 75]
 
         if t == []:
-            return await ctx.send("No match found.", delete_after=6)
+            return await interaction.edit_original_response(content="No match found.")
 
         embed_desc = "".join(
             f"{self.topics.index(tp) + 1}. {tp}\n" for _, tp in enumerate(t)
@@ -84,38 +84,144 @@ class Topic(commands.Cog):
             description=embed_desc,
         )
 
-        await ctx.send(embed=embed, delete_after=20)
+        await interaction.edit_original_response(embed=embed)
 
-    @mod_and_above()
-    @topic.command()
-    @commands.cooldown(1, 5)
-    async def add(self, ctx: commands.Context, *, topic: str):
+    @topics_command.command(name="add")
+    @app_checks.mod_and_above()
+    async def add(self, interaction: discord.Interaction, text: str):
         """
         Add a topic to the list.
         Usage: topic add actual_topic
         """
 
-        self.topics.append(topic)
+        self.topics.append(text)
 
         self.topics_db.update_one({"name": "topics"}, {"$set": {"topics": self.topics}})
 
-        await ctx.send(f"Topic added at index {len(self.topics)}", delete_after=6)
-        await ctx.message.delete(delay=4)
+        await interaction.response.send_message(
+            f"Topic added at index {len(self.topics)}"
+        )
 
-    @topic.command()
-    @bot_commands_only()
-    @commands.cooldown(1, 5)
-    async def suggest(self, ctx: commands.Context, *, topic: str):
+    @topics_command.command(name="remove")
+    @app_checks.mod_and_above()
+    async def remove(
+        self,
+        interaction: discord.Interaction,
+        index: typing.Optional[int] = None,
+        search_text: typing.Optional[str] = None,
+    ):
+        """
+        Delete topic by index or search string.
+        Usage: topic remove index/search_string
+        """
+
+        if index is None and search_text is None:
+            return await interaction.response.send_message(
+                "Please provide value for one of the arguments.", ephemeral=True
+            )
+
+        await interaction.response.defer(ephemeral=True)
+
+        if index is not None:
+            if index < 1 or index > len(self.topics):
+                return await interaction.edit_original_response(
+                    content=f"Invalid index. Min value: 1, Max value: {len(self.topics)}"
+                )
+
+            index = index - 1
+            topic = self.topics[index]
+            del self.topics[index]
+
+            self.topics_db.update_one(
+                {"name": "topics"}, {"$set": {"topics": self.topics}}
+            )
+
+            emb = discord.Embed(
+                title="Success",
+                description=f"**{topic}** removed.",
+                colour=discord.Colour.green(),
+            )
+            await interaction.edit_original_response(embed=emb)
+
+        else:
+            if search_text is None:
+                return await interaction.edit_original_response(
+                    content="Invalid arguments. Please specify either index or search string."
+                )
+
+            search_result = process.extractBests(search_text, self.topics, limit=9)
+
+            t = [topic[0] for topic in search_result if topic[1] > 75]
+
+            if t == []:
+                return await interaction.edit_original_response(
+                    content="No match found."
+                )
+
+            embed_desc = "".join(f"{index + 1}. {tp}\n" for index, tp in enumerate(t))
+
+            embed = discord.Embed(
+                title="React on corresponding number to delete topic.",
+                description=embed_desc,
+            )
+
+            msg = await interaction.edit_original_response(embed=embed)
+
+            emote_list = [
+                "\u0031\uFE0F\u20E3",
+                "\u0032\uFE0F\u20E3",
+                "\u0033\uFE0F\u20E3",
+                "\u0034\uFE0F\u20E3",
+                "\u0035\uFE0F\u20E3",
+                "\u0036\uFE0F\u20E3",
+                "\u0037\uFE0F\u20E3",
+                "\u0038\uFE0F\u20E3",
+                "\u0039\uFE0F\u20E3",
+            ]
+
+            for emote in emote_list[: len(t)]:
+                await msg.add_reaction(emote)
+
+            def check(reaction, user):
+                return user == interaction.user and str(reaction.emoji) in emote_list
+
+            try:
+                reaction, user = await self.bot.wait_for(
+                    "reaction_add", timeout=30.0, check=check
+                )
+                i = emote_list.index(str(reaction.emoji))
+
+                emb = discord.Embed(
+                    title="Success!",
+                    description=f"**{search_result[i][0]}**\nremoved",
+                    colour=discord.Colour.green(),
+                )
+
+                await msg.edit(embed=emb)
+
+                self.topics.remove(search_result[i][0])
+
+                self.topics_db.update_one(
+                    {"name": "topics"}, {"$set": {"topics": self.topics}}
+                )
+
+            except asyncio.TimeoutError:
+                await msg.delete()
+                return
+
+    @app_commands.command(name="topic_suggest")
+    @app_commands.default_permissions(send_messages=True)
+    async def suggest(self, interaction: discord.Interaction, topic: str):
         """
         Suggest a topic.
         Usage: topic suggest actual_topic
         """
-
+        await interaction.response.defer(ephemeral=True)
         automated_channel = self.bot.get_channel(self.automated_channel)
         embed = discord.Embed(description=f"**{topic}**", color=0xC8A2C8)
         embed.set_author(
-            name=ctx.author.name + "#" + ctx.author.discriminator,
-            icon_url=ctx.author.display_avatar.url,
+            name=interaction.user.name + "#" + interaction.user.discriminator,
+            icon_url=interaction.user.display_avatar.url,
         )
         embed.set_footer(text="topic")
         message = await automated_channel.send(embed=embed)
@@ -123,8 +229,9 @@ class Topic(commands.Cog):
         await message.add_reaction("<:kgsYes:955703069516128307>")
         await message.add_reaction("<:kgsNo:955703108565098496>")
 
-        await ctx.send("Topic suggested.", delete_after=4)
-        await ctx.message.delete(delay=4)
+        await interaction.edit_original_response(
+            content="Topic suggested.",
+        )
 
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent):
@@ -164,107 +271,6 @@ class Topic(commands.Cog):
                         ).fetch_message(payload.message_id)
                         embed = discord.Embed(title="Suggestion removed!")
                         await message.edit(embed=embed, delete_after=6)
-
-    @mod_and_above()
-    @topic.command()
-    @commands.cooldown(1, 5)
-    async def remove(
-        self,
-        ctx: commands.Context,
-        index: typing.Optional[int] = None,
-        *,
-        search_string: str = None,
-    ):
-        """
-        Delete topic by index or search string.
-        Usage: topic remove index/search_string
-        """
-        if index is not None:
-            if index < 1 or index > len(self.topics):
-                raise commands.BadArgument(
-                    message=f"Invalid index. Min value: 0, Max value: {len(self.topics)}"
-                )
-
-            index = index - 1
-            topic = self.topics[index]
-            del self.topics[index]
-
-            self.topics_db.update_one(
-                {"name": "topics"}, {"$set": {"topics": self.topics}}
-            )
-
-            emb = discord.Embed(
-                title="Success",
-                description=f"**{topic}** removed.",
-                colour=discord.Colour.green(),
-            )
-            await ctx.send(embed=emb)
-
-        else:
-            if search_string is None:
-                raise commands.BadArgument(
-                    message="Invalid arguments. Please specify either index or search string."
-                )
-
-            await ctx.message.delete(delay=6)
-
-            search_result = process.extractBests(search_string, self.topics, limit=9)
-
-            t = [topic[0] for topic in search_result if topic[1] > 75]
-
-            if t == []:
-                return await ctx.send("No match found.", delete_after=6)
-
-            embed_desc = "".join(f"{index + 1}. {tp}\n" for index, tp in enumerate(t))
-
-            embed = discord.Embed(
-                title="React on corresponding number to delete topic.",
-                description=embed_desc,
-            )
-
-            msg = await ctx.send(embed=embed)
-
-            emote_list = [
-                "\u0031\uFE0F\u20E3",
-                "\u0032\uFE0F\u20E3",
-                "\u0033\uFE0F\u20E3",
-                "\u0034\uFE0F\u20E3",
-                "\u0035\uFE0F\u20E3",
-                "\u0036\uFE0F\u20E3",
-                "\u0037\uFE0F\u20E3",
-                "\u0038\uFE0F\u20E3",
-                "\u0039\uFE0F\u20E3",
-            ]
-
-            for emote in emote_list[: len(t)]:
-                await msg.add_reaction(emote)
-
-            def check(reaction, user):
-                return user == ctx.author and str(reaction.emoji) in emote_list
-
-            try:
-                reaction, user = await self.bot.wait_for(
-                    "reaction_add", timeout=30.0, check=check
-                )
-                i = emote_list.index(str(reaction.emoji))
-
-                emb = discord.Embed(
-                    title="Success!",
-                    description=f"**{search_result[i][0]}**\nremoved",
-                    colour=discord.Colour.green(),
-                )
-
-                await msg.edit(embed=emb, delete_after=6)
-
-                self.topics.remove(search_result[i][0])
-
-                self.topics_db.update_one(
-                    {"name": "topics"}, {"$set": {"topics": self.topics}}
-                )
-
-            except asyncio.TimeoutError:
-                await msg.delete()
-                return
 
 
 async def setup(bot):
