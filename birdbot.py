@@ -96,7 +96,6 @@ class BirdTree(app_commands.CommandTree):
         self, interaction: Interaction, error: app_commands.AppCommandError
     ):
         """Handles errors thrown within the command tree"""
-
         if isinstance(error, app_commands.CheckFailure):
             # Inform user of failure ephemerally
 
@@ -115,6 +114,11 @@ class BirdTree(app_commands.CommandTree):
 
             return
 
+        if isinstance(error, app_commands.errors.CommandOnCooldown):
+            msg = f"<:kgsNo:955703108565098496> {str(error)}"
+            await maybe_responded(interaction, msg, ephemeral=True)
+
+            return
         # most cases this will consist of errors thrown by the actual code
         # TODO send in <#865321589919055882>
 

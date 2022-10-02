@@ -93,13 +93,6 @@ class Help(commands.Cog):
         """
         await interaction.response.send_message(f"{int(self.bot.latency * 1000)} ms")
 
-    @ping.error
-    async def cooldown_error(
-        self, interaction: discord.Interaction, error: app_commands.AppCommandError
-    ):
-        if isinstance(error, app_commands.CommandOnCooldown):
-            await interaction.response.send_message(str(error), ephemeral=True)
-
 
 async def setup(bot):
     await bot.add_cog(Help(bot))
