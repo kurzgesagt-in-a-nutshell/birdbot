@@ -172,6 +172,7 @@ class Banner(commands.Cog):
     # Making this standalone command cause can not override default permissions, and we need only this command to be visible to users.
     @app_commands.command(name="banner_suggest")
     @app_commands.default_permissions(send_messages=True)
+    @app_commands.guilds(414027124836532234)
     async def suggest(
         self,
         interaction: discord.Interaction,
