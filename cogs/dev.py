@@ -5,6 +5,7 @@ import math
 import textwrap
 import traceback
 import os
+import typing
 
 from contextlib import redirect_stdout
 from discord.ext.commands.errors import ExtensionNotFound
@@ -14,7 +15,9 @@ from git.cmd import Git
 
 import discord
 from discord.ext import commands
+from discord import app_commands
 
+from utils import app_checks
 from utils.helper import mod_and_above, devs_only, mainbot_only
 
 
@@ -41,36 +44,28 @@ class Dev(commands.Cog):
             return f"```py\n{e.__class__.__name__}: {e}\n```"
         return f'```py\n{e.text}{"^":>{e.offset}}\n{e.__class__.__name__}: {e}```'
 
-    @commands.group(hidden=True, aliases=["presence"])
-    @devs_only()
-    async def activity(self, ctx: commands.Context):
-        """Sets the bots status"""
-        pass
+    @app_commands.command(name="activity")
+    @app_commands.guilds(414027124836532234)
+    @app_commands.default_permissions(manage_messages=True)
+    @app_checks.mod_and_above()
+    async def activity(
+        self,
+        interaction: discord.Interaction,
+        activity_type: typing.Literal["listening", "watching", "playing"],
+        message: str,
+    ):
+        """Set bot activity."""
+        activities = {
+            "listening": discord.ActivityType.listening,
+            "watching": discord.ActivityType.watching,
+            "playing": discord.ActivityType.playing,
+        }
 
-    async def change_activity(self, ctx: commands.Context, activity: discord.Activity):
-        await ctx.bot.change_presence(activity=activity)
-        await ctx.send("presence changed.")
+        await self.bot.change_presence(
+            activity=discord.Activity(name=message, type=activities[activity_type])
+        )
 
-    @activity.command(aliases=["l"])
-    @devs_only()
-    async def listening(self, ctx: commands.Context, *, text: str):
-        """Set listening activity"""
-        audio = discord.Activity(name=text, type=discord.ActivityType.listening)
-        await self.change_activity(ctx, audio)
-
-    @activity.command(aliases=["w"])
-    @devs_only()
-    async def watching(self, ctx: commands.Context, *, text: str):
-        """Set watching activity"""
-        video = discord.Activity(name=text, type=discord.ActivityType.watching)
-        await self.change_activity(ctx, video)
-
-    @activity.command(aliases=["p"])
-    @devs_only()
-    async def playing(self, ctx: commands.Context, *, text: str):
-        """Set playing activity"""
-        game = discord.Activity(name=text, type=discord.ActivityType.playing)
-        await self.change_activity(ctx, game)
+        await interaction.response.send_message("Activity changed.", ephemeral=True)
 
     @commands.is_owner()
     @commands.command(pass_context=True, name="eval")
