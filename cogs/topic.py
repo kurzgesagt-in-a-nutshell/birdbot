@@ -45,25 +45,29 @@ class Topic(commands.Cog):
         default_permissions=discord.permissions.Permissions(manage_messages=True),
     )
 
-    @app_commands.command(name="topic")
+    @app_commands.command()
     @app_commands.default_permissions(send_messages=True)
     @app_commands.guilds(414027124836532234)
     @app_checks.general_only()
     @app_checks.topic_perm_check()
     @app_commands.checks.cooldown(1, 300, key=lambda i: (i.guild_id, i.user.id))
     async def topic(self, interaction: discord.Interaction):
+        """Fetches a random topic"""
         random_index = random.randint(0, len(self.topics_list) - 1)
         await interaction.response.send_message(f"{self.topics_list.pop(random_index)}")
 
         if self.topics_list == []:
             self.topics_list = copy.deepcopy(self.topics)
 
-    @topics_command.command(name="search")
+    @topics_command.command()
     @app_checks.mod_and_above()
-    async def get(self, interaction: discord.Interaction, text: str):
-        """
-        Get a topic by search string.
-        Usage: topic get search_string
+    async def search(self, interaction: discord.Interaction, text: str):
+        """Search a topic
+
+        Parameters
+        ----------
+        text: str
+            Search string
         """
 
         await interaction.response.defer(ephemeral=True)
@@ -86,12 +90,15 @@ class Topic(commands.Cog):
 
         await interaction.edit_original_response(embed=embed)
 
-    @topics_command.command(name="add")
+    @topics_command.command()
     @app_checks.mod_and_above()
     async def add(self, interaction: discord.Interaction, text: str):
-        """
-        Add a topic to the list.
-        Usage: topic add actual_topic
+        """Add a topic
+
+        Parameters
+        ----------
+        text: str
+            New topic
         """
 
         self.topics.append(text)
@@ -102,7 +109,7 @@ class Topic(commands.Cog):
             f"Topic added at index {len(self.topics)}"
         )
 
-    @topics_command.command(name="remove")
+    @topics_command.command()
     @app_checks.mod_and_above()
     async def remove(
         self,
@@ -110,9 +117,14 @@ class Topic(commands.Cog):
         index: typing.Optional[int] = None,
         search_text: typing.Optional[str] = None,
     ):
-        """
-        Delete topic by index or search string.
-        Usage: topic remove index/search_string
+        """Removes a topic
+
+        Parameters
+        ----------
+        index: int
+            Index of topic
+        search_text: str
+            Search string
         """
 
         if index is None and search_text is None:
@@ -209,12 +221,17 @@ class Topic(commands.Cog):
                 await msg.delete()
                 return
 
-    @app_commands.command(name="topic_suggest")
+    @app_commands.command()
     @app_commands.default_permissions(send_messages=True)
+    @app_commands.guilds(414027124836532234)
+    @app_commands.checks.cooldown(1, 60, key=lambda i: (i.guild_id, i.user.id))
     async def suggest(self, interaction: discord.Interaction, topic: str):
-        """
-        Suggest a topic.
-        Usage: topic suggest actual_topic
+        """Suggest a topic
+
+        Parameters
+        ----------
+        topic: str
+            Topic to suggest
         """
         await interaction.response.defer(ephemeral=True)
         automated_channel = self.bot.get_channel(self.automated_channel)

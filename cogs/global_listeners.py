@@ -22,7 +22,6 @@ from utils.helper import (
     NoAuthorityError,
     DevBotOnly,
     WrongChannel,
-    patreon_only,
     create_user_infraction,
     is_internal_command,
 )
@@ -365,6 +364,9 @@ class GuildChores(commands.Cog):
     async def on_message(self, message):
         """Remind mods to use correct prefix, alert mod pings etc"""
 
+        if isinstance(message.channel, discord.DMChannel):
+            return
+
         await check_server_memories(message)
         await translate_bannsystem(message)
         if any(
@@ -404,6 +406,7 @@ class GuildChores(commands.Cog):
             )
 
         if not message.author.bot:
+
             guild = discord.utils.get(self.bot.guilds, id=414027124836532234)
             mod_role = discord.utils.get(guild.roles, id=self.mod_role)
             admin_role = discord.utils.get(guild.roles, id=self.admin_role)
@@ -492,10 +495,11 @@ class GuildChores(commands.Cog):
         embed = await translate_bannsystem(msg)
         # await ctx.send(embed=embed)
 
-    # TODO: Move to slash
-    @app_commands.command(name="unenrol")
+    @app_commands.command()
     @app_checks.patreon_only()
+    @app_commands.checks.cooldown(1, 300, key=lambda i: (i.user.id))
     async def unenrol(self, interaction: discord.Interaction):
+        """Unenrol from Patron auto join"""
 
         embed = discord.Embed(
             title="We're sorry to see you go",

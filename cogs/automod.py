@@ -16,8 +16,6 @@ from discord.ext import commands
 from utils import app_checks
 from utils.helper import (
     create_automod_embed,
-    devs_only,
-    mod_and_above,
     is_internal_command,
     is_external_command,
 )
@@ -59,7 +57,7 @@ class Filter(commands.Cog):
     # declare command group
     filter_commands = app_commands.Group(
         name="filter",
-        description="...",
+        description="Automod filter commands",
         guild_ids=[414027124836532234],
         default_permissions=discord.permissions.Permissions(manage_messages=True),
     )
@@ -90,86 +88,120 @@ class Filter(commands.Cog):
                 {"name": "humanities"}
             )["filter"]
 
-    @app_checks.mod_and_above()
     @filter_commands.command()
+    @app_checks.mod_and_above()
     async def show(
         self,
         interaction: discord.Interaction,
-        listtype: typing.Literal["whitelist", "general", "humanities"],
+        list_type: typing.Literal["whitelist", "general", "humanities"],
     ):
-        filelist = self.returnlist(listtype)
+        """Show words in selected filter list
+
+        Parameters
+        ----------
+        list_type: str
+            Type of list
+        """
+        filelist = self.returnlist(list_type)
         await interaction.response.send_message(
-            f"These are the words which are in the {listtype}{'blacklist' if listtype != 'whitelist' else ''}",
+            f"These are the words which are in the {list_type}{'blacklist' if list_type != 'whitelist' else ''}",
             file=discord.File(
-                io.BytesIO("\n".join(filelist).encode("UTF-8")), f"{listtype}.txt"
+                io.BytesIO("\n".join(filelist).encode("UTF-8")), f"{list_type}.txt"
             ),
         )
 
-    @app_checks.mod_and_above()
     @filter_commands.command()
+    @app_checks.mod_and_above()
     async def add(
         self,
         interaction: discord.Interaction,
-        listtype: typing.Literal["whitelist", "general", "humanities"],
+        list_type: typing.Literal["whitelist", "general", "humanities"],
         word: str,
     ):
-        filelist = self.returnlist(listtype)
+        """Add a word in selected filter list
+
+        Parameters
+        ----------
+        list_type: str
+            Type of list
+        word: str
+            Word or regex to add in the selected list
+        """
+        filelist = self.returnlist(list_type)
         if word in filelist:
             await interaction.response.send_message(
-                f"`{word}` already exists in {listtype}{' list' if listtype != 'whitelist' else ''}.",
+                f"`{word}` already exists in {list_type}{' list' if list_type != 'whitelist' else ''}.",
                 ephemeral=True,
             )
             return
         await interaction.response.send_message(
-            f"`{word}` added to the {listtype}{' list' if listtype != 'whitelist' else ''}."
+            f"`{word}` added to the {list_type}{' list' if list_type != 'whitelist' else ''}."
         )
 
         self.bot.db.filterlist.update_one(
-            {"name": listtype}, {"$push": {"filter": word}}
+            {"name": list_type}, {"$push": {"filter": word}}
         )
 
-        await self.updatelist(listtype)
+        await self.updatelist(list_type)
 
-    @app_checks.mod_and_above()
     @filter_commands.command()
+    @app_checks.mod_and_above()
     async def remove(
         self,
         interaction: discord.Interaction,
-        listtype: typing.Literal["whitelist", "general", "humanities"],
+        list_type: typing.Literal["whitelist", "general", "humanities"],
         word: str,
     ):
-        filelist = self.returnlist(listtype)
+        """Remove a word in selected filter list
+
+        Parameters
+        ----------
+        list_type: str
+            Type of list
+        word: str
+            Word or regex to remove in the selected list
+        """
+        filelist = self.returnlist(list_type)
         if word not in filelist:
             await interaction.response.send_message(
-                f"`{word}` doesn't exists in {listtype}{' list' if listtype != 'whitelist' else ''}.",
+                f"`{word}` doesn't exists in {list_type}{' list' if list_type != 'whitelist' else ''}.",
                 ephemeral=True,
             )
             return
         await interaction.response.send_message(
-            f"`{word}` removed from the {listtype}{' list' if listtype != 'whitelist' else ''}."
+            f"`{word}` removed from the {list_type}{' list' if list_type != 'whitelist' else ''}."
         )
 
         self.bot.db.filterlist.update_one(
-            {"name": listtype}, {"$pull": {"filter": word}}
+            {"name": list_type}, {"$pull": {"filter": word}}
         )
 
-        await self.updatelist(listtype)
+        await self.updatelist(list_type)
 
     @app_checks.mod_and_above()
     @filter_commands.command()
     async def check(
         self,
         interaction: discord.Interaction,
-        listtype: typing.Literal["general", "humanities"],
-        word: str,
+        list_type: typing.Literal["general", "humanities"],
+        text: str,
     ):
-        filelist = self.returnlist(listtype)
+        """Check if a word/phrase contains profanity
+
+        Parameters
+        ----------
+        list_type: str
+            Type of list
+        text: str
+            Word or phrase to check
+        """
+        filelist = self.returnlist(list_type)
 
         word_list = filelist
-        if listtype == "humanities":
+        if list_type == "humanities":
             word_list += self.general_list
 
-        profanity = self.check_profanity(word_list, word)
+        profanity = self.check_profanity(word_list, text)
         if profanity:
             await interaction.response.send_message(profanity)
         else:
@@ -183,6 +215,8 @@ class Filter(commands.Cog):
 
     @commands.Cog.listener()
     async def on_message(self, message):
+        if isinstance(message.channel, discord.DMChannel):
+            return
         if (
             message.channel.category.id == 414095379156434945  # mod category
             and message.channel.id != 414179142020366336  # bot testing

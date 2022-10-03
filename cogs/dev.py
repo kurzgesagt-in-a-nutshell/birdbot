@@ -44,7 +44,7 @@ class Dev(commands.Cog):
             return f"```py\n{e.__class__.__name__}: {e}\n```"
         return f'```py\n{e.text}{"^":>{e.offset}}\n{e.__class__.__name__}: {e}```'
 
-    @app_commands.command(name="activity")
+    @app_commands.command()
     @app_commands.guilds(414027124836532234)
     @app_commands.default_permissions(manage_messages=True)
     @app_checks.mod_and_above()
@@ -54,7 +54,16 @@ class Dev(commands.Cog):
         activity_type: typing.Literal["listening", "watching", "playing"],
         message: str,
     ):
-        """Set bot activity."""
+        """Set bot activity status
+
+        Parameters
+        ----------
+        activity_type: str
+            Any of "listening", "watching", "playing"
+        message: str
+            Message to display after activity_type
+
+        """
         activities = {
             "listening": discord.ActivityType.listening,
             "watching": discord.ActivityType.watching,
@@ -247,7 +256,7 @@ class Dev(commands.Cog):
     async def clear_apps(self, ctx: commands.Context):
 
         ctx.bot.tree.clear_commands(guild=discord.Object(414027124836532234))
-        ctx.bot.tree.clear_commands()
+        ctx.bot.tree.clear_commands(guild=None)
         await ctx.bot.tree.sync(guild=discord.Object(414027124836532234))
         await ctx.bot.tree.sync()
 

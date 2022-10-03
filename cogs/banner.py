@@ -30,6 +30,9 @@ class Banner(commands.Cog):
         self.index = 0
         self.banner_db = self.bot.db.Banners
 
+    def cog_load(self) -> None:
+        self.banners = self.banner_db.find_one({"name": "banners"})["banners"]
+
     def cog_unload(self):
         self.timed_banner_rotation.cancel()
 
@@ -37,11 +40,9 @@ class Banner(commands.Cog):
     async def on_ready(self):
         self.logger.info("loaded Banners")
 
-        self.banners = self.banner_db.find_one({"name": "banners"})["banners"]
-
     banner_commands = app_commands.Group(
         name="banner",
-        description="...",
+        description="Guild banner commands",
         guild_ids=[414027124836532234],
         default_permissions=discord.permissions.Permissions(manage_messages=True),
     )
@@ -74,17 +75,22 @@ class Banner(commands.Cog):
                 message="You must provide a link or an attachment."
             )
 
-    @app_checks.mod_and_above()
     @banner_commands.command()
+    @app_checks.mod_and_above()
     async def add(
         self,
         interaction: discord.Interaction,
         image: typing.Optional[discord.Attachment] = None,
         url: typing.Optional[str] = None,
     ):
-        """
-        Add a banner by url or attachment
-        Usage: banner add url/attachment
+        """Add or upload a banner
+
+        Parameters
+        ----------
+        image: discord.Attachment
+            An image file
+        url: str
+            URL or Link of an image
         """
 
         await interaction.response.defer(ephemeral=True)
@@ -126,22 +132,22 @@ class Banner(commands.Cog):
         )
         await interaction.edit_original_response(content="Banner added successfully.")
 
-    @app_checks.mod_and_above()
     @banner_commands.command()
+    @app_checks.mod_and_above()
     async def rotate(
         self,
         interaction: discord.Interaction,
         duration: typing.Optional[str] = None,
         stop: typing.Optional[bool] = False,
     ):
-        """Change server banner rotation time or stop the rotation
+        """Change server banner rotation duration or stop the rotation
 
         Parameters
         ----------
         duration: str
-            Time (example: 3hr or 1d).
+            Time (example: 3hr or 1d)
         stop: bool
-            Weather to stop rotation.
+            Weather to stop banner rotation
         """
 
         if not stop and not duration:
@@ -170,17 +176,24 @@ class Banner(commands.Cog):
         )
 
     # Making this standalone command cause can not override default permissions, and we need only this command to be visible to users.
-    @app_commands.command(name="banner_suggest")
+    @app_commands.command()
     @app_commands.default_permissions(send_messages=True)
     @app_commands.guilds(414027124836532234)
-    async def suggest(
+    @app_commands.checks.cooldown(1, 60, key=lambda i: (i.guild_id, i.user.id))
+    async def banner_suggest(
         self,
         interaction: discord.Interaction,
         image: typing.Optional[discord.Attachment] = None,
         url: typing.Optional[str] = None,
     ):
-        """
-        Members can suggest banners to be reviewed by staff
+        """Suggest an image from kurzgesagt for server banner
+
+        Parameters
+        ----------
+        image: discord.Attachment
+            An image file
+        url: str
+            URL or Link of an image
         """
         await interaction.response.defer(ephemeral=True)
         automated_channel = interaction.guild.get_channel(self.automated_channel)
@@ -221,17 +234,23 @@ class Banner(commands.Cog):
 
         await interaction.edit_original_response(content="Banner suggested.")
 
-    @app_checks.mod_and_above()
     @banner_commands.command()
+    @app_checks.mod_and_above()
+    @app_commands.checks.cooldown(1, 30, key=lambda i: (i.guild_id, i.user.id))
     async def change(
         self,
         interaction: discord.Interaction,
         image: typing.Optional[discord.Attachment] = None,
         url: typing.Optional[str] = None,
     ):
-        """
-        Change the banner
-        Usage: banner change url/attachment
+        """Change server banner
+
+        Parameters
+        ----------
+        image: discord.Attachment
+            An image file
+        url: str
+            URL or Link of an image
         """
         if url is None:
             if image:

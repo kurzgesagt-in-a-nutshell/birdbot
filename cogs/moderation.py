@@ -41,13 +41,18 @@ class Moderation(commands.Cog):
         self.logger.info("loaded Moderation")
 
     @app_commands.command()
+    @app_commands.checks.cooldown(1, 30)
     async def report(
         self,
         interaction: discord.Interaction,
         member: typing.Optional[typing.Union[discord.Member, discord.User]] = None,
     ):
-        """
-        Use this command to report issues to the moderation team.
+        """Report issues to the moderation team, gives you an UI
+
+        Parameters
+        ----------
+        member: discord.Member
+            Mention or ID of member to report (is optional)
         """
 
         if interaction.guild:
@@ -100,19 +105,29 @@ class Moderation(commands.Cog):
 
         await interaction.response.send_modal(Modal(member=member))
 
-    @app_commands.command(name="clean")
+    @app_commands.command()
     @app_commands.guilds(414027124836532234)
     @app_checks.mod_and_above()
     @app_commands.default_permissions(manage_messages=True)
     @app_commands.rename(_from="from")
-    async def _clean(
+    async def clean(
         self,
         interaction: discord.Interaction,
         count: app_commands.Range[int, 1, 200],
-        _from: typing.Optional[discord.User],
+        _from: typing.Optional[discord.Member],
         channel: typing.Union[discord.TextChannel, discord.Thread, None] = None,
     ):
-        """Cleans messages with certain parameters"""
+        """Cleans/Purge messages from a channel
+
+        Parameters
+        ----------
+        count: int
+            Number of messages to clear
+        from: discord.Member
+            If provided, deletes all messages from this user from last "count" messages
+        channel: discord.TextChannel
+            Channel from which messages needs to be deleted (default: current channel)
+        """
 
         if channel is None:
             channel = interaction.channel
@@ -186,18 +201,28 @@ class Moderation(commands.Cog):
             ),
         )
 
-    @app_commands.command(name="ban")
+    @app_commands.command()
     @app_commands.guilds(414027124836532234)
     @app_commands.default_permissions(manage_messages=True)
     @app_checks.mod_and_above()
-    async def _ban(
+    async def ban(
         self,
         interaction: discord.Interaction,
         inf_level: app_commands.Range[int, 1, 5],
         user: discord.User,
         reason: str,
     ):
-        """Bans a member"""
+        """Ban or Force ban a user
+
+        Parameters
+        ----------
+        inf_level: int
+            Infraction level
+        user: discord.User
+            User mention or ID to ban (Provide ID to force ban)
+        reason: str
+            Reason for the action
+        """
 
         try:
             # fetch_member throws not_found error if not found
@@ -242,23 +267,31 @@ class Moderation(commands.Cog):
 
         await logging_channel.send(embed=embed)
 
-    @app_commands.command(name="unban")
+    @app_commands.command()
     @app_commands.guilds(414027124836532234)
     @app_commands.default_permissions(manage_messages=True)
     @app_checks.mod_and_above()
-    async def _unban(
+    async def unban(
         self,
         interaction: discord.Interaction,
-        user: discord.User,
+        user_id: discord.User,
         reason: typing.Optional[str] = None,
     ):
-        """Unban a member"""
+        """Unban a user
+
+        Parameters
+        ----------
+        user_id: discord.User
+            User's ID
+        reason: str
+            Reason for the action
+        """
 
         try:
-            await interaction.guild.unban(user, reason=reason)
+            await interaction.guild.unban(user_id, reason=reason)
         except discord.NotFound:
             await interaction.response.send_message(
-                f"User <@{id}> has not been banned before.",
+                f"User has not been banned before.",
                 ephemeral=is_public_channel(interaction.channel),
             )
             return
@@ -274,24 +307,34 @@ class Moderation(commands.Cog):
         embed = helper.create_embed(
             author=interaction.user,
             action="Unbanned user(s)",
-            users=[user],
+            users=[user_id],
             reason=reason,
             color=discord.Color.dark_red(),
         )
         await logging_channel.send(embed=embed)
 
-    @app_commands.command(name="kick")
+    @app_commands.command()
     @app_commands.guilds(414027124836532234)
     @app_commands.default_permissions(manage_messages=True)
     @app_checks.mod_and_above()
-    async def _kick(
+    async def kick(
         self,
         interaction: discord.Interaction,
         inf_level: app_commands.Range[int, 1, 5],
         member: discord.Member,
         reason: str,
     ):
-        """Kicks a member"""
+        """Kick a user
+
+        Parameters
+        ----------
+        inf_level: int
+            Infraction level
+        member: discord.Member
+            User mention or ID
+        reason: str
+            Reason for the action
+        """
 
         if member.top_role >= interaction.user.top_role:
 
@@ -327,15 +370,24 @@ class Moderation(commands.Cog):
         )
         await logging_channel.send(embed=embed)
 
-    @app_commands.command(name="selfmute")
+    @app_commands.command()
     @app_commands.guilds(414027124836532234)
-    async def _selfmute(
+    @app_commands.checks.cooldown(1, 60)
+    async def selfmute(
         self,
         interaction: discord.Interaction,
         time: str,
         reason: typing.Optional[str] = "Self Mute",
     ):
-        """Mute yourself"""
+        """Mute yourself.
+
+        Parameters
+        ----------
+        time: str
+            Duration of mute (min 5 mins, max 7 days). Use suffix "s", "m", "h", "d" along with time. (ex 3m, 5h, 1d)
+        reason: str
+            Reason for the action
+        """
 
         tot_time, _ = helper.calc_time([time, ""])
 
@@ -382,11 +434,11 @@ class Moderation(commands.Cog):
 
         await logging_channel.send(embed=embed)
 
-    @app_commands.command(name="mute")
+    @app_commands.command()
     @app_commands.guilds(414027124836532234)
     @app_commands.default_permissions(manage_messages=True)
     @app_checks.mod_and_above()
-    async def _mute(
+    async def mute(
         self,
         interaction: discord.Interaction,
         inf_level: app_commands.Range[int, 1, 5],
@@ -395,7 +447,17 @@ class Moderation(commands.Cog):
         reason: str,
         final: typing.Optional[bool] = False,
     ):
-        """Mutes a member"""
+        """Mute a user
+
+        Parameters
+        ----------
+        inf_level: int
+            Infraction level
+        member: discord.Member
+            Member mention or ID
+        reason: str
+            Reason for the action
+        """
 
         if member.top_role >= interaction.user.top_role:
 
@@ -463,17 +525,25 @@ class Moderation(commands.Cog):
         )
         await logging_channel.send(embed=embed)
 
-    @app_commands.command(name="unmute")
+    @app_commands.command()
     @app_commands.guilds(414027124836532234)
     @app_commands.default_permissions(manage_messages=True)
     @app_checks.mod_and_above()
-    async def _unmute(
+    async def unmute(
         self,
         interaction: discord.Interaction,
         member: discord.Member,
         reason: typing.Optional[str],
     ):
-        """Unmutes a member"""
+        """Unmutes a user
+
+        Parameters
+        ----------
+        member: discord.Member
+            Member mention or ID
+        reason: str
+            Reason for the action
+        """
 
         logging_channel = discord.utils.get(
             interaction.guild.channels, id=self.logging_channel
@@ -495,17 +565,25 @@ class Moderation(commands.Cog):
             "member has been unmuted", ephemeral=is_public_channel(interaction.channel)
         )
 
-    @app_commands.command(name="role")
+    @app_commands.command()
     @app_commands.guilds(414027124836532234)
     @app_commands.default_permissions(manage_messages=True)
     @app_checks.mod_and_above()
-    async def _role(
+    async def role(
         self,
         interaction: discord.Interaction,
         member: discord.Member,
         role: discord.Role,
     ):
-        """Add/Remove a role from a member"""
+        """Add or Remove role to/from a user
+
+        Parameters
+        ----------
+        member: discord.Member
+            Member mention or ID
+        role: discord.Role
+            Role to add or remove
+        """
 
         if role >= interaction.user.top_role:
 
@@ -545,11 +623,11 @@ class Moderation(commands.Cog):
         )
         await logging_channel.send(embed=embed)
 
-    @app_commands.command(name="warn")
+    @app_commands.command()
     @app_commands.guilds(414027124836532234)
     @app_commands.default_permissions(manage_messages=True)
     @app_checks.mod_and_above()
-    async def _warn(
+    async def warn(
         self,
         interaction: discord.Interaction,
         inf_level: app_commands.Range[int, 1, 5],
@@ -557,7 +635,19 @@ class Moderation(commands.Cog):
         reason: str,
         final: typing.Optional[bool] = False,
     ):
-        """Warns a user"""
+        """Warns a user
+
+        Parameters
+        ----------
+        inf_level: int
+            Infraction level
+        member: discord.Member
+            Member mention or ID
+        reason: str
+            Reason for the action
+        final: bool
+            Mark warn as final
+        """
 
         if member.top_role >= interaction.user.top_role:
 
@@ -603,12 +693,19 @@ class Moderation(commands.Cog):
         )
         await logging_channel.send(embed=embed)
 
-    # TODO CONVERT THIS COMMAND
-    @app_commands.command(name="delwarn")
+    @app_commands.command()
     @app_commands.guilds(414027124836532234)
     @app_commands.default_permissions(manage_messages=True)
     @app_checks.mod_and_above()
-    async def _delwarn(self, interaction: discord.Interaction, member: discord.User):
+    async def delwarn(self, interaction: discord.Interaction, member: discord.Member):
+        """Delete a warn of a user
+
+        Parameters
+        ----------
+        member: discord.Member
+            Member mention or ID
+        """
+
         class View(discord.ui.View):
             def __init__(self, warns):
                 super().__init__(timeout=20)
@@ -801,15 +898,18 @@ class Moderation(commands.Cog):
             embed=embed, view=view, ephemeral=is_public_channel(interaction.channel)
         )
 
-    @app_commands.command(name="infractions")
+    @app_commands.command()
     @app_commands.guilds(414027124836532234)
     @app_commands.default_permissions(manage_messages=True)
     @app_checks.mod_and_above()
-    async def _infractions(self, interaction: discord.Interaction, user: discord.User):
-        """
-        Checks a users infractions. Allows the checking of infractions of
-        members not currently in the server. Prioritizes user_id if both user
-        and user_id are provided.
+    async def infractions(self, interaction: discord.Interaction, user: discord.User):
+        """Checks a users infractions.
+
+        Parameters
+        ----------
+        user: discord.User
+            User mention or user id
+
         """
 
         class InfButton(discord.ui.Button):
@@ -860,18 +960,28 @@ class Moderation(commands.Cog):
             ephemeral=is_public_channel(interaction.channel),
         )
 
-    @app_commands.command(name="detailedinfr")
+    @app_commands.command()
     @app_commands.guilds(414027124836532234)
     @app_commands.default_permissions(manage_messages=True)
     @app_checks.mod_and_above()
-    async def _detailed_infr(
+    async def detailed_infr(
         self,
         interaction: discord.Interaction,
         user: discord.User,
         infr_type: typing.Literal["warn", "ban", "mute", "kick"],
         infr_id: int,
     ):
-        """Get detailed single Infractions"""
+        """Get detailed view of an infraction.
+
+        Parameters
+        ----------
+        user: discord.User
+            User mention or user id
+        infr_type: str
+            Type of infraction "warn", "ban", "mute", "kick"
+        infr_id: int
+            ID as mentioned as last field of the infraction
+        """
 
         result = get_single_infraction_type(user.id, infr_type)
 
@@ -929,11 +1039,11 @@ class Moderation(commands.Cog):
                 embed=embed, ephemeral=is_public_channel(interaction.channel)
             )
 
-    @app_commands.command(name="editinfr")
+    @app_commands.command()
     @app_commands.guilds(414027124836532234)
     @app_commands.default_permissions(manage_messages=True)
     @app_checks.mod_and_above()
-    async def _editinfr(
+    async def editinfr(
         self,
         interaction: discord.Interaction,
         user: discord.User,
@@ -942,7 +1052,21 @@ class Moderation(commands.Cog):
         title: str,
         description: str,
     ):
-        """Add details to an infraction. \nUsage: edit_infr @user/id w/m/k/b infraction_id title description"""
+        """Add extra fields to an infractions
+
+        Parameters
+        ----------
+        user: discord.User
+            User or User ID
+        infr_type: str
+            Type of infractions "warn", "ban", "mute", "kick"
+        infr_id: int
+            ID as mentioned as last field of the infraction
+        title: str
+            Title for the field
+        description: str
+            Description for the field
+        """
 
         result = append_infraction(user.id, infr_type, infr_id, title, description)
 
@@ -974,11 +1098,11 @@ class Moderation(commands.Cog):
             )
             await logging_channel.send(embed=embed)
 
-    @app_commands.command(name="slowmode")
+    @app_commands.command()
     @app_commands.guilds(414027124836532234)
     @app_commands.default_permissions(manage_messages=True)
     @app_checks.mod_and_above()
-    async def _slowmode(
+    async def slowmode(
         self,
         interaction: discord.Interaction,
         duration: app_commands.Range[int, 0, 360],
@@ -990,7 +1114,11 @@ class Moderation(commands.Cog):
         Parameters
         -----------
         duration: int
-            Duration in seconds (0 - 360)
+            Duration in seconds (0 - 360), 0 to remove slowmode
+        channel: discord.TextChannel
+            Channel to enable slowmode (default: current channel)
+        reason: str
+            Reason for the action
         """
 
         if channel is None:
@@ -1017,7 +1145,7 @@ class Moderation(commands.Cog):
         )
         await logging_channel.send(embed=embed)
 
-    @app_commands.command(name="nocmd")
+    @app_commands.command()
     @app_commands.guilds(414027124836532234)
     @app_commands.default_permissions(manage_messages=True)
     @app_checks.mod_and_above()
@@ -1028,8 +1156,14 @@ class Moderation(commands.Cog):
         command_name: str,
     ):
         """
-        Blacklists a member from a command
-        Usage: nocmd @user/user_ID command_name
+        Blacklists a member from using a command
+
+        Parameters
+        ----------
+        member: discord.Member
+            Member or Member ID
+        command_name: str
+            command to blacklist
         """
 
         command = discord.utils.get(self.bot.commands, name=command_name)
@@ -1048,7 +1182,7 @@ class Moderation(commands.Cog):
                 ephemeral=True,
             )
 
-    @app_commands.command(name="yescmd")
+    @app_commands.command()
     @app_commands.guilds(414027124836532234)
     @app_commands.default_permissions(manage_messages=True)
     @app_checks.mod_and_above()
@@ -1059,8 +1193,14 @@ class Moderation(commands.Cog):
         command_name: str,
     ):
         """
-        Whitelists a member from a command
-        Usage: yescmd @user/user_ID command_name
+        Whitelist a member from using a command
+
+        Parameters
+        ----------
+        member: discord.Member
+            Member or Member ID
+        command_name: str
+            command to whitelist
         """
         command = discord.utils.get(self.bot.commands, name=command_name)
         if command is None:

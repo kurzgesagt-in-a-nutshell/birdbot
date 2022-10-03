@@ -20,12 +20,16 @@ class Help(commands.Cog):
 
     # TODO: Convert the output to embed or some UI
     # TODO: Remove mod_and_above and default_permission check.
-    @app_commands.command(name="help")
+    @app_commands.command()
     @app_checks.mod_and_above()
     @app_commands.default_permissions(manage_messages=True)
+    @app_commands.checks.cooldown(
+        1,
+        10,
+    )
     async def help(self, interaction: discord.Interaction):
         """
-        Display help.
+        Display help (Incomplete command)
         """
 
         await interaction.response.defer(ephemeral=True)
@@ -85,11 +89,11 @@ class Help(commands.Cog):
     @app_commands.guild_only()
     @app_commands.checks.cooldown(
         1,
-        5,
+        10,
     )
     async def ping(self, interaction: discord.Interaction):
         """
-        Ping Pong
+        Ping Pong 🏓
         """
         await interaction.response.send_message(f"{int(self.bot.latency * 1000)} ms")
 

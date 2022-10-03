@@ -191,7 +191,7 @@ class Giveaway(commands.Cog):
         else:
             self.giveaway_task.cancel()
 
-    @giveaway_commands.command(name="start")
+    @giveaway_commands.command()
     @app_checks.mod_and_above()
     async def start(
         self,
@@ -208,8 +208,21 @@ class Giveaway(commands.Cog):
         rigged: typing.Optional[bool] = True,
     ):
         """Starts a new giveaway
-        Usage: giveaway start time (dash arguments) prize \n dash args: -w no_of_winners -s sponsor -r rigged
-        default values for dash arguments: -w 1 -s host -r y"""
+
+        Parameters
+        ----------
+        time: str
+            Time (ex: 30m, 2d, 3hr)
+        prize: str
+            Prize(s) for the winners
+        winner_count: int
+            Number of winners (default: 1)
+        sponsor: discord.Member
+            Sponsor of the giveaway
+        rigged: bool
+            Is giveaway rigged/biased (default: True)
+        """
+
         await interaction.response.defer(ephemeral=True)
 
         (time, _) = calc_time([time, ""])
@@ -276,11 +289,16 @@ class Giveaway(commands.Cog):
 
         await interaction.edit_original_response(content="Giveaway started.")
 
-    @giveaway_commands.command(name="end")
+    @giveaway_commands.command()
     @app_checks.mod_and_above()
     async def end(self, interaction: discord.Interaction, message_id: str):
-        """Ends the giveaway early
-        Usage: giveaway end messageid"""
+        """Ends the giveaway preemptively
+
+        Parameters
+        ----------
+        message_id: str
+            Message ID of the giveaway embed.
+        """
 
         await interaction.response.defer(ephemeral=True)
 
@@ -301,11 +319,16 @@ class Giveaway(commands.Cog):
 
         await interaction.edit_original_response(content="Giveaway not found!")
 
-    @giveaway_commands.command(name="cancel")
+    @giveaway_commands.command()
     @app_checks.mod_and_above()
     async def cancel(self, interaction: discord.Interaction, message_id: str):
-        """Cancel a giveaway
-        Usage: giveaway cancel messageid"""
+        """Cancels the giveaway
+
+        Parameters
+        ----------
+        message_id: str
+            Message ID of the giveaway embed.
+        """
 
         await interaction.response.defer(ephemeral=True)
 
@@ -337,7 +360,7 @@ class Giveaway(commands.Cog):
 
         await interaction.edit_original_response(content="Giveaway not found!")
 
-    @giveaway_commands.command(name="reroll")
+    @giveaway_commands.command()
     @app_checks.mod_and_above()
     async def reroll(
         self,
@@ -351,8 +374,18 @@ class Giveaway(commands.Cog):
         ] = None,
         rigged: typing.Optional[bool] = None,
     ):
-        """Pick a new winner
-        Usage: giveaway reroll messageid <no_of_winners> <rigged>"""
+        """Reroll the giveaway to select new winners.
+
+        Parameters
+        ----------
+        message_id: str
+            Message ID of giveaway embed
+        winner_count: int
+            Number of winners (default: Same as original roll)
+        rigged: bool
+            Is giveaway rigged/biased (default: Same as original roll)
+        """
+
         await interaction.response.defer(ephemeral=True)
 
         try:
@@ -377,11 +410,11 @@ class Giveaway(commands.Cog):
 
         await interaction.edit_original_response(content="Giveaway not found!")
 
-    @giveaway_commands.command(name="list")
+    @giveaway_commands.command()
     @app_checks.mod_and_above()
     async def list(self, interaction: discord.Interaction):
-        """Lists all active giveaways
-        Usage: giveaway list"""
+        """List all active giveaways"""
+
         embed = discord.Embed(title="Active giveaways:")
         for messageid in self.active_giveaways:
             giveaway = self.active_giveaways[messageid]
