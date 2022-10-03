@@ -8,8 +8,11 @@ import pymongo
 
 # Do not import panda for VM.
 # import pandas as pd
+import discord
 from discord.ext import commands
+from discord import app_commands
 
+from utils import app_checks
 from utils.helper import role_and_above, bot_commands_only
 
 # Mongo schema to store intros
@@ -240,6 +243,7 @@ class Misc(commands.Cog):
             )
             await ctx.send("Success.")
 
+    # TODO: Move to slash
     @commands.command()
     @commands.is_owner()
     async def mod_intros(self, ctx):
@@ -269,24 +273,26 @@ class Misc(commands.Cog):
             except pymongo.errors.DuplicateKeyError:
                 pass
 
-    @bot_commands_only()
-    @commands.command(aliases=["bg", "bigemoji", "bigemote"])
-    async def big_emote(self, ctx, *args):
+    @app_commands.command(name="big_emote")
+    @app_commands.guilds(414027124836532234)
+    @app_commands.default_permissions(manage_messages=True)
+    @app_checks.mod_and_above()
+    async def big_emote(self, interaction: discord.Interaction, emoji: str):
         emojis = []
-        if len(args) > 5:
-            ctx.send("No more than 5 emojis at a time")
-        print(args)
-        for item in args:
-            if re.match(r"<a:\w+:(\d{17,19})>", str(item)):
-                emojis.append(re.findall(r"<a:\w+:(\d{17,19})>", str(item))[0] + ".gif")
-            elif re.match(r"<:\w+:(\d{17,19})>", str(item)):
-                emojis.append(re.findall(r"<:\w+:(\d{17,19})>", str(item))[0] + ".png")
-        print(emojis)
+
+        if re.match(r"<a:\w+:(\d{17,19})>", str(emoji)):
+            emojis.append(re.findall(r"<a:\w+:(\d{17,19})>", str(emoji))[0] + ".gif")
+        elif re.match(r"<:\w+:(\d{17,19})>", str(emoji)):
+            emojis.append(re.findall(r"<:\w+:(\d{17,19})>", str(emoji))[0] + ".png")
         if len(emojis) == 0:
-            await ctx.send("Please send an emoji that is not a default emoji")
+            await interaction.response.send_message(
+                "Please send an emoji that is not a default emoji", ephemeral=True
+            )
         else:
             for e in emojis:
-                await ctx.send("https://cdn.discordapp.com/emojis/" + str(e))
+                await interaction.response.send_message(
+                    "https://cdn.discordapp.com/emojis/" + str(e)
+                )
 
     @commands.Cog.listener()
     async def on_reaction_add(self, reaction, user):
