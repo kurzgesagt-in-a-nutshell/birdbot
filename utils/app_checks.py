@@ -67,3 +67,22 @@ def topic_perm_check():
         raise InvalidAuthorizationError
 
     return app_commands.check(predicate)
+
+
+def patreon_only():
+    async def predicate(interaction: Interaction):
+
+        user = interaction.client.get_guild(414027124836532234).get_member(
+            interaction.user.id
+        )
+        user_role_ids = [x.id for x in user.roles]
+        check_role_ids = [
+            config_roles["patreon_blue_role"],
+            config_roles["patreon_green_role"],
+            config_roles["patreon_orange_role"],
+        ]
+        if not any(x in user_role_ids for x in check_role_ids):
+            raise InvalidAuthorizationError
+        return True
+
+    return app_commands.check(predicate)

@@ -7,16 +7,17 @@ import aiohttp
 import logging
 import random
 import re
-import datetime
 
 from traceback import TracebackException
 
 import discord
 from discord.ext import commands
 from discord.ext.commands import errors
+from discord import app_commands
 
 from birdbot import BirdBot
 
+from utils import app_checks
 from utils.helper import (
     NoAuthorityError,
     DevBotOnly,
@@ -484,15 +485,18 @@ class GuildChores(commands.Cog):
                     allowed_mentions=discord.AllowedMentions(users=True, roles=True),
                 )
 
+    # TODO: Move to slash
     @commands.command()
     async def translate(self, ctx, msg_id):
         msg = await ctx.channel.fetch_message(msg_id)
         embed = await translate_bannsystem(msg)
         # await ctx.send(embed=embed)
 
-    @patreon_only()
-    @commands.command()
-    async def unenrol(self, ctx):
+    # TODO: Move to slash
+    @app_commands.command(name="unenrol")
+    @app_checks.patreon_only()
+    async def unenrol(self, interaction: discord.Interaction):
+
         embed = discord.Embed(
             title="We're sorry to see you go",
             description="Are you sure you want to get banned from the server?"
@@ -504,7 +508,7 @@ class GuildChores(commands.Cog):
         )
 
         def check(reaction, user):
-            return user == ctx.author
+            return user == interaction.user
 
         fallback_embed = discord.Embed(
             title="Action Cancelled",
@@ -513,7 +517,8 @@ class GuildChores(commands.Cog):
         )
 
         try:
-            confirm_msg = await ctx.author.send(embed=embed)
+            confirm_msg = await interaction.user.send(embed=embed)
+            await interaction.response.send_message("Please check your DMs.")
             await confirm_msg.add_reaction("<:kgsYes:955703069516128307>")
             await confirm_msg.add_reaction("<:kgsNo:955703108565098496>")
             reaction, user = await self.bot.wait_for(
@@ -524,20 +529,22 @@ class GuildChores(commands.Cog):
 
                 member = discord.utils.get(
                     self.bot.guilds, id=414027124836532234
-                ).get_member(ctx.author.id)
+                ).get_member(interaction.user.id)
 
                 infraction_db = BirdBot.db.Infraction
 
-                inf = infraction_db.find_one({"user_id": ctx.author.id})
+                inf = infraction_db.find_one({"user_id": interaction.user.id})
                 if inf is None:
-                    create_user_infraction(ctx.author)
+                    create_user_infraction(interaction.user)
 
-                    inf = infraction_db.find_one({"user_id": ctx.author.id})
+                    inf = infraction_db.find_one({"user_id": interaction.user.id})
                 infraction_db.update_one(
-                    {"user_id": ctx.author.id}, {"$set": {"banned_patron": True}}
+                    {"user_id": interaction.user.id}, {"$set": {"banned_patron": True}}
                 )
 
-                await ctx.author.send("Success! You've been banned from the server.")
+                await interaction.user.send(
+                    "Success! You've been banned from the server."
+                )
                 await member.ban(reason="Patron Voluntary Removal")
                 return
             if reaction.emoji.id == 955703108565098496:
@@ -545,8 +552,9 @@ class GuildChores(commands.Cog):
                 return
 
         except discord.Forbidden:
-            await ctx.send(
-                "I can't seem to DM you. please check your privacy settings and try again"
+            await interaction.response.send_message(
+                "I can't seem to DM you. please check your privacy settings and try again",
+                ephemeral=True,
             )
 
         except asyncio.TimeoutError:
