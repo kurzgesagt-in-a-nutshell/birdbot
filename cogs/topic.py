@@ -132,7 +132,7 @@ class Topic(commands.Cog):
                 "Please provide value for one of the arguments.", ephemeral=True
             )
 
-        await interaction.response.defer(ephemeral=True)
+        await interaction.response.defer()
 
         if index is not None:
             if index < 1 or index > len(self.topics):
@@ -201,6 +201,7 @@ class Topic(commands.Cog):
                 reaction, user = await self.bot.wait_for(
                     "reaction_add", timeout=30.0, check=check
                 )
+
                 i = emote_list.index(str(reaction.emoji))
 
                 emb = discord.Embed(
@@ -209,13 +210,14 @@ class Topic(commands.Cog):
                     colour=discord.Colour.green(),
                 )
 
-                await msg.edit(embed=emb)
-
                 self.topics.remove(search_result[i][0])
 
                 self.topics_db.update_one(
                     {"name": "topics"}, {"$set": {"topics": self.topics}}
                 )
+
+                await msg.edit(embed=emb)
+                await msg.clear_reactions()
 
             except asyncio.TimeoutError:
                 await msg.delete()
