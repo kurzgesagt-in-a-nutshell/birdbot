@@ -225,7 +225,7 @@ class Topic(commands.Cog):
     @app_commands.default_permissions(send_messages=True)
     @app_commands.guilds(414027124836532234)
     @app_commands.checks.cooldown(1, 60, key=lambda i: (i.guild_id, i.user.id))
-    async def suggest(self, interaction: discord.Interaction, topic: str):
+    async def topic_suggest(self, interaction: discord.Interaction, topic: str):
         """Suggest a topic
 
         Parameters

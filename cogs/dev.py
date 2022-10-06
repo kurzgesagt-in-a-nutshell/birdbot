@@ -238,10 +238,14 @@ class Dev(commands.Cog):
         message = _g.pull("origin", "master")
         await ctx.send(f"```{message}```")
 
-    @commands.command()
-    @mod_and_above()
-    async def send(self, ctx, channel: discord.TextChannel, *, msg: str):
+    @app_commands.command()
+    @app_commands.default_permissions(manage_messages=True)
+    @app_checks.mod_and_above()
+    async def send(
+        self, interaction: discord.Interaction, channel: discord.TextChannel, msg: str
+    ):
         await channel.send(msg)
+        await interaction.response.send_message("sent", ephemeral=True)
 
     @commands.command()
     @devs_only()
