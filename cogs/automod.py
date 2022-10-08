@@ -437,7 +437,7 @@ class Filter(commands.Cog):
             if self.exception_list_check(offending_list) and not offending_list == []:
                 return False
             else:
-                return True
+                return offending_list
         else:
             for regex in regex_list:
                 if re.search(regex, message_clean):
