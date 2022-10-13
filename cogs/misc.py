@@ -276,13 +276,14 @@ class Misc(commands.Cog):
     @app_commands.command()
     @app_commands.guilds(414027124836532234)
     @app_commands.checks.cooldown(1, 10)
+    @app_checks.bot_commands_only()
     async def big_emote(self, interaction: discord.Interaction, emoji: str):
         """Get image for server emote
 
         Parameters
         ----------
         emoji: str
-            Discord Emoji
+            Discord Emoji (only use in #bot-commands)
         """
         emojis = []
 

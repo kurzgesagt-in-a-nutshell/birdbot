@@ -48,6 +48,19 @@ def general_only():
     return app_commands.check(predicate)
 
 
+def bot_commands_only():
+    async def predicate(interaction: Interaction):
+        if (
+            interaction.channel.category_id
+            != 414095379156434945  # Mod channel category
+            and interaction.channel_id != 414452106129571842  # bot_commands id
+        ):
+            raise InvalidAuthorizationError
+        return True
+
+    return app_commands.check(predicate)
+
+
 def topic_perm_check():
     # check for role >= Duck(637114897544511488) and Patron
     async def predicate(interaction: Interaction):
