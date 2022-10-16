@@ -171,10 +171,7 @@ class Giveaway(commands.Cog):
         self.logger.debug(f"{len(templist)} giveaways found: {templist}")
         for i in templist:
             giveaway = self.active_giveaways[i]
-            if (
-                giveaway["end_time"] - datetime.utcnow().replace(tzinfo=timezone.utc)
-                <= timedelta()
-            ):
+            if giveaway["end_time"] - datetime.utcnow() <= timedelta():
                 await self.choose_winner(giveaway)
             else:
                 if not firstgiveaway:
