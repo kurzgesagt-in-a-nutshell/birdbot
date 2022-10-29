@@ -34,6 +34,7 @@ class Giveaway(commands.Cog):
         for giveaway in self.giveaway_db.find(
             {"giveaway_over": False, "giveaway_cancelled": False}
         ):
+            giveaway['end_time'] = giveaway['end_time'].replace(tzinfo=timezone.utc)
             self.active_giveaways[giveaway["message_id"]] = giveaway
 
         self.giveaway_task.start()
@@ -171,7 +172,7 @@ class Giveaway(commands.Cog):
         self.logger.debug(f"{len(templist)} giveaways found: {templist}")
         for i in templist:
             giveaway = self.active_giveaways[i]
-            if giveaway["end_time"] - datetime.utcnow() <= timedelta():
+            if giveaway["end_time"] - discord.utils.utcnow() <= timedelta():
                 await self.choose_winner(giveaway)
             else:
                 if not firstgiveaway:
@@ -239,7 +240,7 @@ class Giveaway(commands.Cog):
             "sponsor": f"> **{'Hosted' if sponsor.id == interaction.user.id else 'Sponsored'} by**\n> {sponsor.mention}",
         }
 
-        time = datetime.utcnow().replace(tzinfo=timezone.utc) + timedelta(seconds=time)
+        time = discord.utils.utcnow() + timedelta(seconds=time)
 
         embed = discord.Embed(
             title="Giveaway started!",
@@ -416,12 +417,10 @@ class Giveaway(commands.Cog):
         for messageid in self.active_giveaways:
             giveaway = self.active_giveaways[messageid]
             try:
-                time = giveaway["end_time"] - datetime.utcnow().replace(
-                    tzinfo=timezone.utc
-                )
+                time = int(giveaway["end_time"].timestamp())
                 embed.add_field(
                     name=giveaway["prize"],
-                    value=f"[Giveaway](https://discord.com/channels/414027124836532234/{giveaway['channel_id']}/{giveaway['message_id']}) ends in {int(time.total_seconds()/60)} minutes",
+                    value=f"[Giveaway](https://discord.com/channels/414027124836532234/{giveaway['channel_id']}/{giveaway['message_id']}) ends in <t:{time}:R>",
                 )
             except Exception as e:
                 self.logger.exception(e)
