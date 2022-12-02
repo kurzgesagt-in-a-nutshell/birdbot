@@ -235,7 +235,7 @@ class Moderation(commands.Cog):
             await member.send(
                 f"You have been permanently removed from the server for following reason: \n{reason}"
             )
-        except discord.NotFound:
+        except (discord.NotFound, discord.Forbidden):
             pass
 
         await interaction.guild.ban(user=user, reason=reason)
