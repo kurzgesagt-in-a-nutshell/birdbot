@@ -378,9 +378,8 @@ class Filter(commands.Cog):
 
     # check for profanity
     def check_profanity(self, ref_word_list, message_clean):
-        # print(self.white_list)
         local_word_list = copy.copy(ref_word_list)
-        profanity.load_censor_words(local_word_list)
+        #profanity.load_censor_words(local_word_list)
         regex_list = self.generate_regex(local_word_list)
         # stores all words that are aparently profanity
         offending_list = []
@@ -427,28 +426,33 @@ class Filter(commands.Cog):
         message_clean = "".join(message_clean)
         # sub out discord emojis
         message_clean = re.sub(r"(<[A-z]*:[^\s]+:[0-9]*>)", "*", message_clean)
-        # print(message_clean)
-        if profanity.contains_profanity(message_clean):
-            offending_list = []
-            for w in local_word_list:
-                if re.search(re.escape(w), message_clean):
-                    offending_list.append(w)
-            # print(offending_list)
-            if self.exception_list_check(offending_list) and not offending_list == []:
-                return False
-            else:
-                return offending_list
-        else:
-            for regex in regex_list:
-                if re.search(regex, message_clean):
-                    found_items = re.findall(regex[:-3] + "[A-z]*)", message_clean)
-                    for e in found_items:
-                        offending_list.append(e)
-                    toReturn = True
-        if toReturn:
-            if not self.exception_list_check(offending_list):
-                return offending_list
+        dirty_list = []
+        for regex in regex_list:
+            if re.search(regex, message_clean):
+                found_items = re.findall(regex[:-3] + "[A-z]*)", message_clean)
+                for e in found_items:
+                    dirty_list.append(e)
+        clean_list = []
+        for test_word in dirty_list:
+            found = False
+            for to_match in dirty_list:
+                if test_word[0] in to_match[0] and len(test_word[0]) < len(to_match[0]) and test_word[1] >= \
+                        to_match[1] and test_word[2] < to_match[2]:
+                    found = True
+                    break;
+            if not found:
+                clean_list.append(test_word)
+        #does the final check to see if any word is not in the whitelist
+        for bad_word in clean_list:
+            if not bad_word in self.white_list:
+                return clean_list
         return False
+
+    def exception_list_check(self, offending_list):
+        for bad_word in offending_list:
+            if not bad_word in self.white_list:
+                return False
+        return True
 
     # check for emoji spam
     def check_emoji_spam(self, message):
@@ -635,11 +639,7 @@ class Filter(commands.Cog):
                 },
             )
 
-    def exception_list_check(self, offending_list):
-        for bad_word in offending_list:
-            if not bad_word in self.white_list:
-                return False
-        return True
+
 
     def convert_regional(self, word):
         replacement = {
