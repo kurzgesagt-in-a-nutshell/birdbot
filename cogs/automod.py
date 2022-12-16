@@ -32,10 +32,6 @@ class Filter(commands.Cog):
 
         self.logging_channel_id = self.config_json["logging"]["automod_logging_channel"]
         self.logging_channel = None
-
-        self.humanities_list = []
-        self.general_list = []
-        self.white_list = []
         self.message_history_list = {}
         self.message_history_lock = asyncio.Lock()
 
@@ -48,6 +44,8 @@ class Filter(commands.Cog):
         self.white_list = self.bot.db.filterlist.find_one({"name": "whitelist"})[
             "filter"
         ]
+        self.general_list_regex = self.generate_regex(self.general_list)
+        self.humanities_list_regex = self.generate_regex(self.humanities_list)
 
     @commands.Cog.listener()
     async def on_ready(self):
@@ -63,14 +61,20 @@ class Filter(commands.Cog):
     )
 
     # return the required list
-    def returnlist(self, listtype):
+    def return_list(self, listtype):
         if listtype == "whitelist":
             return self.white_list
         elif listtype == "general":
             return self.general_list
         elif listtype == "humanities":
             return self.humanities_list
-
+    def return_regex(self, listtype):
+        if listtype == "whitelist":
+            return ""
+        elif listtype == "general":
+            return self.general_list_regex
+        elif listtype == "humanities":
+            return self.humanities_list_regex
     # Updates filter list from Mongo based on listtype
     async def updatelist(self, listtype):
         if listtype == "whitelist":
@@ -82,11 +86,13 @@ class Filter(commands.Cog):
             self.general_list = self.bot.db.filterlist.find_one({"name": "general"})[
                 "filter"
             ]
+            self.general_list_regex = self.generate_regex(self.general_list)
 
         elif listtype == "humanities":
             self.humanities_list = self.bot.db.filterlist.find_one(
                 {"name": "humanities"}
             )["filter"]
+            self.humanities_list_regex = self.generate_regex(self.humanities_list)
 
     @filter_commands.command()
     @app_checks.mod_and_above()
@@ -102,7 +108,7 @@ class Filter(commands.Cog):
         list_type: str
             Type of list
         """
-        filelist = self.returnlist(list_type)
+        filelist = self.return_list(list_type)
         await interaction.response.send_message(
             f"These are the words which are in the {list_type}{'blacklist' if list_type != 'whitelist' else ''}",
             file=discord.File(
@@ -127,7 +133,7 @@ class Filter(commands.Cog):
         word: str
             Word or regex to add in the selected list
         """
-        filelist = self.returnlist(list_type)
+        filelist = self.return_list(list_type)
         if word in filelist:
             await interaction.response.send_message(
                 f"`{word}` already exists in {list_type}{' list' if list_type != 'whitelist' else ''}.",
@@ -161,7 +167,7 @@ class Filter(commands.Cog):
         word: str
             Word or regex to remove in the selected list
         """
-        filelist = self.returnlist(list_type)
+        filelist = self.return_list(list_type)
         if word not in filelist:
             await interaction.response.send_message(
                 f"`{word}` doesn't exists in {list_type}{' list' if list_type != 'whitelist' else ''}.",
@@ -195,13 +201,14 @@ class Filter(commands.Cog):
         text: str
             Word or phrase to check
         """
-        filelist = self.returnlist(list_type)
-
-        word_list = filelist
+        file_list = self.return_list(list_type)
+        regex_list = self.return_regex(list_type)
+        word_list = file_list
         if list_type == "humanities":
             word_list += self.general_list
+            regex_list += self.general_list_regex
 
-        profanity = self.check_profanity(word_list, text)
+        profanity = self.check_profanity(word_list,regex_list, text)
         if profanity:
             await interaction.response.send_message(profanity)
         else:
@@ -356,11 +363,7 @@ class Filter(commands.Cog):
             )
             await self.logging_channel.send(embed=embed)
 
-    def get_word_list(self, message):
-        if message.channel.id == 546315063745839115:
-            return self.humanities_list + self.general_list
-        else:
-            return self.general_list
+
 
     def is_member_excluded(self, author):
         rolelist = [
@@ -377,14 +380,8 @@ class Filter(commands.Cog):
         return False
 
     # check for profanity
-    def check_profanity(self, ref_word_list, message_clean):
-        local_word_list = copy.copy(ref_word_list)
-        #profanity.load_censor_words(local_word_list)
-        regex_list = self.generate_regex(local_word_list)
-        # stores all words that are aparently profanity
-        offending_list = []
-        local_word_list.extend(self.white_list)
-        toReturn = False
+    def check_profanity(self, ref_word_list,regex_list, message_clean):
+        #local_word_list = copy.copy(ref_word_list + self.white_list)
         # filter out bold and italics but keep *
         indexes = re.finditer("(\*\*.*?\*\*)", message_clean)
         if indexes:
@@ -540,10 +537,18 @@ class Filter(commands.Cog):
 
     async def check_message(self, message):
 
-        word_list = self.get_word_list(message)
+        word_list = self.return_list(message.channel.name)
+        regex_list = self.return_list(message.channel.name)
+        if word_list is None:
+            word_list = self.general_list
+            regex_list = self.general_list_regex
+
+        if message.channel.name == "humanities":
+            word_list += self.general_list
+            regex_list += self.general_list_regex
 
         # run checks
-        isprofanity = self.check_profanity(word_list, message.content)
+        isprofanity = self.check_profanity(word_list,regex_list, message.content)
         if isprofanity:
             await self.execute_action_on_message(
                 message,
@@ -638,8 +643,6 @@ class Filter(commands.Cog):
                     "mute": 1800,
                 },
             )
-
-
 
     def convert_regional(self, word):
         replacement = {
