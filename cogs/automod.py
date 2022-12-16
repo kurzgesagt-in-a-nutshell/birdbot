@@ -133,8 +133,8 @@ class Filter(commands.Cog):
         word: str
             Word or regex to add in the selected list
         """
-        filelist = self.return_list(list_type)
-        if word in filelist:
+        file_list = self.return_list(list_type)
+        if word in file_list:
             await interaction.response.send_message(
                 f"`{word}` already exists in {list_type}{' list' if list_type != 'whitelist' else ''}.",
                 ephemeral=True,
@@ -364,7 +364,6 @@ class Filter(commands.Cog):
             await self.logging_channel.send(embed=embed)
 
 
-
     def is_member_excluded(self, author):
         rolelist = [
             414092550031278091,  # mod
@@ -379,9 +378,8 @@ class Filter(commands.Cog):
             return True
         return False
 
-    # check for profanity
+
     def check_profanity(self, ref_word_list,regex_list, message_clean):
-        #local_word_list = copy.copy(ref_word_list + self.white_list)
         # filter out bold and italics but keep *
         indexes = re.finditer("(\*\*.*?\*\*)", message_clean)
         if indexes:
@@ -430,6 +428,7 @@ class Filter(commands.Cog):
                 for e in found_items:
                     dirty_list.append(e)
         clean_list = []
+        #test to see if any word is within a already existing word
         for test_word in dirty_list:
             found = False
             for to_match in dirty_list:
@@ -536,7 +535,6 @@ class Filter(commands.Cog):
         return False
 
     async def check_message(self, message):
-
         word_list = self.return_list(message.channel.name)
         regex_list = self.return_list(message.channel.name)
         if word_list is None:
@@ -548,8 +546,8 @@ class Filter(commands.Cog):
             regex_list += self.general_list_regex
 
         # run checks
-        isprofanity = self.check_profanity(word_list,regex_list, message.content)
-        if isprofanity:
+        is_profanity = self.check_profanity(word_list,regex_list, message.content)
+        if is_profanity:
             await self.execute_action_on_message(
                 message,
                 {
@@ -561,7 +559,7 @@ class Filter(commands.Cog):
 
             embed = create_automod_embed(message=message, automod_type="profanity")
             embed.add_field(
-                name="Blacklisted Word", value=isprofanity[:1024], inline=False
+                name="Blacklisted Word", value=is_profanity[:1024], inline=False
             )
             file = discord.File(io.BytesIO(message.content.encode("UTF-8")), f"log.txt")
             await self.logging_channel.send(embed=embed, file=file)
