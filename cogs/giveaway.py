@@ -34,7 +34,7 @@ class Giveaway(commands.Cog):
         for giveaway in self.giveaway_db.find(
             {"giveaway_over": False, "giveaway_cancelled": False}
         ):
-            giveaway['end_time'] = giveaway['end_time'].replace(tzinfo=timezone.utc)
+            giveaway["end_time"] = giveaway["end_time"].replace(tzinfo=timezone.utc)
             self.active_giveaways[giveaway["message_id"]] = giveaway
 
         self.giveaway_task.start()

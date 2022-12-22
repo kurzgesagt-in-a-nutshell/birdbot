@@ -77,9 +77,16 @@ class Moderation(commands.Cog):
                 required=False,
             )
 
-            async def on_submit(self, interaction):
+            async def on_submit(self, interaction: discord.Interaction):
                 description = self.children[0].value
                 message_link = self.children[1].value
+
+                channel = interaction.channel
+                channel_mention = (
+                    channel.mention
+                    if isinstance(channel, (discord.abc.GuildChannel, discord.Thread))
+                    else "Sent through dms"
+                )
 
                 mod_embed = discord.Embed(
                     title="New Report",
@@ -88,6 +95,7 @@ class Moderation(commands.Cog):
                     **Report description:** {description}
                     **User:** {self.member}
                     **Message Link:** [click to jump]({message_link})
+                    **Reported in:** {channel_mention}
                     """,
                 )
                 mod_embed.set_author(
