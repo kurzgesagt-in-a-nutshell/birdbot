@@ -348,10 +348,10 @@ class InfractionList:
             "last_updated": self._last_updated,
             "banned_patron": self._banned_patreon,
             "final_warn": self._final_warn,
-            "warn": [inf.to_dict for inf in self._warns],
-            "mute": [inf.to_dict for inf in self._mutes],
-            "kick": [inf.to_dict for inf in self._kicks],
-            "ban": [inf.to_dict for inf in self._bans]
+            "warn": [inf.to_dict() for inf in self._warns],
+            "mute": [inf.to_dict() for inf in self._mutes],
+            "kick": [inf.to_dict() for inf in self._kicks],
+            "ban": [inf.to_dict() for inf in self._bans]
         }
 
         return data
