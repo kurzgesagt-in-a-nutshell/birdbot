@@ -1,9 +1,10 @@
-import enum, typing
+import enum, typing, logging
 import discord
 
 from birdbot import BirdBot
 
 INFRACTION_DB = BirdBot.db.Infraction
+logger = logging.getLogger(__name__)
 
 class InfractionKind(enum.Enum):
     WARN    = 0
@@ -181,11 +182,37 @@ class InfractionList:
 
         return cls(user, infractions)
 
-    def __kind_to_list(self, kind:InfractionKind) -> typing.List[Infraction]:
+    @classmethod
+    def new_user_infraction(cls, 
+        user:discord.User, 
+        kind: InfractionKind, 
+        level: int, 
+        author: discord.User, 
+        reason:str, 
+        duration=None,
+        final=False
+    ):
+        """
+        A shorthand for running InteractionList.from_user(user), adding a new
+        infraction and calling update.
+        """
+
+        user_infractions = cls.from_user(user)
+        user_infractions.new_infraction(
+            kind=kind, level=level, 
+            author=author, reason=reason, 
+            duration=duration, final=final
+        )
+
+        user_infractions.update()
+
+        return user_infractions
+
+    def _kind_to_list(self, kind:InfractionKind) -> typing.List[Infraction]:
         """
         Returns the list of infractions corresponding to the given kind.
 
-        This is a helper method and should be private.
+        This is a helper method and should not be used to manipulate data.
         """
 
         if kind==InfractionKind.WARN:
@@ -213,7 +240,7 @@ class InfractionList:
         inf_sum = 0
 
         for kind in InfractionKind:
-            infrs = self.__kind_to_list(kind)
+            infrs = self._kind_to_list(kind)
             for infraction in infrs:
                 if infraction.level not in inflevels:
                     inflevels[infraction.level] = 0
@@ -254,9 +281,14 @@ class InfractionList:
         
         infr = Infraction.new(kind, author, level, reason, duration)
 
-        self.__kind_to_list(kind).append(infr)
+        self._kind_to_list(kind).append(infr)
 
         if final: self._final = True
+
+        logger.debug(
+            "appended new infraction (%s) to user (%s) final=(%s)",
+            kind, self._user_id, final
+        )
 
     def detail_infraction(
         self, 
@@ -267,13 +299,14 @@ class InfractionList:
     ) -> bool:
 
         """
-        Allows the editing of extra info on the infraction.
+        Allows the local editing of extra info on the infraction.
 
         Returns the success status as a bool in case an out of range index is
         provided.
         """
         try:
-            self.__kind_to_list(kind)[id].detail(title, description)
+            self._kind_to_list(kind)[id].detail(title, description)
+            logger.debug("locally detailed infraction for %s", self._user_id)
         
         except IndexError:
             return False
@@ -290,7 +323,8 @@ class InfractionList:
         """
 
         try:
-            del self.__kind_to_list(kind)[id]
+            del self._kind_to_list(kind)[id]
+            logger.debug("locally deleted infraction for %s", self._user_id)
         
         except IndexError:
             return False
@@ -306,7 +340,8 @@ class InfractionList:
         the given kind
         """
 
-        infractions = self.__kind_to_list(kind)
+        # enumerate over infractions of kind requested to insert into the embed
+        infractions = self._kind_to_list(kind)
         infractions_info = [v.info_str(i) for i, v in enumerate(infractions)]
 
         embed = discord.Embed(
@@ -321,6 +356,22 @@ class InfractionList:
 
         return embed
 
+    def get_infraction_info_str(
+        self, 
+        kind:InfractionKind, 
+        id:int
+    ) -> typing.Optional[str]:
+        """
+        Returns a string of infraction info for the infraction requested.
+        None is returned if the index is out of range
+        """
+
+        try:
+            return self._kind_to_list(kind)[id].info_str(id)
+        
+        except IndexError:
+            return None
+
     def get_detailed_infraction(
         self, 
         kind: InfractionKind, id:int
@@ -332,7 +383,7 @@ class InfractionList:
         """
         
         try:
-            return self.__kind_to_list(kind)[id].detailed_info_embed(self._user)
+            return self._kind_to_list(kind)[id].detailed_info_embed(self._user)
         
         except IndexError:
             return None
@@ -363,6 +414,7 @@ class InfractionList:
         
         convert the data stored in the class into a dict
         """
+        logger.debug("updating infraction info for %s", self._user_id)
 
         self._last_updated = discord.utils.utcnow()
         data = self.to_dict()
