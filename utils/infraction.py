@@ -57,7 +57,7 @@ class Infraction:
         return cls(kind, data)
 
     @property
-    def level(self) -> typing.Union(int, str):
+    def level(self) -> typing.Union[int, str]:
         """
         A property that returns the integer level of the infraction or the
         string 'legacy' if there is no level.
@@ -72,14 +72,13 @@ class Infraction:
         The infraction's index must be passed into the method to provide an id
         """
         duration = '' if self._duration is None else f'Duration: {self._duration}\n'
-        level = 'Legacy' if self._level is None else self._level
 
-        return f"Author: {self._author_name} ({self._author_id})\n \
-            Reason: {self._reason}\n \
-            {duration} \
-            Date: {self._date.replace(microsecond=0)}\n \
-            Infraction Level: {level}\n \
-            {self._kind.name.title()} ID: {id}"
+        return f"```\nAuthor: {self._author_name} ({self._author_id})\n" + \
+            f"Reason: {self._reason}\n" + \
+            f"{duration}" + \
+            f"Date: {self._datetime.replace(microsecond=0)}\n" + \
+            f"Infraction Level: {self.level}\n" + \
+            f"{self._kind.name.title()} ID: {id}\n```"
 
     def detailed_info_embed(self, user:discord.User):
         """
@@ -258,6 +257,11 @@ class InfractionList:
         }
 
         valuelist = []
+        
+        # legacy is a string so it can't be sorted below. handle before
+        if (legacy := inflevels.pop("legacy", 0)) != 0:
+            valuelist.append(f"{legacy}x{dectoroman['legacy']}")
+
         for key in sorted(inflevels):
             valuelist.append(f"{inflevels[key]}x{dectoroman[key]}")
 
@@ -351,8 +355,11 @@ class InfractionList:
             timestamp=discord.utils.utcnow(),
         )
 
-        embed.add_field(name=self._user_id, value=f"```\n{self.summary()}\n```")
-        embed.add_field(name=kind.name.title(), value="\n\n".join(infractions_info))
+        if len(infractions_info) == 0:
+            infractions_info.append('```\nNone\n```')
+
+        embed.add_field(name=self._user_id, value=f"```\n{self.summary()}\n```", inline=False)
+        embed.add_field(name=kind.name.title() + 's', value="\n".join(infractions_info))
 
         return embed
 
