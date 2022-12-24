@@ -39,7 +39,7 @@ class Infraction:
         author:discord.User, 
         level:int, 
         reason:str, 
-        duration:int=None
+        duration:str=None
     ):
         """Creates a new infraction instance with the provided details"""
 
