@@ -7,13 +7,12 @@ import logging
 
 from utils import helper, app_checks, app_errors
 from utils.helper import (
-    append_infraction,
-    get_single_infraction_type,
     get_active_staff,
     blacklist_member,
     whitelist_member,
     is_public_channel,
 )
+from utils.infraction import InfractionList, InfractionKind
 
 import discord
 from discord.ext import commands
@@ -252,12 +251,12 @@ class Moderation(commands.Cog):
             "User has been banned", ephemeral=is_public_channel(interaction.channel)
         )
 
-        helper.create_infraction(
+        InfractionList.new_user_infraction(
+            user=user,
+            kind=InfractionKind.BAN, 
+            level=inf_level,
             author=interaction.user,
-            users=[user],
-            action="ban",
-            reason=reason,
-            inf_level=inf_level,
+            reason=reason
         )
 
         logging_channel = discord.utils.get(
@@ -356,12 +355,12 @@ class Moderation(commands.Cog):
             "member has been kicked", ephemeral=is_public_channel(interaction.channel)
         )
 
-        helper.create_infraction(
+        InfractionList.new_user_infraction(
+            user=member,
+            kind=InfractionKind.KICK, 
+            level=inf_level,
             author=interaction.user,
-            users=[member],
-            action="kick",
-            reason=reason,
-            inf_level=inf_level,
+            reason=reason
         )
 
         logging_channel = discord.utils.get(
@@ -508,14 +507,14 @@ class Moderation(commands.Cog):
             "member has been muted", ephemeral=is_public_channel(interaction.channel)
         )
 
-        helper.create_infraction(
+        InfractionList.new_user_infraction(
+            user=member,
+            kind=InfractionKind.MUTE, 
+            level=inf_level,
             author=interaction.user,
-            users=[member],
-            action="mute",
             reason=reason,
-            time=time_str,
-            inf_level=inf_level,
-            final_warn=final,
+            duration=time_str,
+            final=final
         )
 
         logging_channel = discord.utils.get(
@@ -678,13 +677,13 @@ class Moderation(commands.Cog):
             "user has been warned", ephemeral=is_public_channel(interaction.channel)
         )
 
-        helper.create_infraction(
+        InfractionList.new_user_infraction(
+            user=member,
+            kind=InfractionKind.WARN, 
+            level=inf_level,
             author=interaction.user,
-            users=[member],
-            action="warn",
             reason=reason,
-            inf_level=inf_level,
-            final_warn=final,
+            final=final
         )
 
         logging_channel = discord.utils.get(
@@ -705,49 +704,91 @@ class Moderation(commands.Cog):
     @app_commands.guilds(414027124836532234)
     @app_commands.default_permissions(manage_messages=True)
     @app_checks.mod_and_above()
-    async def delwarn(self, interaction: discord.Interaction, member: discord.Member):
-        """Delete a warn of a user
-
-        Parameters
-        ----------
-        member: discord.Member
-            Member mention or ID
+    async def delete_infr(
+        self, 
+        interaction: discord.Interaction,
+        user: discord.User, 
+        infr_type: InfractionKind = InfractionKind.WARN
+    ):
+        """
+        Allows for the deletion of an infraction
         """
 
-        class View(discord.ui.View):
-            def __init__(self, warns):
-                super().__init__(timeout=20)
-                self.delete_warn_idx = -1
-                self.page = 0
-                self.warns = warns
-                self.warn_len = len(warns)
+        """
+        Since this is a lot of code, here is a breakdown...
 
-                for i in range(5):
-                    disabled = False
-                    if i >= self.warn_len:
-                        disabled = True
-                    self.add_item(Button(label=str(i), disabled=disabled))
+        IdxButton -> index button which is the button that records the input to
+        select an infraction. it should only be enabled when there is a valid
+        infraction for it to represent (disabled value is handled by 
+        DeleteInfractionView). Its only purpose is to call a method inside the
+        DeleteInfractionView passing the interaction and itself.
+
+        DeleteInfractionView -> rather simple name. The user's infraction list
+        instance is passed to the initialization along with the infraction kind
+        we are attempting to delete. The infractions of that kind are split into
+        chunks and each chunk is its own page of infractions show to the user of
+        the command. 
+        """
+
+        class IdxButton(discord.ui.Button):
+            
+            async def callback(self, interaction: discord.Interaction):
+                """
+                Calls select infraction on the DeleteInfractionView to proceed
+                to the confirmation phase
+                """
+                await self.view.select_infraction(interaction, self)
+
+        class DeleteInfractionView(discord.ui.View):
+
+            def __init__(self, user_infractions: InfractionList, kind: InfractionKind):
+                super().__init__(timeout=60)
+                """
+                Splits the infractions into chunks of 5 or less and builds the
+                buttons that represent the infractions posted on the page
+                """
+
+                self.user_infractions = user_infractions
+                
+                # split the infractions into chunks 5 elements or less
+                infractions = user_infractions._kind_to_list(kind)
+                self.chunks = [
+                    infractions[i:i+5] 
+                    for i in range(0, len(infractions), 5)
+                ]
+
+                self.idx_buttons = []
+                self.current_chunk = 0
+                self.delete_infraction_idx = -1
+
+                for i in range(0, 5):
+                    disabled = i >= len(self.chunks[self.current_chunk])
+                    button = IdxButton(label=str(i), disabled=disabled, row=0)
+                    self.add_item(button)
+                    self.idx_buttons.append(button)
 
             @discord.ui.button(label="<", style=discord.ButtonStyle.blurple, row=1)
             async def back(
                 self, interaction: discord.Interaction, button: discord.ui.Button
             ):
-                self.delete_warn_idx = -1
-                if self.page >= 1:
-                    self.page -= 1
-                else:
-                    self.page = (self.warn_len - 1) // 5
+                """
+                Goes backwards in the pagination. Supports cycling around
+                """
+                new_chunk = (self.current_chunk - 1) % len(self.chunks)
+
+                self.current_chunk = new_chunk
                 await self.write_msg(interaction)
 
             @discord.ui.button(label=">", style=discord.ButtonStyle.blurple, row=1)
             async def forward(
                 self, interaction: discord.Interaction, button: discord.ui.Button
             ):
-                self.delete_warn_idx = -1
-                if self.page < (self.warn_len - 1) // 5:
-                    self.page += 1
-                else:
-                    self.page = 0
+                """
+                Goes forwards in the pagination. Supports cycling around
+                """
+                new_chunk = (self.current_chunk + 1) % len(self.chunks)
+
+                self.current_chunk = new_chunk
                 await self.write_msg(interaction)
 
             @discord.ui.button(label="x", style=discord.ButtonStyle.red, row=1)
@@ -758,7 +799,6 @@ class Moderation(commands.Cog):
                     content="Exited!!!", embed=None, view=None, delete_after=5
                 )
                 self.stop()
-                return
 
             @discord.ui.button(
                 label="✓", style=discord.ButtonStyle.green, row=1, disabled=True
@@ -766,83 +806,111 @@ class Moderation(commands.Cog):
             async def confirm(
                 self, interaction: discord.Interaction, button: discord.ui.Button
             ):
-                if self.delete_warn_idx != -1:
-
-                    del self.warns[self.page * 5 + self.delete_warn_idx]
-                    helper.update_warns(member.id, self.warns)
-
-                    await interaction.response.edit_message(
-                        content="Warning deleted successfully.", embed=None, view=None
+                if self.delete_infraction_idx == -1:
+                    # This should not happen with correct logic but should
+                    # provide insight on an issue if it does
+                    await interaction.response.send_message(
+                        "An infraction is not selected",
+                        ephemeral=True
                     )
-                    self.stop()
-                return
+                    return
 
-            async def write_msg(self, interaction):
-                delete_warn_idx = self.delete_warn_idx
-                page = self.page
-                warn_len = self.warn_len
-
-                embed = discord.Embed(
-                    title=f"Warns for {member.name}",
-                    color=discord.Colour.magenta(),
-                    timestamp=discord.utils.utcnow(),
+                success = self.user_infractions.delete_infraction(
+                    infr_type, 
+                    self.delete_infraction_idx
                 )
 
-                if delete_warn_idx != -1:
-                    warn_idx = page * 5 + delete_warn_idx
-                    embed.description = f"Confirm removal of warn"
+                if not success:
+                    # This should not happen with correct logic but should
+                    # provide insight on an issue if it does
+                    await interaction.response.send_message(
+                        "Infraction was not found",
+                        ephemeral=True
+                    )
+                    return
+
+                self.user_infractions.update()
+
+                # TODO, log this in mod-action-logs
+                
+                await interaction.response.edit_message(
+                    content="Infraction deleted successfully.", embed=None, view=None
+                )
+                self.stop()
+
+            def build_embed(self) -> discord.Embed:
+                """
+                Builds the embed to display the current page of infractions
+                """
+
+                embed = discord.Embed(
+                    title=f"{infr_type.name.title()}s for {user.name} ({user.id})",
+                    color=discord.Color.magenta(),
+                    timestamp=discord.utils.utcnow(),
+                    description=f"Showing atmost 5 warns at a time"
+                )
+
+                embed.set_footer(text=f"Page {self.current_chunk+1}/{len(self.chunks)}")
+
+                for i, infraction in enumerate(self.chunks[self.current_chunk]):
                     embed.add_field(
-                        name="Delete Warn?",
-                        value="```{0}\n{1}\n{2}```".format(
-                            "Author: {} ({})".format(
-                                warns[warn_idx]["author_name"],
-                                warns[warn_idx]["author_id"],
-                            ),
-                            "Reason: {}".format(warns[warn_idx]["reason"]),
-                            "Date: {}".format(
-                                warns[warn_idx]["datetime"].replace(microsecond=0)
-                            ),
-                        ),
+                        name=f"**Value: {i}**",
+                        value=infraction.info_str(i+(5*self.current_chunk))
                     )
-                    for button in self.children:
-                        if button.label == "✓":
-                            button.disabled = False
-                        elif button.row == 0:
-                            button.disabled = True
-                else:
-                    start = page * 5
-                    end = start + 5 if start + 5 < warn_len else warn_len
 
-                    for button in self.children:
-                        if button.row == 0:
-                            if int(button.label) >= (end - start):
-                                button.disabled = True
-                            else:
-                                button.disabled = False
-                        elif button.label == "✓":
-                            button.disabled = True
+                return embed
 
-                    embed.description = (
-                        f"Showing atmost 5 warns at a time. (Total warns: {warn_len})"
-                    )
-                    embed.set_footer(text=f"Page {page+1}/{(warn_len-1)//5+1}")
+            async def select_infraction(
+                self, 
+                interaction: discord.Interaction, 
+                button:discord.ui.Button
+            ):
+                """
+                Selects the infraction that corresponds to the button passed
 
-                    for idx, warn in enumerate(self.warns[start:end]):
-                        embed.add_field(
-                            name=f"ID: {idx}",
-                            value="```{0}\n{1}\n{2}```".format(
-                                "Author: {} ({})".format(
-                                    warn["author_name"], warn["author_id"]
-                                ),
-                                "Reason: {}".format(warn["reason"]),
-                                "Date: {}".format(
-                                    warn["datetime"].replace(microsecond=0)
-                                ),
-                            ),
-                            inline=False,
-                        )
+                This enables the phase of confirmation or declining the update.
+                All index buttons are disabled and the infraction is shown to
+                the user to confirm the choice.
+                """
 
-                await interaction.response.edit_message(embed=embed, view=view)
+                self.delete_infraction_idx = int(button.label)+(5*self.current_chunk)
+
+                user_infractions = self.user_infractions
+
+                infraction_info = user_infractions.get_infraction_info_str(
+                    infr_type, 
+                    self.delete_infraction_idx
+                )
+
+                embed = discord.Embed(
+                    title=f"Confirm deletion of {infr_type.name.lower()}:\n" + \
+                        f"for {user.name} ({user.id})?",
+                    color=discord.Color.magenta(),
+                    timestamp=discord.utils.utcnow(),
+                    description=infraction_info
+                )
+
+                self.confirm.disabled=False
+                for button in self.idx_buttons:
+                    button.disabled = True
+
+                await interaction.response.edit_message(embed=embed, view=self)
+            
+            async def write_msg(self, interaction: discord.Interaction):
+                """
+                Builds the embed, updates button activation and sends to discord
+                """
+
+                embed = self.build_embed()
+
+                # update disabled buttons
+                for button in self.idx_buttons:
+                    button.disabled = int(button.label) >= \
+                        len(self.chunks[self.current_chunk])
+
+                await interaction.response.edit_message(
+                    embed=embed, view=self
+                )
 
             async def on_timeout(self):
                 """Removes the view on timeout"""
@@ -856,54 +924,23 @@ class Moderation(commands.Cog):
                     await interaction.response.send_message(
                         "You can't use that", ephemeral=True
                     )
+                
+        user_infractions = InfractionList.from_user(user)
 
-        class Button(discord.ui.Button):
-            def __init__(self, label, disabled):
-                super().__init__(
-                    label=label,
-                    style=discord.ButtonStyle.gray,
-                    row=0,
-                    disabled=disabled,
-                )
-
-            async def callback(self, interaction: discord.Interaction):
-                view.delete_warn_idx = int(self.label)
-                await view.write_msg(interaction)
-                return
-
-        warns = helper.get_warns(member_id=member.id)
-        # warns might not get deleted properly, temp fix
-        if warns is None or warns == []:
-            return await interaction.response.send_message(
-                "User has no warns.", ephemeral=True
+        if len(user_infractions._kind_to_list(infr_type)) == 0:
+            await interaction.response.send_message(
+                f"User has no {infr_type.name.lower()}s.", ephemeral=True
             )
+            return
 
-        view = View(warns=warns)
+        div = DeleteInfractionView(user_infractions, kind=infr_type)
 
-        warn_len = len(warns)
+        embed = div.build_embed()
 
-        embed = discord.Embed(
-            title=f"Warns for {member.name}",
-            description=f"Showing atmost 5 warns at a time. (Total warns: {warn_len})",
-            color=discord.Colour.magenta(),
-            timestamp=discord.utils.utcnow(),
-        )
-        embed.set_footer(text=f"Page 1/{(warn_len-1)//5+1}")
-
-        end = 5 if 5 < warn_len else warn_len
-
-        for idx, warn in enumerate(warns[0:end]):
-            embed.add_field(
-                name=f"ID: {idx}",
-                value="```{0}\n{1}\n{2}```".format(
-                    "Author: {} ({})".format(warn["author_name"], warn["author_id"]),
-                    "Reason: {}".format(warn["reason"]),
-                    "Date: {}".format(warn["datetime"].replace(microsecond=0)),
-                ),
-                inline=False,
-            )
         await interaction.response.send_message(
-            embed=embed, view=view, ephemeral=is_public_channel(interaction.channel)
+            embed=embed,
+            view=div,
+            ephemeral=is_public_channel(interaction.channel)
         )
 
     @app_commands.command()
@@ -925,46 +962,59 @@ class Moderation(commands.Cog):
             Represents a button to switch pages on an infraction embed view
             """
 
-            def __init__(self, label, inf_type, **kwargs):
+            def __init__(self, 
+                user_infractions: InfractionList, 
+                inf_type: InfractionKind,
+                label,
+                **kwargs
+            ):
                 super().__init__(label=label, **kwargs)
                 self.inf_type = inf_type
+                self.user_infractions=user_infractions
 
             async def callback(self, interaction):
+                """
+                Switches the embed to display content for the corresponding 
+                infraction kind
+                """
 
-                infs_embed = helper.get_infractions(
-                    member_id=user.id, inf_type=self.inf_type
-                )
-                # might need to utilize this if original message is ephemeral
-                # https://discordpy.readthedocs.io/en/latest/interactions/api.html#discord.Interaction.edit_original_message
+                infs_embed = self.user_infractions.get_infractions_of_kind(self.inf_type)
+                
                 await interaction.response.edit_message(embed=infs_embed)
 
         class InfractionView(discord.ui.View):
             """
-            Represents an infraction embed view
+            Represents an infraction embed view. This hosts buttons of the
+            different InfractionKinds to allow switching between the display of
+            each infraction list.
             """
 
-            def __init__(self, initial_interaction: discord.Interaction):
+            def __init__(self, user_infractions: InfractionList):
                 super().__init__(timeout=60)
 
-                self.interaction = initial_interaction
+                self.user_infractions = user_infractions
 
-                self.add_item(InfButton(label="Warns", inf_type="warn"))
-                self.add_item(InfButton(label="Mutes", inf_type="mute"))
-                self.add_item(InfButton(label="Bans", inf_type="ban"))
-                self.add_item(InfButton(label="Kicks", inf_type="kick"))
+                for kind in InfractionKind:
+                    button = InfButton(
+                        user_infractions, 
+                        inf_type=kind, 
+                        label=kind.name.title() + 's'
+                    )
+                    self.add_item(button)
 
             async def on_timeout(self):
                 """
                 Removes the view on timeout for visual aid
                 """
 
-                await self.interaction.edit_original_response(view=None)
+                await interaction.edit_original_response(view=None)
 
-        infs_embed = helper.get_infractions(member_id=user.id, inf_type="warn")
+        user_infractions = InfractionList.from_user(user)
+        infs_embed = user_infractions.get_infractions_of_kind(InfractionKind.WARN)
 
         await interaction.response.send_message(
             embed=infs_embed,
-            view=InfractionView(interaction),
+            view=InfractionView(user_infractions),
             ephemeral=is_public_channel(interaction.channel),
         )
 
@@ -976,7 +1026,7 @@ class Moderation(commands.Cog):
         self,
         interaction: discord.Interaction,
         user: discord.User,
-        infr_type: typing.Literal["warn", "ban", "mute", "kick"],
+        infr_type: InfractionKind,
         infr_id: int,
     ):
         """Get detailed view of an infraction.
@@ -991,61 +1041,19 @@ class Moderation(commands.Cog):
             ID as mentioned as last field of the infraction
         """
 
-        result = get_single_infraction_type(user.id, infr_type)
+        user_infractions = InfractionList.from_user(user)
+        embed = user_infractions.get_detailed_infraction(infr_type, infr_id)
 
-        if result == -1:
+        if embed is None:
             await interaction.response.send_message(
-                "Invalid command format.",
-                ephemeral=is_public_channel(interaction.channel),
+                "Infraction with given id and type not found.", ephemeral=True
             )
+
             return
 
-        elif result:
-
-            if infr_id not in range(0, len(result)):
-                await interaction.response.send_message(
-                    "Invalid infraction ID.",
-                    ephemeral=is_public_channel(interaction.channel),
-                )
-                return
-
-            result = result[infr_id]
-            embed = discord.Embed(
-                title=f"Detailed infraction for {user.name} ({user.id}) ",
-                description=f"**Infraction Type:** {infr_type}",
-                color=discord.Color.green(),
-                timestamp=discord.utils.utcnow(),
-            )
-            embed.add_field(
-                name=f"Author", value=f"<@{result['author_id']}>", inline=False
-            )
-            embed.add_field(
-                name="Date (UTC)",
-                value=result["datetime"].replace(microsecond=0),
-                inline=False,
-            )
-            embed.add_field(name="Base Reason", value=result["reason"], inline=False)
-            if "infraction_level" in result:
-                embed.add_field(
-                    name="Infraction Level",
-                    value=result["infraction_level"],
-                    inline=False,
-                )
-                del result["infraction_level"]
-
-            del (
-                result["author_id"],
-                result["author_name"],
-                result["datetime"],
-                result["reason"],
-            )
-
-            for key in result:
-                embed.add_field(name=key, value=result[key], inline=False)
-
-            await interaction.response.send_message(
-                embed=embed, ephemeral=is_public_channel(interaction.channel)
-            )
+        await interaction.response.send_message(
+            embed=embed, ephemeral=is_public_channel(interaction.channel)
+        )
 
     @app_commands.command()
     @app_commands.guilds(414027124836532234)
@@ -1055,7 +1063,7 @@ class Moderation(commands.Cog):
         self,
         interaction: discord.Interaction,
         user: discord.User,
-        infr_type: typing.Literal["warn", "ban", "mute", "kick"],
+        infr_type: InfractionKind,
         infr_id: int,
         title: str,
         description: str,
@@ -1076,35 +1084,36 @@ class Moderation(commands.Cog):
             Description for the field
         """
 
-        result = append_infraction(user.id, infr_type, infr_id, title, description)
+        user_infractions = InfractionList.from_user(user)
+        success = user_infractions.detail_infraction(infr_type, infr_id, title, description)
 
-        if result == -1:
+        if not success:
             await interaction.response.send_message(
                 "Infraction with given id and type not found.", ephemeral=True
             )
             return
 
-        else:
+        user_infractions.update()
 
-            await interaction.response.send_message(
-                "Infraction updated successfully.",
-                ephemeral=is_public_channel(interaction.channel),
-            )
+        await interaction.response.send_message(
+            "Infraction updated successfully.",
+            ephemeral=is_public_channel(interaction.channel),
+        )
 
-            extra = f"Title: {title}\nDescription: {description} \nID: {infr_id}"
+        extra = f"Title: {title}\nDescription: {description} \nID: {infr_id}"
 
-            embed = helper.create_embed(
-                author=interaction.user,
-                action=f"Appended details to {infr_type} ",
-                users=[user],
-                extra=extra,
-                color=discord.Color.red(),
-            )
+        embed = helper.create_embed(
+            author=interaction.user,
+            action=f"Appended details to {infr_type} ",
+            users=[user],
+            extra=extra,
+            color=discord.Color.red(),
+        )
 
-            logging_channel = discord.utils.get(
-                interaction.guild.channels, id=self.logging_channel
-            )
-            await logging_channel.send(embed=embed)
+        logging_channel = discord.utils.get(
+            interaction.guild.channels, id=self.logging_channel
+        )
+        await logging_channel.send(embed=embed)
 
     @app_commands.command()
     @app_commands.guilds(414027124836532234)
