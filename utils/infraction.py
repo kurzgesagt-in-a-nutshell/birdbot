@@ -207,6 +207,22 @@ class InfractionList:
 
         return user_infractions
 
+    @property
+    def banned_patron(self) -> bool:
+        """
+        A property detailing if the user is banned through unenrol
+        """
+        
+        return self._banned_patreon
+
+    @banned_patron.setter
+    def banned_patreon(self, value: bool):
+        """
+        Updates the property detailing if the user is banned through unenrol
+        """
+
+        self._banned_patreon = value
+
     def _kind_to_list(self, kind:InfractionKind) -> typing.List[Infraction]:
         """
         Returns the list of infractions corresponding to the given kind.

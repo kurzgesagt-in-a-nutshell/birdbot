@@ -18,6 +18,7 @@ from discord import app_commands
 from birdbot import BirdBot
 
 from utils import app_checks
+from utils.infraction import InfractionList
 from utils.helper import (
     NoAuthorityError,
     DevBotOnly,
@@ -535,16 +536,9 @@ class GuildChores(commands.Cog):
                     self.bot.guilds, id=414027124836532234
                 ).get_member(interaction.user.id)
 
-                infraction_db = BirdBot.db.Infraction
-
-                inf = infraction_db.find_one({"user_id": interaction.user.id})
-                if inf is None:
-                    create_user_infraction(interaction.user)
-
-                    inf = infraction_db.find_one({"user_id": interaction.user.id})
-                infraction_db.update_one(
-                    {"user_id": interaction.user.id}, {"$set": {"banned_patron": True}}
-                )
+                user_infractions = InfractionList.from_user(member)
+                user_infractions.banned_patron = True
+                user_infractions.update()
 
                 await interaction.user.send(
                     "Success! You've been banned from the server."
