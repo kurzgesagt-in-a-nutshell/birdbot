@@ -110,7 +110,7 @@ class Infraction:
 
         return embed
 
-    def detail(self, title:str, description):
+    def detail(self, title:str, description: str):
         """
         Appends extra details to the infraction. This also allows for editing of
         contents such as the reason though I dont really want to recommend this
