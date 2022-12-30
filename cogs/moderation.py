@@ -253,10 +253,10 @@ class Moderation(commands.Cog):
 
         InfractionList.new_user_infraction(
             user=user,
-            kind=InfractionKind.BAN, 
+            kind=InfractionKind.BAN,
             level=inf_level,
             author=interaction.user,
-            reason=reason
+            reason=reason,
         )
 
         logging_channel = discord.utils.get(
@@ -357,10 +357,10 @@ class Moderation(commands.Cog):
 
         InfractionList.new_user_infraction(
             user=member,
-            kind=InfractionKind.KICK, 
+            kind=InfractionKind.KICK,
             level=inf_level,
             author=interaction.user,
-            reason=reason
+            reason=reason,
         )
 
         logging_channel = discord.utils.get(
@@ -509,12 +509,12 @@ class Moderation(commands.Cog):
 
         InfractionList.new_user_infraction(
             user=member,
-            kind=InfractionKind.MUTE, 
+            kind=InfractionKind.MUTE,
             level=inf_level,
             author=interaction.user,
             reason=reason,
             duration=time_str,
-            final=final
+            final=final,
         )
 
         logging_channel = discord.utils.get(
@@ -679,11 +679,11 @@ class Moderation(commands.Cog):
 
         InfractionList.new_user_infraction(
             user=member,
-            kind=InfractionKind.WARN, 
+            kind=InfractionKind.WARN,
             level=inf_level,
             author=interaction.user,
             reason=reason,
-            final=final
+            final=final,
         )
 
         logging_channel = discord.utils.get(
@@ -705,10 +705,10 @@ class Moderation(commands.Cog):
     @app_commands.default_permissions(manage_messages=True)
     @app_checks.mod_and_above()
     async def delete_infr(
-        self, 
+        self,
         interaction: discord.Interaction,
-        user: discord.User, 
-        infr_type: InfractionKind = InfractionKind.WARN
+        user: discord.User,
+        infr_type: InfractionKind = InfractionKind.WARN,
     ):
         """
         Allows for the deletion of an infraction
@@ -731,7 +731,6 @@ class Moderation(commands.Cog):
         """
 
         class IdxButton(discord.ui.Button):
-            
             async def callback(self, interaction: discord.Interaction):
                 """
                 Calls select infraction on the DeleteInfractionView to proceed
@@ -740,7 +739,6 @@ class Moderation(commands.Cog):
                 await self.view.select_infraction(interaction, self)
 
         class DeleteInfractionView(discord.ui.View):
-
             def __init__(self, user_infractions: InfractionList, kind: InfractionKind):
                 super().__init__(timeout=60)
                 """
@@ -749,12 +747,11 @@ class Moderation(commands.Cog):
                 """
 
                 self.user_infractions = user_infractions
-                
+
                 # split the infractions into chunks 5 elements or less
                 infractions = user_infractions._kind_to_list(kind)
                 self.chunks = [
-                    infractions[i:i+5] 
-                    for i in range(0, len(infractions), 5)
+                    infractions[i : i + 5] for i in range(0, len(infractions), 5)
                 ]
 
                 self.idx_buttons = []
@@ -810,29 +807,26 @@ class Moderation(commands.Cog):
                     # This should not happen with correct logic but should
                     # provide insight on an issue if it does
                     await interaction.response.send_message(
-                        "An infraction is not selected",
-                        ephemeral=True
+                        "An infraction is not selected", ephemeral=True
                     )
                     return
 
                 success = self.user_infractions.delete_infraction(
-                    infr_type, 
-                    self.delete_infraction_idx
+                    infr_type, self.delete_infraction_idx
                 )
 
                 if not success:
                     # This should not happen with correct logic but should
                     # provide insight on an issue if it does
                     await interaction.response.send_message(
-                        "Infraction was not found",
-                        ephemeral=True
+                        "Infraction was not found", ephemeral=True
                     )
                     return
 
                 self.user_infractions.update()
 
                 # TODO, log this in mod-action-logs
-                
+
                 await interaction.response.edit_message(
                     content="Infraction deleted successfully.", embed=None, view=None
                 )
@@ -847,7 +841,7 @@ class Moderation(commands.Cog):
                     title=f"{infr_type.name.title()}s for {user.name} ({user.id})",
                     color=discord.Color.magenta(),
                     timestamp=discord.utils.utcnow(),
-                    description=f"Showing atmost 5 warns at a time"
+                    description=f"Showing atmost 5 warns at a time",
                 )
 
                 embed.set_footer(text=f"Page {self.current_chunk+1}/{len(self.chunks)}")
@@ -855,15 +849,13 @@ class Moderation(commands.Cog):
                 for i, infraction in enumerate(self.chunks[self.current_chunk]):
                     embed.add_field(
                         name=f"**Value: {i}**",
-                        value=infraction.info_str(i+(5*self.current_chunk))
+                        value=infraction.info_str(i + (5 * self.current_chunk)),
                     )
 
                 return embed
 
             async def select_infraction(
-                self, 
-                interaction: discord.Interaction, 
-                button:discord.ui.Button
+                self, interaction: discord.Interaction, button: discord.ui.Button
             ):
                 """
                 Selects the infraction that corresponds to the button passed
@@ -873,29 +865,30 @@ class Moderation(commands.Cog):
                 the user to confirm the choice.
                 """
 
-                self.delete_infraction_idx = int(button.label)+(5*self.current_chunk)
+                self.delete_infraction_idx = int(button.label) + (
+                    5 * self.current_chunk
+                )
 
                 user_infractions = self.user_infractions
 
                 infraction_info = user_infractions.get_infraction_info_str(
-                    infr_type, 
-                    self.delete_infraction_idx
+                    infr_type, self.delete_infraction_idx
                 )
 
                 embed = discord.Embed(
-                    title=f"Confirm deletion of {infr_type.name.lower()}:\n" + \
-                        f"for {user.name} ({user.id})?",
+                    title=f"Confirm deletion of {infr_type.name.lower()}:\n"
+                    + f"for {user.name} ({user.id})?",
                     color=discord.Color.magenta(),
                     timestamp=discord.utils.utcnow(),
-                    description=infraction_info
+                    description=infraction_info,
                 )
 
-                self.confirm.disabled=False
+                self.confirm.disabled = False
                 for button in self.idx_buttons:
                     button.disabled = True
 
                 await interaction.response.edit_message(embed=embed, view=self)
-            
+
             async def write_msg(self, interaction: discord.Interaction):
                 """
                 Builds the embed, updates button activation and sends to discord
@@ -905,12 +898,11 @@ class Moderation(commands.Cog):
 
                 # update disabled buttons
                 for button in self.idx_buttons:
-                    button.disabled = int(button.label) >= \
-                        len(self.chunks[self.current_chunk])
+                    button.disabled = int(button.label) >= len(
+                        self.chunks[self.current_chunk]
+                    )
 
-                await interaction.response.edit_message(
-                    embed=embed, view=self
-                )
+                await interaction.response.edit_message(embed=embed, view=self)
 
             async def on_timeout(self):
                 """Removes the view on timeout"""
@@ -924,7 +916,7 @@ class Moderation(commands.Cog):
                     await interaction.response.send_message(
                         "You can't use that", ephemeral=True
                     )
-                
+
         user_infractions = InfractionList.from_user(user)
 
         if len(user_infractions._kind_to_list(infr_type)) == 0:
@@ -938,9 +930,7 @@ class Moderation(commands.Cog):
         embed = div.build_embed()
 
         await interaction.response.send_message(
-            embed=embed,
-            view=div,
-            ephemeral=is_public_channel(interaction.channel)
+            embed=embed, view=div, ephemeral=is_public_channel(interaction.channel)
         )
 
     @app_commands.command()
@@ -962,24 +952,27 @@ class Moderation(commands.Cog):
             Represents a button to switch pages on an infraction embed view
             """
 
-            def __init__(self, 
-                user_infractions: InfractionList, 
+            def __init__(
+                self,
+                user_infractions: InfractionList,
                 inf_type: InfractionKind,
                 label,
-                **kwargs
+                **kwargs,
             ):
                 super().__init__(label=label, **kwargs)
                 self.inf_type = inf_type
-                self.user_infractions=user_infractions
+                self.user_infractions = user_infractions
 
             async def callback(self, interaction):
                 """
-                Switches the embed to display content for the corresponding 
+                Switches the embed to display content for the corresponding
                 infraction kind
                 """
 
-                infs_embed = self.user_infractions.get_infractions_of_kind(self.inf_type)
-                
+                infs_embed = self.user_infractions.get_infractions_of_kind(
+                    self.inf_type
+                )
+
                 await interaction.response.edit_message(embed=infs_embed)
 
         class InfractionView(discord.ui.View):
@@ -996,9 +989,7 @@ class Moderation(commands.Cog):
 
                 for kind in InfractionKind:
                     button = InfButton(
-                        user_infractions, 
-                        inf_type=kind, 
-                        label=kind.name.title() + 's'
+                        user_infractions, inf_type=kind, label=kind.name.title() + "s"
                     )
                     self.add_item(button)
 
@@ -1085,7 +1076,9 @@ class Moderation(commands.Cog):
         """
 
         user_infractions = InfractionList.from_user(user)
-        success = user_infractions.detail_infraction(infr_type, infr_id, title, description)
+        success = user_infractions.detail_infraction(
+            infr_type, infr_id, title, description
+        )
 
         if not success:
             await interaction.response.send_message(
