@@ -23,7 +23,6 @@ from utils.helper import (
     NoAuthorityError,
     DevBotOnly,
     WrongChannel,
-    create_user_infraction,
     is_internal_command,
 )
 

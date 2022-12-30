@@ -309,32 +309,6 @@ def create_embed(
     return embed
 
 
-def create_user_infraction(user: Union[discord.User, discord.Member]):
-    """Create a base infraction entry for an user
-
-    Args:
-        user (Union[discord.User, discord.Member]): The user
-    """
-    u = {
-        "user_id": user.id,
-        "user_name": "",
-        "last_updated": datetime.datetime.utcnow(),
-        "banned_patron": False,
-        "final_warn": False,
-        "mute": [],
-        "warn": [],
-        "kick": [],
-        "ban": [],
-    }
-
-    if "name" in dir(user):
-        u["user_name"] = user.name
-    else:
-        del u["user_name"]
-
-    infraction_db.insert_one(u)
-
-
 def create_timed_action(
     users: List[Union[discord.User, discord.Member]], action: str, time: int
 ):
