@@ -708,7 +708,7 @@ class Moderation(commands.Cog):
         self,
         interaction: discord.Interaction,
         user: discord.User,
-        infr_type: InfractionKind = InfractionKind.WARN,
+        infr_type: InfractionKind
     ):
         """
         Allows for the deletion of an infraction
