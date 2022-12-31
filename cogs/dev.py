@@ -242,8 +242,13 @@ class Dev(commands.Cog):
     @app_commands.default_permissions(manage_messages=True)
     @app_checks.mod_and_above()
     async def send(
-        self, interaction: discord.Interaction, channel: discord.TextChannel, msg: str
+        self,
+        interaction: discord.Interaction,
+        msg: str,
+        channel: discord.TextChannel = None,
     ):
+        if not channel:
+            channel = interaction.channel
         await channel.send(msg)
         await interaction.response.send_message("sent", ephemeral=True)
 
