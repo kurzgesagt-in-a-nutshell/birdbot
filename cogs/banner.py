@@ -7,12 +7,12 @@ import io
 
 import discord
 from discord.ext import commands, tasks
+from discord import app_commands
+
+from utils import app_checks
 from utils.helper import (
-    devs_only,
-    mod_and_above,
     calc_time,
     get_time_string,
-    bot_commands_only,
 )
 
 
@@ -30,6 +30,9 @@ class Banner(commands.Cog):
         self.index = 0
         self.banner_db = self.bot.db.Banners
 
+    def cog_load(self) -> None:
+        self.banners = self.banner_db.find_one({"name": "banners"})["banners"]
+
     def cog_unload(self):
         self.timed_banner_rotation.cancel()
 
@@ -37,14 +40,12 @@ class Banner(commands.Cog):
     async def on_ready(self):
         self.logger.info("loaded Banners")
 
-        self.banners = self.banner_db.find_one({"name": "banners"})["banners"]
-
-    @commands.group(hidden=True)
-    async def banner(self, ctx: commands.Context):
-        """
-        Banner commands
-        Usage: banner add/suggest/rotate/change
-        """
+    banner_commands = app_commands.Group(
+        name="banner",
+        description="Guild banner commands",
+        guild_ids=[414027124836532234],
+        default_permissions=discord.permissions.Permissions(manage_messages=True),
+    )
 
     async def verify_url(self, url: str, byte: bool = False):
         """
@@ -74,93 +75,156 @@ class Banner(commands.Cog):
                 message="You must provide a link or an attachment."
             )
 
-    @mod_and_above()
-    @banner.command()
-    async def add(self, ctx: commands.context, *, url: str = None):
-        """
-        Add a banner by url or attachment
-        Usage: banner add url/attachment
-        """
-        if url is None:
-            attachments = ctx.message.attachments
-            if attachments:
-                url = [attachments[n].url for n, _ in enumerate(attachments)]
-            else:
-                raise commands.BadArgument(
-                    message="You must provide a url or attachment."
-                )
-        else:
-            url = url.split(" ")
+    @banner_commands.command()
+    @app_checks.mod_and_above()
+    async def add(
+        self,
+        interaction: discord.Interaction,
+        image: typing.Optional[discord.Attachment] = None,
+        url: typing.Optional[str] = None,
+    ):
+        """Add or upload a banner
 
-        for i in url:
-            self.banners.append(await self.verify_url(i))
+        Parameters
+        ----------
+        image: discord.Attachment
+            An image file
+        url: str
+            URL or Link of an image
+        """
+
+        await interaction.response.defer(ephemeral=True)
+
+        if image:
+
+            try:
+                fp = await self.verify_url(url=image.url, byte=True)
+            except commands.BadArgument as ba:
+                return await interaction.edit_original_response(content=str(ba))
+            except Exception as e:
+                raise e
+
+            if fp:
+                banners_channel = interaction.guild.get_channel(self.automated_channel)
+                msg = await banners_channel.send(
+                    file=discord.File(io.BytesIO(fp), filename=image.filename)
+                )
+
+                url = msg.attachments[0].url
+
+        elif url:
+            try:
+                url = await self.verify_url(url=url)
+            except commands.BadArgument as ba:
+                return await interaction.edit_original_response(content=str(ba))
+            except Exception as e:
+                raise e
+
+        else:
+            return await interaction.edit_original_response(
+                content="Required any one of the parameters."
+            )
+
+        self.banners.append(url)
 
         self.banner_db.update_one(
             {"name": "banners"}, {"$set": {"banners": self.banners}}
         )
+        await interaction.edit_original_response(content="Banner added successfully.")
 
-        await ctx.send("Banner added!")
+    @banner_commands.command()
+    @app_checks.mod_and_above()
+    async def rotate(
+        self,
+        interaction: discord.Interaction,
+        duration: typing.Optional[str] = None,
+        stop: typing.Optional[bool] = False,
+    ):
+        """Change server banner rotation duration or stop the rotation
 
-    @mod_and_above()
-    @banner.command()
-    async def rotate(self, ctx: commands.Context, arg: str = None):
+        Parameters
+        ----------
+        duration: str
+            Time (example: 3hr or 1d)
+        stop: bool
+            Weather to stop banner rotation
         """
-        Change server banner rotation time or stop the rotation
-        Usage: banner rotate time/stop
-        """
 
-        if arg is None:
-            raise commands.BadArgument(
-                message='You must provide rotation period or "stop" to stop rotation'
+        if not stop and not duration:
+            return await interaction.response.send_message(
+                "Please provide value for atleast one argument.", ephemeral=True
             )
 
-        time, reason = calc_time([arg, ""])
-
-        if reason == "stop ":
+        if stop:
             self.timed_banner_rotation.cancel()
-            await ctx.message.delete(delay=6)
-            await ctx.send("Banner rotation stopped.", delete_after=6)
-            return
-        if time is None:
-            raise commands.BadArgument(
-                message="Wrong time syntax or did you mean to run rotate stop?"
+            return await interaction.response.send_message(
+                "Banner rotation stopped.", ephemeral=True
+            )
+
+        time, extra = calc_time([duration, ""])
+        if time == 0:
+            return await interaction.response.send_message(
+                "Wrong time syntax.", ephemeral=True
             )
 
         if not self.timed_banner_rotation.is_running():
             self.timed_banner_rotation.start()
 
-        await ctx.message.delete(delay=6)
         self.timed_banner_rotation.change_interval(seconds=time)
-        await ctx.send(
-            f"Banners are rotating every {get_time_string(time)}.", delete_after=6
+        await interaction.response.send_message(
+            f"Banners are rotating every {get_time_string(time)}.", ephemeral=True
         )
 
-    @banner.command()
-    @bot_commands_only()
-    async def suggest(self, ctx: commands.Context, url: typing.Optional[str] = None):
-        """
-        Members can suggest banners to be reviewed by staff
-        Usage: banner suggest url/attachment
-        """
-        automated_channel = self.bot.get_channel(self.automated_channel)
+    # Making this standalone command cause can not override default permissions, and we need only this command to be visible to users.
+    @app_commands.command()
+    @app_commands.default_permissions(send_messages=True)
+    @app_commands.guilds(414027124836532234)
+    @app_commands.checks.cooldown(1, 60, key=lambda i: (i.guild_id, i.user.id))
+    async def banner_suggest(
+        self,
+        interaction: discord.Interaction,
+        image: typing.Optional[discord.Attachment] = None,
+        url: typing.Optional[str] = None,
+    ):
+        """Suggest an image from kurzgesagt for server banner
 
-        if url is None:
-            attachments = ctx.message.attachments
-            if attachments:
-                url = attachments[0].url
-            else:
-                raise commands.BadArgument(
-                    message="You must provide a url or attachment."
-                )
+        Parameters
+        ----------
+        image: discord.Attachment
+            An image file
+        url: str
+            URL or Link of an image
+        """
+        await interaction.response.defer(ephemeral=True)
+        automated_channel = interaction.guild.get_channel(self.automated_channel)
 
-        url = await self.verify_url(url, byte=True)
+        if image:
+            try:
+                url = await self.verify_url(url=image.url, byte=True)
+            except commands.BadArgument as ba:
+                return await interaction.edit_original_response(content=str(ba))
+            except Exception as e:
+                raise e
+
+        elif url:
+            try:
+                url = await self.verify_url(url=url, byte=True)
+            except commands.BadArgument as ba:
+                return await interaction.edit_original_response(content=str(ba))
+            except Exception as e:
+                raise e
+
+        else:
+            return await interaction.edit_original_response(
+                content="Required any one of the parameters."
+            )
 
         file = discord.File(io.BytesIO(url), filename="banner.png")
 
         embed = discord.Embed(color=0xC8A2C8)
         embed.set_author(
-            name=ctx.author.name + "#" + ctx.author.discriminator,
-            icon_url=ctx.author.avatar_url,
+            name=interaction.user.name + "#" + interaction.user.discriminator,
+            icon_url=interaction.user.display_avatar.url,
         )
         embed.set_image(url="attachment://banner.png")
         embed.set_footer(text="banner")
@@ -168,30 +232,46 @@ class Banner(commands.Cog):
         await message.add_reaction("<:kgsYes:955703069516128307>")
         await message.add_reaction("<:kgsNo:955703108565098496>")
 
-        await ctx.send("Banner suggested.", delete_after=4)
-        await ctx.message.delete(delay=4)
+        await interaction.edit_original_response(content="Banner suggested.")
 
-    @mod_and_above()
-    @banner.command()
-    async def change(self, ctx: commands.Context, url: typing.Optional[str] = None):
-        """
-        Change the banner
-        Usage: banner change url/attachment
+    @banner_commands.command()
+    @app_checks.mod_and_above()
+    @app_commands.checks.cooldown(1, 30, key=lambda i: (i.guild_id, i.user.id))
+    async def change(
+        self,
+        interaction: discord.Interaction,
+        image: typing.Optional[discord.Attachment] = None,
+        url: typing.Optional[str] = None,
+    ):
+        """Change server banner
+
+        Parameters
+        ----------
+        image: discord.Attachment
+            An image file
+        url: str
+            URL or Link of an image
         """
         if url is None:
-            attachments = ctx.message.attachments
-            if attachments:
-                url = attachments[0].url
+            if image:
+                url = image.url
             else:
-                raise commands.BadArgument(
-                    message="You must provide a url or attachment."
+                return await interaction.response.send_message(
+                    "You must provide a url or attachment.", ephemeral=True
                 )
 
-        banner = await self.verify_url(url, byte=True)
+        try:
+            banner = await self.verify_url(url, byte=True)
+        except commands.BadArgument as ba:
+            return await interaction.response.send_message(str(ba), ephemeral=True)
+        except Exception as e:
+            raise e
 
-        await ctx.message.delete(delay=4)
-        await ctx.guild.edit(banner=banner)
-        await ctx.send("Server banner changed!", delete_after=4)
+        await interaction.guild.edit(banner=banner)
+
+        await interaction.response.send_message(
+            "Server banner changed!", ephemeral=True
+        )
 
     @tasks.loop()
     async def timed_banner_rotation(self):
@@ -253,5 +333,5 @@ class Banner(commands.Cog):
                         await message.edit(embed=embed, delete_after=6)
 
 
-def setup(bot):
-    bot.add_cog(Banner(bot))
+async def setup(bot):
+    await bot.add_cog(Banner(bot))

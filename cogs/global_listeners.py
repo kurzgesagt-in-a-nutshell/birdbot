@@ -7,22 +7,22 @@ import aiohttp
 import logging
 import random
 import re
-import datetime
 
 from traceback import TracebackException
 
 import discord
 from discord.ext import commands
 from discord.ext.commands import errors
+from discord import app_commands
 
 from birdbot import BirdBot
 
+from utils import app_checks
+from utils.infraction import InfractionList
 from utils.helper import (
     NoAuthorityError,
     DevBotOnly,
     WrongChannel,
-    patreon_only,
-    create_user_infraction,
     is_internal_command,
 )
 
@@ -45,7 +45,7 @@ async def translate_bannsystem(message: discord.Message):
 
     url = "https://translate.birdbot.xyz/translate?"
 
-    #TODO add keys in the future
+    # TODO add keys in the future
     payload = {
         "q": " ### ".join(to_translate),
         "target": "en",
@@ -138,10 +138,10 @@ class GuildLogger(commands.Cog):
             title="Message Edited",
             description=f"Message edited in {before.channel.mention}",
             color=0xEE7600,
-            timestamp=datetime.datetime.utcnow(),
+            timestamp=discord.utils.utcnow(),
         )
         embed.set_author(
-            name=before.author.display_name, icon_url=before.author.avatar_url
+            name=before.author.display_name, icon_url=before.author.display_avatar.url
         )
         embed.add_field(name="Before", value=before.content, inline=False)
         embed.add_field(name="After", value=after.content, inline=False)
@@ -180,18 +180,20 @@ class GuildLogger(commands.Cog):
             title="Message Deleted",
             description=f"Message deleted in {message.channel.mention}",
             color=0xC9322C,
-            timestamp=datetime.datetime.utcnow(),
+            timestamp=discord.utils.utcnow(),
         )
         embed.set_author(
-            name=message.author.display_name, icon_url=message.author.avatar_url
+            name=message.author.display_name, icon_url=message.author.display_avatar.url
         )
         embed.add_field(name="Content", value=message.content)
         search_terms = f"```Deleted in {message.channel.id}"
 
-        latest_logged_delete = await message.guild.audit_logs(
-            limit=1, action=discord.AuditLogAction.message_delete
-        ).flatten()
-        latest_logged_delete = latest_logged_delete[0]
+        latest_logged_delete = [
+            log
+            async for log in message.guild.audit_logs(
+                limit=1, action=discord.AuditLogAction.message_delete
+            )
+        ][0]
 
         self_deleted = False
         if message.author == latest_logged_delete.target:
@@ -229,9 +231,9 @@ class GuildLogger(commands.Cog):
             title="Member joined",
             description=f"{member.name}#{member.discriminator} ({member.id}) {member.mention}",
             color=0x45E65A,
-            timestamp=datetime.datetime.utcnow(),
+            timestamp=discord.utils.utcnow(),
         )
-        embed.set_author(name=member.name, icon_url=member.avatar_url)
+        embed.set_author(name=member.name, icon_url=member.display_avatar.url)
 
         embed.add_field(
             name="Account Created",
@@ -262,9 +264,9 @@ class GuildLogger(commands.Cog):
             title="Member Left",
             description=f"{member.name}#{member.discriminator} ({member.id})",
             color=0xFF0004,
-            timestamp=datetime.datetime.utcnow(),
+            timestamp=discord.utils.utcnow(),
         )
-        embed.set_author(name=member.name, icon_url=member.avatar_url)
+        embed.set_author(name=member.name, icon_url=member.display_avatar.url)
 
         embed.add_field(
             name="Account Created",
@@ -308,9 +310,9 @@ class GuildLogger(commands.Cog):
             title="Nickname changed",
             description=f"{before.name}#{before.discriminator} ({before.id})",
             color=0xFF6633,
-            timestamp=datetime.datetime.utcnow(),
+            timestamp=discord.utils.utcnow(),
         )
-        embed.set_author(name=before.name, icon_url=before.avatar_url)
+        embed.set_author(name=before.name, icon_url=before.display_avatar.url)
         embed.add_field(name="Previous Nickname", value=f"{before.nick}", inline=True)
         embed.add_field(name="Current Nickname", value=f"{after.nick}", inline=True)
 
@@ -362,6 +364,9 @@ class GuildChores(commands.Cog):
     async def on_message(self, message):
         """Remind mods to use correct prefix, alert mod pings etc"""
 
+        if isinstance(message.channel, discord.DMChannel):
+            return
+
         await check_server_memories(message)
         await translate_bannsystem(message)
         if any(
@@ -384,7 +389,8 @@ class GuildChores(commands.Cog):
                 color=0x00FF00,
             )
             embed.set_author(
-                name=message.author.display_name, icon_url=message.author.avatar_url
+                name=message.author.display_name,
+                icon_url=message.author.display_avatar.url,
             )
             embed.set_footer(
                 text="Last 50 messages in the channel are attached for reference"
@@ -400,6 +406,7 @@ class GuildChores(commands.Cog):
             )
 
         if not message.author.bot:
+
             guild = discord.utils.get(self.bot.guilds, id=414027124836532234)
             mod_role = discord.utils.get(guild.roles, id=self.mod_role)
             admin_role = discord.utils.get(guild.roles, id=self.admin_role)
@@ -472,7 +479,7 @@ class GuildChores(commands.Cog):
             async with aiohttp.ClientSession() as session:
                 hook = discord.Webhook.from_url(
                     self.greeting_webhook_url,
-                    adapter=discord.AsyncWebhookAdapter(session),
+                    session=session,
                 )
                 await hook.send(
                     f"Welcome hatchling {member.mention}!\n"
@@ -481,15 +488,19 @@ class GuildChores(commands.Cog):
                     allowed_mentions=discord.AllowedMentions(users=True, roles=True),
                 )
 
+    # TODO: Move to slash
     @commands.command()
     async def translate(self, ctx, msg_id):
         msg = await ctx.channel.fetch_message(msg_id)
         embed = await translate_bannsystem(msg)
         # await ctx.send(embed=embed)
 
-    @patreon_only()
-    @commands.command()
-    async def unenrol(self, ctx):
+    @app_commands.command()
+    @app_checks.patreon_only()
+    @app_commands.checks.cooldown(1, 300, key=lambda i: (i.user.id))
+    async def unenrol(self, interaction: discord.Interaction):
+        """Unenrol from Patron auto join"""
+
         embed = discord.Embed(
             title="We're sorry to see you go",
             description="Are you sure you want to get banned from the server?"
@@ -501,7 +512,7 @@ class GuildChores(commands.Cog):
         )
 
         def check(reaction, user):
-            return user == ctx.author
+            return user == interaction.user
 
         fallback_embed = discord.Embed(
             title="Action Cancelled",
@@ -510,7 +521,8 @@ class GuildChores(commands.Cog):
         )
 
         try:
-            confirm_msg = await ctx.author.send(embed=embed)
+            confirm_msg = await interaction.user.send(embed=embed)
+            await interaction.response.send_message("Please check your DMs.")
             await confirm_msg.add_reaction("<:kgsYes:955703069516128307>")
             await confirm_msg.add_reaction("<:kgsNo:955703108565098496>")
             reaction, user = await self.bot.wait_for(
@@ -521,20 +533,15 @@ class GuildChores(commands.Cog):
 
                 member = discord.utils.get(
                     self.bot.guilds, id=414027124836532234
-                ).get_member(ctx.author.id)
+                ).get_member(interaction.user.id)
 
-                infraction_db = BirdBot.db.Infraction
+                user_infractions = InfractionList.from_user(member)
+                user_infractions.banned_patron = True
+                user_infractions.update()
 
-                inf = infraction_db.find_one({"user_id": ctx.author.id})
-                if inf is None:
-                    create_user_infraction(ctx.author)
-
-                    inf = infraction_db.find_one({"user_id": ctx.author.id})
-                infraction_db.update_one(
-                    {"user_id": ctx.author.id}, {"$set": {"banned_patron": True}}
+                await interaction.user.send(
+                    "Success! You've been banned from the server."
                 )
-
-                await ctx.author.send("Success! You've been banned from the server.")
                 await member.ban(reason="Patron Voluntary Removal")
                 return
             if reaction.emoji.id == 955703108565098496:
@@ -542,8 +549,9 @@ class GuildChores(commands.Cog):
                 return
 
         except discord.Forbidden:
-            await ctx.send(
-                "I can't seem to DM you. please check your privacy settings and try again"
+            await interaction.response.send_message(
+                "I can't seem to DM you. please check your privacy settings and try again",
+                ephemeral=True,
             )
 
         except asyncio.TimeoutError:
@@ -646,7 +654,7 @@ class Errors(commands.Cog):
             await channel.send(embed=embed, file=file)
 
 
-def setup(bot):
-    bot.add_cog(Errors(bot))
-    bot.add_cog(GuildChores(bot))
-    bot.add_cog(GuildLogger(bot))
+async def setup(bot):
+    await bot.add_cog(Errors(bot))
+    await bot.add_cog(GuildChores(bot))
+    await bot.add_cog(GuildLogger(bot))

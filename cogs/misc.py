@@ -1,18 +1,24 @@
 import logging
 import asyncio
 import json
+import discord
 import re
 
+<<<<<<< HEAD
 import demoji
 import discord
+=======
+>>>>>>> dpy2b-merge
 import pymongo
 
 # Do not import panda for VM.
 # import pandas as pd
+import discord
 from discord.ext import commands
+from discord import app_commands
 
+from utils import app_checks
 from utils.helper import role_and_above, bot_commands_only
-
 
 # Mongo schema to store intros
 # {
@@ -242,6 +248,7 @@ class Misc(commands.Cog):
             )
             await ctx.send("Success.")
 
+    # TODO: Move to slash
     @commands.command()
     @commands.is_owner()
     async def mod_intros(self, ctx):
@@ -271,6 +278,7 @@ class Misc(commands.Cog):
             except pymongo.errors.DuplicateKeyError:
                 pass
 
+<<<<<<< HEAD
     @bot_commands_only()
     @commands.command(aliases=["bg", "bigemoji", "bigemote"])
     async def big_emote(self, ctx, *args):
@@ -290,6 +298,35 @@ class Misc(commands.Cog):
                 emoji = (re.findall(r"<:\w+:(\d{17,19})>", str(args[0]))[0] + ".png")
 
             await ctx.send("https://cdn.discordapp.com/emojis/" + str(emoji))
+=======
+    @app_commands.command()
+    @app_commands.guilds(414027124836532234)
+    @app_commands.checks.cooldown(1, 10)
+    @app_checks.bot_commands_only()
+    async def big_emote(self, interaction: discord.Interaction, emoji: str):
+        """Get image for server emote
+
+        Parameters
+        ----------
+        emoji: str
+            Discord Emoji (only use in #bot-commands)
+        """
+        emojis = []
+
+        if re.match(r"<a:\w+:(\d{17,19})>", str(emoji)):
+            emojis.append(re.findall(r"<a:\w+:(\d{17,19})>", str(emoji))[0] + ".gif")
+        elif re.match(r"<:\w+:(\d{17,19})>", str(emoji)):
+            emojis.append(re.findall(r"<:\w+:(\d{17,19})>", str(emoji))[0] + ".png")
+        if len(emojis) == 0:
+            await interaction.response.send_message(
+                "Please send an emoji that is not a default emoji", ephemeral=True
+            )
+        else:
+            for e in emojis:
+                await interaction.response.send_message(
+                    "https://cdn.discordapp.com/emojis/" + str(e)
+                )
+>>>>>>> dpy2b-merge
 
     @commands.Cog.listener()
     async def on_reaction_add(self, reaction, user):
@@ -318,5 +355,5 @@ class Misc(commands.Cog):
                 )
 
 
-def setup(bot):
-    bot.add_cog(Misc(bot))
+async def setup(bot):
+    await bot.add_cog(Misc(bot))

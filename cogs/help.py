@@ -3,8 +3,9 @@ import logging
 
 import discord
 from discord.ext import commands
+from discord import app_commands
 
-from utils.helper import bot_commands_only
+from utils import app_checks
 
 
 class Help(commands.Cog):
@@ -17,65 +18,85 @@ class Help(commands.Cog):
     async def on_ready(self):
         self.logger.info("loaded Help")
 
-    @commands.command(aliases=["h"])
-    @bot_commands_only()
-    async def help(self, ctx: commands.Context, *, cmnd: str = None):
+    # TODO: Convert the output to embed or some UI
+    # TODO: Remove mod_and_above and default_permission check.
+    @app_commands.command()
+    @app_checks.mod_and_above()
+    @app_commands.default_permissions(manage_messages=True)
+    @app_commands.checks.cooldown(
+        1,
+        10,
+    )
+    async def help(self, interaction: discord.Interaction):
         """
-        Display help. \nUsage: help command_name
+        Display help (Incomplete command)
         """
 
-        cogs = list(self.bot.cogs)
-        cogs.remove("Dev")
-        cogs.remove("Errors")
-        cogs.remove("GuildLogger")
-        cogs.remove("Smfeed")
+        await interaction.response.defer(ephemeral=True)
 
-        if cmnd is None:
-            embed = discord.Embed(
-                title="Kurzbot Help",
-                description=f"To see more info do help [command].",
-                color=discord.Color.green(),
-                timestamp=datetime.datetime.utcnow(),
-            )
-            for i in cogs:
-                cog = self.bot.get_cog(i)
-                cmd_list = []
-                for command in cog.walk_commands():
-                    if not command.hidden:
-                        if command.parent is None:
-                            cmd_list.append(f"`{command.name}`")
+        command_tree_global = self.bot.tree.get_commands()
+        command_tree_guild = self.bot.tree.get_commands(guild=interaction.guild)
+
+        cmds = []
+
+        for cmd in command_tree_global:
+            if isinstance(cmd, discord.app_commands.commands.Command):
+                cmds.append(cmd.name)
+
+            elif isinstance(cmd, discord.app_commands.commands.Group):
+                for c in cmd.commands:
+                    cmds.append(f"{cmd.name} {c.name}")
+
+        for cmd in command_tree_guild:
+            if isinstance(cmd, discord.app_commands.commands.Command):
+                if cmd.default_permissions and cmd.default_permissions.manage_messages:
+                    if interaction.user.top_role >= interaction.guild.get_role(
+                        414092550031278091
+                    ):
+                        cmds.append(cmd.name)
+                    else:
+                        continue
+                else:
+                    cmds.append(cmd.name)
+
+            elif isinstance(cmd, discord.app_commands.commands.Group):
+                for c in cmd.commands:
+                    if cmd.default_permissions:
+                        if cmd.default_permissions.manage_messages:
+                            if interaction.user.top_role >= interaction.guild.get_role(
+                                414092550031278091
+                            ):
+                                cmds.append(f"{cmd.name} {c.name}")
+                            else:
+                                continue
                         else:
-                            cmd_list.append(f"`{command.parent.name} {command.name}`")
+                            cmds.append(f"{cmd.name} {c.name}")
 
-                embed.add_field(name=i, value="\n".join(cmd_list))
+                    elif c.default_permissions:
+                        if c.default_permissions.manage_messages:
+                            if interaction.user.top_role >= interaction.guild.get_role(
+                                414092550031278091
+                            ):
+                                cmds.append(f"{cmd.name} {c.name}")
+                            else:
+                                continue
+                        else:
+                            cmds.append(f"{cmd.name} {c.name}")
 
-            return await ctx.send(embed=embed)
+        await interaction.edit_original_response(content=f"Commands: {' '.join(cmds)}")
 
-        else:
-            c = self.bot.get_command(cmnd)
-            if c is not None and c.cog_name in cogs:
-                command = self.bot.get_command(cmnd)
-                embed = discord.Embed(
-                    title=command.name,
-                    description=f"```{command.help}```",
-                    color=discord.Color.green(),
-                    timestamp=datetime.datetime.utcnow(),
-                )
-                if command.aliases:
-                    embed.add_field(
-                        name="Alias",
-                        value=f'```{", ".join(command.aliases)}```',
-                        inline=False,
-                    )
-                return await ctx.send(embed=embed)
-
-    @commands.command()
-    async def ping(self, ctx: commands.Context):
+    @app_commands.command()
+    @app_commands.guild_only()
+    @app_commands.checks.cooldown(
+        1,
+        10,
+    )
+    async def ping(self, interaction: discord.Interaction):
         """
-        Ping Pong
+        Ping Pong 🏓
         """
-        await ctx.send(f"{int(self.bot.latency * 1000)} ms")
+        await interaction.response.send_message(f"{int(self.bot.latency * 1000)} ms")
 
 
-def setup(bot):
-    bot.add_cog(Help(bot))
+async def setup(bot):
+    await bot.add_cog(Help(bot))

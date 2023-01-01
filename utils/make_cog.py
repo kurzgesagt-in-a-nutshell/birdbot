@@ -20,8 +20,8 @@ class {''.join(name.title().split())}(commands.Cog):
         await ctx.send('thing')
     
 
-def setup(bot):
-    bot.add_cog({''.join(name.title().split())}(bot))
+async def setup(bot):
+    await bot.add_cog({''.join(name.title().split())}(bot))
 
 """
 f = open(f"cogs/{'_'.join(name.casefold().split())}.py", "w+")
