@@ -1,14 +1,9 @@
 import logging
 import asyncio
 import json
-import discord
 import re
 
-<<<<<<< HEAD
 import demoji
-import discord
-=======
->>>>>>> dpy2b-merge
 import pymongo
 
 # Do not import panda for VM.
@@ -278,27 +273,6 @@ class Misc(commands.Cog):
             except pymongo.errors.DuplicateKeyError:
                 pass
 
-<<<<<<< HEAD
-    @bot_commands_only()
-    @commands.command(aliases=["bg", "bigemoji", "bigemote"])
-    async def big_emote(self, ctx, *args):
-        if len(args) > 1:
-            ctx.send("Please only send one emoji at a time")
-
-        if len(demoji.findall_list(ctx.message.content)) > 0:
-            code = str(args[0].encode('unicode-escape')
-                ).replace('U000','-').replace('\\','').replace('\'','').replace('u','-')[2:]
-            name = demoji.replace_with_desc(args[0]).replace(' ','-').replace(":","").replace("_","-")
-            await ctx.send("https://emojipedia-us.s3.dualstack.us-west-1.amazonaws.com/thumbs/120/twitter/322/" + name\
-                           + "_" + code + ".png")
-        else:
-            if re.match(r"<a:\w+:(\d{17,19})>", str(args[0])):
-                emoji = (re.findall(r"<a:\w+:(\d{17,19})>", str(args[0]))[0] + ".gif")
-            elif re.match(r"<:\w+:(\d{17,19})>", str(args[0])):
-                emoji = (re.findall(r"<:\w+:(\d{17,19})>", str(args[0]))[0] + ".png")
-
-            await ctx.send("https://cdn.discordapp.com/emojis/" + str(emoji))
-=======
     @app_commands.command()
     @app_commands.guilds(414027124836532234)
     @app_commands.checks.cooldown(1, 10)
@@ -326,7 +300,6 @@ class Misc(commands.Cog):
                 await interaction.response.send_message(
                     "https://cdn.discordapp.com/emojis/" + str(e)
                 )
->>>>>>> dpy2b-merge
 
     @commands.Cog.listener()
     async def on_reaction_add(self, reaction, user):
