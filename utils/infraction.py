@@ -154,7 +154,11 @@ class InfractionList:
     Represents a list of infractions for a user
     """
 
-    def __init__(self, user: discord.User, data={}) -> None:
+    def __init__(
+        self, user: discord.User, data: typing.Optional[typing.Dict] = None
+    ) -> None:
+        if data is None:
+            data = {}
 
         self._user = user
 
