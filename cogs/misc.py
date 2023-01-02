@@ -1,9 +1,9 @@
 import logging
 import asyncio
 import json
-import discord
 import re
 
+import demoji
 import pymongo
 
 # Do not import panda for VM.
