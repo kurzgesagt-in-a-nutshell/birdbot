@@ -196,7 +196,7 @@ class Dev(commands.Cog):
             await ctx.send(f"```\n{log}\n```")
 
     @commands.command()
-    @devs_only()
+    @commands.is_owner()
     @mainbot_only()
     async def launch(self, ctx: commands.Context, instance: str):
         """Spawn child process of alpha/beta bot instance on the VM, only works on main bot"""
