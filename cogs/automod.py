@@ -7,7 +7,6 @@ import re
 import asyncio
 import io
 import demoji
-from better_profanity import profanity
 
 import discord
 from discord import app_commands
@@ -45,6 +44,7 @@ class Filter(commands.Cog):
             "filter"
         ]
         self.general_list_regex = self.generate_regex(self.general_list)
+
         self.humanities_list_regex = self.generate_regex(self.humanities_list)
 
     @commands.Cog.listener()
@@ -201,8 +201,8 @@ class Filter(commands.Cog):
         text: str
             Word or phrase to check
         """
-        file_list = self.return_list(list_type)
-        regex_list = self.return_regex(list_type)
+        file_list = copy.copy(self.return_list(list_type))
+        regex_list = copy.copy(self.return_regex(list_type))
         word_list = file_list
         if list_type == "humanities":
             word_list += self.general_list
@@ -399,13 +399,13 @@ class Filter(commands.Cog):
                     message_clean[i.start() + 1 - tracker : i.end() - 1 - tracker],
                 )
                 tracker = tracker + 2
-        # Chagnes letter emojis to normal ascii ones
+        # Changes letter emojis to normal ascii ones
         message_clean = self.convert_regional(message_clean)
         # changes cyrllic letters into ascii ones
         message_clean = self.convert_letters(message_clean)
         # find all question marks in message
         indexes = [x.start() for x in re.finditer(r"\?", message_clean)]
-        # get rid of all other non ascii charcters
+        # get rid of all other non ascii characters
         message_clean = demoji.replace(message_clean, "*")
         message_clean = (
             str(message_clean)
@@ -535,11 +535,11 @@ class Filter(commands.Cog):
         return False
 
     async def check_message(self, message):
-        word_list = self.return_list(message.channel.name)
-        regex_list = self.return_list(message.channel.name)
+        word_list = copy.copy(self.return_list(message.channel.name))
+        regex_list = copy.copy(self.return_regex(message.channel.name))
         if word_list is None:
-            word_list = self.general_list
-            regex_list = self.general_list_regex
+            word_list = copy.copy(self.general_list)
+            regex_list = copy.copy(self.general_list_regex)
 
         if message.channel.name == "humanities":
             word_list += self.general_list
