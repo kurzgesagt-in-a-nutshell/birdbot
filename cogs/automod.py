@@ -68,6 +68,7 @@ class Filter(commands.Cog):
             return self.general_list
         elif listtype == "humanities":
             return self.humanities_list
+
     def return_regex(self, listtype):
         if listtype == "whitelist":
             return ""
@@ -75,6 +76,7 @@ class Filter(commands.Cog):
             return self.general_list_regex
         elif listtype == "humanities":
             return self.humanities_list_regex
+
     # Updates filter list from Mongo based on listtype
     async def updatelist(self, listtype):
         if listtype == "whitelist":
@@ -208,7 +210,7 @@ class Filter(commands.Cog):
             word_list += self.general_list
             regex_list += self.general_list_regex
 
-        profanity = self.check_profanity(word_list,regex_list, text)
+        profanity = self.check_profanity(word_list, regex_list, text)
         if profanity:
             await interaction.response.send_message(profanity)
         else:
@@ -363,7 +365,6 @@ class Filter(commands.Cog):
             )
             await self.logging_channel.send(embed=embed)
 
-
     def is_member_excluded(self, author):
         rolelist = [
             414092550031278091,  # mod
@@ -378,8 +379,7 @@ class Filter(commands.Cog):
             return True
         return False
 
-
-    def check_profanity(self, ref_word_list,regex_list, message_clean):
+    def check_profanity(self, ref_word_list, regex_list, message_clean):
         # filter out bold and italics but keep *
         indexes = re.finditer("(\*\*.*?\*\*)", message_clean)
         if indexes:
@@ -428,17 +428,21 @@ class Filter(commands.Cog):
                 for e in found_items:
                     dirty_list.append(e)
         clean_list = []
-        #test to see if any word is within a already existing word
+        # test to see if any word is within a already existing word
         for test_word in dirty_list:
             found = False
             for to_match in dirty_list:
-                if test_word[0] in to_match[0] and len(test_word[0]) < len(to_match[0]) and test_word[1] >= \
-                        to_match[1] and test_word[2] < to_match[2]:
+                if (
+                    test_word[0] in to_match[0]
+                    and len(test_word[0]) < len(to_match[0])
+                    and test_word[1] >= to_match[1]
+                    and test_word[2] < to_match[2]
+                ):
                     found = True
-                    break;
+                    break
             if not found:
                 clean_list.append(test_word)
-        #does the final check to see if any word is not in the whitelist
+        # does the final check to see if any word is not in the whitelist
         for bad_word in clean_list:
             if not bad_word in self.white_list:
                 return clean_list
@@ -546,7 +550,7 @@ class Filter(commands.Cog):
             regex_list += self.general_list_regex
 
         # run checks
-        is_profanity = self.check_profanity(word_list,regex_list, message.content)
+        is_profanity = self.check_profanity(word_list, regex_list, message.content)
         if is_profanity:
             await self.execute_action_on_message(
                 message,
@@ -726,7 +730,7 @@ class Filter(commands.Cog):
         return to_return
 
     def generate_regex(self, words):
-        joining_chars = r'[ _\-\+\.\*!@#$%^&():\'"]*'
+        joining_chars = r'[ _\-\+\.\*!@#$%^&():;\[\]\}\{\'"]*'
         replacement = {
             "a": r"4a\@\#",
             "b": r"b\*",
