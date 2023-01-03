@@ -285,22 +285,27 @@ class Misc(commands.Cog):
         emoji: str
             Discord Emoji (only use in #bot-commands)
         """
+        """
         if len(args) > 1:
             ctx.send("Please only send one emoji at a time")
-
-        if len(demoji.findall_list(ctx.message.content)) > 0:
-            code = str(args[0].encode('unicode-escape')
-                ).replace('U000','-').replace('\\','').replace('\'','').replace('u','-')[2:]
-            name = demoji.replace_with_desc(args[0]).replace(' ','-').replace(":","").replace("_","-")
-            await ctx.send("https://emojipedia-us.s3.dualstack.us-west-1.amazonaws.com/thumbs/120/twitter/322/" + name\
+        """
+        if len(demoji.findall_list(emoji)) == 1:
+            code = str(emojis.encode('unicode-escape')).replace('U000','-').replace('\\','').replace('\'','').replace('u','-')[2:]
+            name = demoji.replace_with_desc(emoji).replace(' ','-').replace(":","").replace("_","-")
+            await interaction.response.send_message("https://emojipedia-us.s3.dualstack.us-west-1.amazonaws.com/thumbs/120/twitter/322/" + name\
                            + "_" + code + ".png")
+        elif len(demoji.findall_list(emoji)) > 1:
+            await interaction.response.send_message("please only send one emoji")
         else:
-            if re.match(r"<a:\w+:(\d{17,19})>", str(args[0])):
-                emoji = (re.findall(r"<a:\w+:(\d{17,19})>", str(args[0]))[0] + ".gif")
-            elif re.match(r"<:\w+:(\d{17,19})>", str(args[0])):
-                emoji = (re.findall(r"<:\w+:(\d{17,19})>", str(args[0]))[0] + ".png")
-
-            await ctx.send("https://cdn.discordapp.com/emojis/" + str(emoji))
+            if re.match(r"<a:\w+:(\d{17,19})>", str(emoji)):
+                emoji = str(re.findall(r"<a:\w+:(\d{17,19})>", str(emoji))[0]) + ".gif"
+                await interaction.response.send_message("https://cdn.discordapp.com/emojis/" + str(emoji))
+            elif re.match(r"<:\w+:(\d{17,19})>", str(emoji)):
+                print("png")
+                emoji = str(re.findall(r"<:\w+:(\d{17,19})>", str(emoji))[0]) + ".png"
+                await interaction.response.send_message("https://cdn.discordapp.com/emojis/" + str(emoji))
+            else:
+                await interaction.response.send_message("Could not process this emoji")
 
     @commands.Cog.listener()
     async def on_reaction_add(self, reaction, user):
