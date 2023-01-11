@@ -463,4 +463,4 @@ class InfractionList:
         self._last_updated = discord.utils.utcnow()
         data = self.to_dict()
 
-        INFRACTION_DB.update_one({"user_id": self._user_id}, {"$set": data})
+        INFRACTION_DB.update_one({"user_id": self._user_id}, {"$set": data}, upsert=True)
