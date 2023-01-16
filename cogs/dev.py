@@ -5,6 +5,7 @@ import math
 import textwrap
 import traceback
 import os
+import typing
 
 from contextlib import redirect_stdout
 from discord.ext.commands.errors import ExtensionNotFound
@@ -14,7 +15,9 @@ from git.cmd import Git
 
 import discord
 from discord.ext import commands
+from discord import app_commands
 
+from utils import app_checks
 from utils.helper import mod_and_above, devs_only, mainbot_only
 
 
@@ -41,36 +44,37 @@ class Dev(commands.Cog):
             return f"```py\n{e.__class__.__name__}: {e}\n```"
         return f'```py\n{e.text}{"^":>{e.offset}}\n{e.__class__.__name__}: {e}```'
 
-    @commands.group(hidden=True, aliases=["presence"])
-    @devs_only()
-    async def activity(self, ctx: commands.Context):
-        """Sets the bots status"""
-        pass
+    @app_commands.command()
+    @app_commands.guilds(414027124836532234)
+    @app_commands.default_permissions(manage_messages=True)
+    @app_checks.mod_and_above()
+    async def activity(
+        self,
+        interaction: discord.Interaction,
+        activity_type: typing.Literal["listening", "watching", "playing"],
+        message: str,
+    ):
+        """Set bot activity status
 
-    async def change_activity(self, ctx: commands.Context, activity: discord.Activity):
-        await ctx.bot.change_presence(activity=activity)
-        await ctx.send("presence changed.")
+        Parameters
+        ----------
+        activity_type: str
+            Any of "listening", "watching", "playing"
+        message: str
+            Message to display after activity_type
 
-    @activity.command(aliases=["l"])
-    @devs_only()
-    async def listening(self, ctx: commands.Context, *, text: str):
-        """Set listening activity"""
-        audio = discord.Activity(name=text, type=discord.ActivityType.listening)
-        await self.change_activity(ctx, audio)
+        """
+        activities = {
+            "listening": discord.ActivityType.listening,
+            "watching": discord.ActivityType.watching,
+            "playing": discord.ActivityType.playing,
+        }
 
-    @activity.command(aliases=["w"])
-    @devs_only()
-    async def watching(self, ctx: commands.Context, *, text: str):
-        """Set watching activity"""
-        video = discord.Activity(name=text, type=discord.ActivityType.watching)
-        await self.change_activity(ctx, video)
+        await self.bot.change_presence(
+            activity=discord.Activity(name=message, type=activities[activity_type])
+        )
 
-    @activity.command(aliases=["p"])
-    @devs_only()
-    async def playing(self, ctx: commands.Context, *, text: str):
-        """Set playing activity"""
-        game = discord.Activity(name=text, type=discord.ActivityType.playing)
-        await self.change_activity(ctx, game)
+        await interaction.response.send_message("Activity changed.", ephemeral=True)
 
     @commands.is_owner()
     @commands.command(pass_context=True, name="eval")
@@ -149,11 +153,11 @@ class Dev(commands.Cog):
         """Reload a module"""
         try:
             try:
-                self.bot.unload_extension(module_name)
+                await self.bot.unload_extension(module_name)
             except discord.ext.commands.errors.ExtensionNotLoaded as enl:
                 await ctx.send(f"Module not loaded. Trying to load it.", delete_after=6)
 
-            self.bot.load_extension(module_name)
+            await self.bot.load_extension(module_name)
             await ctx.send("Module Loaded")
 
         except ExtensionNotFound as enf:
@@ -192,7 +196,7 @@ class Dev(commands.Cog):
             await ctx.send(f"```\n{log}\n```")
 
     @commands.command()
-    @devs_only()
+    @commands.is_owner()
     @mainbot_only()
     async def launch(self, ctx: commands.Context, instance: str):
         """Spawn child process of alpha/beta bot instance on the VM, only works on main bot"""
@@ -234,11 +238,39 @@ class Dev(commands.Cog):
         message = _g.pull("origin", "master")
         await ctx.send(f"```{message}```")
 
-    @commands.command()
-    @mod_and_above()
-    async def send(self, ctx, channel: discord.TextChannel, *, msg: str):
+    @app_commands.command()
+    @app_commands.default_permissions(manage_messages=True)
+    @app_checks.mod_and_above()
+    async def send(
+        self,
+        interaction: discord.Interaction,
+        msg: str,
+        channel: discord.TextChannel = None,
+    ):
+        if not channel:
+            channel = interaction.channel
         await channel.send(msg)
+        await interaction.response.send_message("sent", ephemeral=True)
+
+    @commands.command()
+    @devs_only()
+    async def sync_apps(self, ctx: commands.Context):
+
+        await ctx.bot.tree.sync()
+        await ctx.bot.tree.sync(guild=discord.Object(414027124836532234))
+        await ctx.reply("Synced local guild commands")
+
+    @commands.command()
+    @devs_only()
+    async def clear_apps(self, ctx: commands.Context):
+
+        ctx.bot.tree.clear_commands(guild=discord.Object(414027124836532234))
+        ctx.bot.tree.clear_commands(guild=None)
+        await ctx.bot.tree.sync(guild=discord.Object(414027124836532234))
+        await ctx.bot.tree.sync()
+
+        await ctx.send("cleared all commands")
 
 
-def setup(bot):
-    bot.add_cog(Dev(bot))
+async def setup(bot):
+    await bot.add_cog(Dev(bot))
