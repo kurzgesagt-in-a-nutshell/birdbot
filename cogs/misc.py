@@ -60,7 +60,7 @@ class Misc(commands.Cog):
         )
         msg = await intro_channel.fetch_message(intro["message_id"])
         embed = msg.embeds[0]
-        embed.set_author(name=after.display_name, icon_url=after.avatar_url)
+        embed.set_author(name=after.display_name, icon_url=after.avatar.url)
         await msg.edit(embed=embed)
 
     @commands.Cog.listener()
@@ -95,7 +95,7 @@ class Misc(commands.Cog):
         )
         footer_icon = self.config["roleicons"][f"{user.top_role.id}"]
         embed = discord.Embed(description=description, color=user.top_role.color)
-        embed.set_author(name=user.display_name, icon_url=user.avatar_url)
+        embed.set_author(name=user.display_name, icon_url=user.avatar.url)
         embed.set_footer(text=footer_name, icon_url=footer_icon)
         embed.set_thumbnail(url=bird_icon)
         return embed
@@ -273,6 +273,7 @@ class Misc(commands.Cog):
                 )
             except pymongo.errors.DuplicateKeyError:
                 pass
+
 
     @app_commands.command()
     @app_commands.guilds(414027124836532234)
