@@ -111,6 +111,9 @@ venv/
 ENV/
 env.bak/
 venv.bak/
+bin/
+lib64
+pyvenv.*
 .vscode
 .idea
 

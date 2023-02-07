@@ -34,6 +34,7 @@ class Misc(commands.Cog):
             915629257470906369,
             414029841101225985,
             414092550031278091,
+            1058243220817063936,
             681812574026727471,
         )
         with open("config.json", "r") as f:
@@ -80,7 +81,7 @@ class Misc(commands.Cog):
         )
         msg = await intro_channel.fetch_message(intro["message_id"])
         embed = msg.embeds[0]
-        embed.set_author(name=member.display_name, icon_url=after.avatar_url)
+        embed.set_author(name=member.display_name, icon_url=after.avatar.url)
         await msg.edit(embed=embed)
 
     def parse_info(self, user_id, tz_text, bio, bird_icon):
