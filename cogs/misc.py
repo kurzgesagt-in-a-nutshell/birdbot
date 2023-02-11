@@ -291,10 +291,12 @@ class Misc(commands.Cog):
         if len(args) > 1:
             ctx.send("Please only send one emoji at a time")
         """
+        print(len(demoji.findall_list(emoji)))
         if len(demoji.findall_list(emoji)) == 1:
-            code = str(emojis.encode('unicode-escape')).replace('U000','-').replace('\\','').replace('\'','').replace('u','-')[2:]
+            code = str(emoji.encode('unicode-escape')).replace('U000','-').replace('\\','').replace('\'','').replace('u','-')[2:]
+            print(code)
             name = demoji.replace_with_desc(emoji).replace(' ','-').replace(":","").replace("_","-")
-            await interaction.response.send_message("https://emojipedia-us.s3.dualstack.us-west-1.amazonaws.com/thumbs/120/twitter/322/" + name\
+            await interaction.response.send_message("https://em-content.zobj.net/thumbs/160/twitter/322/" + name\
                            + "_" + code + ".png")
         elif len(demoji.findall_list(emoji)) > 1:
             await interaction.response.send_message("please only send one emoji")
