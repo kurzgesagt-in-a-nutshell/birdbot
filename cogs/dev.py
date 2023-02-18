@@ -176,6 +176,29 @@ class Dev(commands.Cog):
         await ctx.send("Bravo 6 going dark.")
         await self.bot.close()
 
+    @commands.command(hidden=True)
+    @mod_and_above()
+    async def restart(self, ctx: commands.Context, instance: str):
+        """restarts sub processes"""
+        if instance not in ("songbirdalpha", "songbirdbeta", "twitterfeed", "youtubefeed"):
+            raise commands.BadArgument("Instance argument must be songbirdalpha, songbirdbeta, twitterfeed, youtubefeed")
+        process={
+            "songbirdalpha": "songbirda.service",
+            "songbirdbeta": "songbirdb.service",
+            "twitterfeed": "twitter_feed.service",
+            "youtubefeed": "youtube_feed.service"
+        }
+        try:
+            child = await asyncio.create_subprocess_shell("systemctl restart " + process[instance],
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.STDOUT,
+            )
+            await child.wait()
+            await ctx.send("process restarted")
+        except Exception as e:
+            await ctx.send("could not restart process")
+            await ctx.send(e.__str__())
+
     @devs_only()
     @commands.command(aliases=["logs"], hidden=True)
     async def log(self, ctx: commands.Context, lines: int = 10):
