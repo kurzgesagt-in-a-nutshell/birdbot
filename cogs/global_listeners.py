@@ -536,7 +536,7 @@ class GuildChores(commands.Cog):
                 ).get_member(interaction.user.id)
 
                 user_infractions = InfractionList.from_user(member)
-                user_infractions.banned_patron = True
+                user_infractions.banned_patreon = True
                 user_infractions.update()
 
                 await interaction.user.send(

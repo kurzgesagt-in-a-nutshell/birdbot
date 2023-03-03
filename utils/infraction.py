@@ -230,14 +230,14 @@ class InfractionList:
         return user_infractions
 
     @property
-    def banned_patron(self) -> bool:
+    def banned_patreon(self) -> bool:
         """
         A property detailing if the user is banned through unenrol
         """
 
         return self._banned_patreon
 
-    @banned_patron.setter
+    @banned_patreon.setter
     def banned_patreon(self, value: bool):
         """
         Updates the property detailing if the user is banned through unenrol
