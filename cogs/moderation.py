@@ -662,6 +662,17 @@ class Moderation(commands.Cog):
                 "user could not be warned due to your clearance"
             )
 
+        # Collect infraction information
+        # check for final warn
+        # if final create FinalReconfirmation
+        # wait view result (using wait https://discordpy.readthedocs.io/en/stable/interactions/api.html#discord.ui.View.wait)
+        # the button result pressed indicates the action taken
+        # there are three actions.. Continue with action, 10 min timeout, cancel
+        # the user has 1 minute to chose and default action is cancel
+        # if cancel then return
+        # if continue then pass through
+        # if 10 minute timeout then timeout and return
+
         # TODO make this more modular
         default_msg = "(Note: Accumulation of warns may lead to permanent removal from the server)"
         final_msg = "**(This is your final warning, future infractions will lead to a non negotiable ban from the server)**"

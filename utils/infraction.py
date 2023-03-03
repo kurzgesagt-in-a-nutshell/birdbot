@@ -230,6 +230,12 @@ class InfractionList:
         return user_infractions
 
     @property
+    def on_final(self) -> bool:
+        """A value indicating whether the user is on final warn or not"""
+
+        return self._final
+
+    @property
     def banned_patron(self) -> bool:
         """
         A property detailing if the user is banned through unenrol
