@@ -17,7 +17,7 @@ import discord
 from discord.ext import commands
 from discord import app_commands
 
-from utils import app_checks
+from utils import app_checks, helper
 from utils.helper import mod_and_above, devs_only, mainbot_only
 
 
@@ -274,6 +274,17 @@ class Dev(commands.Cog):
             channel = interaction.channel
         await channel.send(msg)
         await interaction.response.send_message("sent", ephemeral=True)
+
+        logging_channel = discord.utils.get(
+            interaction.guild.channels, id=543884016282239006
+        )
+        embed = helper.create_embed(
+            author=interaction.user,
+            action="ran send command",
+            extra="Message sent: {}".format(msg),
+            color=discord.Color.blurple(),
+        )
+        await logging_channel.send(embed=embed)
 
     @commands.command()
     @devs_only()
