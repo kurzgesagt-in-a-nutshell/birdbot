@@ -235,15 +235,14 @@ class InfractionList:
 
         return self._final
 
-    @property
-    def banned_patron(self) -> bool:
+    def banned_patreon(self) -> bool:
         """
         A property detailing if the user is banned through unenrol
         """
 
         return self._banned_patreon
 
-    @banned_patron.setter
+    @banned_patreon.setter
     def banned_patreon(self, value: bool):
         """
         Updates the property detailing if the user is banned through unenrol
@@ -469,4 +468,4 @@ class InfractionList:
         self._last_updated = discord.utils.utcnow()
         data = self.to_dict()
 
-        INFRACTION_DB.update_one({"user_id": self._user_id}, {"$set": data})
+        INFRACTION_DB.update_one({"user_id": self._user_id}, {"$set": data}, upsert=True)

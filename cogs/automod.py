@@ -7,7 +7,6 @@ import re
 import asyncio
 import io
 import demoji
-from better_profanity import profanity
 
 import discord
 from discord import app_commands
@@ -32,10 +31,6 @@ class Filter(commands.Cog):
 
         self.logging_channel_id = self.config_json["logging"]["automod_logging_channel"]
         self.logging_channel = None
-
-        self.humanities_list = []
-        self.general_list = []
-        self.white_list = []
         self.message_history_list = {}
         self.message_history_lock = asyncio.Lock()
 
@@ -48,6 +43,9 @@ class Filter(commands.Cog):
         self.white_list = self.bot.db.filterlist.find_one({"name": "whitelist"})[
             "filter"
         ]
+        self.general_list_regex = self.generate_regex(self.general_list)
+
+        self.humanities_list_regex = self.generate_regex(self.humanities_list)
 
     @commands.Cog.listener()
     async def on_ready(self):
@@ -63,13 +61,21 @@ class Filter(commands.Cog):
     )
 
     # return the required list
-    def returnlist(self, listtype):
+    def return_list(self, listtype):
         if listtype == "whitelist":
             return self.white_list
         elif listtype == "general":
             return self.general_list
         elif listtype == "humanities":
             return self.humanities_list
+
+    def return_regex(self, listtype):
+        if listtype == "whitelist":
+            return ""
+        elif listtype == "general":
+            return self.general_list_regex
+        elif listtype == "humanities":
+            return self.humanities_list_regex
 
     # Updates filter list from Mongo based on listtype
     async def updatelist(self, listtype):
@@ -82,11 +88,13 @@ class Filter(commands.Cog):
             self.general_list = self.bot.db.filterlist.find_one({"name": "general"})[
                 "filter"
             ]
+            self.general_list_regex = self.generate_regex(self.general_list)
 
         elif listtype == "humanities":
             self.humanities_list = self.bot.db.filterlist.find_one(
                 {"name": "humanities"}
             )["filter"]
+            self.humanities_list_regex = self.generate_regex(self.humanities_list)
 
     @filter_commands.command()
     @app_checks.mod_and_above()
@@ -102,7 +110,7 @@ class Filter(commands.Cog):
         list_type: str
             Type of list
         """
-        filelist = self.returnlist(list_type)
+        filelist = self.return_list(list_type)
         await interaction.response.send_message(
             f"These are the words which are in the {list_type}{'blacklist' if list_type != 'whitelist' else ''}",
             file=discord.File(
@@ -127,8 +135,8 @@ class Filter(commands.Cog):
         word: str
             Word or regex to add in the selected list
         """
-        filelist = self.returnlist(list_type)
-        if word in filelist:
+        file_list = self.return_list(list_type)
+        if word in file_list:
             await interaction.response.send_message(
                 f"`{word}` already exists in {list_type}{' list' if list_type != 'whitelist' else ''}.",
                 ephemeral=True,
@@ -161,7 +169,7 @@ class Filter(commands.Cog):
         word: str
             Word or regex to remove in the selected list
         """
-        filelist = self.returnlist(list_type)
+        filelist = self.return_list(list_type)
         if word not in filelist:
             await interaction.response.send_message(
                 f"`{word}` doesn't exists in {list_type}{' list' if list_type != 'whitelist' else ''}.",
@@ -195,13 +203,14 @@ class Filter(commands.Cog):
         text: str
             Word or phrase to check
         """
-        filelist = self.returnlist(list_type)
-
-        word_list = filelist
+        file_list = copy.copy(self.return_list(list_type))
+        regex_list = copy.copy(self.return_regex(list_type))
+        word_list = file_list
         if list_type == "humanities":
             word_list += self.general_list
+            regex_list += self.general_list_regex
 
-        profanity = self.check_profanity(word_list, text)
+        profanity = self.check_profanity(word_list, regex_list, text)
         if profanity:
             await interaction.response.send_message(profanity)
         else:
@@ -356,12 +365,6 @@ class Filter(commands.Cog):
             )
             await self.logging_channel.send(embed=embed)
 
-    def get_word_list(self, message):
-        if message.channel.id == 546315063745839115:
-            return self.humanities_list + self.general_list
-        else:
-            return self.general_list
-
     def is_member_excluded(self, author):
         rolelist = [
             414092550031278091,  # mod
@@ -376,16 +379,7 @@ class Filter(commands.Cog):
             return True
         return False
 
-    # check for profanity
-    def check_profanity(self, ref_word_list, message_clean):
-        # print(self.white_list)
-        local_word_list = copy.copy(ref_word_list)
-        profanity.load_censor_words(local_word_list)
-        regex_list = self.generate_regex(local_word_list)
-        # stores all words that are aparently profanity
-        offending_list = []
-        local_word_list.extend(self.white_list)
-        toReturn = False
+    def check_profanity(self, ref_word_list, regex_list, message_clean):
         # filter out bold and italics but keep *
         indexes = re.finditer("(\*\*.*?\*\*)", message_clean)
         if indexes:
@@ -405,13 +399,13 @@ class Filter(commands.Cog):
                     message_clean[i.start() + 1 - tracker : i.end() - 1 - tracker],
                 )
                 tracker = tracker + 2
-        # Chagnes letter emojis to normal ascii ones
+        # Changes letter emojis to normal ascii ones
         message_clean = self.convert_regional(message_clean)
         # changes cyrllic letters into ascii ones
         message_clean = self.convert_letters(message_clean)
         # find all question marks in message
         indexes = [x.start() for x in re.finditer(r"\?", message_clean)]
-        # get rid of all other non ascii charcters
+        # get rid of all other non ascii characters
         message_clean = demoji.replace(message_clean, "*")
         message_clean = (
             str(message_clean)
@@ -427,28 +421,38 @@ class Filter(commands.Cog):
         message_clean = "".join(message_clean)
         # sub out discord emojis
         message_clean = re.sub(r"(<[A-z]*:[^\s]+:[0-9]*>)", "*", message_clean)
-        # print(message_clean)
-        if profanity.contains_profanity(message_clean):
-            offending_list = []
-            for w in local_word_list:
-                if re.search(re.escape(w), message_clean):
-                    offending_list.append(w)
-            # print(offending_list)
-            if self.exception_list_check(offending_list) and not offending_list == []:
-                return False
-            else:
-                return offending_list
-        else:
-            for regex in regex_list:
-                if re.search(regex, message_clean):
-                    found_items = re.findall(regex[:-3] + "[A-z]*)", message_clean)
-                    for e in found_items:
-                        offending_list.append(e)
-                    toReturn = True
-        if toReturn:
-            if not self.exception_list_check(offending_list):
-                return offending_list
+        dirty_list = []
+        for regex in regex_list:
+            if re.search(regex, message_clean):
+                found_items = re.findall(regex[:-3] + "[A-z]*)", message_clean)
+                for e in found_items:
+                    dirty_list.append(e)
+        clean_list = []
+        # test to see if any word is within a already existing word
+        for test_word in dirty_list:
+            found = False
+            for to_match in dirty_list:
+                if (
+                    test_word[0] in to_match[0]
+                    and len(test_word[0]) < len(to_match[0])
+                    and test_word[1] >= to_match[1]
+                    and test_word[2] < to_match[2]
+                ):
+                    found = True
+                    break
+            if not found:
+                clean_list.append(test_word)
+        # does the final check to see if any word is not in the whitelist
+        for bad_word in clean_list:
+            if not bad_word in self.white_list:
+                return clean_list
         return False
+
+    def exception_list_check(self, offending_list):
+        for bad_word in offending_list:
+            if not bad_word in self.white_list:
+                return False
+        return True
 
     # check for emoji spam
     def check_emoji_spam(self, message):
@@ -535,12 +539,19 @@ class Filter(commands.Cog):
         return False
 
     async def check_message(self, message):
+        word_list = copy.copy(self.return_list(message.channel.name))
+        regex_list = copy.copy(self.return_regex(message.channel.name))
+        if word_list is None:
+            word_list = copy.copy(self.general_list)
+            regex_list = copy.copy(self.general_list_regex)
 
-        word_list = self.get_word_list(message)
+        if message.channel.name == "humanities":
+            word_list += self.general_list
+            regex_list += self.general_list_regex
 
         # run checks
-        isprofanity = self.check_profanity(word_list, message.content)
-        if isprofanity:
+        is_profanity = self.check_profanity(word_list, regex_list, message.content)
+        if is_profanity:
             await self.execute_action_on_message(
                 message,
                 {
@@ -552,7 +563,7 @@ class Filter(commands.Cog):
 
             embed = create_automod_embed(message=message, automod_type="profanity")
             embed.add_field(
-                name="Blacklisted Word", value=isprofanity[:1024], inline=False
+                name="Blacklisted Word", value=is_profanity[:1024], inline=False
             )
             file = discord.File(io.BytesIO(message.content.encode("UTF-8")), f"log.txt")
             await self.logging_channel.send(embed=embed, file=file)
@@ -634,12 +645,6 @@ class Filter(commands.Cog):
                     "mute": 1800,
                 },
             )
-
-    def exception_list_check(self, offending_list):
-        for bad_word in offending_list:
-            if not bad_word in self.white_list:
-                return False
-        return True
 
     def convert_regional(self, word):
         replacement = {
@@ -725,13 +730,13 @@ class Filter(commands.Cog):
         return to_return
 
     def generate_regex(self, words):
-        joining_chars = r'[ _\-\+\.\*!@#$%^&():\'"]*'
+        joining_chars = r'[ _\-\+\.\*!@#$%^&():;\[\]\}\{\'"]*'
         replacement = {
             "a": r"4a\@\#",
             "b": r"b\*",
             "c": r"c¢\*",
             "d": r"d\*",
-            "e": r"e\*",
+            "e": r"e3\*",
             "f": r"f\*",
             "g": r"g\*",
             "h": r"h\*",
@@ -741,7 +746,7 @@ class Filter(commands.Cog):
             "l": r"!1il\*",
             "m": r"m\*",
             "n": r"n\*",
-            "o": r"o\*",
+            "o": r"o0\*",
             "p": r"pq\*",
             "q": r"qp\*",
             "r": r"r\*",

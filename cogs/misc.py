@@ -34,6 +34,7 @@ class Misc(commands.Cog):
             915629257470906369,
             414029841101225985,
             414092550031278091,
+            1058243220817063936,
             681812574026727471,
         )
         with open("config.json", "r") as f:
@@ -59,7 +60,7 @@ class Misc(commands.Cog):
         )
         msg = await intro_channel.fetch_message(intro["message_id"])
         embed = msg.embeds[0]
-        embed.set_author(name=after.display_name, icon_url=after.avatar_url)
+        embed.set_author(name=after.display_name, icon_url=after.avatar.url)
         await msg.edit(embed=embed)
 
     @commands.Cog.listener()
@@ -80,7 +81,7 @@ class Misc(commands.Cog):
         )
         msg = await intro_channel.fetch_message(intro["message_id"])
         embed = msg.embeds[0]
-        embed.set_author(name=member.display_name, icon_url=after.avatar_url)
+        embed.set_author(name=member.display_name, icon_url=after.avatar.url)
         await msg.edit(embed=embed)
 
     def parse_info(self, user_id, tz_text, bio, bird_icon):
@@ -94,7 +95,7 @@ class Misc(commands.Cog):
         )
         footer_icon = self.config["roleicons"][f"{user.top_role.id}"]
         embed = discord.Embed(description=description, color=user.top_role.color)
-        embed.set_author(name=user.display_name, icon_url=user.avatar_url)
+        embed.set_author(name=user.display_name, icon_url=user.avatar.url)
         embed.set_footer(text=footer_name, icon_url=footer_icon)
         embed.set_thumbnail(url=bird_icon)
         return embed
@@ -273,6 +274,7 @@ class Misc(commands.Cog):
             except pymongo.errors.DuplicateKeyError:
                 pass
 
+
     @app_commands.command()
     @app_commands.guilds(414027124836532234)
     @app_commands.checks.cooldown(1, 10)
@@ -285,21 +287,29 @@ class Misc(commands.Cog):
         emoji: str
             Discord Emoji (only use in #bot-commands)
         """
-        emojis = []
-
-        if re.match(r"<a:\w+:(\d{17,19})>", str(emoji)):
-            emojis.append(re.findall(r"<a:\w+:(\d{17,19})>", str(emoji))[0] + ".gif")
-        elif re.match(r"<:\w+:(\d{17,19})>", str(emoji)):
-            emojis.append(re.findall(r"<:\w+:(\d{17,19})>", str(emoji))[0] + ".png")
-        if len(emojis) == 0:
-            await interaction.response.send_message(
-                "Please send an emoji that is not a default emoji", ephemeral=True
-            )
+        """
+        if len(args) > 1:
+            ctx.send("Please only send one emoji at a time")
+        """
+        print(len(demoji.findall_list(emoji)))
+        if len(demoji.findall_list(emoji)) == 1:
+            code = str(emoji.encode('unicode-escape')).replace('U000','-').replace('\\','').replace('\'','').replace('u','-')[2:]
+            print(code)
+            name = demoji.replace_with_desc(emoji).replace(' ','-').replace(":","").replace("_","-")
+            await interaction.response.send_message("https://em-content.zobj.net/thumbs/160/twitter/322/" + name\
+                           + "_" + code + ".png")
+        elif len(demoji.findall_list(emoji)) > 1:
+            await interaction.response.send_message("please only send one emoji")
         else:
-            for e in emojis:
-                await interaction.response.send_message(
-                    "https://cdn.discordapp.com/emojis/" + str(e)
-                )
+            if re.match(r"<a:\w+:(\d{17,19})>", str(emoji)):
+                emoji = str(re.findall(r"<a:\w+:(\d{17,19})>", str(emoji))[0]) + ".gif"
+                await interaction.response.send_message("https://cdn.discordapp.com/emojis/" + str(emoji))
+            elif re.match(r"<:\w+:(\d{17,19})>", str(emoji)):
+                print("png")
+                emoji = str(re.findall(r"<:\w+:(\d{17,19})>", str(emoji))[0]) + ".png"
+                await interaction.response.send_message("https://cdn.discordapp.com/emojis/" + str(emoji))
+            else:
+                await interaction.response.send_message("Could not process this emoji")
 
     @commands.Cog.listener()
     async def on_reaction_add(self, reaction, user):

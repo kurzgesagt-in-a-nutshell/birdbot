@@ -17,7 +17,7 @@ import discord
 from discord.ext import commands
 from discord import app_commands
 
-from utils import app_checks
+from utils import app_checks, helper
 from utils.helper import mod_and_above, devs_only, mainbot_only
 
 
@@ -176,6 +176,29 @@ class Dev(commands.Cog):
         await ctx.send("Bravo 6 going dark.")
         await self.bot.close()
 
+    @commands.command(hidden=True)
+    @mod_and_above()
+    async def restart(self, ctx: commands.Context, instance: str):
+        """restarts sub processes"""
+        if instance not in ("songbirdalpha", "songbirdbeta", "twitterfeed", "youtubefeed"):
+            raise commands.BadArgument("Instance argument must be songbirdalpha, songbirdbeta, twitterfeed, youtubefeed")
+        process={
+            "songbirdalpha": "songbirda.service",
+            "songbirdbeta": "songbirdb.service",
+            "twitterfeed": "twitter_feed.service",
+            "youtubefeed": "youtube_feed.service"
+        }
+        try:
+            child = await asyncio.create_subprocess_shell("systemctl restart " + process[instance],
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.STDOUT,
+            )
+            await child.wait()
+            await ctx.send("process restarted")
+        except Exception as e:
+            await ctx.send("could not restart process")
+            await ctx.send(e.__str__())
+
     @devs_only()
     @commands.command(aliases=["logs"], hidden=True)
     async def log(self, ctx: commands.Context, lines: int = 10):
@@ -251,6 +274,17 @@ class Dev(commands.Cog):
             channel = interaction.channel
         await channel.send(msg)
         await interaction.response.send_message("sent", ephemeral=True)
+
+        logging_channel = discord.utils.get(
+            interaction.guild.channels, id=543884016282239006
+        )
+        embed = helper.create_embed(
+            author=interaction.user,
+            action="ran send command",
+            extra="Message sent: {}".format(msg),
+            color=discord.Color.blurple(),
+        )
+        await logging_channel.send(embed=embed)
 
     @commands.command()
     @devs_only()
