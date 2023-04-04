@@ -380,7 +380,7 @@ class GuildChores(commands.Cog):
                 discord.utils.get(message.guild.roles, id=role).name
                 for role in message.raw_role_mentions
             ]
-            mod_channel = self.bot.get_channel(414095428573986816)
+            mod_channel = self.bot.get_channel(1092578562608988290)
             # mod_channel = self.bot.get_channel(414179142020366336)
 
             embed = discord.Embed(

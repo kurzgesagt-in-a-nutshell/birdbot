@@ -18,6 +18,7 @@ import discord
 from discord.ext import commands
 from discord import app_commands
 
+
 class FinalReconfirmation(discord.ui.View):
     """
     This view handles the interaction with moderators to confirm action while a
@@ -25,16 +26,16 @@ class FinalReconfirmation(discord.ui.View):
     or to cancel the action and follow through with a more appropriate action.
 
     The moderator is also given the option to cancel while timing the user out
-    for 10 minutes to provide decision making time. 
+    for 10 minutes to provide decision making time.
     """
 
     @classmethod
     async def handle(
-        cls, 
-        interaction: discord.Interaction, 
-        infractions:InfractionList, 
-        user:discord.Member, 
-        moderator:discord.Member
+        cls,
+        interaction: discord.Interaction,
+        infractions: InfractionList,
+        user: discord.Member,
+        moderator: discord.Member,
     ):
         """
         Manages the action of the reconfirmation and returns once the action is
@@ -43,7 +44,7 @@ class FinalReconfirmation(discord.ui.View):
 
         # the state change must be made before the call to stop
         """
-        
+
         reconfirmation = cls(user, moderator)
 
         # BECAUSE OF THIS INTERACTION, COMMANDS THAT USE THIS VIEW MUST USE
@@ -51,17 +52,18 @@ class FinalReconfirmation(discord.ui.View):
         await interaction.response.send_message(
             f"{user.mention} is on final warning. Confirm action or cancel...",
             ephemeral=is_public_channel(interaction.channel),
-            view=reconfirmation
+            view=reconfirmation,
         )
 
         failed = await reconfirmation.wait()
-        if failed: reconfirmation.state = -1
+        if failed:
+            reconfirmation.state = -1
 
         return reconfirmation.state
 
     def __init__(self, user: discord.Member, moderator: discord.Member):
-        super().__init__(timeout=2*60)
-        
+        super().__init__(timeout=2 * 60)
+
         self.user = user
         self.moderator = moderator
 
@@ -72,11 +74,13 @@ class FinalReconfirmation(discord.ui.View):
         Checks that the user interacting with this is the moderator that issued
         the warn.
         """
-        
+
         return interaction.user.id == self.moderator.id
 
     @discord.ui.button(label="Continue", style=discord.ButtonStyle.danger)
-    async def _continue(self, interaction: discord.Interaction, button:discord.ui.Button):
+    async def _continue(
+        self, interaction: discord.Interaction, button: discord.ui.Button
+    ):
         """
         Removes the view and edits the message to inform that the action will
         continue
@@ -87,11 +91,14 @@ class FinalReconfirmation(discord.ui.View):
 
         await interaction.response.edit_message(
             content=f"Action on {self.user.mention} will continue",
-            view=None, allowed_mentions=None
+            view=None,
+            allowed_mentions=None,
         )
 
     @discord.ui.button(label="Cancel", style=discord.ButtonStyle.grey, row=2)
-    async def _cancel(self, interaction: discord.Interaction, button:discord.ui.Button):
+    async def _cancel(
+        self, interaction: discord.Interaction, button: discord.ui.Button
+    ):
         """
         Removes the view to prevent more actions and edits the message to
         display the choice made
@@ -102,11 +109,14 @@ class FinalReconfirmation(discord.ui.View):
 
         await interaction.response.edit_message(
             content=f"Action on {self.user.mention} is canceled",
-            view=None, allowed_mentions=None
+            view=None,
+            allowed_mentions=None,
         )
 
     @discord.ui.button(label="10m Timeout", style=discord.ButtonStyle.blurple)
-    async def _timeout(self,interaction: discord.Interaction, button:discord.ui.Button):
+    async def _timeout(
+        self, interaction: discord.Interaction, button: discord.ui.Button
+    ):
         """
         Times out the user for 10 minutes to allow for further decision making.
         This does not record an infraction but allows the moderator to take time
@@ -117,15 +127,14 @@ class FinalReconfirmation(discord.ui.View):
         self.stop()
 
         await self.user.timeout(
-            datetime.timedelta(minutes=10), 
-            reason="user timed out for decision making"
+            datetime.timedelta(minutes=10), reason="user timed out for decision making"
         )
 
         await interaction.response.edit_message(
             content=f"{self.user.mention} was muted for 10 minutes to allow for decision making",
-            view=None,allowed_mentions=None
+            view=None,
+            allowed_mentions=None,
         )
-
 
 
 class Moderation(commands.Cog):
@@ -164,10 +173,10 @@ class Moderation(commands.Cog):
         """
 
         if interaction.guild:
-            mod_channel = interaction.guild.get_channel(414095428573986816)
+            mod_channel = interaction.guild.get_channel(1092578562608988290)
         else:
             kgs_guild = self.bot.get_guild(414027124836532234)
-            mod_channel = await kgs_guild.fetch_channel(414095428573986816)
+            mod_channel = await kgs_guild.fetch_channel(1092578562608988290)
 
         class Modal(discord.ui.Modal):
             def __init__(self, member):
@@ -461,23 +470,20 @@ class Moderation(commands.Cog):
         infractions = InfractionList.from_user(member)
         if infractions.on_final:
             result = await FinalReconfirmation.handle(
-                interaction,
-                infractions,
-                member,
-                interaction.user
+                interaction, infractions, member, interaction.user
             )
 
-            if result < 0: return
+            if result < 0:
+                return
 
         await member.kick(reason=reason)
 
         if interaction.response.is_done():
-            await interaction.edit_original_response(
-                content="member has been kicked"
-            )
+            await interaction.edit_original_response(content="member has been kicked")
         else:
             await interaction.response.send_message(
-                "member has been kicked", ephemeral=is_public_channel(interaction.channel)
+                "member has been kicked",
+                ephemeral=is_public_channel(interaction.channel),
             )
 
         infractions.new_infraction(
@@ -612,13 +618,11 @@ class Moderation(commands.Cog):
         infractions = InfractionList.from_user(member)
         if infractions.on_final:
             result = await FinalReconfirmation.handle(
-                interaction,
-                infractions,
-                member,
-                interaction.user
+                interaction, infractions, member, interaction.user
             )
 
-            if result < 0: return
+            if result < 0:
+                return
 
         duration = datetime.timedelta(seconds=tot_time)
         finished = discord.utils.utcnow() + duration
@@ -640,12 +644,11 @@ class Moderation(commands.Cog):
         await member.timeout(finished)
 
         if interaction.response.is_done():
-            await interaction.edit_original_response(
-                content="member has been muted"
-            )
+            await interaction.edit_original_response(content="member has been muted")
         else:
             await interaction.response.send_message(
-                "member has been muted", ephemeral=is_public_channel(interaction.channel)
+                "member has been muted",
+                ephemeral=is_public_channel(interaction.channel),
             )
 
         infractions.new_infraction(
@@ -806,13 +809,11 @@ class Moderation(commands.Cog):
         infractions = InfractionList.from_user(member)
         if infractions.on_final:
             result = await FinalReconfirmation.handle(
-                interaction,
-                infractions,
-                member,
-                interaction.user
+                interaction, infractions, member, interaction.user
             )
 
-            if result < 0: return
+            if result < 0:
+                return
 
         # TODO make this more modular
         default_msg = "(Note: Accumulation of warns may lead to permanent removal from the server)"
@@ -835,9 +836,7 @@ class Moderation(commands.Cog):
         infractions.update()
 
         if interaction.response.is_done():
-            await interaction.edit_original_response(
-                content="user has been warned"
-            )
+            await interaction.edit_original_response(content="user has been warned")
         else:
             await interaction.response.send_message(
                 "user has been warned", ephemeral=is_public_channel(interaction.channel)
@@ -865,7 +864,7 @@ class Moderation(commands.Cog):
         self,
         interaction: discord.Interaction,
         user: discord.User,
-        infr_type: InfractionKind
+        infr_type: InfractionKind,
     ):
         """
         Allows for the deletion of an infraction
