@@ -232,6 +232,8 @@ class Filter(commands.Cog):
         ):
             return
 
+        if message.channel.category.id ==974333356688965672: # language testing
+            return 
         if self.is_member_excluded(message.author):
             return
 
