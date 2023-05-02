@@ -199,11 +199,16 @@ class Moderation(commands.Cog):
                 message_link = self.children[1].value
 
                 channel = interaction.channel
-                channel_mention = (
-                    channel.mention
-                    if isinstance(channel, (discord.abc.GuildChannel, discord.Thread))
-                    else "Sent through dms"
-                )
+                if isinstance(channel, (discord.abc.GuildChannel, discord.Thread)):
+                    channel_mention = channel.mention
+                    
+                    # What this does is allow you to click the link to go to the
+                    # messages around the time the report was made
+                    if message_link is None or message_link == '':
+                        message_link = f"https://discord.com/channels/414027124836532234/{channel.id}/{interaction.id}"
+
+                else:
+                    channel_mention = 'Sent through DMs'
 
                 mod_embed = discord.Embed(
                     title="New Report",
@@ -221,7 +226,8 @@ class Moderation(commands.Cog):
                 )
 
                 await mod_channel.send(
-                    get_active_staff(interaction.client), embed=mod_embed
+                    get_active_staff(interaction.client), embed=mod_embed,
+                    allowed_mentions=discord.AllowedMentions.all()
                 )
 
                 await interaction.response.send_message(
