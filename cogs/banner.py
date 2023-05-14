@@ -310,7 +310,7 @@ class Banner(commands.Cog):
                         embed.set_author(name=author.name, icon_url=author.icon_url)
 
                         image = await self.verify_url(url, byte=True)
-                        channel = self.bot.get_channel(414179142020366336)
+                        channel = self.bot.get_channel(546689491486769163)
                         file = discord.File(io.BytesIO(image), filename="banner.png")
                         banner = await channel.send(file=file)
                         url = banner.attachments[0].url
