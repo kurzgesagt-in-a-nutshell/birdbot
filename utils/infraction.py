@@ -334,7 +334,7 @@ class InfractionList:
         self._kind_to_list(kind).append(infr)
 
         if final:
-            self._final = True
+            self._final_warn = True
 
         logger.debug(
             "appended new infraction (%s) to user (%s) final=(%s)",
