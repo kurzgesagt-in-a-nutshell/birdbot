@@ -373,7 +373,13 @@ class GuildChores(commands.Cog):
             x in message.raw_role_mentions
             for x in [414092550031278091, 905510680763969536]
         ):
-            if message.channel.category.id == 414095379156434945:  # mod category
+            # if message.channel.category.id in [414095379156434945, 738847867266924545]:  # mod category and mod bulletin
+            #     return
+
+            if message.author.top_role >= await message.guild.fetch_role(
+                414092550031278091
+            ):
+                # dont react to mod ping
                 return
 
             role_names = [
