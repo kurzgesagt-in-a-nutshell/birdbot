@@ -1,4 +1,5 @@
 import logging
+import typing
 import numpy as np
 import os
 from utils import app_checks
@@ -31,7 +32,8 @@ class VideoQuiz(commands.Cog):
     async def add_q(self,
                     interaction: discord.Interaction,
                     image: discord.Attachment,
-                    answer: str
+                    answer: str,
+                    difficulty: typing.Literal["Easy","Medium","Hard"]
                     ):
         """Add a question for the upcoming quiz
 
@@ -40,7 +42,9 @@ class VideoQuiz(commands.Cog):
         image: discord.Attachment
             The image which the user has to find the timetamp for
         answer: str
-            The timetamp URL (eg: https://youtu.be/dQw4w9WgXcQ?t=29) 
+            The timetamp URL (eg: https://youtu.be/dQw4w9WgXcQ?t=29)
+        difficulty: str
+            How hard is this question? Must be "Easy", "Medium" or "Hard" 
         """
 
         await interaction.response.defer(thinking=True)
@@ -49,7 +53,8 @@ class VideoQuiz(commands.Cog):
         msg = await bot_testing.send(file=f)
         self.quiz_db.insert_one({"user_id":interaction.user.id,
                             "url":msg.attachments[0].url,
-                            "answer":answer})
+                            "answer":answer,
+                            "difficulty":difficulty})
         return await interaction.edit_original_response(content="Done!")
 
 async def setup(bot):
