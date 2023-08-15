@@ -26,11 +26,7 @@ class Filter(commands.Cog):
         self.logger = logging.getLogger("Automod")
         self.bot = bot
 
-        config_file = open("config.json", "r")
-        self.config_json = json.loads(config_file.read())
-        config_file.close()
-
-        self.logging_channel_id = self.config_json["logging"]["automod_logging_channel"]
+        self.logging_channel_id = Reference.Channels.Logging.automod_actions
         self.logging_channel = None
         self.message_history_list = {}
         self.message_history_lock = asyncio.Lock()

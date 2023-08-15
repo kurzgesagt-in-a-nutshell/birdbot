@@ -143,10 +143,6 @@ class Moderation(commands.Cog):
         self.logger = logging.getLogger("Moderation")
         self.bot = bot
 
-        config_file = open("config.json", "r")
-        self.config_json = json.loads(config_file.read())
-        config_file.close()
-
         self.logging_channel = Reference.Channels.Logging.mod_actions
         self.message_logging_channel = Reference.Channels.Logging.message_actions
         self.mod_role = Reference.Roles.moderator

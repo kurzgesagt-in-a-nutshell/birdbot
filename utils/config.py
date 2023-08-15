@@ -40,6 +40,9 @@ class Reference:
         duck_hatchling = 637114722675851302 # Duck Hatchling
         duck_egg = 821961644425871390 # Duck Egg
 
+        english = 901136119863844864
+        verified = 542343829785804811
+
         @classmethod
         def admin_and_above(cls):
             return [
@@ -103,7 +106,7 @@ class Reference:
             
             return await client.fetch_emoji(ref)
 
-# TODO: MISC.py still has some raw ids
+# TODO: MISC.py still has some raw ids in roleicons
 # TODO: roleassign.py still has raw data (delete instead?)
 # TODO: GLOBAL_LISTENERS.py still has raw data
-# TODO: GIVEAWAY.py still has raw data
+# TODO: GIVEAWAY.py still has raw data in the giveaway bias
