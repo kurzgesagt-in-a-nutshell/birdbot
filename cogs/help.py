@@ -6,7 +6,7 @@ from discord.ext import commands
 from discord import app_commands
 
 from utils import app_checks
-
+from utils.config import Reference
 
 class Help(commands.Cog):
     def __init__(self, bot):
@@ -51,7 +51,7 @@ class Help(commands.Cog):
             if isinstance(cmd, discord.app_commands.commands.Command):
                 if cmd.default_permissions and cmd.default_permissions.manage_messages:
                     if interaction.user.top_role >= interaction.guild.get_role(
-                        414092550031278091
+                        Reference.Roles.moderator
                     ):
                         cmds.append(cmd.name)
                     else:
@@ -64,7 +64,7 @@ class Help(commands.Cog):
                     if cmd.default_permissions:
                         if cmd.default_permissions.manage_messages:
                             if interaction.user.top_role >= interaction.guild.get_role(
-                                414092550031278091
+                                Reference.Roles.moderator
                             ):
                                 cmds.append(f"{cmd.name} {c.name}")
                             else:
@@ -75,7 +75,7 @@ class Help(commands.Cog):
                     elif c.default_permissions:
                         if c.default_permissions.manage_messages:
                             if interaction.user.top_role >= interaction.guild.get_role(
-                                414092550031278091
+                                Reference.Roles.moderator
                             ):
                                 cmds.append(f"{cmd.name} {c.name}")
                             else:

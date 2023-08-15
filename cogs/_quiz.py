@@ -7,6 +7,8 @@ from utils.helper import admin_and_above
 import pymongo
 from discord.ext import commands
 
+from utils.config import Reference
+
 
 class Quiz(commands.Cog):
     db_qz_key = os.environ.get("DB_QZ_KEY")
@@ -28,7 +30,7 @@ class Quiz(commands.Cog):
 
     @commands.command()
     async def tickets(self, ctx):
-        if ctx.channel.id != 414452106129571842:
+        if ctx.channel.id != Reference.Channels.bot_commands:
             return
         try:
             user = self.quiz_db.find_one({"id": str(ctx.author.id)})
@@ -65,7 +67,7 @@ class Quiz(commands.Cog):
 
         async def process_users():
             """remove users not in server and add ticket boost"""
-            kgs_guild = self.bot.get_guild(414027124836532234)
+            kgs_guild = self.bot.get_guild(Reference.guild)
 
             for i in self.id_and_tickets:
                 user = kgs_guild.get_member(int(i["id"]))

@@ -13,6 +13,7 @@ from utils.helper import (
     is_public_channel,
 )
 from utils.infraction import InfractionList, InfractionKind
+from utils.config import Reference
 
 import discord
 from discord.ext import commands
@@ -146,12 +147,10 @@ class Moderation(commands.Cog):
         self.config_json = json.loads(config_file.read())
         config_file.close()
 
-        self.logging_channel = self.config_json["logging"]["logging_channel"]
-        self.message_logging_channel = self.config_json["logging"][
-            "message_logging_channel"
-        ]
-        self.mod_role = self.config_json["roles"]["mod_role"]
-        self.admin_role = self.config_json["roles"]["admin_role"]
+        self.logging_channel = Reference.Channels.Logging.mod_actions
+        self.message_logging_channel = Reference.Channels.Logging.message_actions
+        self.mod_role = Reference.Roles.moderator
+        self.admin_role = Reference.Roles.administrator
 
     @commands.Cog.listener()
     async def on_ready(self):
@@ -173,10 +172,10 @@ class Moderation(commands.Cog):
         """
 
         if interaction.guild:
-            mod_channel = interaction.guild.get_channel(1092578562608988290)
+            mod_channel = interaction.guild.get_channel(Reference.Channels.mod_chat)
         else:
-            kgs_guild = self.bot.get_guild(414027124836532234)
-            mod_channel = await kgs_guild.fetch_channel(1092578562608988290)
+            kgs_guild = self.bot.get_guild(Reference.guild)
+            mod_channel = await kgs_guild.fetch_channel(Reference.Channels.mod_chat)
 
         class Modal(discord.ui.Modal):
             def __init__(self, member):
@@ -237,7 +236,7 @@ class Moderation(commands.Cog):
         await interaction.response.send_modal(Modal(member=member))
 
     @app_commands.command()
-    @app_commands.guilds(414027124836532234)
+    @app_commands.guilds(Reference.guild)
     @app_checks.mod_and_above()
     @app_commands.default_permissions(manage_messages=True)
     @app_commands.rename(_from="from")
@@ -333,7 +332,7 @@ class Moderation(commands.Cog):
         )
 
     @app_commands.command()
-    @app_commands.guilds(414027124836532234)
+    @app_commands.guilds(Reference.guild)
     @app_commands.default_permissions(manage_messages=True)
     @app_checks.mod_and_above()
     async def ban(
@@ -399,7 +398,7 @@ class Moderation(commands.Cog):
         await logging_channel.send(embed=embed)
 
     @app_commands.command()
-    @app_commands.guilds(414027124836532234)
+    @app_commands.guilds(Reference.guild)
     @app_commands.default_permissions(manage_messages=True)
     @app_checks.mod_and_above()
     async def unban(
@@ -445,7 +444,7 @@ class Moderation(commands.Cog):
         await logging_channel.send(embed=embed)
 
     @app_commands.command()
-    @app_commands.guilds(414027124836532234)
+    @app_commands.guilds(Reference.guild)
     @app_commands.default_permissions(manage_messages=True)
     @app_checks.mod_and_above()
     async def kick(
@@ -515,7 +514,7 @@ class Moderation(commands.Cog):
         await logging_channel.send(embed=embed)
 
     @app_commands.command()
-    @app_commands.guilds(414027124836532234)
+    @app_commands.guilds(Reference.guild)
     @app_commands.checks.cooldown(1, 60)
     async def selfmute(
         self,
@@ -563,7 +562,7 @@ class Moderation(commands.Cog):
         )
 
         logging_channel = discord.utils.get(
-            interaction.guild.channels, id=713107972737204236
+            interaction.guild.channels, id=Reference.Channels.Logging.misc_actions
         )
 
         embed = helper.create_embed(
@@ -579,7 +578,7 @@ class Moderation(commands.Cog):
         await logging_channel.send(embed=embed)
 
     @app_commands.command()
-    @app_commands.guilds(414027124836532234)
+    @app_commands.guilds(Reference.guild)
     @app_commands.default_permissions(manage_messages=True)
     @app_checks.mod_and_above()
     async def mute(
@@ -683,7 +682,7 @@ class Moderation(commands.Cog):
         await logging_channel.send(embed=embed)
 
     @app_commands.command()
-    @app_commands.guilds(414027124836532234)
+    @app_commands.guilds(Reference.guild)
     @app_commands.default_permissions(manage_messages=True)
     @app_checks.mod_and_above()
     async def unmute(
@@ -723,7 +722,7 @@ class Moderation(commands.Cog):
         )
 
     @app_commands.command()
-    @app_commands.guilds(414027124836532234)
+    @app_commands.guilds(Reference.guild)
     @app_commands.default_permissions(manage_messages=True)
     @app_checks.mod_and_above()
     async def role(
@@ -781,7 +780,7 @@ class Moderation(commands.Cog):
         await logging_channel.send(embed=embed)
 
     @app_commands.command()
-    @app_commands.guilds(414027124836532234)
+    @app_commands.guilds(Reference.guild)
     @app_commands.default_permissions(manage_messages=True)
     @app_checks.mod_and_above()
     async def warn(
@@ -863,7 +862,7 @@ class Moderation(commands.Cog):
         await logging_channel.send(embed=embed)
 
     @app_commands.command()
-    @app_commands.guilds(414027124836532234)
+    @app_commands.guilds(Reference.guild)
     @app_commands.default_permissions(manage_messages=True)
     @app_checks.mod_and_above()
     async def delete_infr(
@@ -1096,7 +1095,7 @@ class Moderation(commands.Cog):
         )
 
     @app_commands.command()
-    @app_commands.guilds(414027124836532234)
+    @app_commands.guilds(Reference.guild)
     @app_commands.default_permissions(manage_messages=True)
     @app_checks.mod_and_above()
     async def infractions(self, interaction: discord.Interaction, user: discord.User):
@@ -1172,7 +1171,7 @@ class Moderation(commands.Cog):
         )
 
     @app_commands.command()
-    @app_commands.guilds(414027124836532234)
+    @app_commands.guilds(Reference.guild)
     @app_commands.default_permissions(manage_messages=True)
     @app_checks.mod_and_above()
     async def detailed_infr(
@@ -1209,7 +1208,7 @@ class Moderation(commands.Cog):
         )
 
     @app_commands.command()
-    @app_commands.guilds(414027124836532234)
+    @app_commands.guilds(Reference.guild)
     @app_commands.default_permissions(manage_messages=True)
     @app_checks.mod_and_above()
     async def editinfr(
@@ -1271,7 +1270,7 @@ class Moderation(commands.Cog):
         await logging_channel.send(embed=embed)
 
     @app_commands.command()
-    @app_commands.guilds(414027124836532234)
+    @app_commands.guilds(Reference.guild)
     @app_commands.default_permissions(manage_messages=True)
     @app_checks.mod_and_above()
     async def slowmode(
@@ -1318,7 +1317,7 @@ class Moderation(commands.Cog):
         await logging_channel.send(embed=embed)
 
     @app_commands.command()
-    @app_commands.guilds(414027124836532234)
+    @app_commands.guilds(Reference.guild)
     @app_commands.default_permissions(manage_messages=True)
     @app_checks.mod_and_above()
     async def nocmd(
@@ -1355,7 +1354,7 @@ class Moderation(commands.Cog):
             )
 
     @app_commands.command()
-    @app_commands.guilds(414027124836532234)
+    @app_commands.guilds(Reference.guild)
     @app_commands.default_permissions(manage_messages=True)
     @app_checks.mod_and_above()
     async def yescmd(

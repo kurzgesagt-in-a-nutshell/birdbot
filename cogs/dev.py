@@ -20,6 +20,7 @@ from discord import app_commands
 from utils import app_checks, helper
 from utils.helper import mod_and_above, devs_only, mainbot_only
 
+from utils.config import Reference
 
 class Dev(commands.Cog):
     def __init__(self, bot):
@@ -45,7 +46,7 @@ class Dev(commands.Cog):
         return f'```py\n{e.text}{"^":>{e.offset}}\n{e.__class__.__name__}: {e}```'
 
     @app_commands.command()
-    @app_commands.guilds(414027124836532234)
+    @app_commands.guilds(Reference.guild)
     @app_commands.default_permissions(manage_messages=True)
     @app_checks.mod_and_above()
     async def activity(
@@ -276,7 +277,7 @@ class Dev(commands.Cog):
         await interaction.response.send_message("sent", ephemeral=True)
 
         logging_channel = discord.utils.get(
-            interaction.guild.channels, id=543884016282239006
+            interaction.guild.channels, id=Reference.Channels.Logging.mod_actions
         )
         embed = helper.create_embed(
             author=interaction.user,
@@ -291,16 +292,16 @@ class Dev(commands.Cog):
     async def sync_apps(self, ctx: commands.Context):
 
         await ctx.bot.tree.sync()
-        await ctx.bot.tree.sync(guild=discord.Object(414027124836532234))
+        await ctx.bot.tree.sync(guild=discord.Object(Reference.guild))
         await ctx.reply("Synced local guild commands")
 
     @commands.command()
     @devs_only()
     async def clear_apps(self, ctx: commands.Context):
 
-        ctx.bot.tree.clear_commands(guild=discord.Object(414027124836532234))
+        ctx.bot.tree.clear_commands(guild=discord.Object(Reference.guild))
         ctx.bot.tree.clear_commands(guild=None)
-        await ctx.bot.tree.sync(guild=discord.Object(414027124836532234))
+        await ctx.bot.tree.sync(guild=discord.Object(Reference.guild))
         await ctx.bot.tree.sync()
 
         await ctx.send("cleared all commands")

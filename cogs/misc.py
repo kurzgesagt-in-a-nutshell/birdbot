@@ -14,6 +14,7 @@ from discord import app_commands
 
 from utils import app_checks
 from utils.helper import role_and_above, bot_commands_only
+from utils.config import Reference
 
 # Mongo schema to store intros
 # {
@@ -49,14 +50,14 @@ class Misc(commands.Cog):
         if before.nick == after.nick:
             return
 
-        self.kgs_guild = self.bot.get_guild(414027124836532234)
-        subreddit_role = discord.utils.get(self.kgs_guild.roles, id=681812574026727471)
+        self.kgs_guild = self.bot.get_guild(Reference.guild)
+        subreddit_role = discord.utils.get(self.kgs_guild.roles, id=Reference.Roles.subreddit_mod)
         if not after.top_role >= subreddit_role:
             return
 
         intro = self.intro_db.find_one({"_id": before.id})
         intro_channel = self.kgs_guild.get_channel(
-            self.config["logging"]["intro_channel"]
+            Reference.Channels.intro_channel
         )
         msg = await intro_channel.fetch_message(intro["message_id"])
         embed = msg.embeds[0]
@@ -66,18 +67,18 @@ class Misc(commands.Cog):
     @commands.Cog.listener()
     async def on_user_update(self, before, after):
 
-        self.kgs_guild = self.bot.get_guild(414027124836532234)
+        self.kgs_guild = self.bot.get_guild(Reference.guild)
 
         member = self.kgs_guild.get_member(before.id)
         if not member:
             return
-        subreddit_role = discord.utils.get(self.kgs_guild.roles, id=681812574026727471)
+        subreddit_role = discord.utils.get(self.kgs_guild.roles, id=Reference.Roles.subreddit_mod)
         if not member.top_role >= subreddit_role:
             return
 
         intro = self.intro_db.find_one({"_id": before.id})
         intro_channel = self.kgs_guild.get_channel(
-            self.config["logging"]["intro_channel"]
+            Reference.Channels.intro_channel
         )
         msg = await intro_channel.fetch_message(intro["message_id"])
         embed = msg.embeds[0]
@@ -90,7 +91,7 @@ class Misc(commands.Cog):
         description = f"**{tz_text}**\n\n" + bio
         footer_name = (
             "Kurzgesagt Official"
-            if user.top_role.id == 915629257470906369
+            if user.top_role.id == Reference.Roles.kgsofficial
             else user.top_role.name
         )
         footer_icon = self.config["roleicons"][f"{user.top_role.id}"]
@@ -117,7 +118,7 @@ class Misc(commands.Cog):
 
         return embeds
 
-    @role_and_above(681812574026727471)  # subreddit mods and above | exludes trainees
+    @role_and_above(Reference.Roles.subreddit_mod)  # subreddit mods and above | exludes trainees
     @commands.group(hidden=True)
     async def intro(self, ctx):
         """
@@ -128,7 +129,7 @@ class Misc(commands.Cog):
     @intro.command()
     async def add(self, ctx):
 
-        self.kgs_guild = self.bot.get_guild(414027124836532234)
+        self.kgs_guild = self.bot.get_guild(Reference.guild)
 
         intro = self.intro_db.find_one({"_id": ctx.author.id})
         if intro:
@@ -166,7 +167,7 @@ class Misc(commands.Cog):
                 ctx.author.id, tz_text.content, bio.content, img.content
             )
             intro_channel = self.kgs_guild.get_channel(
-                self.config["logging"]["intro_channel"]
+                Reference.Channels.intro_channel
             )
 
             embeds_to_add = await self.reorder_intros(
@@ -194,7 +195,7 @@ class Misc(commands.Cog):
     @intro.command()
     async def edit(self, ctx):
 
-        self.kgs_guild = self.bot.get_guild(414027124836532234)
+        self.kgs_guild = self.bot.get_guild(Reference.guild)
         intro = self.intro_db.find_one({"_id": ctx.author.id})
         if not intro:
             await ctx.send(
@@ -231,7 +232,7 @@ class Misc(commands.Cog):
             return
         else:
             intro_channel = self.kgs_guild.get_channel(
-                self.config["logging"]["intro_channel"]
+                Reference.Channels.intro_channel
             )
             msg = await intro_channel.fetch_message(intro["message_id"])
             embed = msg.embeds[0]
@@ -251,9 +252,9 @@ class Misc(commands.Cog):
         """Only works with the intro spreadsheet. For local testing only."""
         df = pd.read_csv("intro.csv")
 
-        self.kgs_guild = self.bot.get_guild(414027124836532234)
+        self.kgs_guild = self.bot.get_guild(Reference.guild)
         intro_channel = self.kgs_guild.get_channel(
-            self.config["logging"]["intro_channel"]
+            Reference.Channels.intro_channel
         )
         for _, row in df.iterrows():
             user = self.kgs_guild.get_member(int(row["ID"]))
@@ -276,7 +277,7 @@ class Misc(commands.Cog):
 
 
     @app_commands.command()
-    @app_commands.guilds(414027124836532234)
+    @app_commands.guilds(Reference.guild)
     @app_commands.checks.cooldown(1, 10)
     @app_checks.bot_commands_only()
     async def big_emote(self, interaction: discord.Interaction, emoji: str):
@@ -317,7 +318,7 @@ class Misc(commands.Cog):
         Provide mods with command to forceban users instead of self banning because I dont want to rework the entire command
         """
         if (
-            user.bot or reaction.message.channel.id != 1009138597221372044
+            user.bot or reaction.message.channel.id != Reference.Channels.Logging.bannsystem
         ):  # bannsystem channel
             return
         embed = reaction.message.embeds[0]
@@ -326,7 +327,7 @@ class Misc(commands.Cog):
             "Report-"
         ):  # TODO account for multireports with interactions
 
-            if reaction.emoji.id == 955703069516128307:  # kgsYes
+            if reaction.emoji.id == Reference.Emoji.kgsYes:  # kgsYes
                 reported_user = re.findall(
                     r"[0-9]{11,}", reaction.message.embeds[0].description
                 )[0]

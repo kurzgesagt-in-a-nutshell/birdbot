@@ -15,17 +15,12 @@ from utils.helper import (
     get_time_string,
 )
 
+from utils.config import Reference
 
 class Banner(commands.Cog):
     def __init__(self, bot):
         self.logger = logging.getLogger("Banners")
         self.bot = bot
-
-        with open("config.json", "r") as config_file:
-            config_json = json.loads(config_file.read())
-
-        self.mod_role = config_json["roles"]["mod_role"]
-        self.automated_channel = config_json["logging"]["automated_channel"]
 
         self.index = 0
         self.banner_db = self.bot.db.Banners
@@ -43,7 +38,7 @@ class Banner(commands.Cog):
     banner_commands = app_commands.Group(
         name="banner",
         description="Guild banner commands",
-        guild_ids=[414027124836532234],
+        guild_ids=[Reference.guild],
         default_permissions=discord.permissions.Permissions(manage_messages=True),
     )
 
@@ -105,7 +100,7 @@ class Banner(commands.Cog):
                 raise e
 
             if fp:
-                banners_channel = interaction.guild.get_channel(self.automated_channel)
+                banners_channel = interaction.guild.get_channel(Reference.Channels.banners_and_topics)
                 msg = await banners_channel.send(
                     file=discord.File(io.BytesIO(fp), filename=image.filename)
                 )
@@ -196,7 +191,7 @@ class Banner(commands.Cog):
             URL or Link of an image
         """
         await interaction.response.defer(ephemeral=True)
-        automated_channel = interaction.guild.get_channel(self.automated_channel)
+        automated_channel = interaction.guild.get_channel(Reference.Channels.banners_and_topics)
 
         if image:
             try:
@@ -292,9 +287,9 @@ class Banner(commands.Cog):
         """
         Check if reaction added is by mod+ and approve/deny banner accordingly
         """
-        if payload.channel_id == self.automated_channel and not payload.member.bot:
-            guild = discord.utils.get(self.bot.guilds, id=414027124836532234)
-            mod_role = guild.get_role(self.mod_role)
+        if payload.channel_id == Reference.Channels.banners_and_topics and not payload.member.bot:
+            guild = discord.utils.get(self.bot.guilds, id=Reference.guild)
+            mod_role = guild.get_role(Reference.Roles.moderator)
 
             if payload.member.top_role >= mod_role:
                 message = await self.bot.get_channel(payload.channel_id).fetch_message(
@@ -302,7 +297,7 @@ class Banner(commands.Cog):
                 )
 
                 if message.embeds and message.embeds[0].footer.text == "banner":
-                    if payload.emoji.id == 955703069516128307:  # kgsYes emote
+                    if payload.emoji.id == Reference.Emoji.kgsYes:
                         url = message.embeds[0].image.url
                         author = message.embeds[0].author
                         embed = discord.Embed(colour=discord.Colour.green())
@@ -310,7 +305,7 @@ class Banner(commands.Cog):
                         embed.set_author(name=author.name, icon_url=author.icon_url)
 
                         image = await self.verify_url(url, byte=True)
-                        channel = self.bot.get_channel(546689491486769163)
+                        channel = self.bot.get_channel(Reference.Channels.banners_and_topics)
                         file = discord.File(io.BytesIO(image), filename="banner.png")
                         banner = await channel.send(file=file)
                         url = banner.attachments[0].url
@@ -328,7 +323,7 @@ class Banner(commands.Cog):
                         except discord.Forbidden:
                             pass
 
-                    elif payload.emoji.id == 955703108565098496:  # kgsNo emoji
+                    elif payload.emoji.id == Reference.Emoji.kgsNo:  # kgsNo emoji
                         embed = discord.Embed(title="Banner suggestion removed!")
                         await message.edit(embed=embed, delete_after=6)
 

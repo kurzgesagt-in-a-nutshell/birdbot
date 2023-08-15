@@ -6,6 +6,7 @@ import json
 import discord
 from discord.ext import commands
 from birdbot import BirdBot
+from utils.config import Reference
 
 from utils.helper import mod_and_above, devs_only
 
@@ -14,9 +15,8 @@ class Antiraid(commands.Cog):
     def __init__(self, bot):
         self.logger = logging.getLogger("Antiraid")
         self.bot = bot
-        with open("config.json", "r") as config_file:
-            config_json = json.loads(config_file.read())
-        self.logging_channel = config_json["logging"]["logging_channel"]
+        
+        self.logging_channel = Reference.Channels.Logging.mod_actions
         with open("antiraid.json", "r") as config_file:
             antiraid_json = json.loads(config_file.read())
         self.raidinfo = antiraid_json["raidmode"]
@@ -75,7 +75,7 @@ class Antiraid(commands.Cog):
 
     @commands.Cog.listener()
     async def on_member_join(self, member):
-        if member.guild.id != 414027124836532234:
+        if member.guild.id != Reference.guild:
             return
         if member.bot:
             return

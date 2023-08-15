@@ -14,8 +14,7 @@ infraction_db = BirdBot.db.Infraction
 timed_actions_db = BirdBot.db.TimedAction
 cmd_blacklist_db = BirdBot.db.CommandBlacklist
 
-config_json = json.load(open("config.json"))
-config_roles = config_json["roles"]
+from .config import Reference
 
 logger = logging.getLogger("Helper")
 
@@ -124,38 +123,44 @@ class DevBotOnly(commands.CheckFailure):
 
 
 def general_only():
+    """
+    Checks if the context is within the general channel or moderation category
+    """
+    
     async def predicate(ctx: commands.Context):
         if (
-            ctx.channel.category_id != 414095379156434945  # Mod channel category
-            and ctx.channel.id != 414027124836532236  # general id
+            ctx.channel.category_id != Reference.Categories.moderation
+            and ctx.channel.id != Reference.Channels.general
         ):
-            raise WrongChannel(414027124836532236)
+            raise WrongChannel(Reference.Channels.general)
         return True
 
     return commands.check(predicate)
 
 
 def bot_commands_only():
+    """
+    Checks if the context is within the bot_commands channel or moderation
+    category
+    """
     async def predicate(ctx: commands.Context):
         if (
-            ctx.channel.category_id != 414095379156434945  # Mod channel category
-            and ctx.channel.id != 414452106129571842  # bot commands id
+            ctx.channel.category_id != Reference.Categories.moderation
+            and ctx.channel.id != Reference.Channels.bot_commands
         ):
-            raise WrongChannel(414452106129571842)
+            raise WrongChannel(Reference.Channels.bot_commands)
         return True
 
     return commands.check(predicate)
 
 
 def devs_only():
+    """
+    Checks if the author in the context is in the bot dev list
+    """
+    
     async def predicate(ctx: commands.Context):
-        if not ctx.author.id in [
-            389718094270038018,  # FC
-            424843380342784011,  # Oeav
-            183092910495891467,  # Sloth
-            248790213386567680,  # Austin
-            229779964898181120,  # source
-        ]:
+        if not ctx.author.id in Reference.botdevlist:
             raise NoAuthorityError
         return True
 
@@ -163,8 +168,12 @@ def devs_only():
 
 
 def mainbot_only():
+    """
+    Checks if the bot running the context is the main bot
+    """
+
     async def predicate(ctx: commands.Context):
-        if not ctx.me.id == 471705718957801483:
+        if not ctx.me.id == Reference.mainbot:
             raise DevBotOnly
         return True
 
@@ -172,7 +181,9 @@ def mainbot_only():
 
 
 def role_and_above(id: int):
-    """Check if user has role above or equal to passed role"""
+    """
+    Check if user has role above or equal to passed role
+    """
 
     async def predicate(ctx: commands.Context):
         check_role = ctx.guild.get_role(id)
@@ -184,16 +195,20 @@ def role_and_above(id: int):
 
 
 def patreon_only():
+    """
+    Checks if the author of the context has a patreon role in the main guild
+
+    The author value is not used in this check. The guild is explicitly
+    collected from the guild cache so the command can be used in a private
+    setting
+    """
+    
     async def predicate(ctx: commands.Context):
 
-        guild = discord.utils.get(ctx.bot.guilds, id=414027124836532234)
+        guild = discord.utils.get(ctx.bot.guilds, id=Reference.guild)
         user = guild.get_member(ctx.author.id)
         user_role_ids = [x.id for x in user.roles]
-        check_role_ids = [
-            config_roles["patreon_blue_role"],
-            config_roles["patreon_green_role"],
-            config_roles["patreon_orange_role"],
-        ]
+        check_role_ids = Reference.Roles.patreon()
         if not any(x in user_role_ids for x in check_role_ids):
             raise NoAuthorityError
         return True
@@ -202,14 +217,13 @@ def patreon_only():
 
 
 def mod_and_above():
+    """
+    Checks if the author of the context has a moderation role
+    """
+    
     async def predicate(ctx: commands.Context):
         user_role_ids = [x.id for x in ctx.author.roles]
-        check_role_ids = [
-            config_roles["mod_role"],
-            config_roles["admin_role"],
-            config_roles["kgsofficial_role"],
-            config_roles["trainee_mod_role"],
-        ]
+        check_role_ids = Reference.Roles.moderator_and_above()
         if not any(x in user_role_ids for x in check_role_ids):
             raise NoAuthorityError
         return True
@@ -218,9 +232,13 @@ def mod_and_above():
 
 
 def admin_and_above():
+    """
+    Checks if the author of the context is an administrator or kgs official
+    """
+    
     async def predicate(ctx: commands.Context):
         user_role_ids = [x.id for x in ctx.author.roles]
-        check_role_ids = [config_roles["admin_role"], config_roles["kgsofficial_role"]]
+        check_role_ids = Reference.Roles.admin_and_above()
         if not any(x in user_role_ids for x in check_role_ids):
             raise NoAuthorityError
         return True
@@ -312,6 +330,7 @@ def create_embed(
 def create_timed_action(
     users: List[Union[discord.User, discord.Member]], action: str, time: int
 ):
+    # TODO DELETE
     """Creates a database entry for timed action [not in use currently]
 
     Args:
@@ -336,6 +355,7 @@ def create_timed_action(
 
 
 def delete_timed_actions_uid(u_id: int):
+    # TODO DELETE
     """delete timed action by user_id [not in use currently]
 
     Args:
@@ -441,6 +461,7 @@ def get_time_string(t: int) -> str:
 
 
 def get_timed_actions():
+    # TODO DELETE
     """Fetch all timed action from db [not in use currently]"""
     return timed_actions_db.find().sort("action_end", 1)
 
@@ -481,13 +502,13 @@ def get_active_staff(bot: commands.AutoShardedBot) -> str:
     Returns: str
     """
 
-    guild = discord.utils.get(bot.guilds, id=414027124836532234)
+    guild = discord.utils.get(bot.guilds, id=Reference.guild)
     active_staff = []
     mods_active = False
     for role_id in [
-        config_roles["mod_role"],
-        config_roles["admin_role"],
-        config_roles["trainee_mod_role"],
+        Reference.Roles.moderator,
+        Reference.Roles.administrator,
+        Reference.Roles.trainee_mod
     ]:
         for member in discord.utils.get(guild.roles, id=role_id).members:
             if member.bot:
@@ -502,8 +523,8 @@ def get_active_staff(bot: commands.AutoShardedBot) -> str:
 
                 if not mods_active:
                     if member.top_role.id in [
-                        config_roles["mod_role"],
-                        config_roles["trainee_mod_role"],
+                        Reference.Roles.moderator,
+                        Reference.Roles.trainee_mod
                     ]:
                         # check for active mods
                         mods_active = True
@@ -512,12 +533,12 @@ def get_active_staff(bot: commands.AutoShardedBot) -> str:
 
     if not mods_active:
         mention_str += (
-            f"<@&{config_roles['mod_role']}> <@&{config_roles['trainee_mod_role']}>"
+            f"<@&{Reference.Roles.moderator}> <@&{Reference.Roles.trainee_mod}>"
         )
 
     return mention_str
 
-
+# This is useless due to slash migration
 def blacklist_member(
     bot: commands.AutoShardedBot, member: discord.Member, command: commands.Command
 ):
@@ -536,7 +557,7 @@ def blacklist_member(
         {"command_name": command.name}, {"$push": {"blacklisted_users": member.id}}
     )
 
-
+# This is useless due to slash migration
 def whitelist_member(member: discord.Member, command: commands.Command) -> bool:
     """
     Whitelist a member from a command and return True
@@ -561,5 +582,5 @@ def is_public_channel(
     Currently used within the moderation cog to determine if an interaction
     should be ephemeral
     """
-    # check if channel is underneath the moderation category
-    return channel.category_id != 414095379156434945  # mod category id
+    
+    return channel.category_id != Reference.Categories.moderation

@@ -9,7 +9,7 @@ import discord
 from discord.ext import commands
 from discord import ui, app_commands
 
-
+from utils.config import Reference
 
 class VideoQuiz(commands.Cog):
 
@@ -27,7 +27,7 @@ class VideoQuiz(commands.Cog):
         self.logger.info("loaded Spot The Scene")
 
     @app_commands.command()
-    @app_commands.guilds(414027124836532234)
+    @app_commands.guilds(Reference.guild)
     @app_checks.mod_and_above()
     async def add_q(self,
                     interaction: discord.Interaction,
@@ -48,7 +48,7 @@ class VideoQuiz(commands.Cog):
         """
 
         await interaction.response.defer(thinking=True)
-        bot_testing = interaction.guild.get_channel(414179142020366336)
+        bot_testing = interaction.guild.get_channel(Reference.Channels.bot_tests)
         f = await image.to_file()
         msg = await bot_testing.send(file=f)
         self.quiz_db.insert_one({"user_id":interaction.user.id,

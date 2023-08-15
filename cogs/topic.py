@@ -11,6 +11,7 @@ from discord.ext import commands
 from discord import app_commands
 
 from utils import app_checks
+from utils.config import Reference
 
 
 class Topic(commands.Cog):
@@ -27,13 +28,6 @@ class Topic(commands.Cog):
             self.topics
         )  # This is used to stop topic repeats
 
-        config_file = open("config.json", "r")
-        config_json = json.loads(config_file.read())
-        config_file.close()
-
-        self.mod_role = config_json["roles"]["mod_role"]
-        self.automated_channel = config_json["logging"]["automated_channel"]
-
     @commands.Cog.listener()
     async def on_ready(self):
         self.logger.info("loaded Topic")
@@ -41,13 +35,13 @@ class Topic(commands.Cog):
     topics_command = app_commands.Group(
         name="topics",
         description="Topic commands",
-        guild_ids=[414027124836532234],
+        guild_ids=[Reference.guild],
         default_permissions=discord.permissions.Permissions(manage_messages=True),
     )
 
     @app_commands.command()
     @app_commands.default_permissions(send_messages=True)
-    @app_commands.guilds(414027124836532234)
+    @app_commands.guilds(Reference.guild)
     @app_checks.general_only()
     @app_checks.topic_perm_check()
     @app_commands.checks.cooldown(1, 300, key=lambda i: (i.guild_id, i.user.id))
@@ -225,7 +219,7 @@ class Topic(commands.Cog):
 
     @app_commands.command()
     @app_commands.default_permissions(send_messages=True)
-    @app_commands.guilds(414027124836532234)
+    @app_commands.guilds(Reference.guild)
     @app_commands.checks.cooldown(1, 60, key=lambda i: (i.guild_id, i.user.id))
     async def topic_suggest(self, interaction: discord.Interaction, topic: str):
         """Suggest a topic
@@ -236,7 +230,7 @@ class Topic(commands.Cog):
             Topic to suggest
         """
         await interaction.response.defer(ephemeral=True)
-        automated_channel = self.bot.get_channel(self.automated_channel)
+        automated_channel = self.bot.get_channel(Reference.Channels.banners_and_topics)
         embed = discord.Embed(description=f"**{topic}**", color=0xC8A2C8)
         embed.set_author(
             name=interaction.user.name + "#" + interaction.user.discriminator,
@@ -255,15 +249,15 @@ class Topic(commands.Cog):
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent):
         # User topic suggestions
-        if payload.channel_id == self.automated_channel and not payload.member.bot:
+        if payload.channel_id == Reference.Channels.banners_and_topics and not payload.member.bot:
             guild = discord.utils.get(self.bot.guilds, id=414027124836532234)
-            mod_role = guild.get_role(self.mod_role)
+            mod_role = guild.get_role(Reference.Roles.moderator)
             if payload.member.top_role >= mod_role:
                 message = await self.bot.get_channel(payload.channel_id).fetch_message(
                     payload.message_id
                 )
                 if message.embeds and message.embeds[0].footer.text == "topic":
-                    if payload.emoji.id == 955703069516128307:
+                    if payload.emoji.id == Reference.Emoji.kgsYes:
                         topic = message.embeds[0].description
                         author = message.embeds[0].author
                         self.topics.append(topic.strip("*"))
@@ -284,7 +278,7 @@ class Topic(commands.Cog):
                         except discord.Forbidden:
                             pass
 
-                    elif payload.emoji.id == 955703108565098496:
+                    elif payload.emoji.id == Reference.Emoji.kgsNo:
                         message = await self.bot.get_channel(
                             payload.channel_id
                         ).fetch_message(payload.message_id)
