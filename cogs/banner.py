@@ -173,7 +173,7 @@ class Banner(commands.Cog):
     # Making this standalone command cause can not override default permissions, and we need only this command to be visible to users.
     @app_commands.command()
     @app_commands.default_permissions(send_messages=True)
-    @app_commands.guilds(414027124836532234)
+    @app_commands.guilds(Reference.guild)
     @app_commands.checks.cooldown(1, 60, key=lambda i: (i.guild_id, i.user.id))
     async def banner_suggest(
         self,

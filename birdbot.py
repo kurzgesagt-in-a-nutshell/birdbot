@@ -13,6 +13,7 @@ from rich.logging import RichHandler
 
 from discord import app_commands, Interaction
 from utils import app_errors
+from utils.config import Reference
 
 logger = logging.getLogger("BirdBot")
 
@@ -77,7 +78,7 @@ class BirdTree(app_commands.CommandTree):
         Attempts to altert the discord channel logs of an exception
         """
 
-        channel = await interaction.client.fetch_channel(865321589919055882)
+        channel = await interaction.client.fetch_channel(Reference.Channels.Logging.dev)
 
         content = traceback.format_exc()
 
@@ -127,7 +128,7 @@ class BirdTree(app_commands.CommandTree):
             interaction,
             msg,
             ephemeral=interaction.channel.category_id
-            != 414095379156434945,  # is_public_channel(interaction.channel)
+            != Reference.Categories.moderation
         )
 
         try:
@@ -167,31 +168,19 @@ class BirdBot(commands.AutoShardedBot):
         max_messages = 1000
         if args.beta:
             prefix = "b!"
-            owner_ids = {
-                389718094270038018,  # FC
-                424843380342784011,  # Oeav
-                248790213386567680,  # Austin
-                183092910495891467,  # Sloth
-                229779964898181120,  # Source
-            }
+            owner_ids = Reference.botdevlist
             activity = discord.Activity(
                 type=discord.ActivityType.watching, name="for bugs"
             )
         elif args.alpha:
             prefix = "a!"
-            owner_ids = {
-                389718094270038018,  # FC
-                424843380342784011,  # Oeav
-                248790213386567680,  # Austin
-                183092910495891467,  # Sloth
-                229779964898181120,  # Source
-            }
+            owner_ids = Reference.botdevlist
             activity = discord.Activity(
                 type=discord.ActivityType.playing, name="imagine being a beta"
             )
         else:
             prefix = "!"
-            owner_ids = {183092910495891467}  # Sloth
+            owner_ids = Reference.botownerlist
             max_messages = 10000
             activity = discord.Activity(
                 type=discord.ActivityType.listening, name="Steve's voice"

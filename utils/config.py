@@ -1,5 +1,12 @@
 
+import discord
+
+
 class Reference:
+    botownerlist = [
+        183092910495891467,  # Sloth
+        248790213386567680,  # Austin
+    ]
     botdevlist = [
         389718094270038018,  # FC
         424843380342784011,  # Oeav
@@ -73,6 +80,7 @@ class Reference:
         social_media_feed = 489450008643502080
         banners_and_topics = 546689491486769163
         intro_channel = 981620309163655218
+        language_tests = 974333356688965672
 
         class Logging:
             mod_actions = 543884016282239006
@@ -87,4 +95,15 @@ class Reference:
         kgsYes = 955703069516128307
         kgsNo = 955703108565098496
 
+        @classmethod
+        async def fetch(cls, client: discord.Client, ref:int) -> discord.Emoji:
+            """
+            When given a client object and an emoji id, returns a discord.Emoji
+            """
+            
+            return await client.fetch_emoji(ref)
+
 # TODO: MISC.py still has some raw ids
+# TODO: roleassign.py still has raw data (delete instead?)
+# TODO: GLOBAL_LISTENERS.py still has raw data
+# TODO: GIVEAWAY.py still has raw data

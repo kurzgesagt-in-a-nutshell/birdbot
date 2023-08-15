@@ -250,7 +250,7 @@ class Topic(commands.Cog):
     async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent):
         # User topic suggestions
         if payload.channel_id == Reference.Channels.banners_and_topics and not payload.member.bot:
-            guild = discord.utils.get(self.bot.guilds, id=414027124836532234)
+            guild = discord.utils.get(self.bot.guilds, id=Reference.guild)
             mod_role = guild.get_role(Reference.Roles.moderator)
             if payload.member.top_role >= mod_role:
                 message = await self.bot.get_channel(payload.channel_id).fetch_message(

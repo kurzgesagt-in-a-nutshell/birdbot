@@ -8,6 +8,7 @@ from discord.ext import commands, tasks
 from discord import app_commands
 
 from utils import app_checks
+from utils.config import Reference
 from utils.helper import (
     calc_time,
 )
@@ -46,7 +47,7 @@ class Giveaway(commands.Cog):
         name="giveaway",
         description="Giveaway commands",
         guild_only=True,
-        guild_ids=[414027124836532234],
+        guild_ids=[Reference.guild],
         default_permissions=discord.permissions.Permissions(manage_messages=True),
     )
 

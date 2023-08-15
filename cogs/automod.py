@@ -13,6 +13,7 @@ from discord import app_commands
 from discord.ext import commands
 
 from utils import app_checks
+from utils.config import Reference
 from utils.helper import (
     create_automod_embed,
     is_internal_command,
@@ -56,7 +57,7 @@ class Filter(commands.Cog):
     filter_commands = app_commands.Group(
         name="filter",
         description="Automod filter commands",
-        guild_ids=[414027124836532234],
+        guild_ids=[Reference.guild],
         default_permissions=discord.permissions.Permissions(manage_messages=True),
     )
 
@@ -227,12 +228,12 @@ class Filter(commands.Cog):
         if isinstance(message.channel, discord.DMChannel):
             return
         if (
-            message.channel.category.id == 414095379156434945  # mod category
-            and message.channel.id != 414179142020366336  # bot testing
+            message.channel.category.id == Reference.Categories.moderation
+            and message.channel.id != Reference.Channels.bot_tests
         ):
             return
 
-        if message.channel.category.id ==974333356688965672: # language testing
+        if message.channel.category.id ==Reference.Channels.language_tests: # language testing
             return 
         if self.is_member_excluded(message.author):
             return
@@ -263,15 +264,15 @@ class Filter(commands.Cog):
 
     @commands.Cog.listener()
     async def on_message_edit(self, before, after):
-        if after.channel.id == 414452106129571842:
+        if after.channel.id == Reference.Channels.bot_commands:
             return
 
         if self.is_member_excluded(after.author):
             return
 
         if (
-            before.channel.category.id == 414095379156434945  # mod category
-            and before.channel.id != 414179142020366336  # bot testing
+            before.channel.category.id == Reference.Categories.moderation  # mod category
+            and before.channel.id != Reference.Channels.bot_tests  # bot testing
         ):
             return
         if before.content == after.content:
@@ -369,11 +370,11 @@ class Filter(commands.Cog):
 
     def is_member_excluded(self, author):
         rolelist = [
-            414092550031278091,  # mod
-            414029841101225985,  # admin
-            414954904382210049,  # offical
-            414155501518061578,  # robobird
-            240254129333731328,  # stealth
+            Reference.Roles.moderator,  # mod
+            Reference.Roles.administrator,  # admin
+            Reference.Roles.kgsofficial,  # offical
+            Reference.Roles.robobird,  # robobird
+            Reference.Roles.stealthbot,  # stealth
         ]
         if author.bot:
             return True
@@ -458,7 +459,7 @@ class Filter(commands.Cog):
 
     # check for emoji spam
     def check_emoji_spam(self, message):
-        if message.channel.id == 526882555174191125:  # new-members
+        if message.channel.id == Reference.Channels.new_members:  # new-members
             return False
 
         if (
@@ -480,7 +481,7 @@ class Filter(commands.Cog):
 
     # check for text spam
     def check_text_spam(self, message):
-        if message.channel.id == 526882555174191125:  # new-members
+        if message.channel.id == Reference.Channels.new_members:  # new-members
             return False
 
         # if the user has past messages
@@ -510,11 +511,10 @@ class Filter(commands.Cog):
     def check_gif_bypass(self, message):
         filetypes = ["mp4", "gif", "webm", "gifv"]
 
-        # general, bot-testing and humanities
         if message.channel.id not in (
-            414027124836532236,
-            414179142020366336,
-            546315063745839115,
+            Reference.Channels.general,
+            Reference.Channels.bot_tests,
+            Reference.Channels.humanities,
         ):
             return
         # This is too aggressive and shouldn't be necessary. Leaving it commented for now though.
