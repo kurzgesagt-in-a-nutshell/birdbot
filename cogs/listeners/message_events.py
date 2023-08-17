@@ -22,8 +22,8 @@ class MessageEvents(commands.Cog):
         if not message.author.bot:
 
             guild = discord.utils.get(self.bot.guilds, id=Reference.guild)
-            mod_role = discord.utils.get(guild.roles, id=self.mod_role)
-            admin_role = discord.utils.get(guild.roles, id=self.admin_role)
+            mod_role = discord.utils.get(guild.roles, id=Reference.Roles.moderator)
+            admin_role = discord.utils.get(guild.roles, id=Reference.Roles.administrator)
 
             if not (
                 (mod_role in message.author.roles)
@@ -239,7 +239,7 @@ class MessageEvents(commands.Cog):
                     )
                     return
                 
-    async def translate_bannsystem(message: discord.Message):
+    async def translate_bannsystem(self, message: discord.Message):
         """
         Translate incoming bannsystem reports
         """

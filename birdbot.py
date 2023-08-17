@@ -5,12 +5,13 @@ import discord
 import dotenv
 import certifi
 
+from pathlib import Path
 from contextlib import contextmanager, suppress
 from logging.handlers import TimedRotatingFileHandler
 from discord.ext import commands
 from rich.logging import RichHandler
 
-from birdtree import BirdTree
+from utils.birdtree import BirdTree
 from utils.config import Reference
 
 logger = logging.getLogger("BirdBot")
@@ -125,20 +126,51 @@ class BirdBot(commands.AutoShardedBot):
         logger.info("Connected to mongoDB")
         cls.db = db
 
-    async def load_extensions(self, args):
-        """Loads all cogs from cogs/ without the '_' prefix"""
-        for filename in os.listdir("cogs/"):
-            if not (
-                filename[:-3] in ("antiraid", "automod", "giveaway")
+    async def load_extensions(self, folder, args):
+        """
+        Iterates over the extension folder and attempts to load all python files
+        found.
+        """
+        
+        
+        if folder is None: return
+        extdir = Path(folder)
+
+        if not extdir.is_dir(): return
+
+        for item in extdir.iterdir():
+            if (
+                item.stem in ("antiraid", "automod", "giveaway")
                 and (args.beta or args.alpha)
-            ):
-                if not filename.startswith("_"):
-                    logger.info(f"loading {f'cogs.{filename[:-3]}'}")
-                    try:
-                        await self.load_extension(f"cogs.{filename[:-3]}")
-                    except Exception as e:
-                        logger.error(f"cogs.{filename[:-3]} cannot be loaded. [{e}]")
-                        logger.exception(f"Cannot load cog {f'cogs.{filename[:-3]}'}")
+            ): 
+                logger.debug("Skipping: %s", item.name)
+                continue
+            
+            if item.name.startswith("_"): continue
+            if item.is_dir():
+                await self.load_extensions(item, args)
+                continue
+
+            if item.suffix == ".py":
+                await self.try_load(item)
+
+    async def try_load(self, path: Path) -> bool:
+        """
+        Attempts to load the given path and returns a boolean indicating
+        successful status
+        """
+        
+        extension = ".".join(path.with_suffix('').parts)
+
+        try:
+            await self.load_extension(extension)
+            return True
+        except Exception as e:
+            logger.error(
+                "an error occurred while loading extension", 
+                exc_info=e
+            )
+            return False
 
     async def close(self):
         """Close the Discord connection and the aiohttp sessions if any (future perhaps?)."""
