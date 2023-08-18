@@ -1,7 +1,7 @@
 import enum, typing, logging
 import discord
 
-from birdbot import BirdBot
+from app.birdbot import BirdBot
 
 INFRACTION_DB = BirdBot.db.Infraction
 logger = logging.getLogger(__name__)

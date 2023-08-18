@@ -1,6 +1,6 @@
 import aiohttp, random
 
-from birdbot import BirdBot
+from app.birdbot import BirdBot
 
 from discord.ext import commands
 import discord

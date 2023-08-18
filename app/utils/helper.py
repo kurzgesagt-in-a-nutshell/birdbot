@@ -8,7 +8,7 @@ import typing
 import discord
 from discord.ext import commands
 
-from birdbot import BirdBot
+from app.birdbot import BirdBot
 
 infraction_db = BirdBot.db.Infraction
 timed_actions_db = BirdBot.db.TimedAction

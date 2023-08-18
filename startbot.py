@@ -4,8 +4,8 @@ import dotenv
 import argparse
 import asyncio
 
-from birdbot import BirdBot
-from birdbot import setup
+from app.birdbot import BirdBot
+from app.birdbot import setup
 
 
 parser = argparse.ArgumentParser()

@@ -15,7 +15,7 @@ from discord.ext import commands
 from discord.ext.commands import errors
 from discord import app_commands
 
-from birdbot import BirdBot
+from app.birdbot import BirdBot
 
 from utils import app_checks
 from utils.infraction import InfractionList

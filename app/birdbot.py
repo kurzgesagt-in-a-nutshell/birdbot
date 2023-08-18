@@ -11,7 +11,7 @@ from logging.handlers import TimedRotatingFileHandler
 from discord.ext import commands
 from rich.logging import RichHandler
 
-from utils.birdtree import BirdTree
+from .birdtree import BirdTree
 from utils.config import Reference
 
 logger = logging.getLogger("BirdBot")
