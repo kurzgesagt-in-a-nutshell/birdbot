@@ -16,25 +16,6 @@ class MessageEvents(commands.Cog):
     @commands.Cog.listener()
     async def on_message(self, message):
 
-        # TODO: we can most likely remove this since we have all transitioned
-        # to understanding slash?
-
-        if not message.author.bot:
-
-            guild = discord.utils.get(self.bot.guilds, id=Reference.guild)
-            mod_role = discord.utils.get(guild.roles, id=Reference.Roles.moderator)
-            admin_role = discord.utils.get(guild.roles, id=Reference.Roles.administrator)
-
-            if not (
-                (mod_role in message.author.roles)
-                or (admin_role in message.author.roles)
-            ):
-                return
-            if re.match("^-(kick|ban|mute|warn)", message.content):
-                await message.channel.send(f"ahem.. {message.author.mention}")
-        
-        # --- END TODO
-
         await self.check_mod_alert(message)
         await self.check_server_moments(message)
         await self.translate_bannsystem(message)
