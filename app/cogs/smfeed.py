@@ -4,7 +4,7 @@ import json
 import discord
 from discord.ext import commands
 
-from utils.config import Reference
+from app.utils.config import Reference
 
 class Smfeed(commands.Cog):
     def __init__(self, bot):

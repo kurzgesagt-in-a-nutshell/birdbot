@@ -5,8 +5,8 @@ from requests.models import PreparedRequest
 import discord, io
 from discord.ext import commands
 
-from utils.helper import is_internal_command
-from utils.config import Reference
+from app.utils.helper import is_internal_command
+from app.utils.config import Reference
 
 class MessageEvents(commands.Cog):
     

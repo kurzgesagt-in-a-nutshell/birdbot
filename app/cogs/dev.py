@@ -17,10 +17,9 @@ import discord
 from discord.ext import commands
 from discord import app_commands
 
-from utils import app_checks, helper
-from utils.helper import mod_and_above, devs_only, mainbot_only
+from app.utils import checks, helper
 
-from utils.config import Reference
+from app.utils.config import Reference
 
 class Dev(commands.Cog):
     def __init__(self, bot):
@@ -48,7 +47,7 @@ class Dev(commands.Cog):
     @app_commands.command()
     @app_commands.guilds(Reference.guild)
     @app_commands.default_permissions(manage_messages=True)
-    @app_checks.mod_and_above()
+    @checks.mod_and_above()
     async def activity(
         self,
         interaction: discord.Interaction,
@@ -148,7 +147,7 @@ class Dev(commands.Cog):
                 else:
                     await ctx.send(f"```py\n{value}{ret}\n```")
 
-    @devs_only()
+    @checks.devs_only()
     @commands.command(name="reload", hidden=True)
     async def reload(self, ctx: commands.Context, *, module_name: str):
         """Reload a module"""
@@ -171,14 +170,14 @@ class Dev(commands.Cog):
             self.logger.error("{}: {}".format(type(e).__name__, e))
 
     @commands.command(hidden=True)
-    @mod_and_above()
+    @checks.mod_and_above()
     async def kill(self, ctx: commands.Context):
         """Kill the bot"""
         await ctx.send("Bravo 6 going dark.")
         await self.bot.close()
 
     @commands.command(hidden=True)
-    @mod_and_above()
+    @checks.mod_and_above()
     async def restart(self, ctx: commands.Context, instance: str):
         """restarts sub processes"""
         if instance not in ("songbirdalpha", "songbirdbeta", "twitterfeed", "youtubefeed"):
@@ -200,7 +199,7 @@ class Dev(commands.Cog):
             await ctx.send("could not restart process")
             await ctx.send(e.__str__())
 
-    @devs_only()
+    @checks.devs_only()
     @commands.command(aliases=["logs"], hidden=True)
     async def log(self, ctx: commands.Context, lines: int = 10):
         """View the bot's logs"""
@@ -221,7 +220,7 @@ class Dev(commands.Cog):
 
     @commands.command()
     @commands.is_owner()
-    @mainbot_only()
+    @checks.mainbot_only()
     async def launch(self, ctx: commands.Context, instance: str):
         """Spawn child process of alpha/beta bot instance on the VM, only works on main bot"""
 
@@ -246,7 +245,7 @@ class Dev(commands.Cog):
             except ProcessLookupError:
                 pass
 
-    @devs_only()
+    @checks.devs_only()
     @commands.command(hidden=True)
     async def pull(self, ctx: commands.Context):
         self.logger.info("pulling repository")
@@ -264,7 +263,7 @@ class Dev(commands.Cog):
 
     @app_commands.command()
     @app_commands.default_permissions(manage_messages=True)
-    @app_checks.mod_and_above()
+    @checks.mod_and_above()
     async def send(
         self,
         interaction: discord.Interaction,
@@ -288,7 +287,7 @@ class Dev(commands.Cog):
         await logging_channel.send(embed=embed)
 
     @commands.command()
-    @devs_only()
+    @checks.devs_only()
     async def sync_apps(self, ctx: commands.Context):
 
         await ctx.bot.tree.sync()
@@ -296,7 +295,7 @@ class Dev(commands.Cog):
         await ctx.reply("Synced local guild commands")
 
     @commands.command()
-    @devs_only()
+    @checks.devs_only()
     async def clear_apps(self, ctx: commands.Context):
 
         ctx.bot.tree.clear_commands(guild=discord.Object(Reference.guild))

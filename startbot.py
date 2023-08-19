@@ -36,7 +36,7 @@ async def main():
         dotenv.load_dotenv()
         args = parser.parse_args()
         bot = BirdBot.from_parseargs(args)
-        await bot.load_extensions("cogs", args)
+        await bot.load_extensions("app/cogs", args)
         bot.add_check(is_member_whitelisted)
         if args.beta:
             token = os.environ.get("BETA_BOT_TOKEN")

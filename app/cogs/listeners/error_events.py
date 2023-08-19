@@ -17,15 +17,15 @@ from discord import app_commands
 
 from app.birdbot import BirdBot
 
-from utils import app_checks
-from utils.infraction import InfractionList
-from utils.helper import (
+from app import utils
+from app.utils.infraction import InfractionList
+from app.utils.helper import (
     NoAuthorityError,
     DevBotOnly,
     WrongChannel,
     is_internal_command,
 )
-from utils.config import Reference
+from app.utils.config import Reference
 
 
 class Errors(commands.Cog):
@@ -37,26 +37,15 @@ class Errors(commands.Cog):
         self.logger = logging.getLogger("Listeners")
         self.bot = bot
 
-    async def react_send_delete(
-        self,
-        ctx: commands.Context,
-        reaction: str = None,
-        message: str = None,
-        delay: int = 6,
-    ):
-        """React to the command, send a message and delete later"""
-        if reaction is not None:
-            await ctx.message.add_reaction(reaction)
-        if message is not None:
-            await ctx.send(message, delete_after=delay)
-        await ctx.message.delete(delay=delay)
-
     @commands.Cog.listener()
     async def on_ready(self):
         self.logger.info("loaded Error listener")
 
     @commands.Cog.listener()
     async def on_command_error(self, ctx: commands.Context, err):
+        
+        if isinstance(err, commands.CommandNotFound):
+            return
 
         traceback_txt = "".join(TracebackException.from_exception(err).format())
         channel = await self.bot.fetch_channel(self.dev_logging_channel)
@@ -71,35 +60,17 @@ class Errors(commands.Cog):
                 errors.CheckFailure,
             ),
         ):
-            await self.react_send_delete(ctx, reaction="<:kgsNo:955703108565098496>")
+            err = utils.errors.CheckFailure(content=str(err))
 
-        elif isinstance(err, DevBotOnly):
-            await self.react_send_delete(
-                ctx,
-                message="This command can only be run on the main bot",
-                reaction="<:kgsNo:955703108565098496>",
-            )
+        if isinstance(err, utils.errors.InternalError):
+            embed = err.format_notif_embed(ctx)
 
-        elif isinstance(err, commands.MissingRequiredArgument):
-            await self.react_send_delete(
-                ctx,
-                message=f"You're missing the {err.param.name} argument. Please check syntax using the help command.",
-                reaction="<:kgsNo:955703108565098496>",
-            )
-
-        elif isinstance(err, commands.CommandNotFound):
-            pass
-
-        elif isinstance(err, errors.CommandOnCooldown):
-            await self.react_send_delete(ctx, reaction="\U000023f0", delay=4)
-
-        elif isinstance(err, (WrongChannel, errors.BadArgument)):
-            await self.react_send_delete(
-                ctx,
-                message=err,
-                reaction="<:kgsNo:955703108565098496>",
-                delay=4,
-            )
+            await ctx.send(embed=embed, delete_after=5)
+            await asyncio.sleep(5)
+            try:
+                await ctx.message.delete()
+            except discord.error.NotFound:
+                pass
 
         else:
             self.logger.exception(traceback_txt)

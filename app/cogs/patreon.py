@@ -4,9 +4,9 @@ from discord import (app_commands, Interaction)
 from discord.ext import commands
 import discord
 
-from utils import app_checks
-from utils.infraction import InfractionList
-from utils.config import Reference
+from app.utils import checks
+from app.utils.infraction import InfractionList
+from app.utils.config import Reference
 
 class Patreon(commands.Cog):
 
@@ -48,7 +48,7 @@ class Patreon(commands.Cog):
                 return
 
     @app_commands.command()
-    @app_checks.patreon_only()
+    @checks.patreon_only()
     @app_commands.checks.cooldown(1, 300, key=lambda i: (i.user.id))
     async def unenrol(self, interaction: discord.Interaction):
         """Unenrol from Patron auto join"""

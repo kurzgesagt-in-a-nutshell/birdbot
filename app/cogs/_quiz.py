@@ -2,12 +2,12 @@ import logging
 import numpy as np
 import os
 import asyncio
-from utils.helper import admin_and_above
+from utils import checks
 
 import pymongo
 from discord.ext import commands
 
-from utils.config import Reference
+from app.utils.config import Reference
 
 
 class Quiz(commands.Cog):
@@ -50,7 +50,7 @@ class Quiz(commands.Cog):
         except Exception as e:
             logging.error(str(e))
 
-    @admin_and_above()
+    @checks.admin_and_above()
     @commands.command(hidden=True)
     async def end(self, ctx, winners, *, prize):
         """end giveaway"""

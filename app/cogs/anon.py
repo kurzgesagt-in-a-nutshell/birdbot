@@ -2,14 +2,14 @@ import logging
 import typing
 import numpy as np
 import os
-from utils import app_checks
+from app.utils import checks
 
 import pymongo
 import discord
 from discord.ext import commands
 from discord import ui, app_commands
 
-from utils.config import Reference
+from app.utils.config import Reference
 
 class VideoQuiz(commands.Cog):
 
@@ -28,7 +28,7 @@ class VideoQuiz(commands.Cog):
 
     @app_commands.command()
     @app_commands.guilds(Reference.guild)
-    @app_checks.mod_and_above()
+    @checks.mod_and_above()
     async def add_q(self,
                     interaction: discord.Interaction,
                     image: discord.Attachment,

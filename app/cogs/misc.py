@@ -12,9 +12,8 @@ import discord
 from discord.ext import commands
 from discord import app_commands
 
-from utils import app_checks
-from utils.helper import role_and_above, bot_commands_only
-from utils.config import Reference
+from app.utils import checks
+from app.utils.config import Reference
 
 # Mongo schema to store intros
 # {
@@ -118,7 +117,7 @@ class Misc(commands.Cog):
 
         return embeds
 
-    @role_and_above(Reference.Roles.subreddit_mod)  # subreddit mods and above | exludes trainees
+    @checks.role_and_above(Reference.Roles.subreddit_mod)  # subreddit mods and above | exludes trainees
     @commands.group(hidden=True)
     async def intro(self, ctx):
         """
@@ -279,7 +278,7 @@ class Misc(commands.Cog):
     @app_commands.command()
     @app_commands.guilds(Reference.guild)
     @app_commands.checks.cooldown(1, 10)
-    @app_checks.bot_commands_only()
+    @checks.bot_commands_only()
     async def big_emote(self, interaction: discord.Interaction, emoji: str):
         """Get image for server emote
 

@@ -12,9 +12,9 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
-from utils import app_checks
-from utils.config import Reference
-from utils.helper import (
+from app.utils import checks
+from app.utils.config import Reference
+from app.utils.helper import (
     create_automod_embed,
     is_internal_command,
     is_external_command,
@@ -94,7 +94,7 @@ class Filter(commands.Cog):
             self.humanities_list_regex = self.generate_regex(self.humanities_list)
 
     @filter_commands.command()
-    @app_checks.mod_and_above()
+    @checks.mod_and_above()
     async def show(
         self,
         interaction: discord.Interaction,
@@ -116,7 +116,7 @@ class Filter(commands.Cog):
         )
 
     @filter_commands.command()
-    @app_checks.mod_and_above()
+    @checks.mod_and_above()
     async def add(
         self,
         interaction: discord.Interaction,
@@ -150,7 +150,7 @@ class Filter(commands.Cog):
         await self.updatelist(list_type)
 
     @filter_commands.command()
-    @app_checks.mod_and_above()
+    @checks.mod_and_above()
     async def remove(
         self,
         interaction: discord.Interaction,
@@ -183,7 +183,7 @@ class Filter(commands.Cog):
 
         await self.updatelist(list_type)
 
-    @app_checks.mod_and_above()
+    @checks.mod_and_above()
     @filter_commands.command()
     async def check(
         self,

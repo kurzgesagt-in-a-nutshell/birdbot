@@ -12,7 +12,7 @@ from discord.ext import commands
 from rich.logging import RichHandler
 
 from .birdtree import BirdTree
-from utils.config import Reference
+from .utils.config import Reference
 
 logger = logging.getLogger("BirdBot")
 

@@ -10,8 +10,8 @@ import discord
 from discord.ext import commands
 from discord import app_commands
 
-from utils import app_checks
-from utils.config import Reference
+from app.utils import checks
+from app.utils.config import Reference
 
 
 class Topic(commands.Cog):
@@ -42,8 +42,8 @@ class Topic(commands.Cog):
     @app_commands.command()
     @app_commands.default_permissions(send_messages=True)
     @app_commands.guilds(Reference.guild)
-    @app_checks.general_only()
-    @app_checks.topic_perm_check()
+    @checks.general_only()
+    @checks.topic_perm_check()
     @app_commands.checks.cooldown(1, 300, key=lambda i: (i.guild_id, i.user.id))
     async def topic(self, interaction: discord.Interaction):
         """Fetches a random topic"""
@@ -54,7 +54,7 @@ class Topic(commands.Cog):
             self.topics_list = copy.deepcopy(self.topics)
 
     @topics_command.command()
-    @app_checks.mod_and_above()
+    @checks.mod_and_above()
     async def search(self, interaction: discord.Interaction, text: str):
         """Search a topic
 
@@ -85,7 +85,7 @@ class Topic(commands.Cog):
         await interaction.edit_original_response(embed=embed)
 
     @topics_command.command()
-    @app_checks.mod_and_above()
+    @checks.mod_and_above()
     async def add(self, interaction: discord.Interaction, text: str):
         """Add a topic
 
@@ -104,7 +104,7 @@ class Topic(commands.Cog):
         )
 
     @topics_command.command()
-    @app_checks.mod_and_above()
+    @checks.mod_and_above()
     async def remove(
         self,
         interaction: discord.Interaction,

@@ -5,8 +5,8 @@ import discord
 from discord.ext import commands
 from discord import app_commands
 
-from utils import app_checks
-from utils.config import Reference
+from app.utils import checks
+from app.utils.config import Reference
 
 class Help(commands.Cog):
     def __init__(self, bot):
@@ -21,7 +21,7 @@ class Help(commands.Cog):
     # TODO: Convert the output to embed or some UI
     # TODO: Remove mod_and_above and default_permission check.
     @app_commands.command()
-    @app_checks.mod_and_above()
+    @checks.mod_and_above()
     @app_commands.default_permissions(manage_messages=True)
     @app_commands.checks.cooldown(
         1,

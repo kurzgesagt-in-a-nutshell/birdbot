@@ -7,12 +7,12 @@ import discord
 from discord.ext import commands, tasks
 from discord import app_commands
 
-from utils import app_checks
-from utils.config import Reference
-from utils.helper import (
+from app.utils import checks
+from app.utils.config import Reference
+from app.utils.helper import (
     calc_time,
 )
-from utils.custom_converters import member_converter
+from app.utils.custom_converters import member_converter
 
 import typing
 
@@ -191,7 +191,7 @@ class Giveaway(commands.Cog):
             self.giveaway_task.cancel()
 
     @giveaway_commands.command()
-    @app_checks.mod_and_above()
+    @checks.mod_and_above()
     async def start(
         self,
         interaction: discord.Interaction,
@@ -289,7 +289,7 @@ class Giveaway(commands.Cog):
         await interaction.edit_original_response(content="Giveaway started.")
 
     @giveaway_commands.command()
-    @app_checks.mod_and_above()
+    @checks.mod_and_above()
     async def end(self, interaction: discord.Interaction, message_id: str):
         """Ends the giveaway preemptively
 
@@ -319,7 +319,7 @@ class Giveaway(commands.Cog):
         await interaction.edit_original_response(content="Giveaway not found!")
 
     @giveaway_commands.command()
-    @app_checks.mod_and_above()
+    @checks.mod_and_above()
     async def cancel(self, interaction: discord.Interaction, message_id: str):
         """Cancels the giveaway
 
@@ -360,7 +360,7 @@ class Giveaway(commands.Cog):
         await interaction.edit_original_response(content="Giveaway not found!")
 
     @giveaway_commands.command()
-    @app_checks.mod_and_above()
+    @checks.mod_and_above()
     async def reroll(
         self,
         interaction: discord.Interaction,
@@ -410,7 +410,7 @@ class Giveaway(commands.Cog):
         await interaction.edit_original_response(content="Giveaway not found!")
 
     @giveaway_commands.command()
-    @app_checks.mod_and_above()
+    @checks.mod_and_above()
     async def list(self, interaction: discord.Interaction):
         """List all active giveaways"""
 

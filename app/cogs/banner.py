@@ -9,13 +9,13 @@ import discord
 from discord.ext import commands, tasks
 from discord import app_commands
 
-from utils import app_checks
-from utils.helper import (
+from app.utils import checks
+from app.utils.helper import (
     calc_time,
     get_time_string,
 )
 
-from utils.config import Reference
+from app.utils.config import Reference
 
 class Banner(commands.Cog):
     def __init__(self, bot):
@@ -71,7 +71,7 @@ class Banner(commands.Cog):
             )
 
     @banner_commands.command()
-    @app_checks.mod_and_above()
+    @checks.mod_and_above()
     async def add(
         self,
         interaction: discord.Interaction,
@@ -128,7 +128,7 @@ class Banner(commands.Cog):
         await interaction.edit_original_response(content="Banner added successfully.")
 
     @banner_commands.command()
-    @app_checks.mod_and_above()
+    @checks.mod_and_above()
     async def rotate(
         self,
         interaction: discord.Interaction,
@@ -230,7 +230,7 @@ class Banner(commands.Cog):
         await interaction.edit_original_response(content="Banner suggested.")
 
     @banner_commands.command()
-    @app_checks.mod_and_above()
+    @checks.mod_and_above()
     @app_commands.checks.cooldown(1, 30, key=lambda i: (i.guild_id, i.user.id))
     async def change(
         self,

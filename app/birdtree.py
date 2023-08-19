@@ -3,8 +3,8 @@ import traceback, io
 from discord import (app_commands, Interaction)
 import discord
 
-from utils import app_errors
-from utils.config import Reference
+from .utils import errors
+from .utils.config import Reference
 
 # TODO Move to separate file once util is organized
 # currently would throw a circular import error
@@ -52,38 +52,36 @@ class BirdTree(app_commands.CommandTree):
         self, interaction: Interaction, error: app_commands.AppCommandError
     ):
         """Handles errors thrown within the command tree"""
-        if isinstance(error, app_commands.CheckFailure):
+        if isinstance(error, errors.InternalError):
             # Inform user of failure ephemerally
 
-            if isinstance(error, app_errors.InvalidAuthorizationError):
 
-                msg = f"<:kgsNo:955703108565098496> {str(error)}"
-                await maybe_responded(interaction, msg, ephemeral=True)
+            embed = error.format_notif_embed(interaction)
+            await maybe_responded(interaction, embed=embed, ephemeral=True)
 
-                return
+            return
+        elif isinstance(error, app_commands.CheckFailure):
 
-        elif isinstance(error, app_errors.InvalidInvocationError):
-            # inform user of invalid interaction input ephemerally
+            user_shown_error = errors.CheckFailure(
+                content=str(error)
+            )
 
-            msg = f"<:kgsNo:955703108565098496> {str(error)}"
-            await maybe_responded(interaction, msg, ephemeral=True)
+            embed = user_shown_error.format_notif_embed(interaction)
+            await maybe_responded(interaction, embed=embed, ephemeral=True)
 
             return
 
-        if isinstance(error, app_commands.errors.CommandOnCooldown):
-            msg = f"<:kgsNo:955703108565098496> {str(error)}"
-            await maybe_responded(interaction, msg, ephemeral=True)
-
-            return
         # most cases this will consist of errors thrown by the actual code
-        # TODO send in <#865321589919055882>
 
-        msg = f"an internal error occurred. if this continues please inform an active bot dev"
+        is_in_public_channel = (
+            interaction.channel.category_id!= Reference.Categories.moderation
+        )
+
+        user_shown_error = errors.InternalError()
         await maybe_responded(
             interaction,
-            msg,
-            ephemeral=interaction.channel.category_id
-            != Reference.Categories.moderation
+            embed = user_shown_error.format_notif_embed(interaction),
+            ephemeral=is_in_public_channel
         )
 
         try:
