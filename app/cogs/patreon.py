@@ -21,7 +21,7 @@ class Patreon(commands.Cog):
 
 
         diff_roles = [role.id for role in member.roles]
-        if any(x in diff_roles for x in Reference.Roles.patreon):
+        if any(x in diff_roles for x in Reference.Roles.patreon()):
 
             guild = discord.utils.get(self.bot.guilds, id=Reference.guild)
             await member.add_roles(
