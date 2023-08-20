@@ -50,7 +50,17 @@ class Errors(commands.Cog):
         traceback_txt = "".join(TracebackException.from_exception(err).format())
         channel = await self.bot.fetch_channel(self.dev_logging_channel)
 
-        if isinstance(
+        if isinstance(err, utils.errors.InternalError):
+            embed = err.format_notif_embed(ctx)
+
+            await ctx.send(embed=embed, delete_after=5)
+            await asyncio.sleep(5)
+            try:
+                await ctx.message.delete()
+            except discord.error.NotFound:
+                pass
+
+        elif isinstance(
             err,
             (
                 errors.MissingPermissions,
@@ -62,7 +72,6 @@ class Errors(commands.Cog):
         ):
             err = utils.errors.CheckFailure(content=str(err))
 
-        if isinstance(err, utils.errors.InternalError):
             embed = err.format_notif_embed(ctx)
 
             await ctx.send(embed=embed, delete_after=5)

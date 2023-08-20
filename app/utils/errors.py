@@ -52,3 +52,7 @@ class InvalidAuthorizationError(CheckFailure):
 class InvalidInvocationError(CheckFailure):
     title = "<:kgsNo:955703108565098496> Invalid Invocation"
     content = "```\nThis command was ran in an invalid context\n```"
+
+class InvalidParameterError(CheckFailure):
+    title = "<:kgsNo:955703108565098496> Invalid Parameters"
+    content = "The parameters you provided are not accepted in this context"

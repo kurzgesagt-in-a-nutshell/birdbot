@@ -1,3 +1,22 @@
+"""
+banner.py
+
+The banners that are stored within the mongo database are the image urls that
+are sent in the banners_and_topics channel. If the reference to these are
+removed then the urls are lost.
+
+The banner suggest design goes as following:
+User runs command to suggest photo. In this process an embed is created to
+be displayed to the qualified users to accept or deny the suggested photo. A 
+view is attached to the embed's message to enable the user input of accepting
+or denying the photo. This view is a global view and therefore can be used
+multiple times with different messages and listens to all active references of
+it. 
+
+Once the qualified user selects the action, the view is removed, the embed is
+updated to display the chocie made and the banner is added or not.
+"""
+
 import logging
 import json
 import typing
@@ -7,15 +26,107 @@ import io
 
 import discord
 from discord.ext import commands, tasks
-from discord import app_commands
+from discord import (
+    app_commands, 
+    ui as dui,
+    Interaction
+)
+from discord.interactions import Interaction
 
-from app.utils import checks
+from app.utils import checks, errors
 from app.utils.helper import (
     calc_time,
     get_time_string,
 )
 
 from app.utils.config import Reference
+
+logger = logging.getLogger(__name__)
+
+class BannerView(dui.View):
+    """
+    The static view that is used for handling the controls of accepting or
+    denying a banner suggestion
+    """
+
+    def __init__(self, banner_db, banners, accept_id, deny_id):
+
+        self.banner_db = banner_db
+        self.banners = banners
+
+        self._accept.custom_id = accept_id
+        self._deny.custom_id = deny_id
+
+    async def interaction_check(self, interaction: Interaction) -> bool:
+        """
+        Checks that the interactor is a moderator+ for the defined guild
+        """
+        
+        guild = discord.utils.get(self.bot.guilds, id=Reference.guild)
+        mod_role = guild.get_role(Reference.Roles.moderator)
+
+        return interaction.guild.id == guild.id \
+            and interaction.user.top_role >= mod_role
+
+    @dui.button(
+        label="Accept", 
+        style=discord.ButtonStyle.blurple, 
+        emoji=discord.PartialEmoji.from_str("<:kgsYes:955703069516128307>")
+    )
+    async def _accept(self, interaction: Interaction, button:dui.Button):
+        """
+        Accepts the banner and removes the view from the message
+        Changes the embed to indicate it was accepted and by who
+        """
+        message = interaction.message
+
+        url = message.embeds[0].image.url
+        author = message.embeds[0].author
+        embed = discord.Embed(
+            title=f"Accepted by {interaction.user.name}",
+            colour=discord.Colour.green()
+        )
+        embed.set_image(url=url)
+        embed.set_author(name=author.name, icon_url=author.icon_url)
+
+        logger.critical("accepted banner is not being updated due to commented code")
+        # self.banners.append(url)
+        # self.banner_db.update_one(
+        #     {"name": "banners"}, {"$set": {"banners": self.banners}}
+        # )
+
+        await message.edit(embed=embed, view=None)
+        # member = guild.get_member_named(author.name)
+        # try:
+        #     await member.send(
+        #         f"Your banner suggestion was accepted {url}"
+        #     )
+        # except discord.Forbidden:
+        #     pass
+
+
+    @dui.button(
+        label="Deny",
+        style=discord.ButtonStyle.danger,
+        emoji=discord.PartialEmoji.from_str("<:kgsNo:955703108565098496>")
+    )
+    async def _deny(self, interaction: Interaction, button:dui.Button):
+        """
+        Denys the banner and removes the view from the message
+        Changes the embed to indicate it was denied and by who
+        """
+        message = interaction.message
+        
+        url = message.embeds[0].image.url
+        author = message.embeds[0].author
+        embed = discord.Embed(
+            title=f"Denied by {interaction.user.name}",
+            colour=discord.Colour.red()
+        )
+        embed.set_image(url=url)
+        embed.set_author(name=author.name, icon_url=author.icon_url)
+
+        await message.edit(embed=embed, view=None)
 
 class Banner(commands.Cog):
     def __init__(self, bot):
@@ -25,11 +136,24 @@ class Banner(commands.Cog):
         self.index = 0
         self.banner_db = self.bot.db.Banners
 
-    def cog_load(self) -> None:
+    async def cog_load(self) -> None:
         self.banners = self.banner_db.find_one({"name": "banners"})["banners"]
+        
+        self.BANNER_ACCEPT = f"BANNER-ACCEPT-{self.bot.user.id}"
+        self.BANNER_DENY = f"BANNER-DENY-{self.bot.user.id}"
+        
+        self.BANNER_VIEW = BannerView(
+            banner_db = self.banner_db,
+            banners = self.banners,
+            accept_id = self.BANNER_ACCEPT,
+            deny_id = self.BANNER_DENY
+        )
 
-    def cog_unload(self):
+        self.bot.add_view(self.BANNER_VIEW)
+
+    async def cog_unload(self):
         self.timed_banner_rotation.cancel()
+        self.BANNER_VIEW.stop()
 
     @commands.Cog.listener()
     async def on_ready(self):
@@ -57,17 +181,17 @@ class Banner(commands.Cog):
                             if byte:
                                 return banner
                             return url
-                        raise commands.BadArgument(
-                            message=f"Image must be less than 10240kb, yours is {int(len(banner)/1024)}kb."
+                        raise errors.InvalidParameterError(
+                            content=f"Image must be less than 10240kb, yours is {int(len(banner)/1024)}kb."
                         )
 
-                    raise commands.BadArgument(
-                        message=f"Link must be for an image file not {response.content_type}."
+                    raise errors.InvalidParameterError(
+                        content=f"Link must be for an image file not {response.content_type}."
                     )
 
         except aiohttp.InvalidURL:
-            raise commands.BadArgument(
-                message="You must provide a link or an attachment."
+            raise errors.InvalidParameterError(
+                content="The link provided is not valid"
             )
 
     @banner_commands.command()
@@ -88,43 +212,9 @@ class Banner(commands.Cog):
             URL or Link of an image
         """
 
-        await interaction.response.defer(ephemeral=True)
+        self.banner_suggest.callback(self, interaction, image, url)
 
-        if image:
-
-            try:
-                fp = await self.verify_url(url=image.url, byte=True)
-            except commands.BadArgument as ba:
-                return await interaction.edit_original_response(content=str(ba))
-            except Exception as e:
-                raise e
-
-            if fp:
-                banners_channel = interaction.guild.get_channel(Reference.Channels.banners_and_topics)
-                msg = await banners_channel.send(
-                    file=discord.File(io.BytesIO(fp), filename=image.filename)
-                )
-
-                url = msg.attachments[0].url
-
-        elif url:
-            try:
-                url = await self.verify_url(url=url)
-            except commands.BadArgument as ba:
-                return await interaction.edit_original_response(content=str(ba))
-            except Exception as e:
-                raise e
-
-        else:
-            return await interaction.edit_original_response(
-                content="Required any one of the parameters."
-            )
-
-        self.banners.append(url)
-
-        self.banner_db.update_one(
-            {"name": "banners"}, {"$set": {"banners": self.banners}}
-        )
+        self.BANNER_VIEW._accept.callback(interaction)
         await interaction.edit_original_response(content="Banner added successfully.")
 
     @banner_commands.command()
@@ -193,25 +283,17 @@ class Banner(commands.Cog):
         await interaction.response.defer(ephemeral=True)
         automated_channel = interaction.guild.get_channel(Reference.Channels.banners_and_topics)
 
-        if image:
-            try:
-                url = await self.verify_url(url=image.url, byte=True)
-            except commands.BadArgument as ba:
-                return await interaction.edit_original_response(content=str(ba))
-            except Exception as e:
-                raise e
+        if url:
 
-        elif url:
-            try:
-                url = await self.verify_url(url=url, byte=True)
-            except commands.BadArgument as ba:
-                return await interaction.edit_original_response(content=str(ba))
-            except Exception as e:
-                raise e
+            url = await self.verify_url(url=url, byte=True)
+
+        elif image:
+
+            url = await self.verify_url(url=image.url, byte=True)
 
         else:
-            return await interaction.edit_original_response(
-                content="Required any one of the parameters."
+            raise errors.InvalidParameterError(
+                content="An image file or url is required"
             )
 
         file = discord.File(io.BytesIO(url), filename="banner.png")
@@ -223,9 +305,7 @@ class Banner(commands.Cog):
         )
         embed.set_image(url="attachment://banner.png")
         embed.set_footer(text="banner")
-        message = await automated_channel.send(embed=embed, file=file)
-        await message.add_reaction("<:kgsYes:955703069516128307>")
-        await message.add_reaction("<:kgsNo:955703108565098496>")
+        await automated_channel.send(embed=embed, file=file, view=self.BANNER_VIEW)
 
         await interaction.edit_original_response(content="Banner suggested.")
 
@@ -247,22 +327,20 @@ class Banner(commands.Cog):
         url: str
             URL or Link of an image
         """
-        if url is None:
-            if image:
-                url = image.url
-            else:
-                return await interaction.response.send_message(
-                    "You must provide a url or attachment.", ephemeral=True
-                )
+        if url:
 
-        try:
-            banner = await self.verify_url(url, byte=True)
-        except commands.BadArgument as ba:
-            return await interaction.response.send_message(str(ba), ephemeral=True)
-        except Exception as e:
-            raise e
+            url = await self.verify_url(url=url, byte=True)
 
-        await interaction.guild.edit(banner=banner)
+        elif image:
+            
+            url = await self.verify_url(url=image.url, byte=True)
+
+        else:
+            raise errors.InvalidParameterError(
+                content="An image file or url is required"
+            )
+
+        await interaction.guild.edit(banner=url)
 
         await interaction.response.send_message(
             "Server banner changed!", ephemeral=True
@@ -281,51 +359,6 @@ class Banner(commands.Cog):
                 banner = await response.content.read()
                 await guild.edit(banner=banner)
                 self.index += 1
-
-    @commands.Cog.listener()
-    async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent):
-        """
-        Check if reaction added is by mod+ and approve/deny banner accordingly
-        """
-        if payload.channel_id == Reference.Channels.banners_and_topics and not payload.member.bot:
-            guild = discord.utils.get(self.bot.guilds, id=Reference.guild)
-            mod_role = guild.get_role(Reference.Roles.moderator)
-
-            if payload.member.top_role >= mod_role:
-                message = await self.bot.get_channel(payload.channel_id).fetch_message(
-                    payload.message_id
-                )
-
-                if message.embeds and message.embeds[0].footer.text == "banner":
-                    if payload.emoji.id == Reference.Emoji.kgsYes:
-                        url = message.embeds[0].image.url
-                        author = message.embeds[0].author
-                        embed = discord.Embed(colour=discord.Colour.green())
-                        embed.set_image(url=url)
-                        embed.set_author(name=author.name, icon_url=author.icon_url)
-
-                        image = await self.verify_url(url, byte=True)
-                        channel = self.bot.get_channel(Reference.Channels.banners_and_topics)
-                        file = discord.File(io.BytesIO(image), filename="banner.png")
-                        banner = await channel.send(file=file)
-                        url = banner.attachments[0].url
-                        self.banners.append(url)
-                        self.banner_db.update_one(
-                            {"name": "banners"}, {"$set": {"banners": self.banners}}
-                        )
-
-                        await message.edit(embed=embed, delete_after=6)
-                        member = guild.get_member_named(author.name)
-                        try:
-                            await member.send(
-                                f"Your banner suggestion was accepted {url}"
-                            )
-                        except discord.Forbidden:
-                            pass
-
-                    elif payload.emoji.id == Reference.Emoji.kgsNo:  # kgsNo emoji
-                        embed = discord.Embed(title="Banner suggestion removed!")
-                        await message.edit(embed=embed, delete_after=6)
 
 
 async def setup(bot):
