@@ -111,6 +111,7 @@ class BirdBot(commands.AutoShardedBot):
         )
 
         x.get_database()
+        x.args = args
         return x
 
     @classmethod
@@ -125,6 +126,13 @@ class BirdBot(commands.AutoShardedBot):
         db = client.KurzBot
         logger.info("Connected to mongoDB")
         cls.db = db
+
+    async def setup_hook(self):
+        """
+        Async setup for after the bot logs in 
+        """
+
+        await self.load_extensions("app/cogs", self.args)
 
     async def load_extensions(self, folder, args):
         """
