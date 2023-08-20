@@ -50,6 +50,7 @@ class BannerView(dui.View):
     """
 
     def __init__(self, banner_db, banners, accept_id, deny_id):
+        super().__init__(timeout=None)
 
         self.banner_db = banner_db
         self.banners = banners
