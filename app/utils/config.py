@@ -43,11 +43,11 @@ class Reference:
         english = 901136119863844864
         verified = 542343829785804811
 
-        @classmethod
-        def admin_and_above(cls):
+        @property
+        def admin_and_above(self):
             return [
-                cls.administrator, 
-                cls.kgsofficial
+                self.administrator, 
+                self.kgsofficial
             ]
 
         @classmethod
@@ -59,12 +59,12 @@ class Reference:
                 cls.kgsofficial
             ]
         
-        @classmethod
-        def patreon(cls):
+        @property
+        def patreon(self):
             return [
-                cls.patreon_1,
-                cls.patreon_2,
-                cls.patreon_3
+                self.patreon_1,
+                self.patreon_2,
+                self.patreon_3
             ]
 
     class Categories:
@@ -98,8 +98,8 @@ class Reference:
         kgsYes = 955703069516128307
         kgsNo = 955703108565098496
 
-        @classmethod
-        async def fetch(cls, client: discord.Client, ref:int) -> discord.Emoji:
+        @staticmethod
+        async def fetch(client: discord.Client, ref:int) -> discord.Emoji:
             """
             When given a client object and an emoji id, returns a discord.Emoji
             """
