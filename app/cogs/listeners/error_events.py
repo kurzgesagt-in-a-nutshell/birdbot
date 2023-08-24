@@ -1,29 +1,15 @@
 import io
 import asyncio
-import requests
-from requests.models import PreparedRequest
-import json
-import aiohttp
 import logging
-import random
-import re
-
 from traceback import TracebackException
 
 import discord
 from discord.ext import commands
 from discord.ext.commands import errors
-from discord import app_commands
-
-from app.birdbot import BirdBot
 
 from app import utils
-from app.utils.infraction import InfractionList
 from app.utils.helper import (
     NoAuthorityError,
-    DevBotOnly,
-    WrongChannel,
-    is_internal_command,
 )
 from app.utils.config import Reference
 

@@ -4,22 +4,18 @@ import logging
 import math
 import textwrap
 import traceback
-import os
 import typing
 
 from contextlib import redirect_stdout
 from discord.ext.commands.errors import ExtensionNotFound
-
-from git import Repo, exc
-from git.cmd import Git
 
 import discord
 from discord.ext import commands
 from discord import app_commands
 
 from app.utils import checks, helper
-
 from app.utils.config import Reference
+
 
 class Dev(commands.Cog):
     def __init__(self, bot):
@@ -71,13 +67,14 @@ class Dev(commands.Cog):
         }
 
         await self.bot.change_presence(
-            activity=discord.Activity(name=message, type=activities[activity_type])
+            activity=discord.Activity(
+                name=message, type=activities[activity_type])
         )
 
         await interaction.response.send_message("Activity changed.", ephemeral=True)
 
     @commands.is_owner()
-    @commands.command(pass_context=True, name="eval")
+    @commands.command()
     async def eval(self, ctx: commands.Context, *, body: str):
         """Evaluates a code"""
         env = {
@@ -133,7 +130,8 @@ class Dev(commands.Cog):
                     else:
                         await ctx.send(f"```py\n{value}\n```")
             else:
-                self.logger.info(f"Output chars: {len(str(value)) + len(str(ret))}")
+                self.logger.info(
+                    f"Output chars: {len(str(value)) + len(str(ret))}")
                 self._last_result = ret
                 if len(str(value)) + len(str(ret)) >= 2000:
                     await ctx.send(
@@ -181,8 +179,9 @@ class Dev(commands.Cog):
     async def restart(self, ctx: commands.Context, instance: str):
         """restarts sub processes"""
         if instance not in ("songbirdalpha", "songbirdbeta", "twitterfeed", "youtubefeed"):
-            raise commands.BadArgument("Instance argument must be songbirdalpha, songbirdbeta, twitterfeed, youtubefeed")
-        process={
+            raise commands.BadArgument(
+                "Instance argument must be songbirdalpha, songbirdbeta, twitterfeed, youtubefeed")
+        process = {
             "songbirdalpha": "songbirda.service",
             "songbirdbeta": "songbirdb.service",
             "twitterfeed": "twitter_feed.service",
@@ -190,9 +189,9 @@ class Dev(commands.Cog):
         }
         try:
             child = await asyncio.create_subprocess_shell("systemctl restart " + process[instance],
-                stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.STDOUT,
-            )
+                                                          stdout=asyncio.subprocess.PIPE,
+                                                          stderr=asyncio.subprocess.STDOUT,
+                                                          )
             await child.wait()
             await ctx.send("process restarted")
         except Exception as e:
@@ -213,7 +212,8 @@ class Dev(commands.Cog):
                 f"Returned over 2k chars, sending as file instead.\n"
                 f"(first 1k chars for quick reference)\n"
                 f'```py\n{f"{log}"[0:1000]}\n```',
-                file=discord.File(io.BytesIO(f"{log}".encode()), filename="log.txt"),
+                file=discord.File(io.BytesIO(
+                    f"{log}".encode()), filename="log.txt"),
             )
         else:
             await ctx.send(f"```\n{log}\n```")
@@ -225,7 +225,8 @@ class Dev(commands.Cog):
         """Spawn child process of alpha/beta bot instance on the VM, only works on main bot"""
 
         if instance not in ("alpha", "beta"):
-            raise commands.BadArgument("Instance argument must be `alpha` or `beta`")
+            raise commands.BadArgument(
+                "Instance argument must be `alpha` or `beta`")
 
         try:
             child = await asyncio.create_subprocess_shell(
@@ -244,22 +245,6 @@ class Dev(commands.Cog):
                 await child.terminate()
             except ProcessLookupError:
                 pass
-
-    @checks.devs_only()
-    @commands.command(hidden=True)
-    async def pull(self, ctx: commands.Context):
-        self.logger.info("pulling repository")
-        repo = Repo(os.getcwd())  # Get git repo object to check changes
-        assert not repo.bare
-        if repo.is_dirty():
-            return await ctx.send(
-                "There are untracked changes on the branch, please resolve them before pulling"
-            )
-
-        _g = Git(os.getcwd())
-        _g.fetch()
-        message = _g.pull("origin", "master")
-        await ctx.send(f"```{message}```")
 
     @app_commands.command()
     @app_commands.default_permissions(manage_messages=True)

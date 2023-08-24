@@ -31,40 +31,40 @@ class Reference:
         patreon_2 = 415154206970740737
         patreon_1 = 753268671107039274
 
-        galacduck = 698479120878665729 # GalacDuck
-        legendary_duck = 662937489220173884 # LegendDuck
-        super_duck = 637114917178048543 # SuperDuck
-        duck = 637114897544511488 # Duck
-        smol_duck = 637114873268142081 # Smol Duck
-        duckling = 637114849570062347 # Duckling
-        duck_hatchling = 637114722675851302 # Duck Hatchling
-        duck_egg = 821961644425871390 # Duck Egg
+        galacduck = 698479120878665729  # GalacDuck
+        legendary_duck = 662937489220173884  # LegendDuck
+        super_duck = 637114917178048543  # SuperDuck
+        duck = 637114897544511488  # Duck
+        smol_duck = 637114873268142081  # Smol Duck
+        duckling = 637114849570062347  # Duckling
+        duck_hatchling = 637114722675851302  # Duck Hatchling
+        duck_egg = 821961644425871390  # Duck Egg
 
         english = 901136119863844864
         verified = 542343829785804811
 
-        @classmethod
-        def admin_and_above(cls):
+        @staticmethod
+        def admin_and_above():
             return [
-                cls.administrator, 
-                cls.kgsofficial
+                Reference.Roles.administrator,
+                Reference.Roles.kgsofficial
             ]
 
-        @classmethod
-        def moderator_and_above(cls):
+        @staticmethod
+        def moderator_and_above():
             return [
-                cls.trainee_mod,
-                cls.moderator, 
-                cls.administrator, 
-                cls.kgsofficial
+                Reference.Roles.trainee_mod,
+                Reference.Roles.moderator,
+                Reference.Roles.administrator,
+                Reference.Roles.kgsofficial
             ]
-        
-        @classmethod
-        def patreon(cls):
+
+        @staticmethod
+        def patreon():
             return [
-                cls.patreon_1,
-                cls.patreon_2,
-                cls.patreon_3
+                Reference.Roles.patreon_1,
+                Reference.Roles.patreon_2,
+                Reference.Roles.patreon_3
             ]
 
     class Categories:
@@ -98,12 +98,12 @@ class Reference:
         kgsYes = 955703069516128307
         kgsNo = 955703108565098496
 
-        @classmethod
-        async def fetch(cls, client: discord.Client, ref:int) -> discord.Emoji:
+        @staticmethod
+        async def fetch(client: discord.Client, ref: int) -> discord.Emoji:
             """
             When given a client object and an emoji id, returns a discord.Emoji
             """
-            
+
             return await client.fetch_emoji(ref)
 
 # TODO: MISC.py still has some raw ids in roleicons
