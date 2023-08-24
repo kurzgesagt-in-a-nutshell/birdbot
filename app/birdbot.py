@@ -5,6 +5,7 @@ import io
 import discord
 import dotenv
 import certifi
+import traceback
 
 from pathlib import Path
 from contextlib import contextmanager, suppress
@@ -14,6 +15,7 @@ from discord import app_commands, Interaction
 from rich.logging import RichHandler
 
 from .utils.config import Reference
+from .utils import errors
 
 logger = logging.getLogger("BirdBot")
 
