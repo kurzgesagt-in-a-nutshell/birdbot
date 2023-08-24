@@ -50,7 +50,7 @@ class Reference:
                 self.kgsofficial
             ]
 
-        @classmethod
+        @property
         def moderator_and_above(cls):
             return [
                 cls.trainee_mod,
