@@ -6,22 +6,12 @@ import re
 import demoji
 import pymongo
 
-# Do not import panda for VM.
-# import pandas as pd
 import discord
 from discord.ext import commands
 from discord import app_commands
 
 from app.utils import checks
 from app.utils.config import Reference
-
-# Mongo schema to store intros
-# {
-# "_id": user_id,
-# "message_id": message_id,
-# "tz_text": timezone_text,
-# "bio": bio
-# }
 
 
 class Misc(commands.Cog):
@@ -244,36 +234,6 @@ class Misc(commands.Cog):
             )
             await ctx.send("Success.")
 
-    # TODO: Move to slash
-    @commands.command()
-    @commands.is_owner()
-    async def mod_intros(self, ctx):
-        """Only works with the intro spreadsheet. For local testing only."""
-        df = pd.read_csv("intro.csv")
-
-        self.kgs_guild = self.bot.get_guild(Reference.guild)
-        intro_channel = self.kgs_guild.get_channel(
-            Reference.Channels.intro_channel
-        )
-        for _, row in df.iterrows():
-            user = self.kgs_guild.get_member(int(row["ID"]))
-            bird_icon = self.config["roleicons"][f"{user.top_role.id}"]
-            embed = self.parse_info(
-                int(row["ID"]), row["Region"], row["Bio"], row["Bird"]
-            )
-            msg = await intro_channel.send(embed=embed)
-            try:
-                self.intro_db.insert_one(
-                    {
-                        "_id": int(row["ID"]),
-                        "tz_text": row["Region"],
-                        "bio": row["Bio"],
-                        "message_id": msg.id,
-                    }
-                )
-            except pymongo.errors.DuplicateKeyError:
-                pass
-
 
     @app_commands.command()
     @app_commands.guilds(Reference.guild)
@@ -310,32 +270,6 @@ class Misc(commands.Cog):
                 await interaction.response.send_message("https://cdn.discordapp.com/emojis/" + str(emoji))
             else:
                 await interaction.response.send_message("Could not process this emoji")
-
-    @commands.Cog.listener()
-    async def on_reaction_add(self, reaction, user):
-        """
-        Provide mods with command to forceban users instead of self banning because I dont want to rework the entire command
-        """
-        if (
-            user.bot or reaction.message.channel.id != Reference.Channels.Logging.bannsystem
-        ):  # bannsystem channel
-            return
-        embed = reaction.message.embeds[0]
-
-        if embed.footer.text.startswith(
-            "Report-"
-        ):  # TODO account for multireports with interactions
-
-            if reaction.emoji.id == Reference.Emoji.kgsYes:  # kgsYes
-                reported_user = re.findall(
-                    r"[0-9]{11,}", reaction.message.embeds[0].description
-                )[0]
-                await reaction.message.channel.send(
-                    "Copy the command below to ban the user from the server:\n"
-                    f"```!fban {reported_user} {embed.fields[0].value} "
-                    f"|| bannsystem ID: {embed.footer.text.split()[1]}```",
-                    delete_after=15,
-                )
 
 
 async def setup(bot):

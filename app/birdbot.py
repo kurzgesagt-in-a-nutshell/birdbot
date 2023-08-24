@@ -1,6 +1,7 @@
 import logging
 import asyncio
 import os
+import io
 import discord
 import dotenv
 import certifi
