@@ -195,7 +195,7 @@ class MessageEvents(commands.Cog):
         # Return if author is a moderator or above
         if any(
             _id in [role.id for role in message.author.roles]
-            for _id in Reference.Roles.moderator_and_above
+            for _id in Reference.Roles.moderator_and_above()
         ):
             return
 
