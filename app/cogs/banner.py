@@ -63,7 +63,7 @@ class BannerView(dui.View):
         Checks that the interactor is a moderator+ for the defined guild
         """
         
-        guild = discord.utils.get(self.bot.guilds, id=Reference.guild)
+        guild = discord.utils.get(interaction.client.guilds, id=Reference.guild)
         mod_role = guild.get_role(Reference.Roles.moderator)
 
         return interaction.guild.id == guild.id \
@@ -96,7 +96,7 @@ class BannerView(dui.View):
         #     {"name": "banners"}, {"$set": {"banners": self.banners}}
         # )
 
-        await message.edit(embed=embed, view=None)
+        await interaction.response.edit_message(embed=embed, view=None)
         # member = guild.get_member_named(author.name)
         # try:
         #     await member.send(
@@ -127,7 +127,7 @@ class BannerView(dui.View):
         embed.set_image(url=url)
         embed.set_author(name=author.name, icon_url=author.icon_url)
 
-        await message.edit(embed=embed, view=None)
+        await interaction.response.edit_message(embed=embed, view=None)
 
 class Banner(commands.Cog):
     def __init__(self, bot):
