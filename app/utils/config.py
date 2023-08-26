@@ -95,15 +95,11 @@ class Reference:
         kgsNo = 955703108565098496
 
         @staticmethod
-        async def fetch(client: discord.Client, ref: int) -> discord.Emoji:
+        async def fetch(client: discord.Client, ref: int) -> discord.Emoji | None:
             """
             When given a client object and an emoji id, returns a discord.Emoji
             """
 
-            return await client.fetch_emoji(ref)
-
-
-# TODO: MISC.py still has some raw ids in roleicons
-# TODO: roleassign.py still has raw data (delete instead?)
-# TODO: GLOBAL_LISTENERS.py still has raw data
-# TODO: GIVEAWAY.py still has raw data in the giveaway bias
+            if em := client.get_emoji(ref) is not None:
+                return em # type: ignore
+            return None 

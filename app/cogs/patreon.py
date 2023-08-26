@@ -70,7 +70,7 @@ class Patreon(commands.Cog):
             description="Phew, That was close.",
             color=0x00FFA9,
         )
-
+        confirm_msg: discord.Message | None = None
         try:
             confirm_msg = await interaction.user.send(embed=embed)
             await interaction.response.send_message("Please check your DMs.")
@@ -106,7 +106,8 @@ class Patreon(commands.Cog):
             )
 
         except asyncio.TimeoutError:
-            await confirm_msg.edit(embed=fallback_embed)
+            if confirm_msg != None:
+                await confirm_msg.edit(embed=fallback_embed)
 
 
 async def setup(bot):
