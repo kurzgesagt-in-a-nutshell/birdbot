@@ -81,21 +81,21 @@ class BannerView(dui.View):
         """
         message = interaction.message
 
-        url = message.embeds[0].image.url
-        author = message.embeds[0].author
-        embed = discord.Embed(
-            title=f"Accepted by {interaction.user.name}",
-            colour=discord.Colour.green()
+        embed = message.embeds[0]
+        url = embed.image.url
+        
+        embed.title=f"Accepted by {interaction.user.name}"
+        embed.colour=discord.Colour.green()
+
+        # This is needed for discord to understand we are not trying to display
+        # the file itself and the image in the embed. (duplicate images)
+        embed.set_image(url="attachment://banner.png")
+
+        self.banners.append(url)
+        self.banner_db.update_one(
+            {"name": "banners"}, {"$set": {"banners": self.banners}}
         )
-        embed.set_image(url=url)
-        embed.set_author(name=author.name, icon_url=author.icon_url)
-
-        logger.critical("accepted banner is not being updated due to commented code")
-        # self.banners.append(url)
-        # self.banner_db.update_one(
-        #     {"name": "banners"}, {"$set": {"banners": self.banners}}
-        # )
-
+        
         await interaction.response.edit_message(embed=embed, view=None)
         # member = guild.get_member_named(author.name)
         # try:
@@ -117,15 +117,14 @@ class BannerView(dui.View):
         Changes the embed to indicate it was denied and by who
         """
         message = interaction.message
+        embed = message.embeds[0]
         
-        url = message.embeds[0].image.url
-        author = message.embeds[0].author
-        embed = discord.Embed(
-            title=f"Denied by {interaction.user.name}",
-            colour=discord.Colour.red()
-        )
-        embed.set_image(url=url)
-        embed.set_author(name=author.name, icon_url=author.icon_url)
+        embed.title=f"Denied by {interaction.user.name}"
+        embed.colour=discord.Colour.red()
+
+        # This is needed for discord to understand we are not trying to display
+        # the file itself and the image in the embed. (duplicate images)
+        embed.set_image(url="attachment://banner.png")
 
         await interaction.response.edit_message(embed=embed, view=None)
 
@@ -213,10 +212,48 @@ class Banner(commands.Cog):
             URL or Link of an image
         """
 
-        self.banner_suggest.callback(self, interaction, image, url)
+        await interaction.response.defer(ephemeral=True)
+        automated_channel = interaction.guild.get_channel(Reference.Channels.banners_and_topics)
 
-        self.BANNER_VIEW._accept.callback(interaction)
-        await interaction.edit_original_response(content="Banner added successfully.")
+        if url:
+
+            url = await self.verify_url(url=url, byte=True)
+
+        elif image:
+
+            url = await self.verify_url(url=image.url, byte=True)
+
+        else:
+            raise errors.InvalidParameterError(
+                content="An image file or url is required"
+            )
+
+        file = discord.File(io.BytesIO(url), filename="banner.png")
+
+        embed = discord.Embed(
+            title="Banner Added",
+            color=discord.Color.green()
+        )
+        embed.set_author(
+            name=interaction.user.name + "#" + interaction.user.discriminator,
+            icon_url=interaction.user.display_avatar.url,
+        )
+        embed.set_image(url="attachment://banner.png")
+        embed.set_footer(text="banner")
+        
+        # Uploads the information to the banners channel
+        # The url is then extracted from this embed to keep a static reference
+        message = await automated_channel.send(embed=embed, file=file)
+
+        embed = message.embeds[0]
+        url = embed.image.url
+
+        self.banners.append(url)
+        self.banner_db.update_one(
+            {"name": "banners"}, {"$set": {"banners": self.banners}}
+        )
+
+        await interaction.edit_original_response(content="Banner added.")
 
     @banner_commands.command()
     @checks.mod_and_above()
