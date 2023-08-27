@@ -1,6 +1,5 @@
 import re
 import datetime
-import json
 import logging
 from typing import List, Tuple, Union
 import typing
@@ -10,8 +9,6 @@ from discord.ext import commands
 
 from app.birdbot import BirdBot
 
-infraction_db = BirdBot.db.Infraction
-timed_actions_db = BirdBot.db.TimedAction
 cmd_blacklist_db = BirdBot.db.CommandBlacklist
 
 from .config import Reference
@@ -119,6 +116,7 @@ class DevBotOnly(commands.CheckFailure):
 
 # ----Exception classes end------#
 
+
 def is_internal_command(bot: commands.AutoShardedBot, message: discord.Message):
     """
     check if message is a bird bot command
@@ -195,43 +193,6 @@ def create_embed(
         embed.add_field(name="Level", value=inf_level, inline=False)
 
     return embed
-
-
-def create_timed_action(
-    users: List[Union[discord.User, discord.Member]], action: str, time: int
-):
-    # TODO DELETE
-    """Creates a database entry for timed action [not in use currently]
-
-    Args:
-        users (List[Union[discord.User, discord.Member]]): List of affected users
-        action (str): Action ("mute")
-        time (int): Duration for which action will last
-    """
-    data = []
-    for u in users:
-        data.append(
-            {
-                "user_id": u.id,
-                "user_name": u.name,
-                "action": action,
-                "action_start": datetime.datetime.utcnow(),
-                "duration": time,
-                "action_end": datetime.datetime.utcnow()
-                + datetime.timedelta(seconds=time),
-            }
-        )
-    ids = timed_actions_db.insert_many(data)
-
-
-def delete_timed_actions_uid(u_id: int):
-    # TODO DELETE
-    """delete timed action by user_id [not in use currently]
-
-    Args:
-        u_id (int): user's id
-    """
-    timed_actions_db.remove({"user_id": u_id})
 
 
 def calc_time(args: List[str]) -> Tuple[int, str]:
@@ -330,12 +291,6 @@ def get_time_string(t: int) -> str:
     return f"{day}days {hour}hours {minutes}mins {seconds}sec"
 
 
-def get_timed_actions():
-    # TODO DELETE
-    """Fetch all timed action from db [not in use currently]"""
-    return timed_actions_db.find().sort("action_end", 1)
-
-
 def create_automod_embed(
     message: discord.Message,
     automod_type: str,
@@ -378,7 +333,7 @@ def get_active_staff(bot: commands.AutoShardedBot) -> str:
     for role_id in [
         Reference.Roles.moderator,
         Reference.Roles.administrator,
-        Reference.Roles.trainee_mod
+        Reference.Roles.trainee_mod,
     ]:
         for member in discord.utils.get(guild.roles, id=role_id).members:
             if member.bot:
@@ -394,7 +349,7 @@ def get_active_staff(bot: commands.AutoShardedBot) -> str:
                 if not mods_active:
                     if member.top_role.id in [
                         Reference.Roles.moderator,
-                        Reference.Roles.trainee_mod
+                        Reference.Roles.trainee_mod,
                     ]:
                         # check for active mods
                         mods_active = True
@@ -407,6 +362,7 @@ def get_active_staff(bot: commands.AutoShardedBot) -> str:
         )
 
     return mention_str
+
 
 # This is useless due to slash migration
 def blacklist_member(
@@ -426,6 +382,7 @@ def blacklist_member(
     cmd_blacklist_db.update_one(
         {"command_name": command.name}, {"$push": {"blacklisted_users": member.id}}
     )
+
 
 # This is useless due to slash migration
 def whitelist_member(member: discord.Member, command: commands.Command) -> bool:
@@ -452,5 +409,5 @@ def is_public_channel(
     Currently used within the moderation cog to determine if an interaction
     should be ephemeral
     """
-    
+
     return channel.category_id != Reference.Categories.moderation

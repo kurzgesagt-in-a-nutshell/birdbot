@@ -1,4 +1,3 @@
-
 import discord
 
 
@@ -45,10 +44,7 @@ class Reference:
 
         @staticmethod
         def admin_and_above():
-            return [
-                Reference.Roles.administrator,
-                Reference.Roles.kgsofficial
-            ]
+            return [Reference.Roles.administrator, Reference.Roles.kgsofficial]
 
         @staticmethod
         def moderator_and_above():
@@ -56,7 +52,7 @@ class Reference:
                 Reference.Roles.trainee_mod,
                 Reference.Roles.moderator,
                 Reference.Roles.administrator,
-                Reference.Roles.kgsofficial
+                Reference.Roles.kgsofficial,
             ]
 
         @staticmethod
@@ -64,7 +60,7 @@ class Reference:
             return [
                 Reference.Roles.patreon_1,
                 Reference.Roles.patreon_2,
-                Reference.Roles.patreon_3
+                Reference.Roles.patreon_3,
             ]
 
     class Categories:
@@ -105,6 +101,7 @@ class Reference:
             """
 
             return await client.fetch_emoji(ref)
+
 
 # TODO: MISC.py still has some raw ids in roleicons
 # TODO: roleassign.py still has raw data (delete instead?)

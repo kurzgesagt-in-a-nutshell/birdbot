@@ -1,5 +1,4 @@
 import copy
-import json
 import typing
 import datetime
 import logging
@@ -229,8 +228,10 @@ class Filter(commands.Cog):
         ):
             return
 
-        if message.channel.category.id ==Reference.Channels.language_tests: # language testing
-            return 
+        if (
+            message.channel.category.id == Reference.Channels.language_tests
+        ):  # language testing
+            return
         if self.is_member_excluded(message.author):
             return
 
@@ -267,7 +268,8 @@ class Filter(commands.Cog):
             return
 
         if (
-            before.channel.category.id == Reference.Categories.moderation  # mod category
+            before.channel.category.id
+            == Reference.Categories.moderation  # mod category
             and before.channel.id != Reference.Channels.bot_tests  # bot testing
         ):
             return

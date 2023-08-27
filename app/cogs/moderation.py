@@ -1,4 +1,3 @@
-import json
 import io
 import typing
 import datetime
@@ -196,14 +195,14 @@ class Moderation(commands.Cog):
                 channel = interaction.channel
                 if isinstance(channel, (discord.abc.GuildChannel, discord.Thread)):
                     channel_mention = channel.mention
-                    
+
                     # What this does is allow you to click the link to go to the
                     # messages around the time the report was made
-                    if message_link is None or message_link == '':
+                    if message_link is None or message_link == "":
                         message_link = f"https://discord.com/channels/414027124836532234/{channel.id}/{interaction.id}"
 
                 else:
-                    channel_mention = 'Sent through DMs'
+                    channel_mention = "Sent through DMs"
 
                 mod_embed = discord.Embed(
                     title="New Report",
@@ -221,8 +220,9 @@ class Moderation(commands.Cog):
                 )
 
                 await mod_channel.send(
-                    get_active_staff(interaction.client), embed=mod_embed,
-                    allowed_mentions=discord.AllowedMentions.all()
+                    get_active_staff(interaction.client),
+                    embed=mod_embed,
+                    allowed_mentions=discord.AllowedMentions.all(),
                 )
 
                 await interaction.response.send_message(
@@ -533,9 +533,7 @@ class Moderation(commands.Cog):
         if tot_time is None or tot_time <= 0:
             raise errors.InvalidInvocationError("Improper time provided")
         elif tot_time > 604801:
-            raise errors.InvalidInvocationError(
-                "Can't mute for longer than 7 days!"
-            )
+            raise errors.InvalidInvocationError("Can't mute for longer than 7 days!")
         elif tot_time < 300:
             raise errors.InvalidInvocationError(
                 "Can't mute for shorter than 5 minutes!"

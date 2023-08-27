@@ -1,5 +1,4 @@
 import logging
-import json
 import random
 import typing
 from fuzzywuzzy import process
@@ -249,7 +248,10 @@ class Topic(commands.Cog):
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent):
         # User topic suggestions
-        if payload.channel_id == Reference.Channels.banners_and_topics and not payload.member.bot:
+        if (
+            payload.channel_id == Reference.Channels.banners_and_topics
+            and not payload.member.bot
+        ):
             guild = discord.utils.get(self.bot.guilds, id=Reference.guild)
             mod_role = guild.get_role(Reference.Roles.moderator)
             if payload.member.top_role >= mod_role:

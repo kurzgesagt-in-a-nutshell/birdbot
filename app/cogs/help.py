@@ -8,6 +8,7 @@ from discord import app_commands
 from app.utils import checks
 from app.utils.config import Reference
 
+
 class Help(commands.Cog):
     def __init__(self, bot):
         self.logger = logging.getLogger("Help")

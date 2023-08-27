@@ -403,8 +403,9 @@ class InfractionList:
             infractions_info.append("```\nNone\n```")
 
         embed.add_field(
-            name=f"{self._user_name} ({self._user_id})", 
-            value=f"```\n{self.summary()}\n```", inline=False
+            name=f"{self._user_name} ({self._user_id})",
+            value=f"```\n{self.summary()}\n```",
+            inline=False,
         )
         embed.add_field(name=kind.name.title() + "s", value="\n".join(infractions_info))
 
@@ -470,4 +471,6 @@ class InfractionList:
         self._last_updated = discord.utils.utcnow()
         data = self.to_dict()
 
-        INFRACTION_DB.update_one({"user_id": self._user_id}, {"$set": data}, upsert=True)
+        INFRACTION_DB.update_one(
+            {"user_id": self._user_id}, {"$set": data}, upsert=True
+        )

@@ -1,6 +1,6 @@
 import asyncio
 
-from discord import (app_commands, Interaction)
+from discord import app_commands, Interaction
 from discord.ext import commands
 import discord
 
@@ -8,8 +8,8 @@ from app.utils import checks
 from app.utils.infraction import InfractionList
 from app.utils.config import Reference
 
-class Patreon(commands.Cog):
 
+class Patreon(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
@@ -18,7 +18,6 @@ class Patreon(commands.Cog):
         """Listen for new patrons and provide
         them the option to unenroll from autojoining
         Listen for new members and fire webhook for greeting"""
-
 
         diff_roles = [role.id for role in member.roles]
         if any(x in diff_roles for x in Reference.Roles.patreon()):
@@ -50,7 +49,7 @@ class Patreon(commands.Cog):
     @app_commands.command()
     @checks.patreon_only()
     @app_commands.checks.cooldown(1, 300, key=lambda i: (i.user.id))
-    async def unenrol(self, interaction: discord.Interaction):
+    async def unenrol(self, interaction: Interaction):
         """Unenrol from Patron auto join"""
 
         embed = discord.Embed(
@@ -108,6 +107,7 @@ class Patreon(commands.Cog):
 
         except asyncio.TimeoutError:
             await confirm_msg.edit(embed=fallback_embed)
+
 
 async def setup(bot):
     await bot.add_cog(Patreon(bot))

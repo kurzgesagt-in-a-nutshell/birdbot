@@ -52,6 +52,7 @@ def setup():
             handler.close()
             logger.removeHandler(handler)
 
+
 class BirdTree(app_commands.CommandTree):
     """
     Subclass of app_commands.CommandTree to define the behavior for the birdbot
@@ -59,6 +60,7 @@ class BirdTree(app_commands.CommandTree):
 
     Handles thrown errors within the tree and interactions between all commands
     """
+
     @classmethod
     async def maybe_responded(cls, interaction: Interaction, *args, **kwargs):
         """
@@ -98,16 +100,13 @@ class BirdTree(app_commands.CommandTree):
         if isinstance(error, errors.InternalError):
             # Inform user of failure ephemerally
 
-
             embed = error.format_notif_embed(interaction)
             await BirdTree.maybe_responded(interaction, embed=embed, ephemeral=True)
 
             return
         elif isinstance(error, app_commands.CheckFailure):
 
-            user_shown_error = errors.CheckFailure(
-                content=str(error)
-            )
+            user_shown_error = errors.CheckFailure(content=str(error))
 
             embed = user_shown_error.format_notif_embed(interaction)
             await BirdTree.maybe_responded(interaction, embed=embed, ephemeral=True)
@@ -117,20 +116,21 @@ class BirdTree(app_commands.CommandTree):
         # most cases this will consist of errors thrown by the actual code
 
         is_in_public_channel = (
-            interaction.channel.category_id!= Reference.Categories.moderation
+            interaction.channel.category_id != Reference.Categories.moderation
         )
 
         user_shown_error = errors.InternalError()
         await BirdTree.maybe_responded(
             interaction,
-            embed = user_shown_error.format_notif_embed(interaction),
-            ephemeral=is_in_public_channel
+            embed=user_shown_error.format_notif_embed(interaction),
+            ephemeral=is_in_public_channel,
         )
 
         try:
             await self.alert(interaction, error)
         except Exception as e:
             await super().on_error(interaction, e)
+
 
 class BirdBot(commands.AutoShardedBot):
     """Main Bot"""
@@ -211,7 +211,7 @@ class BirdBot(commands.AutoShardedBot):
 
     async def setup_hook(self):
         """
-        Async setup for after the bot logs in 
+        Async setup for after the bot logs in
         """
 
         await self.load_extensions("app/cogs", self.args)
@@ -221,22 +221,23 @@ class BirdBot(commands.AutoShardedBot):
         Iterates over the extension folder and attempts to load all python files
         found.
         """
-        
-        
-        if folder is None: return
+
+        if folder is None:
+            return
         extdir = Path(folder)
 
-        if not extdir.is_dir(): return
+        if not extdir.is_dir():
+            return
 
         for item in extdir.iterdir():
-            if (
-                item.stem in ("antiraid", "automod", "giveaway")
-                and (args.beta or args.alpha)
-            ): 
+            if item.stem in ("antiraid", "automod", "giveaway") and (
+                args.beta or args.alpha
+            ):
                 logger.debug("Skipping: %s", item.name)
                 continue
-            
-            if item.name.startswith("_"): continue
+
+            if item.name.startswith("_"):
+                continue
             if item.is_dir():
                 await self.load_extensions(item, args)
                 continue
@@ -249,17 +250,14 @@ class BirdBot(commands.AutoShardedBot):
         Attempts to load the given path and returns a boolean indicating
         successful status
         """
-        
-        extension = ".".join(path.with_suffix('').parts)
+
+        extension = ".".join(path.with_suffix("").parts)
 
         try:
             await self.load_extension(extension)
             return True
         except Exception as e:
-            logger.error(
-                "an error occurred while loading extension", 
-                exc_info=e
-            )
+            logger.error("an error occurred while loading extension", exc_info=e)
             return False
 
     async def close(self):

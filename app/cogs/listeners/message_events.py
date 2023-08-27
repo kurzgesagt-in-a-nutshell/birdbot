@@ -1,4 +1,3 @@
-
 import requests, re
 from requests.models import PreparedRequest
 
@@ -8,8 +7,8 @@ from discord.ext import commands
 from app.utils.helper import is_internal_command
 from app.utils.config import Reference
 
+
 class MessageEvents(commands.Cog):
-    
     def __init__(self, bot):
         self.bot = bot
 
@@ -24,8 +23,8 @@ class MessageEvents(commands.Cog):
     async def on_message_edit(self, before, after):
         # Mainbot only, Kgs server only, ignore bot edits
         if (
-            self.bot.user.id != Reference.mainbot 
-            or before.guild.id != Reference.guild 
+            self.bot.user.id != Reference.mainbot
+            or before.guild.id != Reference.guild
             or before.author.bot
         ):
             return
@@ -35,10 +34,10 @@ class MessageEvents(commands.Cog):
 
     @commands.Cog.listener()
     async def on_message_delete(self, message):
-# Mainbot only, Kgs server only, ignore bot edits
+        # Mainbot only, Kgs server only, ignore bot edits
         if (
-            self.bot.user.id != Reference.mainbot 
-            or message.guild.id != Reference.guild 
+            self.bot.user.id != Reference.mainbot
+            or message.guild.id != Reference.guild
             or message.author.bot
             or message.channel.category.id == Reference.Categories.moderation
         ):
@@ -46,9 +45,8 @@ class MessageEvents(commands.Cog):
 
         if is_internal_command(self.bot, message):
             return
-        
-        await self.log_message_delete(message)
 
+        await self.log_message_delete(message)
 
     async def log_message_delete(self, message):
         embed = discord.Embed(
@@ -98,15 +96,14 @@ class MessageEvents(commands.Cog):
         """
         Logs message edits outside of the moderator category
         """
-        
+
         if (
             before.channel.category.id == Reference.Categories.moderation
             or before.channel.category.id == Reference.Categories.server_logs
             or before.content == after.content
         ):
             return
-        
-    
+
         embed = discord.Embed(
             title="Message Edited",
             description=f"Message edited in {before.channel.mention}",
@@ -138,7 +135,7 @@ class MessageEvents(commands.Cog):
         the moderator or trainee moderator role. Ignores if the member is a
         moderator+
         """
-        
+
         # Check if message contains a moderator or traine moderator ping
         if not any(
             x in message.raw_role_mentions
@@ -187,11 +184,11 @@ class MessageEvents(commands.Cog):
         Checks incoming messages to server-moments to validate the have an image
         or is sent by a moderator+
         """
-        
+
         # Return if channel is not server moments
         if message.channel.id != Reference.Channels.server_moments:
             return
-        
+
         # Return if author is a moderator or above
         if any(
             _id in [role.id for role in message.author.roles]
@@ -202,7 +199,7 @@ class MessageEvents(commands.Cog):
         # Returns if author is a bot account
         if message.author.bot:
             return
-        
+
         if len(message.attachments) == 0 and len(message.embeds) == 0:
             await message.delete()
             await message.channel.send(
@@ -219,7 +216,7 @@ class MessageEvents(commands.Cog):
                         delete_after=5,
                     )
                     return
-                
+
     async def translate_bannsystem(self, message: discord.Message):
         """
         Translate incoming bannsystem reports
@@ -270,6 +267,7 @@ class MessageEvents(commands.Cog):
         msg = await ctx.channel.fetch_message(msg_id)
         embed = await self.translate_bannsystem(msg)
         await ctx.send(embed=embed)
+
 
 async def setup(bot):
     await bot.add_cog(MessageEvents(bot))

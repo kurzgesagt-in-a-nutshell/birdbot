@@ -1,16 +1,15 @@
 import logging
-import json
 
 import discord
 from discord.ext import commands
 
 from app.utils.config import Reference
 
+
 class Smfeed(commands.Cog):
     def __init__(self, bot):
         self.logger = logging.getLogger("Smfeed")
         self.bot = bot
-
 
     @commands.Cog.listener()
     async def on_ready(self):
@@ -39,7 +38,9 @@ class Smfeed(commands.Cog):
             guild = discord.utils.get(self.bot.guilds, id=Reference.guild)
             trainee_mod_role = guild.get_role(Reference.Roles.moderator_and_above())
             if payload.member.top_role >= trainee_mod_role:
-                channel = guild.get_channel(Reference.Channels.social_media_queue)  # twitter posts
+                channel = guild.get_channel(
+                    Reference.Channels.social_media_queue
+                )  # twitter posts
                 message = await channel.fetch_message(payload.message_id)
                 for reaction in message.reactions:
                     if type(reaction.emoji) != type(""):

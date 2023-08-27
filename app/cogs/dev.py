@@ -67,8 +67,7 @@ class Dev(commands.Cog):
         }
 
         await self.bot.change_presence(
-            activity=discord.Activity(
-                name=message, type=activities[activity_type])
+            activity=discord.Activity(name=message, type=activities[activity_type])
         )
 
         await interaction.response.send_message("Activity changed.", ephemeral=True)
@@ -130,8 +129,7 @@ class Dev(commands.Cog):
                     else:
                         await ctx.send(f"```py\n{value}\n```")
             else:
-                self.logger.info(
-                    f"Output chars: {len(str(value)) + len(str(ret))}")
+                self.logger.info(f"Output chars: {len(str(value)) + len(str(ret))}")
                 self._last_result = ret
                 if len(str(value)) + len(str(ret)) >= 2000:
                     await ctx.send(
@@ -178,20 +176,27 @@ class Dev(commands.Cog):
     @checks.mod_and_above()
     async def restart(self, ctx: commands.Context, instance: str):
         """restarts sub processes"""
-        if instance not in ("songbirdalpha", "songbirdbeta", "twitterfeed", "youtubefeed"):
+        if instance not in (
+            "songbirdalpha",
+            "songbirdbeta",
+            "twitterfeed",
+            "youtubefeed",
+        ):
             raise commands.BadArgument(
-                "Instance argument must be songbirdalpha, songbirdbeta, twitterfeed, youtubefeed")
+                "Instance argument must be songbirdalpha, songbirdbeta, twitterfeed, youtubefeed"
+            )
         process = {
             "songbirdalpha": "songbirda.service",
             "songbirdbeta": "songbirdb.service",
             "twitterfeed": "twitter_feed.service",
-            "youtubefeed": "youtube_feed.service"
+            "youtubefeed": "youtube_feed.service",
         }
         try:
-            child = await asyncio.create_subprocess_shell("systemctl restart " + process[instance],
-                                                          stdout=asyncio.subprocess.PIPE,
-                                                          stderr=asyncio.subprocess.STDOUT,
-                                                          )
+            child = await asyncio.create_subprocess_shell(
+                "systemctl restart " + process[instance],
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.STDOUT,
+            )
             await child.wait()
             await ctx.send("process restarted")
         except Exception as e:
@@ -212,8 +217,7 @@ class Dev(commands.Cog):
                 f"Returned over 2k chars, sending as file instead.\n"
                 f"(first 1k chars for quick reference)\n"
                 f'```py\n{f"{log}"[0:1000]}\n```',
-                file=discord.File(io.BytesIO(
-                    f"{log}".encode()), filename="log.txt"),
+                file=discord.File(io.BytesIO(f"{log}".encode()), filename="log.txt"),
             )
         else:
             await ctx.send(f"```\n{log}\n```")
@@ -225,8 +229,7 @@ class Dev(commands.Cog):
         """Spawn child process of alpha/beta bot instance on the VM, only works on main bot"""
 
         if instance not in ("alpha", "beta"):
-            raise commands.BadArgument(
-                "Instance argument must be `alpha` or `beta`")
+            raise commands.BadArgument("Instance argument must be `alpha` or `beta`")
 
         try:
             child = await asyncio.create_subprocess_shell(

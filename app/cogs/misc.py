@@ -40,14 +40,14 @@ class Misc(commands.Cog):
             return
 
         self.kgs_guild = self.bot.get_guild(Reference.guild)
-        subreddit_role = discord.utils.get(self.kgs_guild.roles, id=Reference.Roles.subreddit_mod)
+        subreddit_role = discord.utils.get(
+            self.kgs_guild.roles, id=Reference.Roles.subreddit_mod
+        )
         if not after.top_role >= subreddit_role:
             return
 
         intro = self.intro_db.find_one({"_id": before.id})
-        intro_channel = self.kgs_guild.get_channel(
-            Reference.Channels.intro_channel
-        )
+        intro_channel = self.kgs_guild.get_channel(Reference.Channels.intro_channel)
         msg = await intro_channel.fetch_message(intro["message_id"])
         embed = msg.embeds[0]
         embed.set_author(name=after.display_name, icon_url=after.avatar.url)
@@ -61,14 +61,14 @@ class Misc(commands.Cog):
         member = self.kgs_guild.get_member(before.id)
         if not member:
             return
-        subreddit_role = discord.utils.get(self.kgs_guild.roles, id=Reference.Roles.subreddit_mod)
+        subreddit_role = discord.utils.get(
+            self.kgs_guild.roles, id=Reference.Roles.subreddit_mod
+        )
         if not member.top_role >= subreddit_role:
             return
 
         intro = self.intro_db.find_one({"_id": before.id})
-        intro_channel = self.kgs_guild.get_channel(
-            Reference.Channels.intro_channel
-        )
+        intro_channel = self.kgs_guild.get_channel(Reference.Channels.intro_channel)
         msg = await intro_channel.fetch_message(intro["message_id"])
         embed = msg.embeds[0]
         embed.set_author(name=member.display_name, icon_url=after.avatar.url)
@@ -107,7 +107,9 @@ class Misc(commands.Cog):
 
         return embeds
 
-    @checks.role_and_above(Reference.Roles.subreddit_mod)  # subreddit mods and above | exludes trainees
+    @checks.role_and_above(
+        Reference.Roles.subreddit_mod
+    )  # subreddit mods and above | exludes trainees
     @commands.group(hidden=True)
     async def intro(self, ctx):
         """
@@ -155,9 +157,7 @@ class Misc(commands.Cog):
             embed = self.parse_info(
                 ctx.author.id, tz_text.content, bio.content, img.content
             )
-            intro_channel = self.kgs_guild.get_channel(
-                Reference.Channels.intro_channel
-            )
+            intro_channel = self.kgs_guild.get_channel(Reference.Channels.intro_channel)
 
             embeds_to_add = await self.reorder_intros(
                 ctx.author.top_role, intro_channel
@@ -220,9 +220,7 @@ class Misc(commands.Cog):
             )
             return
         else:
-            intro_channel = self.kgs_guild.get_channel(
-                Reference.Channels.intro_channel
-            )
+            intro_channel = self.kgs_guild.get_channel(Reference.Channels.intro_channel)
             msg = await intro_channel.fetch_message(intro["message_id"])
             embed = msg.embeds[0]
             embed.description = f"**{str_tz_text}**\n\n" + str_bio
@@ -233,7 +231,6 @@ class Misc(commands.Cog):
                 {"$set": {"tz_text": str_tz_text, "bio": str_bio}},
             )
             await ctx.send("Success.")
-
 
     @app_commands.command()
     @app_commands.guilds(Reference.guild)
@@ -253,21 +250,41 @@ class Misc(commands.Cog):
         """
         print(len(demoji.findall_list(emoji)))
         if len(demoji.findall_list(emoji)) == 1:
-            code = str(emoji.encode('unicode-escape')).replace('U000','-').replace('\\','').replace('\'','').replace('u','-')[2:]
+            code = (
+                str(emoji.encode("unicode-escape"))
+                .replace("U000", "-")
+                .replace("\\", "")
+                .replace("'", "")
+                .replace("u", "-")[2:]
+            )
             print(code)
-            name = demoji.replace_with_desc(emoji).replace(' ','-').replace(":","").replace("_","-")
-            await interaction.response.send_message("https://em-content.zobj.net/thumbs/160/twitter/322/" + name\
-                           + "_" + code + ".png")
+            name = (
+                demoji.replace_with_desc(emoji)
+                .replace(" ", "-")
+                .replace(":", "")
+                .replace("_", "-")
+            )
+            await interaction.response.send_message(
+                "https://em-content.zobj.net/thumbs/160/twitter/322/"
+                + name
+                + "_"
+                + code
+                + ".png"
+            )
         elif len(demoji.findall_list(emoji)) > 1:
             await interaction.response.send_message("please only send one emoji")
         else:
             if re.match(r"<a:\w+:(\d{17,19})>", str(emoji)):
                 emoji = str(re.findall(r"<a:\w+:(\d{17,19})>", str(emoji))[0]) + ".gif"
-                await interaction.response.send_message("https://cdn.discordapp.com/emojis/" + str(emoji))
+                await interaction.response.send_message(
+                    "https://cdn.discordapp.com/emojis/" + str(emoji)
+                )
             elif re.match(r"<:\w+:(\d{17,19})>", str(emoji)):
                 print("png")
                 emoji = str(re.findall(r"<:\w+:(\d{17,19})>", str(emoji))[0]) + ".png"
-                await interaction.response.send_message("https://cdn.discordapp.com/emojis/" + str(emoji))
+                await interaction.response.send_message(
+                    "https://cdn.discordapp.com/emojis/" + str(emoji)
+                )
             else:
                 await interaction.response.send_message("Could not process this emoji")
 
