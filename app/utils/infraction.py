@@ -403,7 +403,8 @@ class InfractionList:
             infractions_info.append("```\nNone\n```")
 
         embed.add_field(
-            name=self._user_id, value=f"```\n{self.summary()}\n```", inline=False
+            name=f"{self._user_name} ({self._user_id})", 
+            value=f"```\n{self.summary()}\n```", inline=False
         )
         embed.add_field(name=kind.name.title() + "s", value="\n".join(infractions_info))
 
