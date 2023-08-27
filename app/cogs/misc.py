@@ -169,28 +169,60 @@ class introModal(discord.ui.Modal):
             embed.set_footer(text=footer_name, icon_url=footer_icon)
             embed.set_thumbnail(url=self.image.value)
 
-            self.bot.intro_db.insert_one(
+            #lets add server emojis, because modals dont support them
+            serverEmojis = [f":{emoji.name}:" for emoji in kgs_guild.emojis]
+            serverEmojiIds = [emoji.id for emoji in kgs_guild.emojis]
+
+            embed.description = re.sub(r"(?<!<):[A-Za-z0-9_.]+:(?![0-9]+>)", lambda x: f"<{x.group()}{serverEmojiIds[serverEmojis.index(x.group())]}>" if x.group() in serverEmojis else x.group(), embed.description)
+
+
+            #if the intro has previously existed but was deleted
+            if self.intro_db.find_one({"_id": user.id}):
+                self.intro_db.update_one({"_id": user.id}, {"$set":
                 {
-                    "_id": interaction.user.id,
                     "tz_text": self.timezone.value,
                     "bio": self.bio.value,
                     "message_id": None,  #we will edit it with message id after reordering
                     "image": self.image.value
-                }
-            )
+                }}
+                )
+            else:
+                self.intro_db.insert_one(
+                    {
+                        "_id": user.id,
+                        "tz_text": self.timezone.value,
+                        "bio": self.bio.value,
+                        "message_id": None,  #we will edit it with message id after reordering
+                        "image": self.image.value
+                    }
+                )
 
             #the command user wants some feedback
-            message = f'Your intro will be added! (not really, just testing)'
+            message_fb = f'Your intro will be added!'
 
         else:
             """We are editing an existing intro"""
+            #if the message was deleted for some reason
+            try:
+                msg = await intro_channel.fetch_message(self.oldIntro["message_id"])
+            except discord.NotFound:
+                self.intro_db.update_one(
+                    {"_id": user.id}, {"$set": {"message_id": None}}
+                )
+                await interaction.response.send_message("Sorry, the message was deleted, try again", ephemeral=True)
+                return
 
-            msg = await intro_channel.fetch_message(self.oldIntro["message_id"])
             embed = msg.embeds[0]
 
             #edit the embed
             embed.description = f"**{self.timezone.value}**\n\n" + self.bio.value
             embed.set_thumbnail(url=self.image.value)
+
+            #lets add server emojis, because modals dont support them
+            serverEmojis = [f":{emoji.name}:" for emoji in kgs_guild.emojis]
+            serverEmojiIds = [emoji.id for emoji in kgs_guild.emojis]
+
+            embed.description = re.sub(r"(?<!<):[A-Za-z0-9_.]+:(?![0-9]+>)", lambda x: f"<{x.group()}{serverEmojiIds[serverEmojis.index(x.group())]}>" if x.group() in serverEmojis else x.group(), embed.description)
 
             #do we need to edit the footer too?
             if embed.footer.text == role.name or role.name == "Kurzgesagt Official":
@@ -206,6 +238,11 @@ class introModal(discord.ui.Modal):
                     if role.id == Reference.Roles.kgsofficial
                     else role.name
                 )
+                footer_icon = role.display_icon #this can return None if theres no icon
+                #if role has unicode emojis, dont. not a problem in our server but just in case
+                if not footer_icon.url:
+                    footer_icon = None
+                embed.set_footer(text=footer_name, icon_url=footer_icon)
                 embed.color = role.color
 
                 #we are just reusing a variable to reorder
@@ -213,7 +250,7 @@ class introModal(discord.ui.Modal):
 
 
             #the command user wants some feedback
-            message = f'Your intro will be edited! (not really, just testing)'
+            message_fb = f'Your intro will be edited!'
 
         #reorder!
         if self.required:        
@@ -229,13 +266,14 @@ class introModal(discord.ui.Modal):
                     break
 
                 doc = self.intro_db.find_one({"message_id": message.id})
-                embeds.append((doc, message.embeds[0]))
-                await message.delete()
+                if doc:
+                    embeds.append((doc, message.embeds[0]))
+                    await message.delete()
 
             #now we can send the new intro message and add to mongo
             msg = await intro_channel.send(embed=embed)
             self.intro_db.update_one(
-                {"_id": user.id["_id"]}, {"$set": {"message_id": msg.id}}
+                {"_id": user.id}, {"$set": {"message_id": msg.id}}
             )
 
             #add the deleted embeds back
@@ -247,17 +285,10 @@ class introModal(discord.ui.Modal):
                     )
 
 
-        #lets add server emojis, because modals dont support them
-        serverEmojis = [f":{emoji.name}:" for emoji in kgs_guild.emojis]
-        serverEmojiIds = [emoji.id for emoji in kgs_guild.emojis]
-
-        embed.description = re.sub(r"(?<!<):[A-Za-z0-9_.]+:(?![0-9]+>)", lambda x: f"<{x.group()}{serverEmojiIds[serverEmojis.index(x.group())]}>" if x.group() in serverEmojis else x.group(), embed.description)
-
-
-        await interaction.channel.send(embed=embed)
+        #await interaction.channel.send(embed=embed)
 
         #give the command user some feedback
-        await interaction.response.send_message(message, ephemeral=True)
+        await interaction.response.send_message(message_fb, ephemeral=True)
 
     async def on_error(self, interaction: discord.Interaction, error: Exception):
         if isinstance(error, commands.BadArgument):
