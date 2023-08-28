@@ -80,10 +80,10 @@ class Misc(commands.Cog):
 
     @app_commands.command()
     @checks.devs_only()
-    async def intro_modal(self, interaction: discord.Interaction):
+    async def intro(self, interaction: discord.Interaction):
         """
-        Staff intro commands
-        Usage: intro
+        Staff intro command
+        Create or edit an intro
         """        
         oldIntro = self.intro_db.find_one({"_id": interaction.user.id})
         await interaction.response.send_modal(introModal(oldIntro=oldIntro, bot = self.bot))
@@ -106,23 +106,21 @@ class introModal(discord.ui.Modal):
             timezone_default  = oldIntro["tz_text"]
             bio_default = oldIntro["bio"]
             image_default = oldIntro["image"]
-            required = False
+            self.createEmbed = False
             #we are doing this for error handling or in case the mongo entry remained incomplete
             if oldIntro["message_id"] == None:
-                required = True
+                self.createEmbed = True
         else:
             timezone_ph = "The internet - UTC | GMT+0:00"
             bio_ph = "Hello! I'm Birdbot and I help run this server."
             image_ph = "https://cdn.discordapp.com/avatars/471705718957801483/cfcf7fbcdc9579d7f0606b014aa1ede8.png"
-            required = True
-
-        self.required = required
+            self.createEmbed = True
         
-        self.timezone = discord.ui.TextInput(label='Enter your timezone.', style=discord.TextStyle.short, required=required, placeholder=timezone_ph, default = timezone_default, max_length=90)
+        self.timezone = discord.ui.TextInput(label='Enter your timezone.', style=discord.TextStyle.short, required=True, placeholder=timezone_ph, default = timezone_default, max_length=90)
 
-        self.bio = discord.ui.TextInput(label='Enter your bio.', style=discord.TextStyle.paragraph, required=required, placeholder=bio_ph, default=bio_default)
+        self.bio = discord.ui.TextInput(label='Enter your bio.', style=discord.TextStyle.paragraph, required=True, placeholder=bio_ph, default=bio_default)
 
-        self.image = discord.ui.TextInput(label='Enter the image link for your personal bird.', style=discord.TextStyle.short, required=required, placeholder=image_ph, default=image_default)
+        self.image = discord.ui.TextInput(label='Enter the image link for your personal bird.', style=discord.TextStyle.short, required=True, placeholder=image_ph, default=image_default)
 
         self.add_item(self.timezone)
         self.add_item(self.bio)
@@ -148,10 +146,17 @@ class introModal(discord.ui.Modal):
             Reference.Channels.intro_channel
         )
 
-        if self.required:
+        #lets add server emojis, because modals dont support them
+        serverEmojis = [f":{emoji.name}:" for emoji in kgs_guild.emojis]
+        serverEmojiIds = [emoji.id for emoji in kgs_guild.emojis]
+
+        bio = re.sub(r"(?<!<):[A-Za-z0-9_.]+:(?![0-9]+>)", lambda x: f"<{x.group()}{serverEmojiIds[serverEmojis.index(x.group())]}>" if x.group() in serverEmojis else x.group(), self.bio.value)
+        timezone = re.sub(r"(?<!<):[A-Za-z0-9_.]+:(?![0-9]+>)", lambda x: f"<{x.group()}{serverEmojiIds[serverEmojis.index(x.group())]}>" if x.group() in serverEmojis else x.group(), self.timezone.value)
+
+        if self.createEmbed:
             """We are adding a new intro so make an introduction embed"""
 
-            description = f"**{self.timezone.value}**\n\n" + self.bio.value
+            description = f"**{timezone}**\n\n" + bio
 
             footer_name = (
                 "Kurzgesagt Official"
@@ -169,19 +174,12 @@ class introModal(discord.ui.Modal):
             embed.set_footer(text=footer_name, icon_url=footer_icon)
             embed.set_thumbnail(url=self.image.value)
 
-            #lets add server emojis, because modals dont support them
-            serverEmojis = [f":{emoji.name}:" for emoji in kgs_guild.emojis]
-            serverEmojiIds = [emoji.id for emoji in kgs_guild.emojis]
-
-            embed.description = re.sub(r"(?<!<):[A-Za-z0-9_.]+:(?![0-9]+>)", lambda x: f"<{x.group()}{serverEmojiIds[serverEmojis.index(x.group())]}>" if x.group() in serverEmojis else x.group(), embed.description)
-
-
             #if the intro has previously existed but was deleted
             if self.intro_db.find_one({"_id": user.id}):
                 self.intro_db.update_one({"_id": user.id}, {"$set":
                 {
-                    "tz_text": self.timezone.value,
-                    "bio": self.bio.value,
+                    "tz_text": timezone,
+                    "bio": bio,
                     "message_id": None,  #we will edit it with message id after reordering
                     "image": self.image.value
                 }}
@@ -190,8 +188,8 @@ class introModal(discord.ui.Modal):
                 self.intro_db.insert_one(
                     {
                         "_id": user.id,
-                        "tz_text": self.timezone.value,
-                        "bio": self.bio.value,
+                        "tz_text": timezone,
+                        "bio": bio,
                         "message_id": None,  #we will edit it with message id after reordering
                         "image": self.image.value
                     }
@@ -215,21 +213,15 @@ class introModal(discord.ui.Modal):
             embed = msg.embeds[0]
 
             #edit the embed
-            embed.description = f"**{self.timezone.value}**\n\n" + self.bio.value
+            embed.description = f"**{timezone}**\n\n" + bio
             embed.set_thumbnail(url=self.image.value)
-
-            #lets add server emojis, because modals dont support them
-            serverEmojis = [f":{emoji.name}:" for emoji in kgs_guild.emojis]
-            serverEmojiIds = [emoji.id for emoji in kgs_guild.emojis]
-
-            embed.description = re.sub(r"(?<!<):[A-Za-z0-9_.]+:(?![0-9]+>)", lambda x: f"<{x.group()}{serverEmojiIds[serverEmojis.index(x.group())]}>" if x.group() in serverEmojis else x.group(), embed.description)
 
             #do we need to edit the footer too?
             if embed.footer.text == role.name or role.name == "Kurzgesagt Official":
                 await msg.edit(embed=embed)
                 self.intro_db.update_one(
                     {"_id": interaction.user.id},
-                    {"$set": {"tz_text": self.timezone.value, "bio": self.bio.value, "image": self.image.value}},
+                    {"$set": {"tz_text": timezone, "bio": bio, "image": self.image.value}},
                 )
             else:
                 #the user got promoted or demoted
@@ -246,14 +238,14 @@ class introModal(discord.ui.Modal):
                 embed.color = role.color
 
                 #we are just reusing a variable to reorder
-                self.required = True
+                self.createEmbed = True
 
 
             #the command user wants some feedback
             message_fb = f'Your intro will be edited!'
 
         #reorder!
-        if self.required:        
+        if self.createEmbed:        
             """Deletes intros that are before role_id and makes a list of tuples of the form
             (mongodb.document, discord.Embed)"""
 
@@ -297,7 +289,8 @@ class introModal(discord.ui.Modal):
             '''currentState = {
                     "tz_text": self.timezone.value,
                     "bio": self.bio.value,
-                    "image": "Incorrect image link"
+                    "image": "Incorrect image link",
+                    "message_id": None
                 }'''
             #discordpy is not happy with sending a modal like this, look into it in the future?
             #await interaction.response.send_modal(introModal(oldIntro=currentState, bot = self.bot))
