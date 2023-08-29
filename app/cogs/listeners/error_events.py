@@ -7,7 +7,7 @@ import discord
 from discord.ext import commands
 from discord.ext.commands import errors
 
-from app import utils
+from app.utils.errors import * 
 from app.utils.helper import (
     NoAuthorityError,
 )
@@ -36,14 +36,14 @@ class Errors(commands.Cog):
         traceback_txt = "".join(TracebackException.from_exception(err).format())
         channel = await self.bot.fetch_channel(self.dev_logging_channel)
 
-        if isinstance(err, utils.errors.InternalError):
+        if isinstance(err, InternalError):
             embed = err.format_notif_embed(ctx)
 
             await ctx.send(embed=embed, delete_after=5)
             await asyncio.sleep(5)
             try:
                 await ctx.message.delete()
-            except discord.error.NotFound:
+            except discord.errors.NotFound:
                 pass
 
         elif isinstance(
@@ -56,7 +56,7 @@ class Errors(commands.Cog):
                 errors.CheckFailure,
             ),
         ):
-            err = utils.errors.CheckFailure(content=str(err))
+            err = CheckFailure(content=str(err))
 
             embed = err.format_notif_embed(ctx)
 
@@ -64,7 +64,7 @@ class Errors(commands.Cog):
             await asyncio.sleep(5)
             try:
                 await ctx.message.delete()
-            except discord.error.NotFound:
+            except discord.errors.NotFound:
                 pass
 
         else:

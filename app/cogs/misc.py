@@ -1,14 +1,14 @@
-import logging
 import asyncio
 import json
+import logging
 import re
+import typing
 
 import demoji
-import pymongo
-
 import discord
-from discord.ext import commands
+import pymongo
 from discord import app_commands
+from discord.ext import commands
 
 from app.utils import checks
 from app.utils.config import Reference
@@ -19,7 +19,7 @@ class Misc(commands.Cog):
         self.logger = logging.getLogger("Misc")
         self.bot = bot
         self.intro_db = self.bot.db.StaffIntros
-        self.kgs_guild = None
+        self.kgs_guild: typing.Optional[discord.Guild]= None
         self.role_precendence = (
             915629257470906369,
             414029841101225985,
@@ -39,7 +39,9 @@ class Misc(commands.Cog):
         if before.nick == after.nick:
             return
 
-        self.kgs_guild = self.bot.get_guild(Reference.guild)
+        self.kgs_guild: discord.Guild= self.bot.get_guild(Reference.guild)
+        assert self.kgs_guild != None
+
         subreddit_role = discord.utils.get(self.kgs_guild.roles, id=Reference.Roles.subreddit_mod)
         if not after.top_role >= subreddit_role:
             return
@@ -48,6 +50,8 @@ class Misc(commands.Cog):
         intro_channel = self.kgs_guild.get_channel(
             Reference.Channels.intro_channel
         )
+        assert intro_channel != None
+
         msg = await intro_channel.fetch_message(intro["message_id"])
         embed = msg.embeds[0]
         embed.set_author(name=after.display_name, icon_url=after.avatar.url)
@@ -57,6 +61,7 @@ class Misc(commands.Cog):
     async def on_user_update(self, before, after):
 
         self.kgs_guild = self.bot.get_guild(Reference.guild)
+        assert self.kgs_guild != None
 
         member = self.kgs_guild.get_member(before.id)
         if not member:
@@ -73,8 +78,6 @@ class Misc(commands.Cog):
         embed = msg.embeds[0]
         embed.set_author(name=member.display_name, icon_url=after.avatar.url)
         await msg.edit(embed=embed)
-
-
 
     @app_commands.command()
     @checks.devs_only()
