@@ -61,7 +61,7 @@ class BirdTree(app_commands.CommandTree):
     Handles thrown errors within the tree and interactions between all commands
     """
     @classmethod
-    async def maybe_responded(interaction: Interaction, *args, **kwargs):
+    async def maybe_responded(cls, interaction: Interaction, *args, **kwargs):
         """
         Either responds or sends a followup on an interaction response
         """
