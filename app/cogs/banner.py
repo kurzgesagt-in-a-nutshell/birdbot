@@ -58,7 +58,7 @@ class BannerView(dui.View):
         """
         Checks that the interactor is a moderator+ for the defined guild
         """
-
+        
         guild = discord.utils.get(interaction.client.guilds, id=Reference.guild)
         mod_role = guild.get_role(Reference.Roles.moderator)
 
@@ -80,9 +80,9 @@ class BannerView(dui.View):
 
         embed = message.embeds[0]
         url = embed.image.url
-
-        embed.title = f"Accepted by {interaction.user.name}"
-        embed.colour = discord.Colour.green()
+        
+        embed.title=f"Accepted by {interaction.user.name}"
+        embed.colour=discord.Colour.green()
 
         # This is needed for discord to understand we are not trying to display
         # the file itself and the image in the embed. (duplicate images)
@@ -92,7 +92,7 @@ class BannerView(dui.View):
         self.banner_db.update_one(
             {"name": "banners"}, {"$set": {"banners": self.banners}}
         )
-
+        
         await interaction.response.edit_message(embed=embed, view=None)
         # member = guild.get_member_named(author.name)
         # try:
@@ -114,16 +114,15 @@ class BannerView(dui.View):
         """
         message = interaction.message
         embed = message.embeds[0]
-
-        embed.title = f"Denied by {interaction.user.name}"
-        embed.colour = discord.Colour.red()
+        
+        embed.title=f"Denied by {interaction.user.name}"
+        embed.colour=discord.Colour.red()
 
         # This is needed for discord to understand we are not trying to display
         # the file itself and the image in the embed. (duplicate images)
         embed.set_image(url="attachment://banner.png")
 
         await interaction.response.edit_message(embed=embed, view=None)
-
 
 class Banner(commands.Cog):
     def __init__(self, bot):
@@ -227,14 +226,16 @@ class Banner(commands.Cog):
 
         file = discord.File(io.BytesIO(url), filename="banner.png")
 
-        embed = discord.Embed(title="Banner Added", color=discord.Color.green())
+        embed = discord.Embed(
+            title="Banner Added",
+            color=discord.Color.green()
+        )
         embed.set_author(
             name=interaction.user.name + "#" + interaction.user.discriminator,
             icon_url=interaction.user.display_avatar.url,
         )
         embed.set_image(url="attachment://banner.png")
         embed.set_footer(text="banner")
-
         # Uploads the information to the banners channel
         # The url is then extracted from this embed to keep a static reference
         message = await automated_channel.send(embed=embed, file=file)
