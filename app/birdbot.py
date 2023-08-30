@@ -1,27 +1,28 @@
-import logging
+import argparse
 import asyncio
-import os
 import io
-import discord
-import dotenv
-import certifi
+import logging
+import os
 import traceback
-
-from pathlib import Path
 from contextlib import contextmanager, suppress
 from logging.handlers import TimedRotatingFileHandler
+from pathlib import Path
+
+import certifi
+import discord
+import dotenv
+from discord import Interaction, app_commands
 from discord.ext import commands
-from discord import app_commands, Interaction
 from rich.logging import RichHandler
 
-from .utils.config import Reference
 from .utils import errors
+from .utils.config import Reference
 
 logger = logging.getLogger("BirdBot")
 
 
 @contextmanager
-def setup():
+def setup() :
     try:
         dotenv.load_dotenv()
         logging.getLogger("discord").setLevel(logging.INFO)
@@ -135,15 +136,13 @@ class BirdTree(app_commands.CommandTree):
 class BirdBot(commands.AutoShardedBot):
     """Main Bot"""
 
-    currently_raided = False
-
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.get_database()
 
     @classmethod
-    def from_parseargs(cls, args):
-        """Create and return an instance of a Bot."""
+    def from_parseargs(cls, args: argparse.Namespace):
+        """Create and return an instance of a Bot from argparse Namespace instance"""
         logger.info(args)
         allowed_mentions = discord.AllowedMentions(
             roles=False, everyone=False, users=True
@@ -216,12 +215,11 @@ class BirdBot(commands.AutoShardedBot):
 
         await self.load_extensions("app/cogs", self.args)
 
-    async def load_extensions(self, folder, args):
+    async def load_extensions(self, folder: str, args: argparse.Namespace) -> None:
         """
         Iterates over the extension folder and attempts to load all python files
         found.
         """
-        
         
         if folder is None: return
         extdir = Path(folder)

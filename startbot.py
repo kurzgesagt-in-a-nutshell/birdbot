@@ -17,34 +17,27 @@ parser.add_argument(
 )
 
 
-def is_member_whitelisted(ctx) -> bool:
-    cmd_blacklist_db = BirdBot.db.CommandBlacklist
-    cmd = cmd_blacklist_db.find_one({"command_name": ctx.command.name})
-    if cmd is None:
-        cmd_blacklist_db.insert_one(
-            {"command_name": ctx.command.name, "blacklisted_users": []}
-        )
-        return True
-
-    return ctx.author.id not in cmd["blacklisted_users"]
 
 
-async def main():
+async def main() -> None:
     with setup():
 
         logger = logging.getLogger("Startbot")
         dotenv.load_dotenv()
         args = parser.parse_args()
         bot = BirdBot.from_parseargs(args)
-        bot.add_check(is_member_whitelisted)
         if args.beta:
-            token = os.environ.get("BETA_BOT_TOKEN")
+            token: str | None = os.environ.get("BETA_BOT_TOKEN")
         elif args.alpha:
-            token = os.environ.get("ALPHA_BOT_TOKEN")
+            token: str | None = os.environ.get("ALPHA_BOT_TOKEN")
         else:
-            token = os.environ.get("MAIN_BOT_TOKEN")
+            token: str | None = os.environ.get("MAIN_BOT_TOKEN")
         async with bot:
-            await bot.start(token, reconnect=True)
+            if token: 
+                await bot.start(token, reconnect=True)
+            else:
+                logger.critical("No token found")
+                exit(-1)
 
 
 if __name__ == "__main__":

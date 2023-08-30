@@ -2,10 +2,10 @@ import enum, typing, logging
 import discord
 
 from app.birdbot import BirdBot
+from typing import TYPE_CHECKING
 
 INFRACTION_DB = BirdBot.db.Infraction
 logger = logging.getLogger(__name__)
-
 
 class InfractionKind(enum.Enum):
     WARN = 0
@@ -40,7 +40,7 @@ class Infraction:
         author: discord.User,
         level: int,
         reason: str,
-        duration: str = None,
+        duration: typing.Optional[str] = None,
     ):
         """Creates a new infraction instance with the provided details"""
 
@@ -309,7 +309,7 @@ class InfractionList:
             valuelist.append(f"{legacy}x{dectoroman['legacy']}")
 
         for key in sorted(inflevels):
-            valuelist.append(f"{inflevels[key]}x{dectoroman[key]}")
+            valuelist.append(f"{inflevels[key]}x{dectoroman[key]}") # type: ignore
 
         return f"Total Infractions: {inf_sum}\n{final_warn}{', '.join(valuelist)}"
 
