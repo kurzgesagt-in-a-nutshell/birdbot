@@ -29,10 +29,17 @@ class TopicEditorModal(dui.Modal):
     )
 
     def __init__(self, topic:str):
-        super().__init__(title="Topic Editor")
+        super().__init__(title="Topic Editor", timeout=60*2)
         self.topic.default = topic
 
     async def on_submit(self, interaction: Interaction) -> None:
+        """
+        Edits the message if the input value is different than the default
+        """
+        if self.topic.value == self.topic.default:
+            await interaction.response.defer(thinking=False)
+            return
+        
         message = interaction.message
         embed = message.embeds[0]
 
@@ -65,8 +72,15 @@ class TopicAcceptorView(dui.View):
         """
         editing = self.editing.get(interaction.message.id, 0)
         if editing != 0:
+            who = f"<@{editing}> is currently editing this topic"
+            avoid = (
+                "" if editing != interaction.user.id else 
+                "\nThis interaction will clear out in at least two minutes." \
+                + " To avoid this issue, do not cancel out of the popup"
+            )
+            
             raise errors.InvalidAuthorizationError(
-                f"<@{editing}> is currently editing this topic"
+                content=f"{who}{avoid}"
             )
         return True
 
@@ -77,7 +91,7 @@ class TopicAcceptorView(dui.View):
             item: Item[Any]
         ):
         """Raises the error to the command tree"""
-        interaction.client.tree.on_error(interaction, error)
+        await interaction.client.tree.on_error(interaction, error)
 
     @dui.button(
         label="Accept", 
