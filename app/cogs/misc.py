@@ -160,11 +160,14 @@ class IntroModal(discord.ui.Modal):
 
     def __init__(self, oldIntro, bot: birdbot.BirdBot):
         super().__init__(title="Introduce yourself!")
+
         self.oldIntro = oldIntro
         self.intro_db = bot.db.StaffIntros
 
         assert self.kgs_guild != None
         self.kgs_guild = bot.get_guild(Reference.guild)
+
+        self.reorder_lock = asyncio.Lock()
 
         timezone_ph = bio_ph = image_ph = None
         timezone_default = bio_default = image_default = None
@@ -380,7 +383,8 @@ class IntroModal(discord.ui.Modal):
             if not reorder:
                 await oldIntroMessage.edit(embed=embed)
             else:
-                await self.reorder(embed)
+                async with self.reorder_lock:
+                    await self.reorder(embed)
 
         else:
             embed = self.create_embed()
@@ -388,5 +392,5 @@ class IntroModal(discord.ui.Modal):
             await interaction.response.send_message(
                 "Your intro will be added!", ephemeral=True
             )
-
-            await self.reorder(embed)
+            async with self.reorder_lock:
+                await self.reorder(embed)
