@@ -181,7 +181,7 @@ class IntroModal(discord.ui.Modal):
 
         embed.description = f"**{timezone}**\n\n" + bio
         embed.set_thumbnail(url=self.image.value)
-        embed.set_author(name=user.display_name, icon_url=lambda: user.avatar.url if user.avatar else user.display_avatar.url)
+        embed.set_author(name=user.display_name, icon_url=user.avatar.url if user.avatar else user.display_avatar.url)
 
         #do we need to edit the footer too?
         if (embed.footer.text == role.name) or (embed.footer.text == "Kurzgesagt Official" and role.id == Reference.Roles.kgsofficial):
@@ -203,7 +203,7 @@ class IntroModal(discord.ui.Modal):
         footer_name, footer_icon = self.get_footer(role)
 
         embed = discord.Embed(description=description, color=role.color)
-        embed.set_author(name=user.display_name, icon_url=lambda: user.avatar.url if user.avatar else user.display_avatar.url)
+        embed.set_author(name=user.display_name, icon_url=user.avatar.url if user.avatar else user.display_avatar.url)
         embed.set_footer(text=footer_name, icon_url=footer_icon)
         embed.set_thumbnail(url=self.image.value)
 
@@ -285,40 +285,37 @@ class IntroModal(discord.ui.Modal):
 
         #check the validity of the image link, write a better regex?
         if not re.match(r"^https*://.*\..*", self.image.value):
-            await interaction.response.send_message("Incorrect image link, try again", ephemeral=True)
+            await interaction.response.send_message("Incorrect image link, please try again", ephemeral=True)
             return
 
 
         #if the message was deleted for some reason
-        if self.oldIntro["message_id"]:
-            try:
-                oldIntroMessage = await intro_channel.fetch_message(self.oldIntro["message_id"])
-            except discord.NotFound:
-                self.intro_db.update_one(
-                    {"_id": user.id}, {"$set": {"message_id": None}}
-                )
-                await interaction.response.send_message("The message was deleted, try again", ephemeral=True)
-                return
+        if self.oldIntro:
+            if self.oldIntro["message_id"]:
+                try:
+                    oldIntroMessage = await intro_channel.fetch_message(self.oldIntro["message_id"])
+                except discord.NotFound:
+                    #the message was deleted, but not to worry we will just create a new one
+                    pass
 
 
         if oldIntroMessage:
             embed, reorder = self.edit_embed(oldIntroMessage, timezone, bio, role, user)
             if not reorder:
+                #to close the modal
+                await interaction.response.send_message('Your intro will be edited!', ephemeral=True)
                 await oldIntroMessage.edit(embed=embed)
             else:
+                #to close the modal, do it before rorder
+                await interaction.response.send_message('Your intro will be edited!', ephemeral=True)
                 await self.reorder(intro_channel, role, embed, user)
-            #the command user wants some feedback
-            message_fb = f'Your intro will be edited!'
 
         else:
             embed = self.create_embed(timezone, bio, role, user)
 
+            #to close the modal, do it before rorder
+            await interaction.response.send_message('Your intro will be added!', ephemeral=True)
+
             await self.reorder(intro_channel, role, embed, user)
 
-            #the command user wants some feedback
-            message_fb = f'Your intro will be added!'
-
-
-
-        #give the command user some feedback
-        await interaction.response.send_message(message_fb, ephemeral=True)
+        
