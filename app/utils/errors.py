@@ -14,7 +14,7 @@ from discord import (
     Embed
 )
 
-from utils.config import Reference
+from .config import Reference
 
 Info = Type[Union[commands.Context, Interaction]]
 
