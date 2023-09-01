@@ -96,7 +96,7 @@ class TopicAcceptorView(dui.View):
     @dui.button(
         label="Accept", 
         style=discord.ButtonStyle.green, 
-        emoji=discord.PartialEmoji.from_str("<:kgsYes:955703069516128307>")
+        emoji=discord.PartialEmoji.from_str(Reference.Emoji.PartialString.kgsYes)
     )
     async def _accept(self, interaction: Interaction, button:dui.Button):
         """
@@ -107,10 +107,10 @@ class TopicAcceptorView(dui.View):
         embed = message.embeds[0]
 
         topic = embed.description
-        # self.topics.append(topic)
-        # self.topics_db.update_one(
-        #     {"name": "topics"}, {"$set": {"topics": self.topics}}
-        # )
+        self.topics.append(topic)
+        self.topics_db.update_one(
+            {"name": "topics"}, {"$set": {"topics": self.topics}}
+        )
 
         embed.color = discord.Color.green()
         embed.title=f"Accepted by {interaction.user.name}"
@@ -121,7 +121,7 @@ class TopicAcceptorView(dui.View):
     @dui.button(
         label="Deny",
         style=discord.ButtonStyle.danger,
-        emoji=discord.PartialEmoji.from_str("<:kgsNo:955703108565098496>")
+        emoji=discord.PartialEmoji.from_str(Reference.Emoji.PartialString.kgsNo)
     )
     async def _deny(self, interaction: Interaction, button:dui.Button):
         """
@@ -139,7 +139,7 @@ class TopicAcceptorView(dui.View):
     @dui.button(
         label="Edit",
         style=discord.ButtonStyle.blurple,
-        emoji=discord.PartialEmoji.from_str("<:kgsWhoAsked:754871694467924070>")
+        emoji=discord.PartialEmoji.from_str(Reference.Emoji.PartialString.kgsWhoAsked)
     )
     async def _edit(self, interaction: Interaction, button:dui.Button):
         """
