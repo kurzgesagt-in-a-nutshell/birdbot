@@ -72,7 +72,7 @@ class BannerView(dui.View):
     @dui.button(
         label="Accept", 
         style=discord.ButtonStyle.blurple, 
-        emoji=discord.PartialEmoji.from_str("<:kgsYes:955703069516128307>")
+        emoji=discord.PartialEmoji.from_str(Reference.Emoji.PartialString.kgsYes)
     )
     async def _accept(self, interaction: Interaction, button:dui.Button):
         """
@@ -109,7 +109,7 @@ class BannerView(dui.View):
     @dui.button(
         label="Deny",
         style=discord.ButtonStyle.danger,
-        emoji=discord.PartialEmoji.from_str("<:kgsNo:955703108565098496>")
+        emoji=discord.PartialEmoji.from_str(Reference.Emoji.PartialString.kgsNo)
     )
     async def _deny(self, interaction: Interaction, button:dui.Button):
         """

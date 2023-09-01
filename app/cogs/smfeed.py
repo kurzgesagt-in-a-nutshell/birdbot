@@ -23,7 +23,7 @@ class Smfeed(commands.Cog):
         if self.bot.user.id != Reference.mainbot:
             return
         if message.channel.id == Reference.Channels.social_media_queue:
-            await message.add_reaction("<:kgsYes:955703069516128307>")
+            await message.add_reaction(Reference.Emoji.PartialString.kgsYes)
 
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload):

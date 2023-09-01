@@ -110,9 +110,9 @@ class Dev(commands.Cog):
         else:
             value = stdout.getvalue()
             try:
-                await ctx.message.add_reaction("<:kgsYes:955703069516128307>")
+                await ctx.message.add_reaction(Reference.Emoji.PartialString.kgsYes)
             except Exception as _:
-                await ctx.message.add_reaction("<:kgsNo:955703108565098496>")
+                await ctx.message.add_reaction(Reference.Emoji.PartialString.kgsNo)
                 pass
 
             if ret is None:
