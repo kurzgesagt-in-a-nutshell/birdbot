@@ -69,7 +69,7 @@ class Errors(commands.Cog):
 
         else:
             self.logger.exception(traceback_txt)
-            await ctx.message.add_reaction("<:kgsStop:579824947959169024>")
+            await ctx.message.add_reaction(Reference.Emoji.PartialString.kgsStop)
             if self.bot.user.id != Reference.mainbot:
                 return
             await ctx.send(

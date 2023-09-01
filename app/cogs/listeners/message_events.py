@@ -260,8 +260,8 @@ class MessageEvents(commands.Cog):
 
         translated_msg = await message.channel.send(embed=to_send)
 
-        await translated_msg.add_reaction("<:kgsYes:955703069516128307>")
-        await translated_msg.add_reaction("<:kgsNo:955703108565098496>")
+        await translated_msg.add_reaction(Reference.Emoji.PartialString.kgsYes)
+        await translated_msg.add_reaction(Reference.Emoji.PartialString.kgsNo)
         await message.delete()
 
     # TODO: Move to slash
