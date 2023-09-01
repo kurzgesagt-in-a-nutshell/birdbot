@@ -75,8 +75,8 @@ class Patreon(commands.Cog):
         try:
             confirm_msg = await interaction.user.send(embed=embed)
             await interaction.response.send_message("Please check your DMs.")
-            await confirm_msg.add_reaction("<:kgsYes:955703069516128307>")
-            await confirm_msg.add_reaction("<:kgsNo:955703108565098496>")
+            await confirm_msg.add_reaction(Reference.Emoji.PartialString.kgsYes)
+            await confirm_msg.add_reaction(Reference.Emoji.PartialString.kgsNo)
             reaction, user = await self.bot.wait_for(
                 "reaction_add", timeout=120, check=check
             )

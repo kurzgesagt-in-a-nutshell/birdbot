@@ -312,7 +312,7 @@ class Giveaway(commands.Cog):
             await self.choose_winner(self.active_giveaways[message_id])
             self.giveaway_task.restart()
             await interaction.edit_original_response(
-                content="<:kgsYes:955703069516128307> Giveaway ended."
+                content=f"{Reference.Emoji.PartialString.kgsYes} Giveaway ended."
             )
             return
 
@@ -352,7 +352,7 @@ class Giveaway(commands.Cog):
                     giveaway, {"$set": {"giveaway_cancelled": True}}
                 )
                 return await interaction.edit_original_response(
-                    content="<:kgsYes:955703069516128307> Giveaway cancelled!"
+                    content=f"{Reference.Emoji.PartialString.kgsYes} Giveaway cancelled!"
                 )
             except Exception as e:
                 raise e
@@ -403,7 +403,7 @@ class Giveaway(commands.Cog):
                 doc["rigged"] = rigged
             await self.choose_winner(doc)
             await interaction.edit_original_response(
-                content="<:kgsYes:955703069516128307> Giveaway rerolled!"
+                content=f"{Reference.Emoji.PartialString.kgsYes} Giveaway rerolled!"
             )
             return
 
