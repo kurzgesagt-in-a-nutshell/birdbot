@@ -1,13 +1,10 @@
 import logging
-import json
 import random
 import typing
-from typing import Any, Optional
-from discord.interactions import Interaction
-from discord.ui.item import Item
 from fuzzywuzzy import process
 import asyncio
 import copy
+import re
 
 import discord
 from discord.ext import commands
@@ -88,7 +85,7 @@ class TopicAcceptorView(dui.View):
             self, 
             interaction: Interaction, 
             error: Exception, 
-            item: Item[Any]
+            item: dui.Item
         ):
         """Raises the error to the command tree"""
         await interaction.client.tree.on_error(interaction, error)
@@ -116,6 +113,18 @@ class TopicAcceptorView(dui.View):
         embed.title=f"Accepted by {interaction.user.name}"
 
         await interaction.response.edit_message(embed=embed, view=None)
+
+        try:
+            match = re.match(r".*\(([0-9]+)\)$", embed.author.name)
+            userid = match.group(1)
+
+            suggester = await interaction.client.fetch_user(int(userid))
+            await suggester.send(
+                f"Your topic suggestion was accepted: **{topic}**"
+            )
+
+        except discord.Forbidden:
+            pass
 
 
     @dui.button(
@@ -393,7 +402,7 @@ class Topic(commands.Cog):
         automated_channel = self.bot.get_channel(Reference.Channels.banners_and_topics)
         embed = discord.Embed(description=topic, color=0xC8A2C8)
         embed.set_author(
-            name=interaction.user.name + "#" + interaction.user.discriminator,
+            name=f"{interaction.user.name} ({interaction.user.id})",
             icon_url=interaction.user.display_avatar.url,
         )
         embed.set_footer(text="topic")
