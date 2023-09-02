@@ -21,7 +21,7 @@ import logging
 import json
 import typing
 import aiohttp
-
+import re
 import io
 
 import discord
@@ -97,13 +97,18 @@ class BannerView(dui.View):
         )
         
         await interaction.response.edit_message(embed=embed, view=None)
-        # member = guild.get_member_named(author.name)
-        # try:
-        #     await member.send(
-        #         f"Your banner suggestion was accepted {url}"
-        #     )
-        # except discord.Forbidden:
-        #     pass
+        try:
+            match = re.match(r".*\(([0-9]+)\)$", embed.author.name)
+            userid = match.group(1)
+
+            suggester = await interaction.client.fetch_user(int(userid))
+            await suggester.send(
+                f"Your banner suggestion was accepted {url}"
+            )
+
+        except discord.Forbidden:
+            pass
+
 
 
     @dui.button(
@@ -338,7 +343,7 @@ class Banner(commands.Cog):
 
         embed = discord.Embed(color=0xC8A2C8)
         embed.set_author(
-            name=interaction.user.name + "#" + interaction.user.discriminator,
+            name=f"{interaction.user.name} ({interaction.user.id})",
             icon_url=interaction.user.display_avatar.url,
         )
         embed.set_image(url="attachment://banner.png")
