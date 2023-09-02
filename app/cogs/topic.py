@@ -1,19 +1,170 @@
 import logging
-import json
 import random
 import typing
 from fuzzywuzzy import process
 import asyncio
 import copy
+import re
 
 import discord
 from discord.ext import commands
-from discord import app_commands
+from discord import app_commands, ui as dui, Interaction
 
-from app.utils import checks
+from app.utils import checks, errors
 from app.utils.config import Reference
 
+class TopicEditorModal(dui.Modal):
+    """
+    A modal sent to the user attempting to change the topic
+    """
+    
+    topic = dui.TextInput(
+        label="Topic",
+        placeholder="Edited topic goes here",
+        style=discord.TextStyle.long, 
+        max_length=2000
+    )
 
+    def __init__(self, topic:str):
+        super().__init__(title="Topic Editor", timeout=60*2)
+        self.topic.default = topic
+
+    async def on_submit(self, interaction: Interaction) -> None:
+        """
+        Edits the message if the input value is different than the default
+        """
+        if self.topic.value == self.topic.default:
+            await interaction.response.defer(thinking=False)
+            return
+        
+        message = interaction.message
+        embed = message.embeds[0]
+
+        embed.description = self.topic.value
+
+        embed.add_field(name="Initial Submission", value=self.topic.default)
+
+        await interaction.response.edit_message(embed=embed)
+
+class TopicAcceptorView(dui.View):
+    """
+    A class that is meant to be instantiated once and used on all topic
+    suggestions
+    """
+
+    def __init__(self, accept_id, deny_id, edit_id, topics, topic_db):
+        super().__init__(timeout=None)
+
+        self._accept.custom_id = accept_id
+        self._deny.custom_id = deny_id
+        self._edit.custom_id = edit_id
+
+        self.topics = topics
+        self.topic_db = topic_db
+        self.editing = {}
+
+    async def interaction_check(self, interaction: Interaction) -> bool:
+        """
+        Checks if another user is currently editing this topic.
+        """
+        editing = self.editing.get(interaction.message.id, 0)
+        if editing != 0:
+            who = f"<@{editing}> is currently editing this topic"
+            avoid = (
+                "" if editing != interaction.user.id else 
+                "\nThis interaction will clear out in at least two minutes." \
+                + " To avoid this issue, do not cancel out of the popup"
+            )
+            
+            raise errors.InvalidAuthorizationError(
+                content=f"{who}{avoid}"
+            )
+        return True
+
+    async def on_error(
+            self, 
+            interaction: Interaction, 
+            error: Exception, 
+            item: dui.Item
+        ):
+        """Raises the error to the command tree"""
+        await interaction.client.tree.on_error(interaction, error)
+
+    @dui.button(
+        label="Accept", 
+        style=discord.ButtonStyle.green, 
+        emoji=discord.PartialEmoji.from_str(Reference.Emoji.PartialString.kgsYes)
+    )
+    async def _accept(self, interaction: Interaction, button:dui.Button):
+        """
+        Accepts the topic and removes the view from the message
+        Changes the embed to indicate it was accepted and by who
+        """
+        message = interaction.message
+        embed = message.embeds[0]
+
+        topic = embed.description
+        self.topics.append(topic)
+        self.topics_db.update_one(
+            {"name": "topics"}, {"$set": {"topics": self.topics}}
+        )
+
+        embed.color = discord.Color.green()
+        embed.title=f"Accepted by {interaction.user.name}"
+
+        await interaction.response.edit_message(embed=embed, view=None)
+
+        try:
+            match = re.match(r".*\(([0-9]+)\)$", embed.author.name)
+            userid = match.group(1)
+
+            suggester = await interaction.client.fetch_user(int(userid))
+            await suggester.send(
+                f"Your topic suggestion was accepted: **{topic}**"
+            )
+
+        except discord.Forbidden:
+            pass
+
+
+    @dui.button(
+        label="Deny",
+        style=discord.ButtonStyle.danger,
+        emoji=discord.PartialEmoji.from_str(Reference.Emoji.PartialString.kgsNo)
+    )
+    async def _deny(self, interaction: Interaction, button:dui.Button):
+        """
+        Denys the topic and removes the view from the message
+        Changes the embed to indicate it was denied and by who
+        """
+        message = interaction.message
+        embed = message.embeds[0]
+
+        embed.color = discord.Color.red()
+        embed.title=f"Denied by {interaction.user.name}"
+
+        await interaction.response.edit_message(embed=embed, view=None)
+
+    @dui.button(
+        label="Edit",
+        style=discord.ButtonStyle.blurple,
+        emoji=discord.PartialEmoji.from_str(Reference.Emoji.PartialString.kgsWhoAsked)
+    )
+    async def _edit(self, interaction: Interaction, button:dui.Button):
+        """
+        Sends a modal to interact with the provided topic text
+        """
+        self.editing[interaction.message.id] = interaction.user.id
+
+        embed = interaction.message.embeds[0]
+
+        topic_modal = TopicEditorModal(embed.description)
+        await interaction.response.send_modal(topic_modal)
+
+        await topic_modal.wait()
+        self.editing.pop(interaction.message.id)
+
+        
 class Topic(commands.Cog):
     def __init__(self, bot):
         self.logger = logging.getLogger("Fun")
@@ -31,6 +182,24 @@ class Topic(commands.Cog):
     @commands.Cog.listener()
     async def on_ready(self):
         self.logger.info("loaded Topic")
+
+    async def cog_load(self):
+        self.TOPIC_ACCEPT = f"TOPIC-ACCEPT-{self.bot.user.id}"
+        self.TOPIC_DENY = f"TOPIC-DENY-{self.bot.user.id}"
+        self.TOPIC_EDIT = f"TOPIC-EDIT-{self.bot.user.id}"
+        
+        self.TOPIC_VIEW = TopicAcceptorView(
+            accept_id=self.TOPIC_ACCEPT, 
+            deny_id=self.TOPIC_DENY, 
+            edit_id=self.TOPIC_EDIT,
+            topics=self.topics,
+            topic_db=self.topics_db
+        )
+
+        self.bot.add_view(self.TOPIC_VIEW)
+
+    async def cog_unload(self) -> None:
+        self.TOPIC_VIEW.stop()
 
     topics_command = app_commands.Group(
         name="topics",
@@ -231,59 +400,17 @@ class Topic(commands.Cog):
         """
         await interaction.response.defer(ephemeral=True)
         automated_channel = self.bot.get_channel(Reference.Channels.banners_and_topics)
-        embed = discord.Embed(description=f"**{topic}**", color=0xC8A2C8)
+        embed = discord.Embed(description=topic, color=0xC8A2C8)
         embed.set_author(
-            name=interaction.user.name + "#" + interaction.user.discriminator,
+            name=f"{interaction.user.name} ({interaction.user.id})",
             icon_url=interaction.user.display_avatar.url,
         )
         embed.set_footer(text="topic")
-        message = await automated_channel.send(embed=embed)
-
-        await message.add_reaction("<:kgsYes:955703069516128307>")
-        await message.add_reaction("<:kgsNo:955703108565098496>")
+        await automated_channel.send(embed=embed, view=self.TOPIC_VIEW)
 
         await interaction.edit_original_response(
             content="Topic suggested.",
         )
-
-    @commands.Cog.listener()
-    async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent):
-        # User topic suggestions
-        if payload.channel_id == Reference.Channels.banners_and_topics and not payload.member.bot:
-            guild = discord.utils.get(self.bot.guilds, id=Reference.guild)
-            mod_role = guild.get_role(Reference.Roles.moderator)
-            if payload.member.top_role >= mod_role:
-                message = await self.bot.get_channel(payload.channel_id).fetch_message(
-                    payload.message_id
-                )
-                if message.embeds and message.embeds[0].footer.text == "topic":
-                    if payload.emoji.id == Reference.Emoji.kgsYes:
-                        topic = message.embeds[0].description
-                        author = message.embeds[0].author
-                        self.topics.append(topic.strip("*"))
-                        self.topics_db.update_one(
-                            {"name": "topics"}, {"$set": {"topics": self.topics}}
-                        )
-                        embed = discord.Embed(
-                            description=f"**{topic}**", colour=discord.Colour.green()
-                        )
-                        embed.set_author(name=author.name, icon_url=author.icon_url)
-                        await message.edit(embed=embed, delete_after=6)
-
-                        member = guild.get_member_named(author.name)
-                        try:
-                            await member.send(
-                                f"Your topic suggestion was accepted: **{topic}**"
-                            )
-                        except discord.Forbidden:
-                            pass
-
-                    elif payload.emoji.id == Reference.Emoji.kgsNo:
-                        message = await self.bot.get_channel(
-                            payload.channel_id
-                        ).fetch_message(payload.message_id)
-                        embed = discord.Embed(title="Suggestion removed!")
-                        await message.edit(embed=embed, delete_after=6)
 
 
 async def setup(bot):

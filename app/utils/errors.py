@@ -14,6 +14,8 @@ from discord import (
     Embed
 )
 
+from .config import Reference
+
 Info = Type[Union[commands.Context, Interaction]]
 
 class InternalError(Exception):
@@ -42,17 +44,17 @@ class CheckFailure(
     app_commands.CheckFailure, 
     commands.CheckFailure
 ):
-    title="<:kgsNo:955703108565098496> You can not use this command"
+    title=f"{Reference.Emoji.PartialString.kgsNo} You can not use this command"
     content="Default, Bot Devs need to provide better info here"
 
 class InvalidAuthorizationError(CheckFailure):
-    title = "<:kgsNo:955703108565098496> Invalid Authorization"
+    title = f"{Reference.Emoji.PartialString.kgsNo} Invalid Authorization"
     content = "```\nYou do not have access to run this command\n```"
 
 class InvalidInvocationError(CheckFailure):
-    title = "<:kgsNo:955703108565098496> Invalid Invocation"
+    title = f"{Reference.Emoji.PartialString.kgsNo} Invalid Invocation"
     content = "```\nThis command was ran in an invalid context\n```"
 
 class InvalidParameterError(CheckFailure):
-    title = "<:kgsNo:955703108565098496> Invalid Parameters"
+    title = f"{Reference.Emoji.PartialString.kgsNo} Invalid Parameters"
     content = "The parameters you provided are not accepted in this context"

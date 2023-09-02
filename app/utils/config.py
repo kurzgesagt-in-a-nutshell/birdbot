@@ -98,6 +98,12 @@ class Reference:
         kgsYes = 955703069516128307
         kgsNo = 955703108565098496
 
+        class PartialString:
+            kgsYes = "<:kgsYes:955703069516128307>"
+            kgsNo = "<:kgsNo:955703108565098496>"
+            kgsStop = "<:kgsStop:579824947959169024>"
+            kgsWhoAsked = "<:kgsWhoAsked:754871694467924070>"
+
         @staticmethod
         async def fetch(client: discord.Client, ref: int) -> discord.Emoji | None:
             """
