@@ -1,11 +1,13 @@
-import requests, re
+import io
+import re
+
+import discord
+import requests
+from discord.ext import commands
 from requests.models import PreparedRequest
 
-import discord, io
-from discord.ext import commands
-
-from app.utils.helper import is_internal_command
 from app.utils.config import Reference
+from app.utils.helper import is_internal_command
 
 
 class MessageEvents(commands.Cog):

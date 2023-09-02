@@ -1,14 +1,15 @@
-import logging
-import random
-import typing
-from fuzzywuzzy import process
 import asyncio
 import copy
+import logging
+import random
 import re
+import typing
 
 import discord
+from discord import Interaction, app_commands
+from discord import ui as dui
 from discord.ext import commands
-from discord import app_commands, ui as dui, Interaction
+from fuzzywuzzy import process
 
 from app.utils import checks, errors
 from app.utils.config import Reference

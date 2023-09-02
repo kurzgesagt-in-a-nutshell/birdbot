@@ -1,9 +1,9 @@
-import re
 import datetime
 import json
 import logging
-from typing import List, Tuple, Union
+import re
 import typing
+from typing import List, Tuple, Union
 
 import discord
 from discord.ext import commands

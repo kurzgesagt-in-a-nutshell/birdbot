@@ -1,23 +1,17 @@
-import json
-import io
-import typing
 import datetime
+import io
+import json
 import logging
-
-
-from app.utils import helper, checks, errors
-from app.utils.helper import (
-    get_active_staff,
-    blacklist_member,
-    whitelist_member,
-    is_public_channel,
-)
-from app.utils.infraction import InfractionList, InfractionKind
-from app.utils.config import Reference
+import typing
 
 import discord
-from discord.ext import commands
 from discord import app_commands
+from discord.ext import commands
+
+from app.utils import checks, errors, helper
+from app.utils.config import Reference
+from app.utils.helper import blacklist_member, get_active_staff, is_public_channel, whitelist_member
+from app.utils.infraction import InfractionKind, InfractionList
 
 
 class FinalReconfirmation(discord.ui.View):

@@ -1,10 +1,10 @@
 from typing import Union
 
+from discord import Interaction, app_commands
+from discord.ext import commands
+
 from .config import Reference
 from .errors import InvalidAuthorizationError, InvalidInvocationError
-
-from discord.ext import commands
-from discord import Interaction, app_commands
 
 
 def check(predicate):

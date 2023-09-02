@@ -1,12 +1,11 @@
-import logging
-import os
-import dotenv
 import argparse
 import asyncio
+import logging
+import os
 
-from app.birdbot import BirdBot
-from app.birdbot import setup
+import dotenv
 
+from app.birdbot import BirdBot, setup
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-b", "--beta", help="Run the beta instance of the bot", action="store_true")

@@ -7,8 +7,8 @@ in inherited classes.
 
 from typing import Type, Union
 
+from discord import Embed, Interaction, app_commands
 from discord.ext import commands
-from discord import app_commands, Interaction, Embed
 
 from .config import Reference
 

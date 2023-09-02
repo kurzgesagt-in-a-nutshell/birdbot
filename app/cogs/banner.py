@@ -17,25 +17,22 @@ Once the qualified user selects the action, the view is removed, the embed is
 updated to display the chocie made and the banner is added or not.
 """
 
-import logging
-import json
-import typing
-import aiohttp
-import re
 import io
+import json
+import logging
+import re
+import typing
 
+import aiohttp
 import discord
+from discord import Interaction, app_commands
+from discord import ui as dui
 from discord.ext import commands, tasks
-from discord import app_commands, ui as dui, Interaction
 from discord.interactions import Interaction
 
 from app.utils import checks, errors
-from app.utils.helper import (
-    calc_time,
-    get_time_string,
-)
-
 from app.utils.config import Reference
+from app.utils.helper import calc_time, get_time_string
 
 logger = logging.getLogger(__name__)
 

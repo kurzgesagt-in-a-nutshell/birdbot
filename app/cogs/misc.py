@@ -4,6 +4,7 @@ import logging
 import re
 import typing
 
+import birdbot
 import demoji
 import discord
 import pymongo
@@ -12,8 +13,6 @@ from discord.ext import commands
 
 from app.utils import checks
 from app.utils.config import Reference
-
-import birdbot
 
 
 class Misc(commands.Cog):

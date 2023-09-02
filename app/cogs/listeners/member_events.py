@@ -1,10 +1,10 @@
-import aiohttp, random
+import random
+
+import aiohttp
+import discord
+from discord.ext import commands
 
 from app.birdbot import BirdBot
-
-from discord.ext import commands
-import discord
-
 from app.utils.config import Reference
 
 

@@ -1,8 +1,11 @@
-import enum, typing, logging
+import enum
+import logging
+import typing
+from typing import TYPE_CHECKING
+
 import discord
 
 from app.birdbot import BirdBot
-from typing import TYPE_CHECKING
 
 INFRACTION_DB = BirdBot.db.Infraction
 logger = logging.getLogger(__name__)
