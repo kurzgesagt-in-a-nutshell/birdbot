@@ -15,13 +15,13 @@ jobs:
     steps:
 
       - name: checkout
-      - uses: actions/checkout@v3
+        uses: actions/checkout@v3
       
       - name: black
-      - run: |
+        run: |
           black . --config pyproject.toml --check
 
       - name: isort
-      - uses: isort/isort-action@v1
+        uses: isort/isort-action@v1
         with:
             requirements-files: "requirements.txt"
