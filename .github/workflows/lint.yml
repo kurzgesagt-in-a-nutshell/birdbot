@@ -13,8 +13,13 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
+      - name: black
       - uses: actions/checkout@v3
-      - uses: psf/black@stable
+      - run: |
+          black . --config pyproject.toml --check
+
+      - name: isort
+      - uses: actions/checkout@v3
       - uses: isort/isort-action@v1
         with:
             requirements-files: "requirements.txt"
