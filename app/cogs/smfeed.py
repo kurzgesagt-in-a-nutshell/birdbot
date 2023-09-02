@@ -6,11 +6,11 @@ from discord.ext import commands
 
 from app.utils.config import Reference
 
+
 class Smfeed(commands.Cog):
     def __init__(self, bot):
         self.logger = logging.getLogger("Smfeed")
         self.bot = bot
-
 
     @commands.Cog.listener()
     async def on_ready(self):
@@ -45,9 +45,7 @@ class Smfeed(commands.Cog):
                     if type(reaction.emoji) != type(""):
                         if reaction.emoji.id == Reference.Emoji.kgsYes:
                             if reaction.count < 3:
-                                channel = guild.get_channel(
-                                    Reference.Channels.social_media_feed
-                                )  # social-media-feed
+                                channel = guild.get_channel(Reference.Channels.social_media_feed)  # social-media-feed
                                 await channel.send(message.content)
                                 break
 

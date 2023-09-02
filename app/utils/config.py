@@ -1,4 +1,3 @@
-
 import discord
 
 
@@ -45,10 +44,7 @@ class Reference:
 
         @staticmethod
         def admin_and_above():
-            return [
-                Reference.Roles.administrator,
-                Reference.Roles.kgsofficial
-            ]
+            return [Reference.Roles.administrator, Reference.Roles.kgsofficial]
 
         @staticmethod
         def moderator_and_above():
@@ -56,16 +52,12 @@ class Reference:
                 Reference.Roles.trainee_mod,
                 Reference.Roles.moderator,
                 Reference.Roles.administrator,
-                Reference.Roles.kgsofficial
+                Reference.Roles.kgsofficial,
             ]
 
         @staticmethod
         def patreon():
-            return [
-                Reference.Roles.patreon_1,
-                Reference.Roles.patreon_2,
-                Reference.Roles.patreon_3
-            ]
+            return [Reference.Roles.patreon_1, Reference.Roles.patreon_2, Reference.Roles.patreon_3]
 
     class Categories:
         moderation = 414095379156434945
@@ -111,5 +103,5 @@ class Reference:
             """
 
             if em := client.get_emoji(ref) is not None:
-                return em # type: ignore
-            return None 
+                return em  # type: ignore
+            return None

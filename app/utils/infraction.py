@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING
 INFRACTION_DB = BirdBot.db.Infraction
 logger = logging.getLogger(__name__)
 
+
 class InfractionKind(enum.Enum):
     WARN = 0
     MUTE = 1
@@ -154,9 +155,7 @@ class InfractionList:
     Represents a list of infractions for a user
     """
 
-    def __init__(
-        self, user: discord.User, data: typing.Optional[typing.Dict] = None
-    ) -> None:
+    def __init__(self, user: discord.User, data: typing.Optional[typing.Dict] = None) -> None:
         if data is None:
             data = {}
 
@@ -168,21 +167,10 @@ class InfractionList:
         self._banned_patreon = data.pop("banned_patreon", False)
         self._final_warn = data.pop("final_warn", False)
 
-        self._warns = [
-            Infraction(InfractionKind.WARN, warn_data)
-            for warn_data in data.pop("warn", [])
-        ]
-        self._mutes = [
-            Infraction(InfractionKind.MUTE, mute_data)
-            for mute_data in data.pop("mute", [])
-        ]
-        self._kicks = [
-            Infraction(InfractionKind.KICK, kick_data)
-            for kick_data in data.pop("kick", [])
-        ]
-        self._bans = [
-            Infraction(InfractionKind.BAN, ban_data) for ban_data in data.pop("ban", [])
-        ]
+        self._warns = [Infraction(InfractionKind.WARN, warn_data) for warn_data in data.pop("warn", [])]
+        self._mutes = [Infraction(InfractionKind.MUTE, mute_data) for mute_data in data.pop("mute", [])]
+        self._kicks = [Infraction(InfractionKind.KICK, kick_data) for kick_data in data.pop("kick", [])]
+        self._bans = [Infraction(InfractionKind.BAN, ban_data) for ban_data in data.pop("ban", [])]
 
     @classmethod
     def from_user(cls, user: discord.User):
@@ -275,9 +263,7 @@ class InfractionList:
         the layout of infraction levels.
         """
 
-        final_warn = (
-            "" if self._final_warn is not True else "USER IS ON FINAL WARNING\n"
-        )
+        final_warn = "" if self._final_warn is not True else "USER IS ON FINAL WARNING\n"
 
         # count infraction levels
         # legacies are handled by the infraction.level property
@@ -309,7 +295,7 @@ class InfractionList:
             valuelist.append(f"{legacy}x{dectoroman['legacy']}")
 
         for key in sorted(inflevels):
-            valuelist.append(f"{inflevels[key]}x{dectoroman[key]}") # type: ignore
+            valuelist.append(f"{inflevels[key]}x{dectoroman[key]}")  # type: ignore
 
         return f"Total Infractions: {inf_sum}\n{final_warn}{', '.join(valuelist)}"
 
@@ -343,9 +329,7 @@ class InfractionList:
             final,
         )
 
-    def detail_infraction(
-        self, kind: InfractionKind, id: int, title: str, description: str
-    ) -> bool:
+    def detail_infraction(self, kind: InfractionKind, id: int, title: str, description: str) -> bool:
 
         """
         Allows the local editing of extra info on the infraction.
@@ -402,17 +386,12 @@ class InfractionList:
         if len(infractions_info) == 0:
             infractions_info.append("```\nNone\n```")
 
-        embed.add_field(
-            name=f"{self._user_name} ({self._user_id})", 
-            value=f"```\n{self.summary()}\n```", inline=False
-        )
+        embed.add_field(name=f"{self._user_name} ({self._user_id})", value=f"```\n{self.summary()}\n```", inline=False)
         embed.add_field(name=kind.name.title() + "s", value="\n".join(infractions_info))
 
         return embed
 
-    def get_infraction_info_str(
-        self, kind: InfractionKind, id: int
-    ) -> typing.Optional[str]:
+    def get_infraction_info_str(self, kind: InfractionKind, id: int) -> typing.Optional[str]:
         """
         Returns a string of infraction info for the infraction requested.
         None is returned if the index is out of range
@@ -424,9 +403,7 @@ class InfractionList:
         except IndexError:
             return None
 
-    def get_detailed_infraction(
-        self, kind: InfractionKind, id: int
-    ) -> typing.Optional[discord.Embed]:
+    def get_detailed_infraction(self, kind: InfractionKind, id: int) -> typing.Optional[discord.Embed]:
         """
         Returns a discord.Embed with information about the requested infraction.
 

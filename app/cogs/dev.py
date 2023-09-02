@@ -66,10 +66,7 @@ class Dev(commands.Cog):
             "playing": discord.ActivityType.playing,
         }
 
-        await self.bot.change_presence(
-            activity=discord.Activity(
-                name=message, type=activities[activity_type])
-        )
+        await self.bot.change_presence(activity=discord.Activity(name=message, type=activities[activity_type]))
 
         await interaction.response.send_message("Activity changed.", ephemeral=True)
 
@@ -123,24 +120,19 @@ class Dev(commands.Cog):
                             f"Returned over 2k chars, sending as file instead.\n"
                             f"(first 1.5k chars for quick reference)\n"
                             f"```py\n{value[0:1500]}\n```",
-                            file=discord.File(
-                                io.BytesIO(value.encode()), filename="output.txt"
-                            ),
+                            file=discord.File(io.BytesIO(value.encode()), filename="output.txt"),
                         )
                     else:
                         await ctx.send(f"```py\n{value}\n```")
             else:
-                self.logger.info(
-                    f"Output chars: {len(str(value)) + len(str(ret))}")
+                self.logger.info(f"Output chars: {len(str(value)) + len(str(ret))}")
                 self._last_result = ret
                 if len(str(value)) + len(str(ret)) >= 2000:
                     await ctx.send(
                         f"Returned over 2k chars, sending as file instead.\n"
                         f"(first 1.5k chars for quick reference)\n"
                         f'```py\n{f"{value}{ret}"[0:1500]}\n```',
-                        file=discord.File(
-                            io.BytesIO(f"{value}{ret}".encode()), filename="output.txt"
-                        ),
+                        file=discord.File(io.BytesIO(f"{value}{ret}".encode()), filename="output.txt"),
                     )
                 else:
                     await ctx.send(f"```py\n{value}{ret}\n```")
@@ -180,18 +172,20 @@ class Dev(commands.Cog):
         """restarts sub processes"""
         if instance not in ("songbirdalpha", "songbirdbeta", "twitterfeed", "youtubefeed"):
             raise commands.BadArgument(
-                "Instance argument must be songbirdalpha, songbirdbeta, twitterfeed, youtubefeed")
+                "Instance argument must be songbirdalpha, songbirdbeta, twitterfeed, youtubefeed"
+            )
         process = {
             "songbirdalpha": "songbirda.service",
             "songbirdbeta": "songbirdb.service",
             "twitterfeed": "twitter_feed.service",
-            "youtubefeed": "youtube_feed.service"
+            "youtubefeed": "youtube_feed.service",
         }
         try:
-            child = await asyncio.create_subprocess_shell("systemctl restart " + process[instance],
-                                                          stdout=asyncio.subprocess.PIPE,
-                                                          stderr=asyncio.subprocess.STDOUT,
-                                                          )
+            child = await asyncio.create_subprocess_shell(
+                "systemctl restart " + process[instance],
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.STDOUT,
+            )
             await child.wait()
             await ctx.send("process restarted")
         except Exception as e:
@@ -212,8 +206,7 @@ class Dev(commands.Cog):
                 f"Returned over 2k chars, sending as file instead.\n"
                 f"(first 1k chars for quick reference)\n"
                 f'```py\n{f"{log}"[0:1000]}\n```',
-                file=discord.File(io.BytesIO(
-                    f"{log}".encode()), filename="log.txt"),
+                file=discord.File(io.BytesIO(f"{log}".encode()), filename="log.txt"),
             )
         else:
             await ctx.send(f"```\n{log}\n```")
@@ -225,8 +218,7 @@ class Dev(commands.Cog):
         """Spawn child process of alpha/beta bot instance on the VM, only works on main bot"""
 
         if instance not in ("alpha", "beta"):
-            raise commands.BadArgument(
-                "Instance argument must be `alpha` or `beta`")
+            raise commands.BadArgument("Instance argument must be `alpha` or `beta`")
 
         try:
             child = await asyncio.create_subprocess_shell(
@@ -260,9 +252,7 @@ class Dev(commands.Cog):
         await channel.send(msg)
         await interaction.response.send_message("sent", ephemeral=True)
 
-        logging_channel = discord.utils.get(
-            interaction.guild.channels, id=Reference.Channels.Logging.mod_actions
-        )
+        logging_channel = discord.utils.get(interaction.guild.channels, id=Reference.Channels.Logging.mod_actions)
         embed = helper.create_embed(
             author=interaction.user,
             action="ran send command",

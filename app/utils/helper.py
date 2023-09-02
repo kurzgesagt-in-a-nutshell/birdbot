@@ -119,6 +119,7 @@ class DevBotOnly(commands.CheckFailure):
 
 # ----Exception classes end------#
 
+
 def is_internal_command(bot: commands.AutoShardedBot, message: discord.Message):
     """
     check if message is a bird bot command
@@ -197,9 +198,7 @@ def create_embed(
     return embed
 
 
-def create_timed_action(
-    users: List[Union[discord.User, discord.Member]], action: str, time: int
-):
+def create_timed_action(users: List[Union[discord.User, discord.Member]], action: str, time: int):
     # TODO DELETE
     """Creates a database entry for timed action [not in use currently]
 
@@ -217,8 +216,7 @@ def create_timed_action(
                 "action": action,
                 "action_start": datetime.datetime.utcnow(),
                 "duration": time,
-                "action_end": datetime.datetime.utcnow()
-                + datetime.timedelta(seconds=time),
+                "action_end": datetime.datetime.utcnow() + datetime.timedelta(seconds=time),
             }
         )
     ids = timed_actions_db.insert_many(data)
@@ -357,9 +355,7 @@ def create_automod_embed(
     )
     embed.add_field(
         name="Message Content",
-        value=f"{message.content[:1024]}"
-        if message.content
-        else "it's an attachment/embed",
+        value=f"{message.content[:1024]}" if message.content else "it's an attachment/embed",
         inline=False,
     )
     return embed
@@ -375,57 +371,41 @@ def get_active_staff(bot: commands.AutoShardedBot) -> str:
     guild = discord.utils.get(bot.guilds, id=Reference.guild)
     active_staff = []
     mods_active = False
-    for role_id in [
-        Reference.Roles.moderator,
-        Reference.Roles.administrator,
-        Reference.Roles.trainee_mod
-    ]:
+    for role_id in [Reference.Roles.moderator, Reference.Roles.administrator, Reference.Roles.trainee_mod]:
         for member in discord.utils.get(guild.roles, id=role_id).members:
             if member.bot:
                 continue
             if member in active_staff:
                 continue
-            if (
-                member.status == discord.Status.online
-                or member.status == discord.Status.idle
-            ):
+            if member.status == discord.Status.online or member.status == discord.Status.idle:
                 active_staff.append(member)
 
                 if not mods_active:
-                    if member.top_role.id in [
-                        Reference.Roles.moderator,
-                        Reference.Roles.trainee_mod
-                    ]:
+                    if member.top_role.id in [Reference.Roles.moderator, Reference.Roles.trainee_mod]:
                         # check for active mods
                         mods_active = True
 
     mention_str = " ".join([staff.mention for staff in active_staff])
 
     if not mods_active:
-        mention_str += (
-            f"<@&{Reference.Roles.moderator}> <@&{Reference.Roles.trainee_mod}>"
-        )
+        mention_str += f"<@&{Reference.Roles.moderator}> <@&{Reference.Roles.trainee_mod}>"
 
     return mention_str
 
+
 # This is useless due to slash migration
-def blacklist_member(
-    bot: commands.AutoShardedBot, member: discord.Member, command: commands.Command
-):
+def blacklist_member(bot: commands.AutoShardedBot, member: discord.Member, command: commands.Command):
     """
     Blacklists a member from a command
     """
 
     cmd = cmd_blacklist_db.find_one({"command_name": command.name})
     if cmd is None:
-        cmd_blacklist_db.insert_one(
-            {"command_name": command.name, "blacklisted_users": [member.id]}
-        )
+        cmd_blacklist_db.insert_one({"command_name": command.name, "blacklisted_users": [member.id]})
         return
 
-    cmd_blacklist_db.update_one(
-        {"command_name": command.name}, {"$push": {"blacklisted_users": member.id}}
-    )
+    cmd_blacklist_db.update_one({"command_name": command.name}, {"$push": {"blacklisted_users": member.id}})
+
 
 # This is useless due to slash migration
 def whitelist_member(member: discord.Member, command: commands.Command) -> bool:
@@ -437,20 +417,16 @@ def whitelist_member(member: discord.Member, command: commands.Command) -> bool:
     if cmd is None or member.id not in cmd["blacklisted_users"]:
         return False
 
-    cmd_blacklist_db.update_one(
-        {"command_name": command.name}, {"$pull": {"blacklisted_users": member.id}}
-    )
+    cmd_blacklist_db.update_one({"command_name": command.name}, {"$pull": {"blacklisted_users": member.id}})
     return True
 
 
-def is_public_channel(
-    channel: typing.Union[discord.TextChannel, discord.Thread]
-) -> bool:
+def is_public_channel(channel: typing.Union[discord.TextChannel, discord.Thread]) -> bool:
     """
     Returns true for all channels except those under the moderation category
 
     Currently used within the moderation cog to determine if an interaction
     should be ephemeral
     """
-    
+
     return channel.category_id != Reference.Categories.moderation

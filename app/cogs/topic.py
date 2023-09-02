@@ -13,20 +13,18 @@ from discord import app_commands, ui as dui, Interaction
 from app.utils import checks, errors
 from app.utils.config import Reference
 
+
 class TopicEditorModal(dui.Modal):
     """
     A modal sent to the user attempting to change the topic
     """
-    
+
     topic = dui.TextInput(
-        label="Topic",
-        placeholder="Edited topic goes here",
-        style=discord.TextStyle.long, 
-        max_length=2000
+        label="Topic", placeholder="Edited topic goes here", style=discord.TextStyle.long, max_length=2000
     )
 
-    def __init__(self, topic:str):
-        super().__init__(title="Topic Editor", timeout=60*2)
+    def __init__(self, topic: str):
+        super().__init__(title="Topic Editor", timeout=60 * 2)
         self.topic.default = topic
 
     async def on_submit(self, interaction: Interaction) -> None:
@@ -36,7 +34,7 @@ class TopicEditorModal(dui.Modal):
         if self.topic.value == self.topic.default:
             await interaction.response.defer(thinking=False)
             return
-        
+
         message = interaction.message
         embed = message.embeds[0]
 
@@ -45,6 +43,7 @@ class TopicEditorModal(dui.Modal):
         embed.add_field(name="Initial Submission", value=self.topic.default)
 
         await interaction.response.edit_message(embed=embed)
+
 
 class TopicAcceptorView(dui.View):
     """
@@ -71,31 +70,25 @@ class TopicAcceptorView(dui.View):
         if editing != 0:
             who = f"<@{editing}> is currently editing this topic"
             avoid = (
-                "" if editing != interaction.user.id else 
-                "\nThis interaction will clear out in at least two minutes." \
+                ""
+                if editing != interaction.user.id
+                else "\nThis interaction will clear out in at least two minutes."
                 + " To avoid this issue, do not cancel out of the popup"
             )
-            
-            raise errors.InvalidAuthorizationError(
-                content=f"{who}{avoid}"
-            )
+
+            raise errors.InvalidAuthorizationError(content=f"{who}{avoid}")
         return True
 
-    async def on_error(
-            self, 
-            interaction: Interaction, 
-            error: Exception, 
-            item: dui.Item
-        ):
+    async def on_error(self, interaction: Interaction, error: Exception, item: dui.Item):
         """Raises the error to the command tree"""
         await interaction.client.tree.on_error(interaction, error)
 
     @dui.button(
-        label="Accept", 
-        style=discord.ButtonStyle.green, 
-        emoji=discord.PartialEmoji.from_str(Reference.Emoji.PartialString.kgsYes)
+        label="Accept",
+        style=discord.ButtonStyle.green,
+        emoji=discord.PartialEmoji.from_str(Reference.Emoji.PartialString.kgsYes),
     )
-    async def _accept(self, interaction: Interaction, button:dui.Button):
+    async def _accept(self, interaction: Interaction, button: dui.Button):
         """
         Accepts the topic and removes the view from the message
         Changes the embed to indicate it was accepted and by who
@@ -105,12 +98,10 @@ class TopicAcceptorView(dui.View):
 
         topic = embed.description
         self.topics.append(topic)
-        self.topics_db.update_one(
-            {"name": "topics"}, {"$set": {"topics": self.topics}}
-        )
+        self.topics_db.update_one({"name": "topics"}, {"$set": {"topics": self.topics}})
 
         embed.color = discord.Color.green()
-        embed.title=f"Accepted by {interaction.user.name}"
+        embed.title = f"Accepted by {interaction.user.name}"
 
         await interaction.response.edit_message(embed=embed, view=None)
 
@@ -119,20 +110,17 @@ class TopicAcceptorView(dui.View):
             userid = match.group(1)
 
             suggester = await interaction.client.fetch_user(int(userid))
-            await suggester.send(
-                f"Your topic suggestion was accepted: **{topic}**"
-            )
+            await suggester.send(f"Your topic suggestion was accepted: **{topic}**")
 
         except discord.Forbidden:
             pass
 
-
     @dui.button(
         label="Deny",
         style=discord.ButtonStyle.danger,
-        emoji=discord.PartialEmoji.from_str(Reference.Emoji.PartialString.kgsNo)
+        emoji=discord.PartialEmoji.from_str(Reference.Emoji.PartialString.kgsNo),
     )
-    async def _deny(self, interaction: Interaction, button:dui.Button):
+    async def _deny(self, interaction: Interaction, button: dui.Button):
         """
         Denys the topic and removes the view from the message
         Changes the embed to indicate it was denied and by who
@@ -141,16 +129,16 @@ class TopicAcceptorView(dui.View):
         embed = message.embeds[0]
 
         embed.color = discord.Color.red()
-        embed.title=f"Denied by {interaction.user.name}"
+        embed.title = f"Denied by {interaction.user.name}"
 
         await interaction.response.edit_message(embed=embed, view=None)
 
     @dui.button(
         label="Edit",
         style=discord.ButtonStyle.blurple,
-        emoji=discord.PartialEmoji.from_str(Reference.Emoji.PartialString.kgsWhoAsked)
+        emoji=discord.PartialEmoji.from_str(Reference.Emoji.PartialString.kgsWhoAsked),
     )
-    async def _edit(self, interaction: Interaction, button:dui.Button):
+    async def _edit(self, interaction: Interaction, button: dui.Button):
         """
         Sends a modal to interact with the provided topic text
         """
@@ -164,20 +152,16 @@ class TopicAcceptorView(dui.View):
         await topic_modal.wait()
         self.editing.pop(interaction.message.id)
 
-        
+
 class Topic(commands.Cog):
     def __init__(self, bot):
         self.logger = logging.getLogger("Fun")
         self.bot = bot
 
         self.topics_db = self.bot.db.Topics
-        self.topics = self.topics_db.find_one({"name": "topics"})[
-            "topics"
-        ]  # Use this for DB interaction
+        self.topics = self.topics_db.find_one({"name": "topics"})["topics"]  # Use this for DB interaction
 
-        self.topics_list = copy.deepcopy(
-            self.topics
-        )  # This is used to stop topic repeats
+        self.topics_list = copy.deepcopy(self.topics)  # This is used to stop topic repeats
 
     @commands.Cog.listener()
     async def on_ready(self):
@@ -187,13 +171,13 @@ class Topic(commands.Cog):
         self.TOPIC_ACCEPT = f"TOPIC-ACCEPT-{self.bot.user.id}"
         self.TOPIC_DENY = f"TOPIC-DENY-{self.bot.user.id}"
         self.TOPIC_EDIT = f"TOPIC-EDIT-{self.bot.user.id}"
-        
+
         self.TOPIC_VIEW = TopicAcceptorView(
-            accept_id=self.TOPIC_ACCEPT, 
-            deny_id=self.TOPIC_DENY, 
+            accept_id=self.TOPIC_ACCEPT,
+            deny_id=self.TOPIC_DENY,
             edit_id=self.TOPIC_EDIT,
             topics=self.topics,
-            topic_db=self.topics_db
+            topic_db=self.topics_db,
         )
 
         self.bot.add_view(self.TOPIC_VIEW)
@@ -242,9 +226,7 @@ class Topic(commands.Cog):
         if t == []:
             return await interaction.edit_original_response(content="No match found.")
 
-        embed_desc = "".join(
-            f"{self.topics.index(tp) + 1}. {tp}\n" for _, tp in enumerate(t)
-        )
+        embed_desc = "".join(f"{self.topics.index(tp) + 1}. {tp}\n" for _, tp in enumerate(t))
 
         embed = discord.Embed(
             title="Best matches for search: ",
@@ -268,9 +250,7 @@ class Topic(commands.Cog):
 
         self.topics_db.update_one({"name": "topics"}, {"$set": {"topics": self.topics}})
 
-        await interaction.response.send_message(
-            f"Topic added at index {len(self.topics)}"
-        )
+        await interaction.response.send_message(f"Topic added at index {len(self.topics)}")
 
     @topics_command.command()
     @checks.mod_and_above()
@@ -307,9 +287,7 @@ class Topic(commands.Cog):
             topic = self.topics[index]
             del self.topics[index]
 
-            self.topics_db.update_one(
-                {"name": "topics"}, {"$set": {"topics": self.topics}}
-            )
+            self.topics_db.update_one({"name": "topics"}, {"$set": {"topics": self.topics}})
 
             emb = discord.Embed(
                 title="Success",
@@ -329,9 +307,7 @@ class Topic(commands.Cog):
             t = [topic[0] for topic in search_result if topic[1] > 75]
 
             if t == []:
-                return await interaction.edit_original_response(
-                    content="No match found."
-                )
+                return await interaction.edit_original_response(content="No match found.")
 
             embed_desc = "".join(f"{index + 1}. {tp}\n" for index, tp in enumerate(t))
 
@@ -361,9 +337,7 @@ class Topic(commands.Cog):
                 return user == interaction.user and str(reaction.emoji) in emote_list
 
             try:
-                reaction, user = await self.bot.wait_for(
-                    "reaction_add", timeout=30.0, check=check
-                )
+                reaction, user = await self.bot.wait_for("reaction_add", timeout=30.0, check=check)
 
                 i = emote_list.index(str(reaction.emoji))
 
@@ -375,9 +349,7 @@ class Topic(commands.Cog):
 
                 self.topics.remove(search_result[i][0])
 
-                self.topics_db.update_one(
-                    {"name": "topics"}, {"$set": {"topics": self.topics}}
-                )
+                self.topics_db.update_one({"name": "topics"}, {"$set": {"topics": self.topics}})
 
                 await msg.edit(embed=emb)
                 await msg.clear_reactions()

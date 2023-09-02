@@ -9,14 +9,8 @@ from app.birdbot import setup
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument(
-    "-b", "--beta", help="Run the beta instance of the bot", action="store_true"
-)
-parser.add_argument(
-    "-a", "--alpha", help="Run the alpha instance of the bot", action="store_true"
-)
-
-
+parser.add_argument("-b", "--beta", help="Run the beta instance of the bot", action="store_true")
+parser.add_argument("-a", "--alpha", help="Run the alpha instance of the bot", action="store_true")
 
 
 async def main() -> None:
@@ -33,7 +27,7 @@ async def main() -> None:
         else:
             token: str | None = os.environ.get("MAIN_BOT_TOKEN")
         async with bot:
-            if token: 
+            if token:
                 await bot.start(token, reconnect=True)
             else:
                 logger.critical("No token found")

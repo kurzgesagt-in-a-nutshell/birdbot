@@ -79,9 +79,7 @@ class FinalReconfirmation(discord.ui.View):
         return interaction.user.id == self.moderator.id
 
     @discord.ui.button(label="Continue", style=discord.ButtonStyle.danger)
-    async def _continue(
-        self, interaction: discord.Interaction, button: discord.ui.Button
-    ):
+    async def _continue(self, interaction: discord.Interaction, button: discord.ui.Button):
         """
         Removes the view and edits the message to inform that the action will
         continue
@@ -97,9 +95,7 @@ class FinalReconfirmation(discord.ui.View):
         )
 
     @discord.ui.button(label="Cancel", style=discord.ButtonStyle.grey, row=2)
-    async def _cancel(
-        self, interaction: discord.Interaction, button: discord.ui.Button
-    ):
+    async def _cancel(self, interaction: discord.Interaction, button: discord.ui.Button):
         """
         Removes the view to prevent more actions and edits the message to
         display the choice made
@@ -115,9 +111,7 @@ class FinalReconfirmation(discord.ui.View):
         )
 
     @discord.ui.button(label="10m Timeout", style=discord.ButtonStyle.blurple)
-    async def _timeout(
-        self, interaction: discord.Interaction, button: discord.ui.Button
-    ):
+    async def _timeout(self, interaction: discord.Interaction, button: discord.ui.Button):
         """
         Times out the user for 10 minutes to allow for further decision making.
         This does not record an infraction but allows the moderator to take time
@@ -127,9 +121,7 @@ class FinalReconfirmation(discord.ui.View):
         self.state = -1
         self.stop()
 
-        await self.user.timeout(
-            datetime.timedelta(minutes=10), reason="user timed out for decision making"
-        )
+        await self.user.timeout(datetime.timedelta(minutes=10), reason="user timed out for decision making")
 
         await interaction.response.edit_message(
             content=f"{self.user.mention} was muted for 10 minutes to allow for decision making",
@@ -196,14 +188,14 @@ class Moderation(commands.Cog):
                 channel = interaction.channel
                 if isinstance(channel, (discord.abc.GuildChannel, discord.Thread)):
                     channel_mention = channel.mention
-                    
+
                     # What this does is allow you to click the link to go to the
                     # messages around the time the report was made
-                    if message_link is None or message_link == '':
+                    if message_link is None or message_link == "":
                         message_link = f"https://discord.com/channels/414027124836532234/{channel.id}/{interaction.id}"
 
                 else:
-                    channel_mention = 'Sent through DMs'
+                    channel_mention = "Sent through DMs"
 
                 mod_embed = discord.Embed(
                     title="New Report",
@@ -221,13 +213,12 @@ class Moderation(commands.Cog):
                 )
 
                 await mod_channel.send(
-                    get_active_staff(interaction.client), embed=mod_embed,
-                    allowed_mentions=discord.AllowedMentions.all()
+                    get_active_staff(interaction.client),
+                    embed=mod_embed,
+                    allowed_mentions=discord.AllowedMentions.all(),
                 )
 
-                await interaction.response.send_message(
-                    "Report has been sent!", ephemeral=True
-                )
+                await interaction.response.send_message("Report has been sent!", ephemeral=True)
 
         await interaction.response.send_modal(Modal(member=member))
 
@@ -315,9 +306,7 @@ class Moderation(commands.Cog):
                 )
             )
 
-        message_logging_channel = discord.utils.get(
-            interaction.guild.channels, id=self.message_logging_channel
-        )
+        message_logging_channel = discord.utils.get(interaction.guild.channels, id=self.message_logging_channel)
 
         await message_logging_channel.send(
             f"{len(deleted_messages)} messages deleted in {channel.mention}",
@@ -354,13 +343,9 @@ class Moderation(commands.Cog):
             # fetch_member throws not_found error if not found
             member = await interaction.guild.fetch_member(user.id)
             if member.top_role >= interaction.user.top_role:
-                raise errors.InvalidAuthorizationError(
-                    "User could not be banned due to your clearance."
-                )
+                raise errors.InvalidAuthorizationError("User could not be banned due to your clearance.")
 
-            await member.send(
-                f"You have been permanently removed from the server for following reason: \n{reason}"
-            )
+            await member.send(f"You have been permanently removed from the server for following reason: \n{reason}")
         except (discord.NotFound, discord.Forbidden):
             pass
 
@@ -378,9 +363,7 @@ class Moderation(commands.Cog):
             reason=reason,
         )
 
-        logging_channel = discord.utils.get(
-            interaction.guild.channels, id=self.logging_channel
-        )
+        logging_channel = discord.utils.get(interaction.guild.channels, id=self.logging_channel)
 
         embed = helper.create_embed(
             author=interaction.user,
@@ -422,13 +405,9 @@ class Moderation(commands.Cog):
             )
             return
 
-        await interaction.response.send_message(
-            "user was unbanned", ephemeral=is_public_channel(interaction.channel)
-        )
+        await interaction.response.send_message("user was unbanned", ephemeral=is_public_channel(interaction.channel))
 
-        logging_channel = discord.utils.get(
-            interaction.guild.channels, id=self.logging_channel
-        )
+        logging_channel = discord.utils.get(interaction.guild.channels, id=self.logging_channel)
 
         embed = helper.create_embed(
             author=interaction.user,
@@ -464,15 +443,11 @@ class Moderation(commands.Cog):
 
         if member.top_role >= interaction.user.top_role:
 
-            raise errors.InvalidAuthorizationError(
-                "User could not be kicked due to your clearance."
-            )
+            raise errors.InvalidAuthorizationError("User could not be kicked due to your clearance.")
 
         infractions = InfractionList.from_user(member)
         if infractions.on_final:
-            result = await FinalReconfirmation.handle(
-                interaction, infractions, member, interaction.user
-            )
+            result = await FinalReconfirmation.handle(interaction, infractions, member, interaction.user)
 
             if result < 0:
                 return
@@ -495,9 +470,7 @@ class Moderation(commands.Cog):
         )
         infractions.update()
 
-        logging_channel = discord.utils.get(
-            interaction.guild.channels, id=self.logging_channel
-        )
+        logging_channel = discord.utils.get(interaction.guild.channels, id=self.logging_channel)
 
         embed = helper.create_embed(
             author=interaction.user,
@@ -533,13 +506,9 @@ class Moderation(commands.Cog):
         if tot_time is None or tot_time <= 0:
             raise errors.InvalidInvocationError("Improper time provided")
         elif tot_time > 604801:
-            raise errors.InvalidInvocationError(
-                "Can't mute for longer than 7 days!"
-            )
+            raise errors.InvalidInvocationError("Can't mute for longer than 7 days!")
         elif tot_time < 300:
-            raise errors.InvalidInvocationError(
-                "Can't mute for shorter than 5 minutes!"
-            )
+            raise errors.InvalidInvocationError("Can't mute for shorter than 5 minutes!")
 
         duration = datetime.timedelta(seconds=tot_time)
         finished = discord.utils.utcnow() + duration
@@ -557,9 +526,7 @@ class Moderation(commands.Cog):
             ephemeral=True,
         )
 
-        logging_channel = discord.utils.get(
-            interaction.guild.channels, id=Reference.Channels.Logging.misc_actions
-        )
+        logging_channel = discord.utils.get(interaction.guild.channels, id=Reference.Channels.Logging.misc_actions)
 
         embed = helper.create_embed(
             author=interaction.user,
@@ -600,9 +567,7 @@ class Moderation(commands.Cog):
 
         if member.top_role >= interaction.user.top_role:
 
-            raise errors.InvalidAuthorizationError(
-                "user could not be muted due to your clearance"
-            )
+            raise errors.InvalidAuthorizationError("user could not be muted due to your clearance")
 
         # time calculation
         tot_time, _ = helper.calc_time([time, ""])
@@ -612,15 +577,11 @@ class Moderation(commands.Cog):
         elif tot_time <= 0:
             raise errors.InvalidInvocationError("time can not be 0 or less")
         elif tot_time > 2419200:
-            raise errors.InvalidInvocationError(
-                "time can not be longer than 28 days (2419200 seconds)"
-            )
+            raise errors.InvalidInvocationError("time can not be longer than 28 days (2419200 seconds)")
 
         infractions = InfractionList.from_user(member)
         if infractions.on_final:
-            result = await FinalReconfirmation.handle(
-                interaction, infractions, member, interaction.user
-            )
+            result = await FinalReconfirmation.handle(interaction, infractions, member, interaction.user)
 
             if result < 0:
                 return
@@ -631,14 +592,14 @@ class Moderation(commands.Cog):
         time_str = helper.get_time_string(tot_time)
 
         default_msg = "(Note: Accumulation of warns may lead to permanent removal from the server)"
-        final_msg = "**(This is your final warning, future infractions will lead to a non negotiable ban from the server)**"
+        final_msg = (
+            "**(This is your final warning, future infractions will lead to a non negotiable ban from the server)**"
+        )
         if final:
             default_msg = final_msg
 
         try:
-            await member.send(
-                f"You have been muted for {time_str}.\nGiven reason: {reason}\n{default_msg}"
-            )
+            await member.send(f"You have been muted for {time_str}.\nGiven reason: {reason}\n{default_msg}")
         except discord.Forbidden:
             pass
 
@@ -662,9 +623,7 @@ class Moderation(commands.Cog):
         )
         infractions.update()
 
-        logging_channel = discord.utils.get(
-            interaction.guild.channels, id=self.logging_channel
-        )
+        logging_channel = discord.utils.get(interaction.guild.channels, id=self.logging_channel)
 
         embed = helper.create_embed(
             author=interaction.user,
@@ -697,9 +656,7 @@ class Moderation(commands.Cog):
             Reason for the action
         """
 
-        logging_channel = discord.utils.get(
-            interaction.guild.channels, id=self.logging_channel
-        )
+        logging_channel = discord.utils.get(interaction.guild.channels, id=self.logging_channel)
 
         await member.timeout(None)
 
@@ -739,9 +696,7 @@ class Moderation(commands.Cog):
 
         if role >= interaction.user.top_role:
 
-            raise errors.InvalidAuthorizationError(
-                "you do not have clearance to do that"
-            )
+            raise errors.InvalidAuthorizationError("you do not have clearance to do that")
 
         # check if member has role
         action, preposition = "", ""
@@ -762,9 +717,7 @@ class Moderation(commands.Cog):
             allowed_mentions=discord.AllowedMentions.none(),
         )
 
-        logging_channel = discord.utils.get(
-            interaction.guild.channels, id=self.logging_channel
-        )
+        logging_channel = discord.utils.get(interaction.guild.channels, id=self.logging_channel)
 
         embed = helper.create_embed(
             author=interaction.user,
@@ -803,22 +756,20 @@ class Moderation(commands.Cog):
 
         if member.top_role >= interaction.user.top_role:
 
-            raise errors.InvalidAuthorizationError(
-                "user could not be warned due to your clearance"
-            )
+            raise errors.InvalidAuthorizationError("user could not be warned due to your clearance")
 
         infractions = InfractionList.from_user(member)
         if infractions.on_final:
-            result = await FinalReconfirmation.handle(
-                interaction, infractions, member, interaction.user
-            )
+            result = await FinalReconfirmation.handle(interaction, infractions, member, interaction.user)
 
             if result < 0:
                 return
 
         # TODO make this more modular
         default_msg = "(Note: Accumulation of warns may lead to permanent removal from the server)"
-        final_msg = "**(This is your final warning, future infractions will lead to a non negotiable ban from the server)**"
+        final_msg = (
+            "**(This is your final warning, future infractions will lead to a non negotiable ban from the server)**"
+        )
         if final:
             default_msg = final_msg
 
@@ -843,9 +794,7 @@ class Moderation(commands.Cog):
                 "user has been warned", ephemeral=is_public_channel(interaction.channel)
             )
 
-        logging_channel = discord.utils.get(
-            interaction.guild.channels, id=self.logging_channel
-        )
+        logging_channel = discord.utils.get(interaction.guild.channels, id=self.logging_channel)
 
         embed = helper.create_embed(
             author=interaction.user,
@@ -907,9 +856,7 @@ class Moderation(commands.Cog):
 
                 # split the infractions into chunks 5 elements or less
                 infractions = user_infractions._kind_to_list(kind)
-                self.chunks = [
-                    infractions[i : i + 5] for i in range(0, len(infractions), 5)
-                ]
+                self.chunks = [infractions[i : i + 5] for i in range(0, len(infractions), 5)]
 
                 self.idx_buttons = []
                 self.current_chunk = 0
@@ -922,9 +869,7 @@ class Moderation(commands.Cog):
                     self.idx_buttons.append(button)
 
             @discord.ui.button(label="<", style=discord.ButtonStyle.blurple, row=1)
-            async def back(
-                self, interaction: discord.Interaction, button: discord.ui.Button
-            ):
+            async def back(self, interaction: discord.Interaction, button: discord.ui.Button):
                 """
                 Goes backwards in the pagination. Supports cycling around
                 """
@@ -934,9 +879,7 @@ class Moderation(commands.Cog):
                 await self.write_msg(interaction)
 
             @discord.ui.button(label=">", style=discord.ButtonStyle.blurple, row=1)
-            async def forward(
-                self, interaction: discord.Interaction, button: discord.ui.Button
-            ):
+            async def forward(self, interaction: discord.Interaction, button: discord.ui.Button):
                 """
                 Goes forwards in the pagination. Supports cycling around
                 """
@@ -946,38 +889,24 @@ class Moderation(commands.Cog):
                 await self.write_msg(interaction)
 
             @discord.ui.button(label="x", style=discord.ButtonStyle.red, row=1)
-            async def exit(
-                self, interaction: discord.Interaction, button: discord.ui.Button
-            ):
-                await interaction.message.edit(
-                    content="Exited!!!", embed=None, view=None, delete_after=5
-                )
+            async def exit(self, interaction: discord.Interaction, button: discord.ui.Button):
+                await interaction.message.edit(content="Exited!!!", embed=None, view=None, delete_after=5)
                 self.stop()
 
-            @discord.ui.button(
-                label="✓", style=discord.ButtonStyle.green, row=1, disabled=True
-            )
-            async def confirm(
-                self, interaction: discord.Interaction, button: discord.ui.Button
-            ):
+            @discord.ui.button(label="✓", style=discord.ButtonStyle.green, row=1, disabled=True)
+            async def confirm(self, interaction: discord.Interaction, button: discord.ui.Button):
                 if self.delete_infraction_idx == -1:
                     # This should not happen with correct logic but should
                     # provide insight on an issue if it does
-                    await interaction.response.send_message(
-                        "An infraction is not selected", ephemeral=True
-                    )
+                    await interaction.response.send_message("An infraction is not selected", ephemeral=True)
                     return
 
-                success = self.user_infractions.delete_infraction(
-                    infr_type, self.delete_infraction_idx
-                )
+                success = self.user_infractions.delete_infraction(infr_type, self.delete_infraction_idx)
 
                 if not success:
                     # This should not happen with correct logic but should
                     # provide insight on an issue if it does
-                    await interaction.response.send_message(
-                        "Infraction was not found", ephemeral=True
-                    )
+                    await interaction.response.send_message("Infraction was not found", ephemeral=True)
                     return
 
                 self.user_infractions.update()
@@ -1011,9 +940,7 @@ class Moderation(commands.Cog):
 
                 return embed
 
-            async def select_infraction(
-                self, interaction: discord.Interaction, button: discord.ui.Button
-            ):
+            async def select_infraction(self, interaction: discord.Interaction, button: discord.ui.Button):
                 """
                 Selects the infraction that corresponds to the button passed
 
@@ -1022,19 +949,14 @@ class Moderation(commands.Cog):
                 the user to confirm the choice.
                 """
 
-                self.delete_infraction_idx = int(button.label) + (
-                    5 * self.current_chunk
-                )
+                self.delete_infraction_idx = int(button.label) + (5 * self.current_chunk)
 
                 user_infractions = self.user_infractions
 
-                infraction_info = user_infractions.get_infraction_info_str(
-                    infr_type, self.delete_infraction_idx
-                )
+                infraction_info = user_infractions.get_infraction_info_str(infr_type, self.delete_infraction_idx)
 
                 embed = discord.Embed(
-                    title=f"Confirm deletion of {infr_type.name.lower()}:\n"
-                    + f"for {user.name} ({user.id})?",
+                    title=f"Confirm deletion of {infr_type.name.lower()}:\n" + f"for {user.name} ({user.id})?",
                     color=discord.Color.magenta(),
                     timestamp=discord.utils.utcnow(),
                     description=infraction_info,
@@ -1055,9 +977,7 @@ class Moderation(commands.Cog):
 
                 # update disabled buttons
                 for button in self.idx_buttons:
-                    button.disabled = int(button.label) >= len(
-                        self.chunks[self.current_chunk]
-                    )
+                    button.disabled = int(button.label) >= len(self.chunks[self.current_chunk])
 
                 await interaction.response.edit_message(embed=embed, view=self)
 
@@ -1070,25 +990,19 @@ class Moderation(commands.Cog):
                 if new_interaction.user.id == interaction.user.id:
                     return True
                 else:
-                    await interaction.response.send_message(
-                        "You can't use that", ephemeral=True
-                    )
+                    await interaction.response.send_message("You can't use that", ephemeral=True)
 
         user_infractions = InfractionList.from_user(user)
 
         if len(user_infractions._kind_to_list(infr_type)) == 0:
-            await interaction.response.send_message(
-                f"User has no {infr_type.name.lower()}s.", ephemeral=True
-            )
+            await interaction.response.send_message(f"User has no {infr_type.name.lower()}s.", ephemeral=True)
             return
 
         div = DeleteInfractionView(user_infractions, kind=infr_type)
 
         embed = div.build_embed()
 
-        await interaction.response.send_message(
-            embed=embed, view=div, ephemeral=is_public_channel(interaction.channel)
-        )
+        await interaction.response.send_message(embed=embed, view=div, ephemeral=is_public_channel(interaction.channel))
 
     @app_commands.command()
     @app_commands.guilds(Reference.guild)
@@ -1126,9 +1040,7 @@ class Moderation(commands.Cog):
                 infraction kind
                 """
 
-                infs_embed = self.user_infractions.get_infractions_of_kind(
-                    self.inf_type
-                )
+                infs_embed = self.user_infractions.get_infractions_of_kind(self.inf_type)
 
                 await interaction.response.edit_message(embed=infs_embed)
 
@@ -1145,9 +1057,7 @@ class Moderation(commands.Cog):
                 self.user_infractions = user_infractions
 
                 for kind in InfractionKind:
-                    button = InfButton(
-                        user_infractions, inf_type=kind, label=kind.name.title() + "s"
-                    )
+                    button = InfButton(user_infractions, inf_type=kind, label=kind.name.title() + "s")
                     self.add_item(button)
 
             async def on_timeout(self):
@@ -1193,15 +1103,11 @@ class Moderation(commands.Cog):
         embed = user_infractions.get_detailed_infraction(infr_type, infr_id)
 
         if embed is None:
-            await interaction.response.send_message(
-                "Infraction with given id and type not found.", ephemeral=True
-            )
+            await interaction.response.send_message("Infraction with given id and type not found.", ephemeral=True)
 
             return
 
-        await interaction.response.send_message(
-            embed=embed, ephemeral=is_public_channel(interaction.channel)
-        )
+        await interaction.response.send_message(embed=embed, ephemeral=is_public_channel(interaction.channel))
 
     @app_commands.command()
     @app_commands.guilds(Reference.guild)
@@ -1233,14 +1139,10 @@ class Moderation(commands.Cog):
         """
 
         user_infractions = InfractionList.from_user(user)
-        success = user_infractions.detail_infraction(
-            infr_type, infr_id, title, description
-        )
+        success = user_infractions.detail_infraction(infr_type, infr_id, title, description)
 
         if not success:
-            await interaction.response.send_message(
-                "Infraction with given id and type not found.", ephemeral=True
-            )
+            await interaction.response.send_message("Infraction with given id and type not found.", ephemeral=True)
             return
 
         user_infractions.update()
@@ -1260,9 +1162,7 @@ class Moderation(commands.Cog):
             color=discord.Color.red(),
         )
 
-        logging_channel = discord.utils.get(
-            interaction.guild.channels, id=self.logging_channel
-        )
+        logging_channel = discord.utils.get(interaction.guild.channels, id=self.logging_channel)
         await logging_channel.send(embed=embed)
 
     @app_commands.command()
@@ -1298,9 +1198,7 @@ class Moderation(commands.Cog):
             ephemeral=True,
         )
 
-        logging_channel = discord.utils.get(
-            interaction.guild.channels, id=self.logging_channel
-        )
+        logging_channel = discord.utils.get(interaction.guild.channels, id=self.logging_channel)
 
         embed = helper.create_embed(
             author=interaction.user,
@@ -1335,14 +1233,10 @@ class Moderation(commands.Cog):
 
         command = discord.utils.get(self.bot.commands, name=command_name)
         if command is None:
-            return await interaction.response.send_message(
-                f"{command_name} is not a valid command", ephemeral=True
-            )
+            return await interaction.response.send_message(f"{command_name} is not a valid command", ephemeral=True)
         if interaction.user.top_role > member.top_role:
             blacklist_member(self.bot, member, command)
-            await interaction.response.send_message(
-                f"{member.name} can no longer use {command_name}", ephemeral=True
-            )
+            await interaction.response.send_message(f"{member.name} can no longer use {command_name}", ephemeral=True)
         else:
             await interaction.response.send_message(
                 f"You cannot blacklist someone higher or equal to you smh.",
@@ -1371,13 +1265,9 @@ class Moderation(commands.Cog):
         """
         command = discord.utils.get(self.bot.commands, name=command_name)
         if command is None:
-            return await interaction.response.send_message(
-                f"{command_name} is not a valid command", ephemeral=True
-            )
+            return await interaction.response.send_message(f"{command_name} is not a valid command", ephemeral=True)
         if whitelist_member(member, command):
-            await interaction.response.send_message(
-                f"{member.name} can now use {command.name}", ephemeral=True
-            )
+            await interaction.response.send_message(f"{member.name} can now use {command.name}", ephemeral=True)
         else:
             await interaction.response.send_message(
                 f"{member.name} is not blacklisted from {command.name}", ephemeral=True

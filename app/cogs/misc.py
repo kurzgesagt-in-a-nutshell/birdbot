@@ -44,9 +44,7 @@ class Misc(commands.Cog):
         self.kgs_guild: discord.Guild = self.bot.get_guild(Reference.guild)
         assert self.kgs_guild != None
 
-        subreddit_role = discord.utils.get(
-            self.kgs_guild.roles, id=Reference.Roles.subreddit_mod
-        )
+        subreddit_role = discord.utils.get(self.kgs_guild.roles, id=Reference.Roles.subreddit_mod)
         if not after.top_role >= subreddit_role:
             return
 
@@ -68,9 +66,7 @@ class Misc(commands.Cog):
         member = self.kgs_guild.get_member(before.id)
         if not member:
             return
-        subreddit_role = discord.utils.get(
-            self.kgs_guild.roles, id=Reference.Roles.subreddit_mod
-        )
+        subreddit_role = discord.utils.get(self.kgs_guild.roles, id=Reference.Roles.subreddit_mod)
         if not member.top_role >= subreddit_role:
             return
 
@@ -88,9 +84,7 @@ class Misc(commands.Cog):
         Staff intro command, create or edit an intro
         """
         oldIntro = self.intro_db.find_one({"_id": interaction.user.id})
-        await interaction.response.send_modal(
-            IntroModal(oldIntro=oldIntro, bot=self.bot)
-        )
+        await interaction.response.send_modal(IntroModal(oldIntro=oldIntro, bot=self.bot))
 
     @app_commands.command()
     @app_commands.guilds(Reference.guild)
@@ -118,33 +112,20 @@ class Misc(commands.Cog):
                 .replace("u", "-")[2:]
             )
             print(code)
-            name = (
-                demoji.replace_with_desc(emoji)
-                .replace(" ", "-")
-                .replace(":", "")
-                .replace("_", "-")
-            )
+            name = demoji.replace_with_desc(emoji).replace(" ", "-").replace(":", "").replace("_", "-")
             await interaction.response.send_message(
-                "https://em-content.zobj.net/thumbs/160/twitter/322/"
-                + name
-                + "_"
-                + code
-                + ".png"
+                "https://em-content.zobj.net/thumbs/160/twitter/322/" + name + "_" + code + ".png"
             )
         elif len(demoji.findall_list(emoji)) > 1:
             await interaction.response.send_message("please only send one emoji")
         else:
             if re.match(r"<a:\w+:(\d{17,19})>", str(emoji)):
                 emoji = str(re.findall(r"<a:\w+:(\d{17,19})>", str(emoji))[0]) + ".gif"
-                await interaction.response.send_message(
-                    "https://cdn.discordapp.com/emojis/" + str(emoji)
-                )
+                await interaction.response.send_message("https://cdn.discordapp.com/emojis/" + str(emoji))
             elif re.match(r"<:\w+:(\d{17,19})>", str(emoji)):
                 print("png")
                 emoji = str(re.findall(r"<:\w+:(\d{17,19})>", str(emoji))[0]) + ".png"
-                await interaction.response.send_message(
-                    "https://cdn.discordapp.com/emojis/" + str(emoji)
-                )
+                await interaction.response.send_message("https://cdn.discordapp.com/emojis/" + str(emoji))
             else:
                 await interaction.response.send_message("Could not process this emoji")
 
@@ -211,20 +192,14 @@ class IntroModal(discord.ui.Modal):
 
     def get_footer(self, role: discord.Role) -> typing.Tuple[str, str | None]:
         """Make the footer with role name and icon"""
-        footer_name = (
-            "Kurzgesagt Official"
-            if role.id == Reference.Roles.kgsofficial
-            else role.name
-        )
+        footer_name = "Kurzgesagt Official" if role.id == Reference.Roles.kgsofficial else role.name
         if role.icon:
             footer_icon = role.icon.url
         else:
             footer_icon = None
         return footer_name, footer_icon
 
-    def edit_embed(
-        self, oldIntroMessage: discord.Message
-    ) -> typing.Tuple[discord.Embed, bool]:
+    def edit_embed(self, oldIntroMessage: discord.Message) -> typing.Tuple[discord.Embed, bool]:
         """Edit and return the intro embed"""
         embed = oldIntroMessage.embeds[0]
 
@@ -232,15 +207,12 @@ class IntroModal(discord.ui.Modal):
         embed.set_thumbnail(url=self.image.value)
         embed.set_author(
             name=self.user.display_name,
-            icon_url=self.user.avatar.url
-            if self.user.avatar
-            else self.user.display_avatar.url,
+            icon_url=self.user.avatar.url if self.user.avatar else self.user.display_avatar.url,
         )
 
         # check if the user's top role has changed (promotion/demotion)
         if (embed.footer.text == self.role.name) or (
-            embed.footer.text == "Kurzgesagt Official"
-            and self.role.id == Reference.Roles.kgsofficial
+            embed.footer.text == "Kurzgesagt Official" and self.role.id == Reference.Roles.kgsofficial
         ):
             reorder = False
         else:
@@ -262,9 +234,7 @@ class IntroModal(discord.ui.Modal):
         embed = discord.Embed(description=description, color=self.role.color)
         embed.set_author(
             name=self.user.display_name,
-            icon_url=self.user.avatar.url
-            if self.user.avatar
-            else self.user.display_avatar.url,
+            icon_url=self.user.avatar.url if self.user.avatar else self.user.display_avatar.url,
         )
         embed.set_footer(text=footer_name, icon_url=footer_icon)
         embed.set_thumbnail(url=self.image.value)
@@ -293,17 +263,13 @@ class IntroModal(discord.ui.Modal):
 
         # now we can send the new intro message
         msg = await self.intro_channel.send(embed=embed)
-        self.intro_db.update_one(
-            {"_id": self.user.id}, {"$set": {"message_id": msg.id}}
-        )
+        self.intro_db.update_one({"_id": self.user.id}, {"$set": {"message_id": msg.id}})
 
         # add the deleted embeds back
         if embeds:
             for doc, embed in embeds:
                 msg = await self.intro_channel.send(embed=embed)
-                self.intro_db.update_one(
-                    {"_id": doc["_id"]}, {"$set": {"message_id": msg.id}}
-                )
+                self.intro_db.update_one({"_id": doc["_id"]}, {"$set": {"message_id": msg.id}})
 
     def add_emojis(self, text: str) -> str:
         """Add server emojis, because modals don't support them"""
@@ -326,9 +292,7 @@ class IntroModal(discord.ui.Modal):
 
         self.user = self.kgs_guild.get_member(interaction.user.id)
         self.role = self.user.top_role
-        self.intro_channel = self.kgs_guild.get_channel(
-            Reference.Channels.intro_channel
-        )
+        self.intro_channel = self.kgs_guild.get_channel(Reference.Channels.intro_channel)
 
         self.timezone_txt = self.add_emojis(self.timezone.value)
         self.bio_txt = self.add_emojis(self.bio.value)
@@ -359,27 +323,21 @@ class IntroModal(discord.ui.Modal):
 
         # check the validity of the image link, write a better regex?
         if not re.match(r"^https*://.*\..*", self.image.value):
-            await interaction.response.send_message(
-                "Incorrect image link, please try again", ephemeral=True
-            )
+            await interaction.response.send_message("Incorrect image link, please try again", ephemeral=True)
             return
 
         # check if the message was deleted for some reason
         if self.oldIntro:
             if self.oldIntro["message_id"]:
                 try:
-                    oldIntroMessage = await self.intro_channel.fetch_message(
-                        self.oldIntro["message_id"]
-                    )
+                    oldIntroMessage = await self.intro_channel.fetch_message(self.oldIntro["message_id"])
                 except discord.NotFound:
                     # the message was deleted, but not to worry we will just create a new one
                     pass
 
         if oldIntroMessage:
             embed, reorder = self.edit_embed(oldIntroMessage)
-            await interaction.response.send_message(
-                "Your intro will be edited!", ephemeral=True
-            )
+            await interaction.response.send_message("Your intro will be edited!", ephemeral=True)
             if not reorder:
                 await oldIntroMessage.edit(embed=embed)
             else:
@@ -389,8 +347,6 @@ class IntroModal(discord.ui.Modal):
         else:
             embed = self.create_embed()
 
-            await interaction.response.send_message(
-                "Your intro will be added!", ephemeral=True
-            )
+            await interaction.response.send_message("Your intro will be added!", ephemeral=True)
             async with self.reorder_lock:
                 await self.reorder(embed)
