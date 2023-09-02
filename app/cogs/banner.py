@@ -21,7 +21,7 @@ import logging
 import json
 import typing
 import aiohttp
-
+import re
 import io
 
 import discord
@@ -72,7 +72,7 @@ class BannerView(dui.View):
     @dui.button(
         label="Accept", 
         style=discord.ButtonStyle.blurple, 
-        emoji=discord.PartialEmoji.from_str("<:kgsYes:955703069516128307>")
+        emoji=discord.PartialEmoji.from_str(Reference.Emoji.PartialString.kgsYes)
     )
     async def _accept(self, interaction: Interaction, button:dui.Button):
         """
@@ -97,19 +97,24 @@ class BannerView(dui.View):
         )
         
         await interaction.response.edit_message(embed=embed, view=None)
-        # member = guild.get_member_named(author.name)
-        # try:
-        #     await member.send(
-        #         f"Your banner suggestion was accepted {url}"
-        #     )
-        # except discord.Forbidden:
-        #     pass
+        try:
+            match = re.match(r".*\(([0-9]+)\)$", embed.author.name)
+            userid = match.group(1)
+
+            suggester = await interaction.client.fetch_user(int(userid))
+            await suggester.send(
+                f"Your banner suggestion was accepted {url}"
+            )
+
+        except discord.Forbidden:
+            pass
+
 
 
     @dui.button(
         label="Deny",
         style=discord.ButtonStyle.danger,
-        emoji=discord.PartialEmoji.from_str("<:kgsNo:955703108565098496>")
+        emoji=discord.PartialEmoji.from_str(Reference.Emoji.PartialString.kgsNo)
     )
     async def _deny(self, interaction: Interaction, button:dui.Button):
         """
@@ -338,7 +343,7 @@ class Banner(commands.Cog):
 
         embed = discord.Embed(color=0xC8A2C8)
         embed.set_author(
-            name=interaction.user.name + "#" + interaction.user.discriminator,
+            name=f"{interaction.user.name} ({interaction.user.id})",
             icon_url=interaction.user.display_avatar.url,
         )
         embed.set_image(url="attachment://banner.png")
