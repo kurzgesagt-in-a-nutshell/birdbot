@@ -29,8 +29,6 @@ class Misc(commands.Cog):
             1058243220817063936,
             681812574026727471,
         )
-        with open("config.json", "r") as f:
-            self.config = json.load(f)
 
     @commands.Cog.listener()
     async def on_ready(self):
@@ -51,6 +49,8 @@ class Misc(commands.Cog):
             return
 
         intro = self.intro_db.find_one({"_id": before.id})
+        if not intro:
+            return
         intro_channel = self.kgs_guild.get_channel(Reference.Channels.intro_channel)
         assert intro_channel != None
 
@@ -75,6 +75,8 @@ class Misc(commands.Cog):
             return
 
         intro = self.intro_db.find_one({"_id": before.id})
+        if not intro:
+            return
         intro_channel = self.kgs_guild.get_channel(Reference.Channels.intro_channel)
         msg = await intro_channel.fetch_message(intro["message_id"])
         embed = msg.embeds[0]
@@ -82,7 +84,7 @@ class Misc(commands.Cog):
         await msg.edit(embed=embed)
 
     @app_commands.command()
-    @checks.devs_only()
+    @checks.role_and_above(Reference.Roles.subreddit_mod)
     async def intro(self, interaction: discord.Interaction):
         """
         Staff intro command, create or edit an intro
