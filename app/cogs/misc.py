@@ -21,7 +21,7 @@ class Misc(commands.Cog):
         self.logger = logging.getLogger("Misc")
         self.bot = bot
         self.intro_db = self.bot.db.StaffIntros
-        self.kgs_guild: typing.Optional[discord.Guild] = None
+        self.kgs_guild: discord.Guild = self.bot.get_guild(Reference.guild)
         self.role_precendence = (
             915629257470906369,
             414029841101225985,
@@ -38,9 +38,6 @@ class Misc(commands.Cog):
     async def on_member_update(self, before, after):
         if before.nick == after.nick:
             return
-
-        self.kgs_guild: discord.Guild = self.bot.get_guild(Reference.guild)
-        assert self.kgs_guild != None
 
         subreddit_role = discord.utils.get(
             self.kgs_guild.roles, id=Reference.Roles.subreddit_mod
@@ -61,9 +58,6 @@ class Misc(commands.Cog):
 
     @commands.Cog.listener()
     async def on_user_update(self, before, after):
-        self.kgs_guild = self.bot.get_guild(Reference.guild)
-        assert self.kgs_guild != None
-
         member = self.kgs_guild.get_member(before.id)
         if not member:
             return
