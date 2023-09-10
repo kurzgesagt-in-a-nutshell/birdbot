@@ -48,13 +48,8 @@ class Misc(commands.Cog):
         intro = self.intro_db.find_one({"_id": before.id})
         if not intro:
             return
-        intro_channel = self.kgs_guild.get_channel(Reference.Channels.intro_channel)
-        assert intro_channel != None
-
-        msg = await intro_channel.fetch_message(intro["message_id"])
-        embed = msg.embeds[0]
-        embed.set_author(name=after.display_name, icon_url=after.avatar.url)
-        await msg.edit(embed=embed)
+        async with IntroLock.reorder_lock:
+            await self.edit_intro(after)
 
     @commands.Cog.listener()
     async def on_user_update(self, before, after):
@@ -70,10 +65,15 @@ class Misc(commands.Cog):
         intro = self.intro_db.find_one({"_id": before.id})
         if not intro:
             return
+        async with IntroLock.reorder_lock:
+            await self.edit_intro(after)
+
+    async def edit_intro(self, member):
+        intro = self.intro_db.find_one({"_id": member.id})
         intro_channel = self.kgs_guild.get_channel(Reference.Channels.intro_channel)
         msg = await intro_channel.fetch_message(intro["message_id"])
         embed = msg.embeds[0]
-        embed.set_author(name=member.display_name, icon_url=after.avatar.url)
+        embed.set_author(name=member.display_name, icon_url=member.avatar.url)
         await msg.edit(embed=embed)
 
     @app_commands.command()
@@ -237,8 +237,6 @@ class IntroModal(discord.ui.Modal):
         self.intro_db = bot.db.StaffIntros
 
         self.kgs_guild: discord.Guild = bot.get_guild(Reference.guild)
-
-        self.reorder_lock = asyncio.Lock()
 
         timezone_ph = bio_ph = image_ph = None
         timezone_default = bio_default = image_default = None
@@ -566,7 +564,7 @@ class IntroModal(discord.ui.Modal):
                 and self.role.id == Reference.Roles.kgsofficial
             ):
                 newembed = self.create_embed()
-                async with self.reorder_lock:
+                async with IntroLock.reorder_lock:
                     await oldIntroMessage.edit(embed=newembed)
             else:
                 rolename = embed.footer.text
@@ -574,15 +572,19 @@ class IntroModal(discord.ui.Modal):
                     lambda role: role.name == rolename, self.kgs_guild.roles
                 )
                 if self.role > oldrole:
-                    async with self.reorder_lock:
+                    async with IntroLock.reorder_lock:
                         await self.reorder_promotion(oldIntroMessage)
                 elif self.role < oldrole:
-                    async with self.reorder_lock:
+                    async with IntroLock.reorder_lock:
                         await self.reorder_demotion(oldIntroMessage)
 
         else:
             await interaction.response.send_message(
                 "Your intro will be added!", ephemeral=True
             )
-            async with self.reorder_lock:
+            async with IntroLock.reorder_lock:
                 await self.reorder_add()
+
+
+class IntroLock():
+    reorder_lock = asyncio.Lock()
