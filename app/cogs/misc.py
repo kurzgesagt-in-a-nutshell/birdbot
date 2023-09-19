@@ -80,8 +80,7 @@ class Misc(commands.Cog):
             await msg.edit(embed=embed)
 
     @app_commands.command()
-    # @checks.role_and_above(Reference.Roles.subreddit_mod)
-    @checks.devs_only()
+    @checks.role_and_above(Reference.Roles.subreddit_mod)
     async def intro(self, interaction: discord.Interaction):
         """
         Staff intro command, create or edit an intro
@@ -92,7 +91,7 @@ class Misc(commands.Cog):
         )
 
     @app_commands.command()
-    @checks.devs_only()
+    @checks.admin_and_above()
     async def intro_reorg(self, interaction: discord.Interaction):
         """
         Admin intro command, reorganize all intros
