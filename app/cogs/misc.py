@@ -48,9 +48,6 @@ class Misc(commands.Cog):
         if not after.top_role >= subreddit_role:
             return
 
-        intro = self.intro_db.find_one({"_id": before.id})
-        if not intro:
-            return
         async with IntroLock.reorder_lock:
             await self.edit_intro(after)
 
@@ -68,19 +65,19 @@ class Misc(commands.Cog):
         if not member.top_role >= subreddit_role:
             return
 
-        intro = self.intro_db.find_one({"_id": before.id})
-        if not intro:
-            return
         async with IntroLock.reorder_lock:
             await self.edit_intro(after)
 
     async def edit_intro(self, member):
         intro = self.intro_db.find_one({"_id": member.id})
+        if not intro:
+            return
         intro_channel = self.kgs_guild.get_channel(Reference.Channels.intro_channel)
         msg = await intro_channel.fetch_message(intro["message_id"])
         embed = msg.embeds[0]
-        embed.set_author(name=member.display_name, icon_url=member.avatar.url)
-        await msg.edit(embed=embed)
+        if embed.author.name != member.display_name or embed.author.icon_url != member.avatar.url:
+            embed.set_author(name=member.display_name, icon_url=member.avatar.url)
+            await msg.edit(embed=embed)
 
     @app_commands.command()
     # @checks.role_and_above(Reference.Roles.subreddit_mod)
@@ -147,6 +144,8 @@ class Misc(commands.Cog):
             return e[1].top_role.position
 
         embedList.sort(key=embed_sort, reverse=True)
+
+        self.kgs_guild = self.bot.get_guild(Reference.guild)
 
         intro_channel: discord.TextChannel = self.kgs_guild.get_channel(
             Reference.Channels.intro_channel
@@ -323,7 +322,7 @@ class IntroModal(discord.ui.Modal):
             serverEmojis = {f":{emoji.name}:": emoji.id}
 
         return re.sub(
-            r"(?<!<):[A-Za-z0-9_.]+:(?![0-9]+>)",
+            r"(?<!<):[A-Za-z0-9_]+:(?![0-9]+>)",
             lambda emoji: f"<{emoji.group()}{serverEmojis[emoji.group()]}>"
             if emoji.group() in serverEmojis
             else emoji.group(),
@@ -492,10 +491,10 @@ class IntroModal(discord.ui.Modal):
         msg = await self.intro_channel.send(embed=message.embeds[0])
         self.intro_db.update_one({"_id": doc["_id"]}, {"$set": {"message_id": msg.id}})
         doc, message = embeds[newPos - 1]
-        await message.edit(embed=newembed)
         self.intro_db.update_one(
             {"_id": self.user.id}, {"$set": {"message_id": message.id}}
         )
+        await message.edit(embed=newembed)
 
     async def on_submit(self, interaction: discord.Interaction):
         """Most of the intro command logic is here"""
@@ -511,6 +510,31 @@ class IntroModal(discord.ui.Modal):
         self.timezone_txt = self.add_emojis(self.timezone.value)
         self.bio_txt = self.add_emojis(self.bio.value)
         self.image_txt = self.image.value
+
+        async def edit_intro(oldIntroMessage: discord.Message):
+            embed = oldIntroMessage.embeds[0]
+            await interaction.response.send_message(
+                "Your intro will be edited!", ephemeral=True
+            )
+            # check if the user's top role has changed (promotion/demotion)
+            if (embed.footer.text == self.role.name) or (
+                embed.footer.text == "Kurzgesagt Official"
+                and self.role.id == Reference.Roles.kgsofficial
+            ):
+                newembed = self.create_embed()
+                async with IntroLock.reorder_lock:
+                    await oldIntroMessage.edit(embed=newembed)
+            else:
+                rolename = embed.footer.text
+                oldrole = discord.utils.find(
+                    lambda role: role.name == rolename, self.kgs_guild.roles
+                )
+                if self.role > oldrole:
+                    async with IntroLock.reorder_lock:
+                        await self.reorder_promotion(oldIntroMessage)
+                elif self.role < oldrole:
+                    async with IntroLock.reorder_lock:
+                        await self.reorder_demotion(oldIntroMessage)
 
         # update mongo
         if self.oldIntro:
@@ -544,53 +568,31 @@ class IntroModal(discord.ui.Modal):
 
         # check if the message was deleted for some reason
         if self.oldIntro:
-            if self.oldIntro["message_id"]:
-                try:
-                    oldIntroMessage = await self.intro_channel.fetch_message(
-                        self.oldIntro["message_id"]
-                    )
-                except discord.NotFound:
-                    # the message was deleted, but not to worry we will just create a new one
-                    # that is what we used to do, now
-                    # pass
-                    await interaction.response.send_message(
-                        "Something went wrong, can't find the intro message. Do the intros have to be reorganized?",
-                        ephemeral=True,
-                    )
-                    return
-
-        if oldIntroMessage:
-            embed = oldIntroMessage.embeds[0]
-            await interaction.response.send_message(
-                "Your intro will be edited!", ephemeral=True
-            )
-            # check if the user's top role has changed (promotion/demotion)
-            if (embed.footer.text == self.role.name) or (
-                embed.footer.text == "Kurzgesagt Official"
-                and self.role.id == Reference.Roles.kgsofficial
-            ):
-                newembed = self.create_embed()
-                async with IntroLock.reorder_lock:
-                    await oldIntroMessage.edit(embed=newembed)
-            else:
-                rolename = embed.footer.text
-                oldrole = discord.utils.find(
-                    lambda role: role.name == rolename, self.kgs_guild.roles
+            if not self.oldIntro["message_id"]:
+                await interaction.response.send_message(
+                    "Something went wrong, can't find the intro message. Do the intros have to be reorganized?",
+                    ephemeral=True,
                 )
-                if self.role > oldrole:
-                    async with IntroLock.reorder_lock:
-                        await self.reorder_promotion(oldIntroMessage)
-                elif self.role < oldrole:
-                    async with IntroLock.reorder_lock:
-                        await self.reorder_demotion(oldIntroMessage)
-
-        else:
-            await interaction.response.send_message(
-                "Your intro will be added!", ephemeral=True
-            )
-            async with IntroLock.reorder_lock:
-                await self.reorder_add()
-
+                return
+            try:
+                oldIntroMessage = await self.intro_channel.fetch_message(
+                    self.oldIntro["message_id"]
+                )
+                await edit_intro(oldIntroMessage)
+                return
+            except discord.NotFound:
+                await interaction.response.send_message(
+                    "Something went wrong, can't find the intro message. Do the intros have to be reorganized?",
+                    ephemeral=True,
+                )
+                return
+            
+        await interaction.response.send_message(
+            "Your intro will be added!", ephemeral=True
+        )
+        async with IntroLock.reorder_lock:
+            await self.reorder_add()
+                
 
 class IntroLock():
     reorder_lock = asyncio.Lock()
