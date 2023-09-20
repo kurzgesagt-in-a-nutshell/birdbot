@@ -105,7 +105,7 @@ class Misc(commands.Cog):
             role = member.top_role
             footer_name = (
                 "Kurzgesagt Official"
-                if role.id == Reference.Roles.kgsofficial
+                if role.id == Reference.Roles.kgsmaintenance
                 else role.name
             )
             if role.icon:
@@ -113,7 +113,7 @@ class Misc(commands.Cog):
             else:
                 footer_icon = None
 
-            embed = discord.Embed(description=description, color=role.color)
+            embed = discord.Embed(description=description, color=member.color)
             embed.set_author(
                 name=member.display_name,
                 icon_url=member.avatar.url
@@ -124,12 +124,14 @@ class Misc(commands.Cog):
             embed.set_thumbnail(url=introDoc["image"])
 
             return embed
+        
+        kgs_guild: discord.Guild = self.bot.get_guild(Reference.guild)
 
-        lowest_role = self.kgs_guild.get_role(Reference.Roles.subreddit_mod)
+        lowest_role = kgs_guild.get_role(Reference.Roles.subreddit_mod)
 
         embedList: typing.List[typing.Tuple[discord.Embed, discord.Member]] = []
         for introDoc in self.intro_db.find():
-            member = self.kgs_guild.get_member(introDoc["_id"])
+            member = kgs_guild.get_member(introDoc["_id"])
 
             if not member or member.top_role < lowest_role:
                 self.intro_db.delete_one(introDoc)
@@ -144,9 +146,7 @@ class Misc(commands.Cog):
 
         embedList.sort(key=embed_sort, reverse=True)
 
-        self.kgs_guild = self.bot.get_guild(Reference.guild)
-
-        intro_channel: discord.TextChannel = self.kgs_guild.get_channel(
+        intro_channel: discord.TextChannel = kgs_guild.get_channel(
             Reference.Channels.intro_channel
         )
 
@@ -286,7 +286,7 @@ class IntroModal(discord.ui.Modal):
         """Make the footer with role name and icon"""
         footer_name = (
             "Kurzgesagt Official"
-            if role.id == Reference.Roles.kgsofficial
+            if role.id == Reference.Roles.kgsmaintenance
             else role.name
         )
         if role.icon:
@@ -301,7 +301,7 @@ class IntroModal(discord.ui.Modal):
 
         footer_name, footer_icon = self.get_footer(self.role)
 
-        embed = discord.Embed(description=description, color=self.role.color)
+        embed = discord.Embed(description=description, color=self.user.color)
         embed.set_author(
             name=self.user.display_name,
             icon_url=self.user.avatar.url
