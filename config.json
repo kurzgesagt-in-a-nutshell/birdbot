@@ -1,24 +1,4 @@
 {
-    "logging": {
-        "logging_channel": 543884016282239006,
-        "automod_logging_channel": 966769038879498301,
-        "message_logging_channel": 879399217511161887,
-        "member_logging_channel": 939570758903005296,
-        "dev_logging_channel": 865321589919055882,
-        "automated_channel": 546689491486769163,
-        "intro_channel": 981620309163655218
-    },
-    "roles": {
-        "mute_role": 681323126252240899,
-        "helper_role": 849423379706150946,
-        "mod_role": 414092550031278091,
-        "admin_role": 414029841101225985,
-        "kgsofficial_role": 414954904382210049,
-        "patreon_blue_role": 753258289185161248,
-        "patreon_green_role": 415154206970740737,
-        "patreon_orange_role": 753268671107039274,
-        "trainee_mod_role": 905510680763969536
-    },
     "giveaway": {
         "roles": [
             {
@@ -48,12 +28,5 @@
             }
         ],
         "default": 1
-    },
-    "roleicons": {
-        "915629257470906369": "https://cdn.discordapp.com/attachments/414179142020366336/981591366805119006/officialkurzgesagt.png",
-        "414029841101225985": "https://cdn.discordapp.com/attachments/414179142020366336/981591366201126963/administratorkurzgesagt.png",
-        "414092550031278091": "https://cdn.discordapp.com/attachments/414179142020366336/981591366524084244/moderatorkurzgesagt.png",
-        "1058243220817063936": "https://cdn.discordapp.com/emojis/892827414097440839.png",
-        "681812574026727471": "https://cdn.discordapp.com/emojis/892827414097440839.png"
     }
 }
