@@ -25,7 +25,8 @@ class Reference:
         robobird = 414155501518061578
         stealthbot = 691931822023770132
         subreddit_mod = 681812574026727471
-
+        kgsmaintenance = 915629257470906369
+        
         patreon_3 = 753258289185161248
         patreon_2 = 415154206970740737
         patreon_1 = 753268671107039274
