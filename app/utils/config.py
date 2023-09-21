@@ -26,7 +26,8 @@ class Reference:
         robobird = 414155501518061578
         stealthbot = 691931822023770132
         subreddit_mod = 681812574026727471
-
+        kgsmaintenance = 915629257470906369
+        
         patreon_3 = 753258289185161248
         patreon_2 = 415154206970740737
         patreon_1 = 753268671107039274
@@ -113,3 +114,28 @@ class Reference:
             if em := client.get_emoji(ref) is not None:
                 return em # type: ignore
             return None 
+        
+class GiveawayBias:
+    roles = [
+        {
+            "id": Reference.Roles.galacduck,
+            "bias": 11,
+        },
+        {
+            "id": Reference.Roles.legendary_duck,
+            "bias": 7,
+        },
+        {
+            "id": Reference.Roles.super_duck,
+            "bias": 4,
+        },
+        {
+            "id": Reference.Roles.duck,
+            "bias": 3,
+        },
+        {
+            "id": Reference.Roles.smol_duck,
+            "bias": 2,
+        }
+    ]
+    default = 1
