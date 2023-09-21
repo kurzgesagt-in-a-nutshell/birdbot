@@ -9,14 +9,7 @@ from discord import app_commands
 from discord.ext import commands, tasks
 
 from app.utils import checks
-<<<<<<< HEAD
-from app.utils.config import Reference
-=======
-from app.utils.config import Reference, GiveawayBias
-from app.utils.helper import (
-    calc_time,
-)
->>>>>>> origin/public-refactor
+from app.utils.config import GiveawayBias, Reference
 from app.utils.custom_converters import member_converter
 from app.utils.helper import calc_time
 
