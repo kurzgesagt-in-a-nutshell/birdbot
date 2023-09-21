@@ -8,7 +8,7 @@ from discord.ext import commands, tasks
 from discord import app_commands
 
 from app.utils import checks
-from app.utils.config import Reference
+from app.utils.config import Reference, GiveawayBias
 from app.utils.helper import (
     calc_time,
 )
@@ -21,9 +21,6 @@ class Giveaway(commands.Cog):
     def __init__(self, bot):
         self.logger = logging.getLogger("Giveaway")
         self.bot = bot
-        with open("config.json", "r") as config_file:
-            config_json = json.loads(config_file.read())
-        self.giveaway_bias = config_json["giveaway"]
         self.active_giveaways = {}
         self.giveaway_db = self.bot.db.Giveaways
 
@@ -96,9 +93,9 @@ class Giveaway(commands.Cog):
                 self.logger.debug("Calculating weights")
                 weights = []
                 for user in users:
-                    bias = self.giveaway_bias["default"]
+                    bias = GiveawayBias.default
                     roles = [role.id for role in user.roles]
-                    for role in self.giveaway_bias["roles"]:
+                    for role in GiveawayBias.roles:
                         if role["id"] in roles:
                             bias = role["bias"]
                             break
