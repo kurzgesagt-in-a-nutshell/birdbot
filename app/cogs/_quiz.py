@@ -1,11 +1,11 @@
-import logging
-import numpy as np
-import os
 import asyncio
-from utils import checks
+import logging
+import os
 
+import numpy as np
 import pymongo
 from discord.ext import commands
+from utils import checks
 
 from app.utils.config import Reference
 
@@ -20,9 +20,7 @@ class Quiz(commands.Cog):
     def __init__(self, bot):
         self.logger = logging.getLogger("Quiz")
         self.bot = bot
-        self.id_and_tickets = list(
-            self.quiz_db.find({"tickets": {"$ne": 0}}, {"id": 1, "tickets": 1})
-        )
+        self.id_and_tickets = list(self.quiz_db.find({"tickets": {"$ne": 0}}, {"id": 1, "tickets": 1}))
 
     @commands.Cog.listener()
     async def on_ready(self):
@@ -43,9 +41,7 @@ class Quiz(commands.Cog):
                     f'You have {user["tickets"]} tickets of { total_tickets } tickets ( {percentage}% chance of winning ).'
                 )
             else:
-                await ctx.send(
-                    f"You have not participated. To participate please vist `https://quiz.birdbot.xyz`"
-                )
+                await ctx.send(f"You have not participated. To participate please vist `https://quiz.birdbot.xyz`")
 
         except Exception as e:
             logging.error(str(e))
@@ -77,9 +73,7 @@ class Quiz(commands.Cog):
 
                 # check if user has any leveled roles
                 to_boost = [
-                    role
-                    for role in list(role_boosts.keys())
-                    if role in [user_role.id for user_role in user.roles]
+                    role for role in list(role_boosts.keys()) if role in [user_role.id for user_role in user.roles]
                 ]
                 if len(to_boost) != 0:
                     self.logger.info(
@@ -99,14 +93,10 @@ class Quiz(commands.Cog):
                 probability.append(i / total)
 
             rng = np.random.default_rng()
-            winner = rng.choice(
-                self.id_and_tickets, size=int(winners), replace=False, p=probability
-            )
+            winner = rng.choice(self.id_and_tickets, size=int(winners), replace=False, p=probability)
             self.logger.info(winner)
             # await asyncio.sleep(4)
-            await ctx.send(
-                f'**And the winner for {prize} {"is" if int(winners) == 1 else "are "}...**'
-            )
+            await ctx.send(f'**And the winner for {prize} {"is" if int(winners) == 1 else "are "}...**')
             await asyncio.sleep(3)
             for i in winner:
 

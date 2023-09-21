@@ -1,15 +1,16 @@
+import io
+import re
 
-import requests, re
+import discord
+import requests
+from discord.ext import commands
 from requests.models import PreparedRequest
 
-import discord, io
-from discord.ext import commands
-
-from app.utils.helper import is_internal_command
 from app.utils.config import Reference
+from app.utils.helper import is_internal_command
+
 
 class MessageEvents(commands.Cog):
-    
     def __init__(self, bot):
         self.bot = bot
 
@@ -23,11 +24,7 @@ class MessageEvents(commands.Cog):
     @commands.Cog.listener()
     async def on_message_edit(self, before, after):
         # Mainbot only, Kgs server only, ignore bot edits
-        if (
-            self.bot.user.id != Reference.mainbot 
-            or before.guild.id != Reference.guild 
-            or before.author.bot
-        ):
+        if self.bot.user.id != Reference.mainbot or before.guild.id != Reference.guild or before.author.bot:
             return
 
         await self.check_server_moments(after)
@@ -35,10 +32,10 @@ class MessageEvents(commands.Cog):
 
     @commands.Cog.listener()
     async def on_message_delete(self, message):
-# Mainbot only, Kgs server only, ignore bot edits
+        # Mainbot only, Kgs server only, ignore bot edits
         if (
-            self.bot.user.id != Reference.mainbot 
-            or message.guild.id != Reference.guild 
+            self.bot.user.id != Reference.mainbot
+            or message.guild.id != Reference.guild
             or message.author.bot
             or message.channel.category.id == Reference.Categories.moderation
         ):
@@ -46,9 +43,8 @@ class MessageEvents(commands.Cog):
 
         if is_internal_command(self.bot, message):
             return
-        
-        await self.log_message_delete(message)
 
+        await self.log_message_delete(message)
 
     async def log_message_delete(self, message):
         embed = discord.Embed(
@@ -57,17 +53,12 @@ class MessageEvents(commands.Cog):
             color=0xC9322C,
             timestamp=discord.utils.utcnow(),
         )
-        embed.set_author(
-            name=message.author.display_name, icon_url=message.author.display_avatar.url
-        )
+        embed.set_author(name=message.author.display_name, icon_url=message.author.display_avatar.url)
         embed.add_field(name="Content", value=message.content)
         search_terms = f"```Deleted in {message.channel.id}"
 
         latest_logged_delete = [
-            log
-            async for log in message.guild.audit_logs(
-                limit=1, action=discord.AuditLogAction.message_delete
-            )
+            log async for log in message.guild.audit_logs(limit=1, action=discord.AuditLogAction.message_delete)
         ][0]
 
         self_deleted = False
@@ -77,45 +68,36 @@ class MessageEvents(commands.Cog):
         else:
             self_deleted = True
             search_terms += f"\nDeleted by {message.author.id}"
-            embed.description += (
-                f"\nDeleted by {message.author.mention} {message.author.name}"
-            )
+            embed.description += f"\nDeleted by {message.author.mention} {message.author.name}"
 
         search_terms += f"\nSent by {message.author.id}"
         search_terms += f"\nMessage from {message.author.id} deleted by {message.author.id if self_deleted else latest_logged_delete.user.id} in {message.channel.id}```"
 
         embed.add_field(name="Search terms", value=search_terms, inline=False)
-        embed.set_footer(
-            text="Input the search terms in your discord search bar to easily sort through specific logs"
-        )
+        embed.set_footer(text="Input the search terms in your discord search bar to easily sort through specific logs")
 
-        message_logging_channel = self.bot.get_channel(
-            Reference.Channels.Logging.message_actions
-        )
+        message_logging_channel = self.bot.get_channel(Reference.Channels.Logging.message_actions)
         await message_logging_channel.send(embed=embed)
 
     async def log_message_edit(self, before, after):
         """
         Logs message edits outside of the moderator category
         """
-        
+
         if (
             before.channel.category.id == Reference.Categories.moderation
             or before.channel.category.id == Reference.Categories.server_logs
             or before.content == after.content
         ):
             return
-        
-    
+
         embed = discord.Embed(
             title="Message Edited",
             description=f"Message edited in {before.channel.mention}",
             color=0xEE7600,
             timestamp=discord.utils.utcnow(),
         )
-        embed.set_author(
-            name=before.author.display_name, icon_url=before.author.display_avatar.url
-        )
+        embed.set_author(name=before.author.display_name, icon_url=before.author.display_avatar.url)
         embed.add_field(name="Before", value=before.content, inline=False)
         embed.add_field(name="After", value=after.content, inline=False)
         search_terms = f"""
@@ -123,13 +105,9 @@ class MessageEvents(commands.Cog):
                         """
 
         embed.add_field(name="Search terms", value=search_terms, inline=False)
-        embed.set_footer(
-            text="Input the search terms in your discord search bar to easily sort through specific logs"
-        )
+        embed.set_footer(text="Input the search terms in your discord search bar to easily sort through specific logs")
 
-        message_logging_channel = self.bot.get_channel(
-            Reference.Channels.Logging.message_actions
-        )
+        message_logging_channel = self.bot.get_channel(Reference.Channels.Logging.message_actions)
         await message_logging_channel.send(embed=embed)
 
     async def check_mod_alert(self, message: discord.Message):
@@ -138,26 +116,18 @@ class MessageEvents(commands.Cog):
         the moderator or trainee moderator role. Ignores if the member is a
         moderator+
         """
-        
+
         # Check if message contains a moderator or traine moderator ping
-        if not any(
-            x in message.raw_role_mentions
-            for x in [Reference.Roles.moderator, Reference.Roles.trainee_mod]
-        ):
+        if not any(x in message.raw_role_mentions for x in [Reference.Roles.moderator, Reference.Roles.trainee_mod]):
             return
 
         # If the ping was done by a moderator or above then ignore
-        if message.author.top_role >= await message.guild.fetch_role(
-            Reference.Roles.moderator
-        ):
+        if message.author.top_role >= await message.guild.fetch_role(Reference.Roles.moderator):
             return
 
         # TODO BEFORE COMMIT, LOOK HERE TF DOES ROLE COME FROM?
 
-        role_names = [
-            discord.utils.get(message.guild.roles, id=role).name
-            for role in message.raw_role_mentions
-        ]
+        role_names = [discord.utils.get(message.guild.roles, id=role).name for role in message.raw_role_mentions]
         mod_channel = self.bot.get_channel(Reference.Channels.mod_chat)
 
         embed = discord.Embed(
@@ -169,9 +139,7 @@ class MessageEvents(commands.Cog):
             name=message.author.display_name,
             icon_url=message.author.display_avatar.url,
         )
-        embed.set_footer(
-            text="Last 50 messages in the channel are attached for reference"
-        )
+        embed.set_footer(text="Last 50 messages in the channel are attached for reference")
 
         to_file = ""
         async for msg in message.channel.history(limit=50):
@@ -187,22 +155,19 @@ class MessageEvents(commands.Cog):
         Checks incoming messages to server-moments to validate the have an image
         or is sent by a moderator+
         """
-        
+
         # Return if channel is not server moments
         if message.channel.id != Reference.Channels.server_moments:
             return
-        
+
         # Return if author is a moderator or above
-        if any(
-            _id in [role.id for role in message.author.roles]
-            for _id in Reference.Roles.moderator_and_above()
-        ):
+        if any(_id in [role.id for role in message.author.roles] for _id in Reference.Roles.moderator_and_above()):
             return
 
         # Returns if author is a bot account
         if message.author.bot:
             return
-        
+
         if len(message.attachments) == 0 and len(message.embeds) == 0:
             await message.delete()
             await message.channel.send(
@@ -219,15 +184,14 @@ class MessageEvents(commands.Cog):
                         delete_after=5,
                     )
                     return
-                
+
     async def translate_bannsystem(self, message: discord.Message):
         """
         Translate incoming bannsystem reports
         """
 
         if not (
-            message.channel.id == Reference.Channels.Logging.bannsystem
-            and message.author.id == Reference.bannsystembot
+            message.channel.id == Reference.Channels.Logging.bannsystem and message.author.id == Reference.bannsystembot
         ):
             return
 
@@ -270,6 +234,7 @@ class MessageEvents(commands.Cog):
         msg = await ctx.channel.fetch_message(msg_id)
         embed = await self.translate_bannsystem(msg)
         await ctx.send(embed=embed)
+
 
 async def setup(bot):
     await bot.add_cog(MessageEvents(bot))

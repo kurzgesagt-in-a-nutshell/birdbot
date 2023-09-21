@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Discord Server
+    url: https://discord.gg/kurzgesagt
+    about: Please ask and answer questions here.
+  - name: Security Issue
+    url: https://discord.gg/kurzgesagt
+    about: Please report security vulnerabilities to a moderator or admin in the discord server

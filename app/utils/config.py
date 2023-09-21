@@ -1,4 +1,3 @@
-
 import discord
 
 
@@ -27,7 +26,7 @@ class Reference:
         stealthbot = 691931822023770132
         subreddit_mod = 681812574026727471
         kgsmaintenance = 915629257470906369
-        
+
         patreon_3 = 753258289185161248
         patreon_2 = 415154206970740737
         patreon_1 = 753268671107039274
@@ -46,10 +45,7 @@ class Reference:
 
         @staticmethod
         def admin_and_above():
-            return [
-                Reference.Roles.administrator,
-                Reference.Roles.kgsofficial
-            ]
+            return [Reference.Roles.administrator, Reference.Roles.kgsofficial]
 
         @staticmethod
         def moderator_and_above():
@@ -57,16 +53,12 @@ class Reference:
                 Reference.Roles.trainee_mod,
                 Reference.Roles.moderator,
                 Reference.Roles.administrator,
-                Reference.Roles.kgsofficial
+                Reference.Roles.kgsofficial,
             ]
 
         @staticmethod
         def patreon():
-            return [
-                Reference.Roles.patreon_1,
-                Reference.Roles.patreon_2,
-                Reference.Roles.patreon_3
-            ]
+            return [Reference.Roles.patreon_1, Reference.Roles.patreon_2, Reference.Roles.patreon_3]
 
     class Categories:
         moderation = 414095379156434945
@@ -112,9 +104,10 @@ class Reference:
             """
 
             if em := client.get_emoji(ref) is not None:
-                return em # type: ignore
-            return None 
-        
+                return em  # type: ignore
+            return None
+
+
 class GiveawayBias:
     roles = [
         {
@@ -136,6 +129,6 @@ class GiveawayBias:
         {
             "id": Reference.Roles.smol_duck,
             "bias": 2,
-        }
+        },
     ]
     default = 1

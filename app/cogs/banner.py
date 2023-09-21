@@ -17,31 +17,25 @@ Once the qualified user selects the action, the view is removed, the embed is
 updated to display the chocie made and the banner is added or not.
 """
 
-import logging
-import json
-import typing
-import aiohttp
-import re
 import io
+import json
+import logging
+import re
+import typing
 
+import aiohttp
 import discord
+from discord import Interaction, app_commands
+from discord import ui as dui
 from discord.ext import commands, tasks
-from discord import (
-    app_commands, 
-    ui as dui,
-    Interaction
-)
 from discord.interactions import Interaction
 
 from app.utils import checks, errors
-from app.utils.helper import (
-    calc_time,
-    get_time_string,
-)
-
 from app.utils.config import Reference
+from app.utils.helper import calc_time, get_time_string
 
 logger = logging.getLogger(__name__)
+
 
 class BannerView(dui.View):
     """
@@ -62,19 +56,18 @@ class BannerView(dui.View):
         """
         Checks that the interactor is a moderator+ for the defined guild
         """
-        
+
         guild = discord.utils.get(interaction.client.guilds, id=Reference.guild)
         mod_role = guild.get_role(Reference.Roles.moderator)
 
-        return interaction.guild.id == guild.id \
-            and interaction.user.top_role >= mod_role
+        return interaction.guild.id == guild.id and interaction.user.top_role >= mod_role
 
     @dui.button(
-        label="Accept", 
-        style=discord.ButtonStyle.blurple, 
-        emoji=discord.PartialEmoji.from_str(Reference.Emoji.PartialString.kgsYes)
+        label="Accept",
+        style=discord.ButtonStyle.blurple,
+        emoji=discord.PartialEmoji.from_str(Reference.Emoji.PartialString.kgsYes),
     )
-    async def _accept(self, interaction: Interaction, button:dui.Button):
+    async def _accept(self, interaction: Interaction, button: dui.Button):
         """
         Accepts the banner and removes the view from the message
         Changes the embed to indicate it was accepted and by who
@@ -83,55 +76,50 @@ class BannerView(dui.View):
 
         embed = message.embeds[0]
         url = embed.image.url
-        
-        embed.title=f"Accepted by {interaction.user.name}"
-        embed.colour=discord.Colour.green()
+
+        embed.title = f"Accepted by {interaction.user.name}"
+        embed.colour = discord.Colour.green()
 
         # This is needed for discord to understand we are not trying to display
         # the file itself and the image in the embed. (duplicate images)
         embed.set_image(url="attachment://banner.png")
 
         self.banners.append(url)
-        self.banner_db.update_one(
-            {"name": "banners"}, {"$set": {"banners": self.banners}}
-        )
-        
+        self.banner_db.update_one({"name": "banners"}, {"$set": {"banners": self.banners}})
+
         await interaction.response.edit_message(embed=embed, view=None)
         try:
             match = re.match(r".*\(([0-9]+)\)$", embed.author.name)
             userid = match.group(1)
 
             suggester = await interaction.client.fetch_user(int(userid))
-            await suggester.send(
-                f"Your banner suggestion was accepted {url}"
-            )
+            await suggester.send(f"Your banner suggestion was accepted {url}")
 
         except discord.Forbidden:
             pass
 
-
-
     @dui.button(
         label="Deny",
         style=discord.ButtonStyle.danger,
-        emoji=discord.PartialEmoji.from_str(Reference.Emoji.PartialString.kgsNo)
+        emoji=discord.PartialEmoji.from_str(Reference.Emoji.PartialString.kgsNo),
     )
-    async def _deny(self, interaction: Interaction, button:dui.Button):
+    async def _deny(self, interaction: Interaction, button: dui.Button):
         """
         Denys the banner and removes the view from the message
         Changes the embed to indicate it was denied and by who
         """
         message = interaction.message
         embed = message.embeds[0]
-        
-        embed.title=f"Denied by {interaction.user.name}"
-        embed.colour=discord.Colour.red()
+
+        embed.title = f"Denied by {interaction.user.name}"
+        embed.colour = discord.Colour.red()
 
         # This is needed for discord to understand we are not trying to display
         # the file itself and the image in the embed. (duplicate images)
         embed.set_image(url="attachment://banner.png")
 
         await interaction.response.edit_message(embed=embed, view=None)
+
 
 class Banner(commands.Cog):
     def __init__(self, bot):
@@ -143,15 +131,12 @@ class Banner(commands.Cog):
 
     async def cog_load(self) -> None:
         self.banners = self.banner_db.find_one({"name": "banners"})["banners"]
-        
+
         self.BANNER_ACCEPT = f"BANNER-ACCEPT-{self.bot.user.id}"
         self.BANNER_DENY = f"BANNER-DENY-{self.bot.user.id}"
-        
+
         self.BANNER_VIEW = BannerView(
-            banner_db = self.banner_db,
-            banners = self.banners,
-            accept_id = self.BANNER_ACCEPT,
-            deny_id = self.BANNER_DENY
+            banner_db=self.banner_db, banners=self.banners, accept_id=self.BANNER_ACCEPT, deny_id=self.BANNER_DENY
         )
 
         self.bot.add_view(self.BANNER_VIEW)
@@ -195,9 +180,7 @@ class Banner(commands.Cog):
                     )
 
         except aiohttp.InvalidURL:
-            raise errors.InvalidParameterError(
-                content="The link provided is not valid"
-            )
+            raise errors.InvalidParameterError(content="The link provided is not valid")
 
     @banner_commands.command()
     @checks.mod_and_above()
@@ -229,23 +212,18 @@ class Banner(commands.Cog):
             url = await self.verify_url(url=image.url, byte=True)
 
         else:
-            raise errors.InvalidParameterError(
-                content="An image file or url is required"
-            )
+            raise errors.InvalidParameterError(content="An image file or url is required")
 
         file = discord.File(io.BytesIO(url), filename="banner.png")
 
-        embed = discord.Embed(
-            title="Banner Added",
-            color=discord.Color.green()
-        )
+        embed = discord.Embed(title="Banner Added", color=discord.Color.green())
         embed.set_author(
             name=interaction.user.name + "#" + interaction.user.discriminator,
             icon_url=interaction.user.display_avatar.url,
         )
         embed.set_image(url="attachment://banner.png")
         embed.set_footer(text="banner")
-        
+
         # Uploads the information to the banners channel
         # The url is then extracted from this embed to keep a static reference
         message = await automated_channel.send(embed=embed, file=file)
@@ -254,9 +232,7 @@ class Banner(commands.Cog):
         url = embed.image.url
 
         self.banners.append(url)
-        self.banner_db.update_one(
-            {"name": "banners"}, {"$set": {"banners": self.banners}}
-        )
+        self.banner_db.update_one({"name": "banners"}, {"$set": {"banners": self.banners}})
 
         await interaction.edit_original_response(content="Banner added.")
 
@@ -285,23 +261,17 @@ class Banner(commands.Cog):
 
         if stop:
             self.timed_banner_rotation.cancel()
-            return await interaction.response.send_message(
-                "Banner rotation stopped.", ephemeral=True
-            )
+            return await interaction.response.send_message("Banner rotation stopped.", ephemeral=True)
 
         time, extra = calc_time([duration, ""])
         if time == 0:
-            return await interaction.response.send_message(
-                "Wrong time syntax.", ephemeral=True
-            )
+            return await interaction.response.send_message("Wrong time syntax.", ephemeral=True)
 
         if not self.timed_banner_rotation.is_running():
             self.timed_banner_rotation.start()
 
         self.timed_banner_rotation.change_interval(seconds=time)
-        await interaction.response.send_message(
-            f"Banners are rotating every {get_time_string(time)}.", ephemeral=True
-        )
+        await interaction.response.send_message(f"Banners are rotating every {get_time_string(time)}.", ephemeral=True)
 
     # Making this standalone command cause can not override default permissions, and we need only this command to be visible to users.
     @app_commands.command()
@@ -335,9 +305,7 @@ class Banner(commands.Cog):
             url = await self.verify_url(url=image.url, byte=True)
 
         else:
-            raise errors.InvalidParameterError(
-                content="An image file or url is required"
-            )
+            raise errors.InvalidParameterError(content="An image file or url is required")
 
         file = discord.File(io.BytesIO(url), filename="banner.png")
 
@@ -375,19 +343,15 @@ class Banner(commands.Cog):
             url = await self.verify_url(url=url, byte=True)
 
         elif image:
-            
+
             url = await self.verify_url(url=image.url, byte=True)
 
         else:
-            raise errors.InvalidParameterError(
-                content="An image file or url is required"
-            )
+            raise errors.InvalidParameterError(content="An image file or url is required")
 
         await interaction.guild.edit(banner=url)
 
-        await interaction.response.send_message(
-            "Server banner changed!", ephemeral=True
-        )
+        await interaction.response.send_message("Server banner changed!", ephemeral=True)
 
     @tasks.loop()
     async def timed_banner_rotation(self):

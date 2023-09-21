@@ -1,15 +1,15 @@
 import asyncio
 
-from discord import (app_commands, Interaction)
-from discord.ext import commands
 import discord
+from discord import Interaction, app_commands
+from discord.ext import commands
 
 from app.utils import checks
-from app.utils.infraction import InfractionList
 from app.utils.config import Reference
+from app.utils.infraction import InfractionList
+
 
 class Patreon(commands.Cog):
-
     def __init__(self, bot):
         self.bot = bot
 
@@ -18,7 +18,6 @@ class Patreon(commands.Cog):
         """Listen for new patrons and provide
         them the option to unenroll from autojoining
         Listen for new members and fire webhook for greeting"""
-
 
         diff_roles = [role.id for role in member.roles]
         if any(x in diff_roles for x in Reference.Roles.patreon()):
@@ -39,9 +38,7 @@ class Patreon(commands.Cog):
                     "If you change your mind in the future just fill out [this form!](https://forms.gle/m4KPj2Szk1FKGE6F8)",
                     color=0xFFFFFF,
                 )
-                embed.set_thumbnail(
-                    url="https://cdn.discordapp.com/emojis/824253681443536896.png?size=256"
-                )
+                embed.set_thumbnail(url="https://cdn.discordapp.com/emojis/824253681443536896.png?size=256")
 
                 await member.send(embed=embed)
             except discord.Forbidden:
@@ -59,9 +56,7 @@ class Patreon(commands.Cog):
             "If you change your mind in the future you can simply fill out [this form.](https://forms.gle/m4KPj2Szk1FKGE6F8)",
             color=0xFFCB00,
         )
-        embed.set_thumbnail(
-            url="https://cdn.discordapp.com/emojis/736621027093774467.png?size=96"
-        )
+        embed.set_thumbnail(url="https://cdn.discordapp.com/emojis/736621027093774467.png?size=96")
 
         def check(reaction, user):
             return user == interaction.user
@@ -77,23 +72,17 @@ class Patreon(commands.Cog):
             await interaction.response.send_message("Please check your DMs.")
             await confirm_msg.add_reaction(Reference.Emoji.PartialString.kgsYes)
             await confirm_msg.add_reaction(Reference.Emoji.PartialString.kgsNo)
-            reaction, user = await self.bot.wait_for(
-                "reaction_add", timeout=120, check=check
-            )
+            reaction, user = await self.bot.wait_for("reaction_add", timeout=120, check=check)
 
             if reaction.emoji.id == Reference.Emoji.kgsYes:
 
-                member = discord.utils.get(
-                    self.bot.guilds, id=Reference.guild
-                ).get_member(interaction.user.id)
+                member = discord.utils.get(self.bot.guilds, id=Reference.guild).get_member(interaction.user.id)
 
                 user_infractions = InfractionList.from_user(member)
                 user_infractions.banned_patreon = True
                 user_infractions.update()
 
-                await interaction.user.send(
-                    "Success! You've been banned from the server."
-                )
+                await interaction.user.send("Success! You've been banned from the server.")
                 await member.ban(reason="Patron Voluntary Removal")
                 return
             if reaction.emoji.id == Reference.Emoji.kgsNo:
@@ -109,6 +98,7 @@ class Patreon(commands.Cog):
         except asyncio.TimeoutError:
             if confirm_msg != None:
                 await confirm_msg.edit(embed=fallback_embed)
+
 
 async def setup(bot):
     await bot.add_cog(Patreon(bot))

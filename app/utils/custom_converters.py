@@ -22,9 +22,7 @@ def member_converter(ctx: commands.Context, argument):
         else:
             user_id = int(match.group(1))
             if guild:
-                result = guild.get_member(user_id) or _utils_get(
-                    ctx.message.mentions, id=user_id
-                )
+                result = guild.get_member(user_id) or _utils_get(ctx.message.mentions, id=user_id)
             else:
                 result = _get_from_guilds(bot, "get_member", user_id)
 

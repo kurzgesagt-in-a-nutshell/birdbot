@@ -1,27 +1,25 @@
+import asyncio
 import copy
-import json
-import typing
 import datetime
+import io
+import json
 import logging
 import re
-import asyncio
-import io
-import demoji
+import typing
 
+import demoji
 import discord
 from discord import app_commands
 from discord.ext import commands
 
 from app.utils import checks
 from app.utils.config import Reference
-from app.utils.helper import (
-    create_automod_embed,
-    is_internal_command,
-    is_external_command,
-)
+from app.utils.helper import create_automod_embed, is_external_command, is_internal_command
+
 """
 
 """
+
 
 class Filter(commands.Cog):
     def __init__(self, bot):
@@ -33,15 +31,9 @@ class Filter(commands.Cog):
         self.message_history_list = {}
         self.message_history_lock = asyncio.Lock()
 
-        self.humanities_list = self.bot.db.filterlist.find_one({"name": "humanities"})[
-            "filter"
-        ]
-        self.general_list = self.bot.db.filterlist.find_one({"name": "general"})[
-            "filter"
-        ]
-        self.white_list = self.bot.db.filterlist.find_one({"name": "whitelist"})[
-            "filter"
-        ]
+        self.humanities_list = self.bot.db.filterlist.find_one({"name": "humanities"})["filter"]
+        self.general_list = self.bot.db.filterlist.find_one({"name": "general"})["filter"]
+        self.white_list = self.bot.db.filterlist.find_one({"name": "whitelist"})["filter"]
         self.general_list_regex = self.generate_regex(self.general_list)
 
         self.humanities_list_regex = self.generate_regex(self.humanities_list)
@@ -79,20 +71,14 @@ class Filter(commands.Cog):
     # Updates filter list from Mongo based on listtype
     async def updatelist(self, listtype):
         if listtype == "whitelist":
-            self.white_list = self.bot.db.filterlist.find_one({"name": "whitelist"})[
-                "filter"
-            ]
+            self.white_list = self.bot.db.filterlist.find_one({"name": "whitelist"})["filter"]
 
         elif listtype == "general":
-            self.general_list = self.bot.db.filterlist.find_one({"name": "general"})[
-                "filter"
-            ]
+            self.general_list = self.bot.db.filterlist.find_one({"name": "general"})["filter"]
             self.general_list_regex = self.generate_regex(self.general_list)
 
         elif listtype == "humanities":
-            self.humanities_list = self.bot.db.filterlist.find_one(
-                {"name": "humanities"}
-            )["filter"]
+            self.humanities_list = self.bot.db.filterlist.find_one({"name": "humanities"})["filter"]
             self.humanities_list_regex = self.generate_regex(self.humanities_list)
 
     @filter_commands.command()
@@ -112,9 +98,7 @@ class Filter(commands.Cog):
         filelist = self.return_list(list_type)
         await interaction.response.send_message(
             f"These are the words which are in the {list_type}{'blacklist' if list_type != 'whitelist' else ''}",
-            file=discord.File(
-                io.BytesIO("\n".join(filelist).encode("UTF-8")), f"{list_type}.txt"
-            ),
+            file=discord.File(io.BytesIO("\n".join(filelist).encode("UTF-8")), f"{list_type}.txt"),
         )
 
     @filter_commands.command()
@@ -145,9 +129,7 @@ class Filter(commands.Cog):
             f"`{word}` added to the {list_type}{' list' if list_type != 'whitelist' else ''}."
         )
 
-        self.bot.db.filterlist.update_one(
-            {"name": list_type}, {"$push": {"filter": word}}
-        )
+        self.bot.db.filterlist.update_one({"name": list_type}, {"$push": {"filter": word}})
 
         await self.updatelist(list_type)
 
@@ -179,9 +161,7 @@ class Filter(commands.Cog):
             f"`{word}` removed from the {list_type}{' list' if list_type != 'whitelist' else ''}."
         )
 
-        self.bot.db.filterlist.update_one(
-            {"name": list_type}, {"$pull": {"filter": word}}
-        )
+        self.bot.db.filterlist.update_one({"name": list_type}, {"$pull": {"filter": word}})
 
         await self.updatelist(list_type)
 
@@ -231,8 +211,8 @@ class Filter(commands.Cog):
         ):
             return
 
-        if message.channel.category.id ==Reference.Channels.language_tests: # language testing
-            return 
+        if message.channel.category.id == Reference.Channels.language_tests:  # language testing
+            return
         if self.is_member_excluded(message.author):
             return
 
@@ -300,17 +280,13 @@ class Filter(commands.Cog):
                 await member.edit(nick="Kurzgesagt Fan")
 
         if member.nick is None:
-            if not re.search(
-                r"[a-zA-Z0-9~!@#$%^&*()_+`;':\",./<>?]{3,}", member.name, re.IGNORECASE
-            ):
+            if not re.search(r"[a-zA-Z0-9~!@#$%^&*()_+`;':\",./<>?]{3,}", member.name, re.IGNORECASE):
                 await member.edit(nick="Unpingable Username")
             if any(s in member.name for s in ("nazi", "hitler", "führer", "fuhrer")):
                 await member.edit(nick="Parrot")
 
         else:
-            if not re.search(
-                r"[a-zA-Z0-9~!@#$%^&*()_+`;':\",./<>?]{3,}", member.nick, re.IGNORECASE
-            ):
+            if not re.search(r"[a-zA-Z0-9~!@#$%^&*()_+`;':\",./<>?]{3,}", member.nick, re.IGNORECASE):
                 await member.edit(nick="Unpingable Nickname")
             if any(s in member.nick for s in ("nazi", "hitler", "führer", "fuhrer")):
                 await member.edit(nick=None)
@@ -333,12 +309,10 @@ class Filter(commands.Cog):
             if isinstance(actions["delete_message"], int):
                 async with self.message_history_lock:
                     for i in range(4):
-                        await self.message_history_list[actions["delete_message"]][
-                            i
-                        ].delete()
-                    self.message_history_list[
+                        await self.message_history_list[actions["delete_message"]][i].delete()
+                    self.message_history_list[actions["delete_message"]] = self.message_history_list[
                         actions["delete_message"]
-                    ] = self.message_history_list[actions["delete_message"]][4:]
+                    ][4:]
             else:
                 await message.delete()
 
@@ -347,9 +321,7 @@ class Filter(commands.Cog):
             await message.author.timeout(time, reason="spam")
 
             try:
-                await message.author.send(
-                    f"You have been muted for 30 minutes.\nGiven reason: Spam\n"
-                )
+                await message.author.send(f"You have been muted for 30 minutes.\nGiven reason: Spam\n")
 
             except discord.Forbidden:
                 pass
@@ -361,9 +333,7 @@ class Filter(commands.Cog):
         # logic for messaging the user
 
         if "log" in actions:
-            embed = create_automod_embed(
-                message=message, automod_type=actions.get("log")
-            )
+            embed = create_automod_embed(message=message, automod_type=actions.get("log"))
             await self.logging_channel.send(embed=embed)
 
     def is_member_excluded(self, author):
@@ -408,13 +378,7 @@ class Filter(commands.Cog):
         indexes = [x.start() for x in re.finditer(r"\?", message_clean)]
         # get rid of all other non ascii characters
         message_clean = demoji.replace(message_clean, "*")
-        message_clean = (
-            str(message_clean)
-            .encode("ascii", "replace")
-            .decode()
-            .lower()
-            .replace("?", "*")
-        )
+        message_clean = str(message_clean).encode("ascii", "replace").decode().lower().replace("?", "*")
         # put back question marks
         message_clean = list(message_clean)
         for i in indexes:
@@ -486,18 +450,12 @@ class Filter(commands.Cog):
         if message.author.id in self.message_history_list:
             count = len(self.message_history_list[message.author.id])
             if count > 3:
-                if all(
-                    m.content == message.content
-                    for m in self.message_history_list[message.author.id][0:4]
-                ):
+                if all(m.content == message.content for m in self.message_history_list[message.author.id][0:4]):
                     return message.author.id
 
         if message.channel.id in self.message_history_list:
             if len(self.message_history_list[message.channel.id]) > 3:
-                if all(
-                    m.content == message.content
-                    for m in self.message_history_list[message.channel.id][0:4]
-                ):
+                if all(m.content == message.content for m in self.message_history_list[message.channel.id][0:4]):
                     return message.channel.id
 
     # check for mass ping
@@ -562,9 +520,7 @@ class Filter(commands.Cog):
             )
 
             embed = create_automod_embed(message=message, automod_type="profanity")
-            embed.add_field(
-                name="Blacklisted Word", value=is_profanity[:1024], inline=False
-            )
+            embed.add_field(name="Blacklisted Word", value=is_profanity[:1024], inline=False)
             file = discord.File(io.BytesIO(message.content.encode("UTF-8")), f"log.txt")
             await self.logging_channel.send(embed=embed, file=file)
             return
