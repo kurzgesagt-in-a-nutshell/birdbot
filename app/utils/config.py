@@ -104,5 +104,30 @@ class Reference:
             """
 
             if em := client.get_emoji(ref) is not None:
-                return em  # type: ignore
-            return None
+                return em # type: ignore
+            return None 
+        
+class GiveawayBias:
+    roles = [
+        {
+            "id": Reference.Roles.galacduck,
+            "bias": 11,
+        },
+        {
+            "id": Reference.Roles.legendary_duck,
+            "bias": 7,
+        },
+        {
+            "id": Reference.Roles.super_duck,
+            "bias": 4,
+        },
+        {
+            "id": Reference.Roles.duck,
+            "bias": 3,
+        },
+        {
+            "id": Reference.Roles.smol_duck,
+            "bias": 2,
+        }
+    ]
+    default = 1
