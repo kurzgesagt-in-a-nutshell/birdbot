@@ -1,14 +1,14 @@
-import aiohttp, random
+import random
+
+import aiohttp
+import discord
+from discord.ext import commands
 
 from app.birdbot import BirdBot
-
-from discord.ext import commands
-import discord
-
 from app.utils.config import Reference
 
+
 class MemberEvents(commands.Cog):
-    
     def __init__(self, bot):
         self.bot = bot
         self.pfp_list = [
@@ -18,11 +18,10 @@ class MemberEvents(commands.Cog):
             "https://cdn.discordapp.com/emojis/909047000253734922.png?size=256",
         ]
         self.greeting_webhook_url = "https://discord.com/api/webhooks/909052135864410172/5Fky0bSJMC3vh3Pz69nYc2PfEV3W2IAwAsSFinBFuUXXzDc08X5dv085XlLDGz3MmQvt"
-        
 
     @commands.Cog.listener()
     async def on_member_join(self, member):
-        
+
         if self.bot.user.id != Reference.mainbot:
             return
 
@@ -45,7 +44,7 @@ class MemberEvents(commands.Cog):
 
         if self.bot.user.id != Reference.mainbot:
             return
-        
+
         await self.check_member_screen(self, before, after)
         await self.log_nickname_change(self, before, after)
 
@@ -81,16 +80,10 @@ class MemberEvents(commands.Cog):
             inline=True,
         )
 
-        embed.add_field(
-            name="Search terms", value=f"```{member.id} joined```", inline=False
-        )
-        embed.set_footer(
-            text="Input the search terms in your discord search bar to easily sort through specific logs"
-        )
+        embed.add_field(name="Search terms", value=f"```{member.id} joined```", inline=False)
+        embed.set_footer(text="Input the search terms in your discord search bar to easily sort through specific logs")
 
-        member_logging_channel = self.bot.get_channel(
-            Reference.Channels.Logging.member_actions
-        )
+        member_logging_channel = self.bot.get_channel(Reference.Channels.Logging.member_actions)
         await member_logging_channel.send(embed=embed)
 
     async def log_member_remove(self, member):
@@ -118,16 +111,10 @@ class MemberEvents(commands.Cog):
             inline=False,
         )
 
-        embed.add_field(
-            name="Search terms", value=f"```{member.id} left```", inline=False
-        )
-        embed.set_footer(
-            text="Input the search terms in your discord search bar to easily sort through specific logs"
-        )
+        embed.add_field(name="Search terms", value=f"```{member.id} left```", inline=False)
+        embed.set_footer(text="Input the search terms in your discord search bar to easily sort through specific logs")
 
-        member_logging_channel = self.bot.get_channel(
-            Reference.Channels.Logging.member_actions
-        )
+        member_logging_channel = self.bot.get_channel(Reference.Channels.Logging.member_actions)
         await member_logging_channel.send(embed=embed)
 
     async def check_member_screen(self, before, after):
@@ -158,14 +145,11 @@ class MemberEvents(commands.Cog):
             value=f"```{before.id} changed nickname```",
             inline=False,
         )
-        embed.set_footer(
-            text="Input the search terms in your discord search bar to easily sort through specific logs"
-        )
+        embed.set_footer(text="Input the search terms in your discord search bar to easily sort through specific logs")
 
-        member_logging_channel = self.bot.get_channel(
-            Reference.Channels.Logging.member_actions
-        )
+        member_logging_channel = self.bot.get_channel(Reference.Channels.Logging.member_actions)
         await member_logging_channel.send(embed=embed)
+
 
 async def setup(bot):
     await bot.add_cog(MemberEvents(bot))

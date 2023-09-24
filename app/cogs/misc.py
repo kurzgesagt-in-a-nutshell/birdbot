@@ -4,16 +4,16 @@ import logging
 import re
 import typing
 
+import birdbot
 import demoji
 import discord
 import pymongo
 from discord import app_commands
 from discord.ext import commands
 
+from app.birdbot import BirdBot
 from app.utils import checks
 from app.utils.config import Reference
-
-from app.birdbot import BirdBot
 
 
 class Misc(commands.Cog):
@@ -42,9 +42,7 @@ class Misc(commands.Cog):
         self.kgs_guild: discord.Guild = self.bot.get_guild(Reference.guild)
         assert self.kgs_guild != None
 
-        subreddit_role = discord.utils.get(
-            self.kgs_guild.roles, id=Reference.Roles.subreddit_mod
-        )
+        subreddit_role = discord.utils.get(self.kgs_guild.roles, id=Reference.Roles.subreddit_mod)
         if not after.top_role >= subreddit_role:
             return
 
@@ -59,9 +57,7 @@ class Misc(commands.Cog):
         member = self.kgs_guild.get_member(before.id)
         if not member:
             return
-        subreddit_role = discord.utils.get(
-            self.kgs_guild.roles, id=Reference.Roles.subreddit_mod
-        )
+        subreddit_role = discord.utils.get(self.kgs_guild.roles, id=Reference.Roles.subreddit_mod)
         if not member.top_role >= subreddit_role:
             return
 
@@ -86,9 +82,7 @@ class Misc(commands.Cog):
         Staff intro command, create or edit an intro
         """
         oldIntro: dict = self.intro_db.find_one({"_id": interaction.user.id})
-        await interaction.response.send_modal(
-            IntroModal(oldIntro=oldIntro, bot=self.bot)
-        )
+        await interaction.response.send_modal(IntroModal(oldIntro=oldIntro, bot=self.bot))
 
     @app_commands.command()
     @checks.admin_and_above()
@@ -103,11 +97,7 @@ class Misc(commands.Cog):
         def make_intro_embed(member: discord.Member, introDoc) -> discord.Embed:
             description = f'**{introDoc["tz_text"]}**\n\n' + introDoc["bio"]
             role = member.top_role
-            footer_name = (
-                "Kurzgesagt Official"
-                if role.id == Reference.Roles.kgsmaintenance
-                else role.name
-            )
+            footer_name = "Kurzgesagt Official" if role.id == Reference.Roles.kgsmaintenance else role.name
             if role.icon:
                 footer_icon = role.icon.url
             else:
@@ -116,15 +106,13 @@ class Misc(commands.Cog):
             embed = discord.Embed(description=description, color=member.color)
             embed.set_author(
                 name=member.display_name,
-                icon_url=member.avatar.url
-                if member.avatar
-                else member.display_avatar.url,
+                icon_url=member.avatar.url if member.avatar else member.display_avatar.url,
             )
             embed.set_footer(text=footer_name, icon_url=footer_icon)
             embed.set_thumbnail(url=introDoc["image"])
 
             return embed
-        
+
         kgs_guild: discord.Guild = self.bot.get_guild(Reference.guild)
 
         lowest_role = kgs_guild.get_role(Reference.Roles.subreddit_mod)
@@ -146,25 +134,17 @@ class Misc(commands.Cog):
 
         embedList.sort(key=embed_sort, reverse=True)
 
-        intro_channel: discord.TextChannel = kgs_guild.get_channel(
-            Reference.Channels.intro_channel
-        )
+        intro_channel: discord.TextChannel = kgs_guild.get_channel(Reference.Channels.intro_channel)
 
         def purge_check(msg: discord.Message) -> bool:
-            return bool(
-                msg.author == self.bot.user
-                and msg.embeds
-                and msg.embeds[0].type == "rich"
-            )
+            return bool(msg.author == self.bot.user and msg.embeds and msg.embeds[0].type == "rich")
 
         # limit is currently 100 because getting the length of the collection is annoying
         await intro_channel.purge(check=purge_check, limit=100)
 
         for embed, member in embedList:
             msg = await intro_channel.send(embed=embed)
-            self.intro_db.update_one(
-                {"_id": member.id}, {"$set": {"message_id": msg.id}}
-            )
+            self.intro_db.update_one({"_id": member.id}, {"$set": {"message_id": msg.id}})
 
     @app_commands.command()
     @app_commands.guilds(Reference.guild)
@@ -192,33 +172,20 @@ class Misc(commands.Cog):
                 .replace("u", "-")[2:]
             )
             print(code)
-            name = (
-                demoji.replace_with_desc(emoji)
-                .replace(" ", "-")
-                .replace(":", "")
-                .replace("_", "-")
-            )
+            name = demoji.replace_with_desc(emoji).replace(" ", "-").replace(":", "").replace("_", "-")
             await interaction.response.send_message(
-                "https://em-content.zobj.net/thumbs/160/twitter/322/"
-                + name
-                + "_"
-                + code
-                + ".png"
+                "https://em-content.zobj.net/thumbs/160/twitter/322/" + name + "_" + code + ".png"
             )
         elif len(demoji.findall_list(emoji)) > 1:
             await interaction.response.send_message("please only send one emoji")
         else:
             if re.match(r"<a:\w+:(\d{17,19})>", str(emoji)):
                 emoji = str(re.findall(r"<a:\w+:(\d{17,19})>", str(emoji))[0]) + ".gif"
-                await interaction.response.send_message(
-                    "https://cdn.discordapp.com/emojis/" + str(emoji)
-                )
+                await interaction.response.send_message("https://cdn.discordapp.com/emojis/" + str(emoji))
             elif re.match(r"<:\w+:(\d{17,19})>", str(emoji)):
                 print("png")
                 emoji = str(re.findall(r"<:\w+:(\d{17,19})>", str(emoji))[0]) + ".png"
-                await interaction.response.send_message(
-                    "https://cdn.discordapp.com/emojis/" + str(emoji)
-                )
+                await interaction.response.send_message("https://cdn.discordapp.com/emojis/" + str(emoji))
             else:
                 await interaction.response.send_message("Could not process this emoji")
 
@@ -284,11 +251,7 @@ class IntroModal(discord.ui.Modal):
 
     def get_footer(self, role: discord.Role) -> typing.Tuple[str, str | None]:
         """Make the footer with role name and icon"""
-        footer_name = (
-            "Kurzgesagt Official"
-            if role.id == Reference.Roles.kgsmaintenance
-            else role.name
-        )
+        footer_name = "Kurzgesagt Official" if role.id == Reference.Roles.kgsmaintenance else role.name
         if role.icon:
             footer_icon = role.icon.url
         else:
@@ -304,9 +267,7 @@ class IntroModal(discord.ui.Modal):
         embed = discord.Embed(description=description, color=self.user.color)
         embed.set_author(
             name=self.user.display_name,
-            icon_url=self.user.avatar.url
-            if self.user.avatar
-            else self.user.display_avatar.url,
+            icon_url=self.user.avatar.url if self.user.avatar else self.user.display_avatar.url,
         )
         embed.set_footer(text=footer_name, icon_url=footer_icon)
         embed.set_thumbnail(url=self.image.value)
@@ -336,9 +297,7 @@ class IntroModal(discord.ui.Modal):
         newPos = 0
         embeds.append((self.oldIntro, oldmessage))
         snowflake = discord.Object(self.oldIntro["message_id"])
-        async for message in self.intro_channel.history(
-            limit=limit, after=snowflake, oldest_first=True
-        ):
+        async for message in self.intro_channel.history(limit=limit, after=snowflake, oldest_first=True):
             if not message.embeds:
                 continue
             if not message.embeds[0].footer:
@@ -355,9 +314,7 @@ class IntroModal(discord.ui.Modal):
                 if message.embeds[0].footer.text != "Kurzgesagt Official"
                 else "Kurzgesagt Maintenance"
             )
-            msgrole = discord.utils.find(
-                lambda role: role.name == rolename, self.kgs_guild.roles
-            )
+            msgrole = discord.utils.find(lambda role: role.name == rolename, self.kgs_guild.roles)
 
             if self.role >= msgrole:
                 break
@@ -370,17 +327,13 @@ class IntroModal(discord.ui.Modal):
             msg = embeds[i - 1][1]
             await msg.edit(embed=embeds[i][1].embeds[0])
 
-            self.intro_db.update_one(
-                {"_id": embeds[i][0]["_id"]}, {"$set": {"message_id": msg.id}}
-            )
+            self.intro_db.update_one({"_id": embeds[i][0]["_id"]}, {"$set": {"message_id": msg.id}})
 
         doc, msg = embeds[newPos]
 
         embed = self.create_embed()
         await msg.edit(embed=embed)
-        self.intro_db.update_one(
-            {"_id": self.user.id}, {"$set": {"message_id": msg.id}}
-        )
+        self.intro_db.update_one({"_id": self.user.id}, {"$set": {"message_id": msg.id}})
 
     async def reorder_promotion(self, oldmessage: discord.Message):
         # make a list of messages that have to be edited (doc, msg)
@@ -391,9 +344,7 @@ class IntroModal(discord.ui.Modal):
         embeds.append((self.oldIntro, oldmessage))
         self.logger.info(f"Old message: {self.oldIntro['message_id']}")
         snowflake = discord.Object(self.oldIntro["message_id"])
-        async for message in self.intro_channel.history(
-            limit=limit, before=snowflake, oldest_first=False
-        ):
+        async for message in self.intro_channel.history(limit=limit, before=snowflake, oldest_first=False):
             if not message.embeds:
                 continue
             if not message.embeds[0].footer:
@@ -410,9 +361,7 @@ class IntroModal(discord.ui.Modal):
                 if message.embeds[0].footer.text != "Kurzgesagt Official"
                 else "Kurzgesagt Maintenance"
             )
-            msgrole = discord.utils.find(
-                lambda role: role.name == rolename, self.kgs_guild.roles
-            )
+            msgrole = discord.utils.find(lambda role: role.name == rolename, self.kgs_guild.roles)
 
             if self.role <= msgrole:
                 break
@@ -423,17 +372,13 @@ class IntroModal(discord.ui.Modal):
             msg = embeds[i - 1][1]
             await msg.edit(embed=embeds[i][1].embeds[0])
 
-            self.intro_db.update_one(
-                {"_id": embeds[i][0]["_id"]}, {"$set": {"message_id": msg.id}}
-            )
+            self.intro_db.update_one({"_id": embeds[i][0]["_id"]}, {"$set": {"message_id": msg.id}})
 
         doc, msg = embeds[newPos]
 
         embed = self.create_embed()
         await msg.edit(embed=embed)
-        self.intro_db.update_one(
-            {"_id": self.user.id}, {"$set": {"message_id": msg.id}}
-        )
+        self.intro_db.update_one({"_id": self.user.id}, {"$set": {"message_id": msg.id}})
 
     async def reorder_add(self):
         # make a list of messages that have to be edited (doc, msg)
@@ -441,9 +386,7 @@ class IntroModal(discord.ui.Modal):
         limit = 100
         embeds: typing.List[typing.Tuple[dict, discord.Message]] = []
         newPos = 0
-        async for message in self.intro_channel.history(
-            limit=limit, oldest_first=False
-        ):
+        async for message in self.intro_channel.history(limit=limit, oldest_first=False):
             if not message.embeds:
                 continue
             if not message.embeds[0].footer:
@@ -458,9 +401,7 @@ class IntroModal(discord.ui.Modal):
                 if message.embeds[0].footer.text != "Kurzgesagt Official"
                 else "Kurzgesagt Maintenance"
             )
-            msgrole = discord.utils.find(
-                lambda role: role.name == rolename, self.kgs_guild.roles
-            )
+            msgrole = discord.utils.find(lambda role: role.name == rolename, self.kgs_guild.roles)
 
             embeds.append((doc, message))
 
@@ -473,26 +414,20 @@ class IntroModal(discord.ui.Modal):
 
         if newPos == 0:
             msg = await self.intro_channel.send(embed=newembed)
-            self.intro_db.update_one(
-                {"_id": self.user.id}, {"$set": {"message_id": msg.id}}
-            )
+            self.intro_db.update_one({"_id": self.user.id}, {"$set": {"message_id": msg.id}})
             return
 
         for i in range(1, newPos):
             msg = embeds[i - 1][1]
             await msg.edit(embed=embeds[i][1].embeds[0])
 
-            self.intro_db.update_one(
-                {"_id": embeds[i][0]["_id"]}, {"$set": {"message_id": msg.id}}
-            )
+            self.intro_db.update_one({"_id": embeds[i][0]["_id"]}, {"$set": {"message_id": msg.id}})
 
         doc, message = embeds[0]
         msg = await self.intro_channel.send(embed=message.embeds[0])
         self.intro_db.update_one({"_id": doc["_id"]}, {"$set": {"message_id": msg.id}})
         doc, message = embeds[newPos - 1]
-        self.intro_db.update_one(
-            {"_id": self.user.id}, {"$set": {"message_id": message.id}}
-        )
+        self.intro_db.update_one({"_id": self.user.id}, {"$set": {"message_id": message.id}})
         await message.edit(embed=newembed)
 
     async def on_submit(self, interaction: discord.Interaction):
@@ -502,9 +437,7 @@ class IntroModal(discord.ui.Modal):
         self.user: discord.Member = self.kgs_guild.get_member(interaction.user.id)
         assert self.user
         self.role = self.user.top_role
-        self.intro_channel: discord.TextChannel = self.kgs_guild.get_channel(
-            Reference.Channels.intro_channel
-        )
+        self.intro_channel: discord.TextChannel = self.kgs_guild.get_channel(Reference.Channels.intro_channel)
 
         self.timezone_txt = self.add_emojis(self.timezone.value)
         self.bio_txt = self.add_emojis(self.bio.value)
@@ -512,22 +445,17 @@ class IntroModal(discord.ui.Modal):
 
         async def edit_intro(oldIntroMessage: discord.Message):
             embed = oldIntroMessage.embeds[0]
-            await interaction.response.send_message(
-                "Your intro will be edited!", ephemeral=True
-            )
+            await interaction.response.send_message("Your intro will be edited!", ephemeral=True)
             # check if the user's top role has changed (promotion/demotion)
             if (embed.footer.text == self.role.name) or (
-                embed.footer.text == "Kurzgesagt Official"
-                and self.role.id == Reference.Roles.kgsofficial
+                embed.footer.text == "Kurzgesagt Official" and self.role.id == Reference.Roles.kgsofficial
             ):
                 newembed = self.create_embed()
                 async with IntroLock.reorder_lock:
                     await oldIntroMessage.edit(embed=newembed)
             else:
                 rolename = embed.footer.text
-                oldrole = discord.utils.find(
-                    lambda role: role.name == rolename, self.kgs_guild.roles
-                )
+                oldrole = discord.utils.find(lambda role: role.name == rolename, self.kgs_guild.roles)
                 if self.role > oldrole:
                     async with IntroLock.reorder_lock:
                         await self.reorder_promotion(oldIntroMessage)
@@ -560,9 +488,7 @@ class IntroModal(discord.ui.Modal):
 
         # check the validity of the image link, write a better regex?
         if not re.match(r"^https*://.*\..*", self.image.value):
-            await interaction.response.send_message(
-                "Incorrect image link, please try again", ephemeral=True
-            )
+            await interaction.response.send_message("Incorrect image link, please try again", ephemeral=True)
             return
 
         # check if the message was deleted for some reason
@@ -574,9 +500,7 @@ class IntroModal(discord.ui.Modal):
                 )
                 return
             try:
-                oldIntroMessage = await self.intro_channel.fetch_message(
-                    self.oldIntro["message_id"]
-                )
+                oldIntroMessage = await self.intro_channel.fetch_message(self.oldIntro["message_id"])
                 await edit_intro(oldIntroMessage)
                 return
             except discord.NotFound:
@@ -585,13 +509,11 @@ class IntroModal(discord.ui.Modal):
                     ephemeral=True,
                 )
                 return
-            
-        await interaction.response.send_message(
-            "Your intro will be added!", ephemeral=True
-        )
+
+        await interaction.response.send_message("Your intro will be added!", ephemeral=True)
         async with IntroLock.reorder_lock:
             await self.reorder_add()
-                
 
-class IntroLock():
+
+class IntroLock:
     reorder_lock = asyncio.Lock()

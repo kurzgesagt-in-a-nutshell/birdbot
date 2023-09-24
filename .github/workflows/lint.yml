@@ -1,0 +1,31 @@
+name: Lint
+
+on: 
+  push:
+    branches:
+      - master
+      - meta/workflows
+  pull_request:
+    branches: 
+      - '*'
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+
+      - name: checkout
+        uses: actions/checkout@v3
+
+      - name: Install Deps
+        run: |
+          pip install -r requirements.txt
+      
+      - name: black
+        run: |
+          black . --config pyproject.toml --check
+
+      - name: isort
+        uses: isort/isort-action@v1
+        with:
+            requirements-files: "requirements.txt"

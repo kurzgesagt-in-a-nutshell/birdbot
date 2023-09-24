@@ -2,11 +2,12 @@ import datetime
 import logging
 
 import discord
-from discord.ext import commands
 from discord import app_commands
+from discord.ext import commands
 
 from app.utils import checks
 from app.utils.config import Reference
+
 
 class Help(commands.Cog):
     def __init__(self, bot):
@@ -50,9 +51,7 @@ class Help(commands.Cog):
         for cmd in command_tree_guild:
             if isinstance(cmd, discord.app_commands.commands.Command):
                 if cmd.default_permissions and cmd.default_permissions.manage_messages:
-                    if interaction.user.top_role >= interaction.guild.get_role(
-                        Reference.Roles.moderator
-                    ):
+                    if interaction.user.top_role >= interaction.guild.get_role(Reference.Roles.moderator):
                         cmds.append(cmd.name)
                     else:
                         continue
@@ -63,9 +62,7 @@ class Help(commands.Cog):
                 for c in cmd.commands:
                     if cmd.default_permissions:
                         if cmd.default_permissions.manage_messages:
-                            if interaction.user.top_role >= interaction.guild.get_role(
-                                Reference.Roles.moderator
-                            ):
+                            if interaction.user.top_role >= interaction.guild.get_role(Reference.Roles.moderator):
                                 cmds.append(f"{cmd.name} {c.name}")
                             else:
                                 continue
@@ -74,9 +71,7 @@ class Help(commands.Cog):
 
                     elif c.default_permissions:
                         if c.default_permissions.manage_messages:
-                            if interaction.user.top_role >= interaction.guild.get_role(
-                                Reference.Roles.moderator
-                            ):
+                            if interaction.user.top_role >= interaction.guild.get_role(Reference.Roles.moderator):
                                 cmds.append(f"{cmd.name} {c.name}")
                             else:
                                 continue

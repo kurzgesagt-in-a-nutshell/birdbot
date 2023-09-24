@@ -1,5 +1,5 @@
-import io
 import asyncio
+import io
 import logging
 from traceback import TracebackException
 
@@ -7,11 +7,9 @@ import discord
 from discord.ext import commands
 from discord.ext.commands import errors
 
-from app.utils.errors import * 
-from app.utils.helper import (
-    NoAuthorityError,
-)
 from app.utils.config import Reference
+from app.utils.errors import *
+from app.utils.helper import NoAuthorityError
 
 
 class Errors(commands.Cog):
@@ -29,7 +27,7 @@ class Errors(commands.Cog):
 
     @commands.Cog.listener()
     async def on_command_error(self, ctx: commands.Context, err):
-        
+
         if isinstance(err, commands.CommandNotFound):
             return
 
@@ -79,12 +77,8 @@ class Errors(commands.Cog):
                 f"An [**unhandled exception**]({ctx.message.jump_url}) occured in <#{ctx.message.channel.id}> when "
                 f"running the **{ctx.command.name}** command.```\n{err}```"
             )
-            embed = discord.Embed(
-                title="Unhandled Exception", description=description, color=0xFF0000
-            )
-            file = discord.File(
-                io.BytesIO(traceback_txt.encode()), filename="traceback.txt"
-            )
+            embed = discord.Embed(title="Unhandled Exception", description=description, color=0xFF0000)
+            file = discord.File(io.BytesIO(traceback_txt.encode()), filename="traceback.txt")
             await channel.send(embed=embed, file=file)
 
 

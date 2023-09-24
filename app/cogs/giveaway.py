@@ -1,20 +1,17 @@
-import logging
-from datetime import datetime, timedelta, timezone
-import numpy as np
 import json
+import logging
+import typing
+from datetime import datetime, timedelta, timezone
 
 import discord
-from discord.ext import commands, tasks
+import numpy as np
 from discord import app_commands
+from discord.ext import commands, tasks
 
 from app.utils import checks
-from app.utils.config import Reference, GiveawayBias
-from app.utils.helper import (
-    calc_time,
-)
+from app.utils.config import GiveawayBias, Reference
 from app.utils.custom_converters import member_converter
-
-import typing
+from app.utils.helper import calc_time
 
 
 class Giveaway(commands.Cog):
@@ -29,9 +26,7 @@ class Giveaway(commands.Cog):
         self.logger.info("loaded Giveaway")
 
     def cog_load(self) -> None:
-        for giveaway in self.giveaway_db.find(
-            {"giveaway_over": False, "giveaway_cancelled": False}
-        ):
+        for giveaway in self.giveaway_db.find({"giveaway_over": False, "giveaway_cancelled": False}):
             giveaway["end_time"] = giveaway["end_time"].replace(tzinfo=timezone.utc)
             self.active_giveaways[giveaway["message_id"]] = giveaway
 
@@ -74,11 +69,7 @@ class Giveaway(commands.Cog):
             self.logger.debug("Fetching reactions from users")
             for reaction in message.reactions:
                 if reaction.emoji == "🎉":
-                    userids = [
-                        user.id
-                        async for user in reaction.users()
-                        if user.id != self.bot.user.id
-                    ]
+                    userids = [user.id async for user in reaction.users() if user.id != self.bot.user.id]
                     users = []
                     for userid in userids:
                         try:
@@ -118,9 +109,7 @@ class Giveaway(commands.Cog):
                 winnerids = ", ".join([str(i.id) for i in choice])
                 self.logger.debug(f"Fetched winner(s): {winnerids}")
                 for winner in choice:
-                    await message.reply(
-                        f"{winner.mention} won **{giveaway['prize']}**!"
-                    )
+                    await message.reply(f"{winner.mention} won **{giveaway['prize']}**!")
                     winners.append(f"> {winner.mention}")
                 winners = "\n".join(winners)
 
@@ -144,9 +133,7 @@ class Giveaway(commands.Cog):
             self.logger.debug("Message not found")
             self.logger.debug("Deleting giveaway")
             del self.active_giveaways[giveaway["message_id"]]
-            self.giveaway_db.update_one(
-                giveaway, {"$set": {"giveaway_cancelled": True}}
-            )
+            self.giveaway_db.update_one(giveaway, {"$set": {"giveaway_cancelled": True}})
             return
 
         if giveaway["message_id"] in self.active_giveaways:
@@ -226,9 +213,7 @@ class Giveaway(commands.Cog):
             return await interaction.edit_original_response(content="Time can't be 0")
 
         if time is None:
-            return await interaction.edit_original_response(
-                content="Invalid time syntax."
-            )
+            return await interaction.edit_original_response(content="Invalid time syntax.")
 
         if sponsor is None:
             sponsor = interaction.user
@@ -247,7 +232,9 @@ class Giveaway(commands.Cog):
         )
         riggedinfo = ""
         if rigged:
-            riggedinfo = "[rigged](https://discord.com/channels/414027124836532234/414452106129571842/714496884844134401)"
+            riggedinfo = (
+                "[rigged](https://discord.com/channels/414027124836532234/414452106129571842/714496884844134401)"
+            )
 
         description = f"**{prize}**\nReact with 🎉 to join the {riggedinfo} giveaway\n"
         for field in fields:
@@ -301,16 +288,12 @@ class Giveaway(commands.Cog):
         try:
             message_id = int(message_id)
         except ValueError as ve:
-            return await interaction.edit_original_response(
-                content="Invalid message id."
-            )
+            return await interaction.edit_original_response(content="Invalid message id.")
 
         if message_id in self.active_giveaways:
             await self.choose_winner(self.active_giveaways[message_id])
             self.giveaway_task.restart()
-            await interaction.edit_original_response(
-                content=f"{Reference.Emoji.PartialString.kgsYes} Giveaway ended."
-            )
+            await interaction.edit_original_response(content=f"{Reference.Emoji.PartialString.kgsYes} Giveaway ended.")
             return
 
         await interaction.edit_original_response(content="Giveaway not found!")
@@ -331,23 +314,19 @@ class Giveaway(commands.Cog):
         try:
             message_id = int(message_id)
         except ValueError as ve:
-            return await interaction.edit_original_response(
-                content="Invalid message id."
-            )
+            return await interaction.edit_original_response(content="Invalid message id.")
 
         if message_id in self.active_giveaways:
             giveaway = self.active_giveaways[message_id]
 
             try:
-                message = await interaction.guild.get_channel(
-                    giveaway["channel_id"]
-                ).fetch_message(giveaway["message_id"])
+                message = await interaction.guild.get_channel(giveaway["channel_id"]).fetch_message(
+                    giveaway["message_id"]
+                )
                 await message.delete()
                 del self.active_giveaways[message_id]
                 self.giveaway_task.restart()
-                self.giveaway_db.update_one(
-                    giveaway, {"$set": {"giveaway_cancelled": True}}
-                )
+                self.giveaway_db.update_one(giveaway, {"$set": {"giveaway_cancelled": True}})
                 return await interaction.edit_original_response(
                     content=f"{Reference.Emoji.PartialString.kgsYes} Giveaway cancelled!"
                 )
@@ -387,12 +366,8 @@ class Giveaway(commands.Cog):
         try:
             message_id = int(message_id)
         except ValueError as ve:
-            return await interaction.edit_original_response(
-                content="Invalid message id."
-            )
-        doc = self.giveaway_db.find_one(
-            {"giveaway_over": True, "message_id": message_id}
-        )
+            return await interaction.edit_original_response(content="Invalid message id.")
+        doc = self.giveaway_db.find_one({"giveaway_over": True, "message_id": message_id})
         if doc:
             if winner_count != None:
                 doc["winners_no"] = winner_count
@@ -422,9 +397,7 @@ class Giveaway(commands.Cog):
                 )
             except Exception as e:
                 self.logger.exception(e)
-                return await interaction.response.send_message(
-                    "Error!!! Take a screenshot.", ephemeral=True
-                )
+                return await interaction.response.send_message("Error!!! Take a screenshot.", ephemeral=True)
 
         await interaction.response.send_message(embed=embed)
 
