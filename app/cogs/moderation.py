@@ -1,7 +1,7 @@
 import datetime
 import io
 import logging
-import typing
+from typing import Optional
 
 import discord
 from discord import app_commands
@@ -143,7 +143,7 @@ class Moderation(commands.Cog):
     async def report(
         self,
         interaction: discord.Interaction,
-        member: typing.Optional[typing.Union[discord.Member, discord.User]] = None,
+        member: Optional[discord.Member | discord.User] = None,
     ):
         """Report issues to the moderation team, gives you an UI
 
@@ -227,8 +227,8 @@ class Moderation(commands.Cog):
         self,
         interaction: discord.Interaction,
         count: app_commands.Range[int, 1, 200],
-        _from: typing.Optional[discord.Member],
-        channel: typing.Union[discord.TextChannel, discord.Thread, None] = None,
+        _from: Optional[discord.Member],
+        channel: discord.TextChannel | discord.Thread | None = None,
     ):
         """Cleans/Purge messages from a channel
 
@@ -387,7 +387,7 @@ class Moderation(commands.Cog):
         self,
         interaction: discord.Interaction,
         user_id: discord.User,
-        reason: typing.Optional[str] = None,
+        reason: Optional[str] = None,
     ):
         """Unban a user
 
@@ -499,7 +499,7 @@ class Moderation(commands.Cog):
         self,
         interaction: discord.Interaction,
         time: str,
-        reason: typing.Optional[str] = "Self Mute",
+        reason: Optional[str] = "Self Mute",
     ):
         """Mute yourself.
 
@@ -565,7 +565,7 @@ class Moderation(commands.Cog):
         member: discord.Member,
         time: str,
         reason: str,
-        final: typing.Optional[bool] = False,
+        final: Optional[bool] = False,
     ):
         """Mute a user
 
@@ -665,7 +665,7 @@ class Moderation(commands.Cog):
         self,
         interaction: discord.Interaction,
         member: discord.Member,
-        reason: typing.Optional[str],
+        reason: Optional[str],
     ):
         """Unmutes a user
 
@@ -768,7 +768,7 @@ class Moderation(commands.Cog):
         inf_level: app_commands.Range[int, 1, 5],
         member: discord.Member,
         reason: str,
-        final: typing.Optional[bool] = False,
+        final: Optional[bool] = False,
     ):
         """Warns a user
 
@@ -1219,8 +1219,8 @@ class Moderation(commands.Cog):
         self,
         interaction: discord.Interaction,
         duration: app_commands.Range[int, 0, 360],
-        channel: typing.Union[discord.TextChannel, discord.Thread, None],
-        reason: typing.Optional[str],
+        channel: discord.TextChannel | discord.Thread | None,
+        reason: Optional[str],
     ):
         """Add or remove slowmode in a channel
 

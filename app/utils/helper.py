@@ -2,7 +2,7 @@ import datetime
 import logging
 import re
 import typing
-from typing import List, Tuple, Union
+from typing import List, Tuple
 
 import discord
 from discord.ext import commands
@@ -144,9 +144,9 @@ def is_external_command(message: discord.Message):
 
 
 def create_embed(
-    author: Union[discord.User, discord.Member],
+    author: discord.User | discord.Member,
     action: str,
-    users: List[Union[discord.User, discord.Member]] | None = None,
+    users: List[discord.User | discord.Member] | None = None,
     reason=None,
     extra=None,
     color=discord.Color.blurple,
@@ -197,12 +197,12 @@ def create_embed(
     return embed
 
 
-def create_timed_action(users: List[Union[discord.User, discord.Member]], action: str, time: int):
+def create_timed_action(users: List[discord.User | discord.Member], action: str, time: int):
     # TODO DELETE
     """Creates a database entry for timed action [not in use currently]
 
     Args:
-        users (List[Union[discord.User, discord.Member]]): List of affected users
+        users (List[discord.User | discord.Member]): List of affected users
         action (str): Action ("mute")
         time (int): Duration for which action will last
     """
@@ -424,7 +424,7 @@ def whitelist_member(member: discord.Member, command: commands.Command) -> bool:
     return True
 
 
-def is_public_channel(channel: typing.Union[discord.TextChannel, discord.Thread]) -> bool:
+def is_public_channel(channel: discord.TextChannel | discord.Thread) -> bool:
     """
     Returns true for all channels except those under the moderation category
 

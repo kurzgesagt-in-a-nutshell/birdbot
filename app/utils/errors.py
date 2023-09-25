@@ -5,8 +5,6 @@ Behavior for errors are within the InternalError class and alternations are made
 in inherited classes. 
 """
 
-from typing import Union
-
 from discord import Embed, Interaction, app_commands
 from discord.ext import commands
 
@@ -18,7 +16,7 @@ class InternalError(Exception):
     content = "an unhandled internal error occurred. if this continues please inform an active bot dev"
     color = 0xC6612A
 
-    def __init__(self, *, content: Union[str, None] = None):
+    def __init__(self, *, content: str | None = None):
         if content is not None:
             self.content = content
 
