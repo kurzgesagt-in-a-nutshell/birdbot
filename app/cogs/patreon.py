@@ -7,10 +7,11 @@ from discord.ext import commands
 from app.utils import checks
 from app.utils.config import Reference
 from app.utils.infraction import InfractionList
+from app.birdbot import BirdBot
 
 
 class Patreon(commands.Cog):
-    def __init__(self, bot):
+    def __init__(self, bot: BirdBot):
         self.bot = bot
 
     @commands.Cog.listener()
@@ -100,5 +101,5 @@ class Patreon(commands.Cog):
                 await confirm_msg.edit(embed=fallback_embed)
 
 
-async def setup(bot):
+async def setup(bot: BirdBot):
     await bot.add_cog(Patreon(bot))

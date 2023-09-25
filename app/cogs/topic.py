@@ -14,6 +14,7 @@ from fuzzywuzzy import process
 
 from app.utils import checks, errors
 from app.utils.config import Reference
+from app.birdbot import BirdBot
 
 if TYPE_CHECKING:
     from pymongo.collection import Collection
@@ -166,7 +167,7 @@ class TopicAcceptorView(dui.View):
 
 
 class Topic(commands.Cog):
-    def __init__(self, bot):
+    def __init__(self, bot: BirdBot):
         self.logger = logging.getLogger("Fun")
         self.bot = bot
 
@@ -397,5 +398,5 @@ class Topic(commands.Cog):
         )
 
 
-async def setup(bot):
+async def setup(bot: BirdBot):
     await bot.add_cog(Topic(bot))

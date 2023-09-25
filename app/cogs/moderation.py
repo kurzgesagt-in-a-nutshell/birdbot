@@ -11,6 +11,7 @@ from app.utils import checks, errors, helper
 from app.utils.config import Reference
 from app.utils.helper import blacklist_member, get_active_staff, is_public_channel, whitelist_member
 from app.utils.infraction import InfractionKind, InfractionList
+from app.birdbot import BirdBot
 
 
 class FinalReconfirmation(discord.ui.View):
@@ -125,7 +126,7 @@ class FinalReconfirmation(discord.ui.View):
 
 
 class Moderation(commands.Cog):
-    def __init__(self, bot):
+    def __init__(self, bot: BirdBot):
         self.logger = logging.getLogger("Moderation")
         self.bot = bot
 
@@ -1327,5 +1328,5 @@ class Moderation(commands.Cog):
             )
 
 
-async def setup(bot):
+async def setup(bot: BirdBot):
     await bot.add_cog(Moderation(bot))

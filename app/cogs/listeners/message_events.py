@@ -7,10 +7,11 @@ from requests.models import PreparedRequest
 
 from app.utils.config import Reference
 from app.utils.helper import is_internal_command
+from app.birdbot import BirdBot
 
 
 class MessageEvents(commands.Cog):
-    def __init__(self, bot):
+    def __init__(self, bot: BirdBot):
         self.bot = bot
 
     @commands.Cog.listener()
@@ -243,5 +244,5 @@ class MessageEvents(commands.Cog):
         await ctx.send(embed=embed)
 
 
-async def setup(bot):
+async def setup(bot: BirdBot):
     await bot.add_cog(MessageEvents(bot))

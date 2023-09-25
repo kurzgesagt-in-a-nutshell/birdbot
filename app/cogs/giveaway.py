@@ -10,10 +10,11 @@ from discord.ext import commands, tasks
 from app.utils import checks
 from app.utils.config import GiveawayBias, Reference
 from app.utils.helper import calc_time
+from app.birdbot import BirdBot
 
 
 class Giveaway(commands.Cog):
-    def __init__(self, bot):
+    def __init__(self, bot: BirdBot):
         self.logger = logging.getLogger("Giveaway")
         self.bot = bot
         self.active_giveaways = {}
@@ -401,5 +402,5 @@ class Giveaway(commands.Cog):
         await interaction.response.send_message(embed=embed)
 
 
-async def setup(bot):
+async def setup(bot: BirdBot):
     await bot.add_cog(Giveaway(bot))

@@ -10,12 +10,13 @@ from discord.ext.commands import errors
 from app.utils.config import Reference
 from app.utils.errors import *
 from app.utils.helper import NoAuthorityError
+from app.birdbot import BirdBot
 
 
 class Errors(commands.Cog):
     """Catches all exceptions coming in through commands"""
 
-    def __init__(self, bot):
+    def __init__(self, bot: BirdBot):
         self.dev_logging_channel = Reference.Channels.Logging.dev
 
         self.logger = logging.getLogger("Listeners")
@@ -82,5 +83,5 @@ class Errors(commands.Cog):
             await channel.send(embed=embed, file=file)
 
 
-async def setup(bot):
+async def setup(bot: BirdBot):
     await bot.add_cog(Errors(bot))

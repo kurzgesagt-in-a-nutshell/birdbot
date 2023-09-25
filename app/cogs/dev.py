@@ -14,10 +14,11 @@ from discord.ext.commands.errors import ExtensionNotFound
 
 from app.utils import checks, helper
 from app.utils.config import Reference
+from app.birdbot import BirdBot
 
 
 class Dev(commands.Cog):
-    def __init__(self, bot):
+    def __init__(self, bot: BirdBot):
         self.logger = logging.getLogger("Dev")
         self.bot = bot
 
@@ -287,5 +288,5 @@ class Dev(commands.Cog):
         await ctx.send("cleared all commands")
 
 
-async def setup(bot):
+async def setup(bot: BirdBot):
     await bot.add_cog(Dev(bot))

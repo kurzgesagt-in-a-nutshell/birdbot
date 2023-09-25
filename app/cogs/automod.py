@@ -14,6 +14,7 @@ from discord.ext import commands
 from app.utils import checks
 from app.utils.config import Reference
 from app.utils.helper import create_automod_embed, is_external_command, is_internal_command
+from app.birdbot import BirdBot
 
 """
 
@@ -21,7 +22,7 @@ from app.utils.helper import create_automod_embed, is_external_command, is_inter
 
 
 class Filter(commands.Cog):
-    def __init__(self, bot):
+    def __init__(self, bot: BirdBot):
         self.logger = logging.getLogger("Automod")
         self.bot = bot
 
@@ -727,5 +728,5 @@ class Filter(commands.Cog):
         return regexlist
 
 
-async def setup(bot):
+async def setup(bot: BirdBot):
     await bot.add_cog(Filter(bot))

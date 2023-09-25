@@ -6,10 +6,11 @@ from discord.ext import commands
 
 from app.utils import checks
 from app.utils.config import Reference
+from app.birdbot import BirdBot
 
 
 class Help(commands.Cog):
-    def __init__(self, bot):
+    def __init__(self, bot: BirdBot):
         self.logger = logging.getLogger("Help")
         self.bot = bot
         self.bot.remove_command("help")
@@ -94,5 +95,5 @@ class Help(commands.Cog):
         await interaction.response.send_message(f"{int(self.bot.latency * 1000)} ms")
 
 
-async def setup(bot):
+async def setup(bot: BirdBot):
     await bot.add_cog(Help(bot))

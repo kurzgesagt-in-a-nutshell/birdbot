@@ -32,6 +32,7 @@ from discord.interactions import Interaction
 from app.utils import checks, errors
 from app.utils.config import Reference
 from app.utils.helper import calc_time, get_time_string
+from app.birdbot import BirdBot
 
 logger = logging.getLogger(__name__)
 
@@ -129,7 +130,7 @@ class BannerView(dui.View):
 
 
 class Banner(commands.Cog):
-    def __init__(self, bot):
+    def __init__(self, bot: BirdBot):
         self.logger = logging.getLogger("Banners")
         self.bot = bot
 
@@ -380,5 +381,5 @@ class Banner(commands.Cog):
                 self.index += 1
 
 
-async def setup(bot):
+async def setup(bot: BirdBot):
     await bot.add_cog(Banner(bot))

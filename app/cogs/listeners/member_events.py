@@ -5,10 +5,11 @@ import discord
 from discord.ext import commands
 
 from app.utils.config import Reference
+from app.birdbot import BirdBot
 
 
 class MemberEvents(commands.Cog):
-    def __init__(self, bot):
+    def __init__(self, bot: BirdBot):
         self.bot = bot
         self.pfp_list = [
             "https://cdn.discordapp.com/emojis/909047588160942140.png?size=256",
@@ -150,5 +151,5 @@ class MemberEvents(commands.Cog):
         await member_logging_channel.send(embed=embed)
 
 
-async def setup(bot):
+async def setup(bot: BirdBot):
     await bot.add_cog(MemberEvents(bot))

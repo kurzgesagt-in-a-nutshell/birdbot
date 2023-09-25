@@ -4,10 +4,11 @@ import discord
 from discord.ext import commands
 
 from app.utils.config import Reference
+from app.birdbot import BirdBot
 
 
 class Smfeed(commands.Cog):
-    def __init__(self, bot):
+    def __init__(self, bot: BirdBot):
         self.logger = logging.getLogger("Smfeed")
         self.bot = bot
 
@@ -49,5 +50,5 @@ class Smfeed(commands.Cog):
                                 break
 
 
-async def setup(bot):
+async def setup(bot: BirdBot):
     await bot.add_cog(Smfeed(bot))

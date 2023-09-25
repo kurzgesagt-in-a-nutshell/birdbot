@@ -194,7 +194,7 @@ class Misc(commands.Cog):
                 await interaction.response.send_message("Could not process this emoji")
 
 
-async def setup(bot):
+async def setup(bot: BirdBot):
     await bot.add_cog(Misc(bot))
 
 
