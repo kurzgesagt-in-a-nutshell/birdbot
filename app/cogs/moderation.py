@@ -1,9 +1,5 @@
 import datetime
 import io
-<<<<<<< HEAD
-=======
-import json
->>>>>>> origin/public-refactor
 import logging
 import typing
 
@@ -310,10 +306,7 @@ class Moderation(commands.Cog):
             )
 
         message_logging_channel = discord.utils.get(interaction.guild.channels, id=self.message_logging_channel)
-<<<<<<< HEAD
         assert isinstance(message_logging_channel, discord.TextChannel)
-=======
->>>>>>> origin/public-refactor
 
         await message_logging_channel.send(
             f"{len(deleted_messages)} messages deleted in {channel.mention}",
@@ -353,11 +346,7 @@ class Moderation(commands.Cog):
             # fetch_member throws not_found error if not found
             member = await interaction.guild.fetch_member(user.id)
             if member.top_role >= interaction.user.top_role:
-<<<<<<< HEAD
                 raise errors.InvalidAuthorizationError(content="User could not be banned due to your clearance.")
-=======
-                raise errors.InvalidAuthorizationError("User could not be banned due to your clearance.")
->>>>>>> origin/public-refactor
 
             await member.send(f"You have been permanently removed from the server for following reason: \n{reason}")
         except (discord.NotFound, discord.Forbidden):
@@ -378,10 +367,7 @@ class Moderation(commands.Cog):
         )
 
         logging_channel = discord.utils.get(interaction.guild.channels, id=self.logging_channel)
-<<<<<<< HEAD
         assert isinstance(logging_channel, discord.TextChannel)
-=======
->>>>>>> origin/public-refactor
 
         embed = helper.create_embed(
             author=interaction.user,
@@ -428,10 +414,7 @@ class Moderation(commands.Cog):
         await interaction.response.send_message("user was unbanned", ephemeral=is_public_channel(interaction.channel))
 
         logging_channel = discord.utils.get(interaction.guild.channels, id=self.logging_channel)
-<<<<<<< HEAD
         assert isinstance(logging_channel, discord.TextChannel)
-=======
->>>>>>> origin/public-refactor
 
         embed = helper.create_embed(
             author=interaction.user,
@@ -470,11 +453,7 @@ class Moderation(commands.Cog):
         assert isinstance(interaction.channel, discord.TextChannel)
         if member.top_role >= interaction.user.top_role:
 
-<<<<<<< HEAD
             raise errors.InvalidAuthorizationError(content="User could not be kicked due to your clearance.")
-=======
-            raise errors.InvalidAuthorizationError("User could not be kicked due to your clearance.")
->>>>>>> origin/public-refactor
 
         infractions = InfractionList.from_user(self.bot.get_user(member.id))
         if infractions.on_final:
@@ -502,10 +481,7 @@ class Moderation(commands.Cog):
         infractions.update()
 
         logging_channel = discord.utils.get(interaction.guild.channels, id=self.logging_channel)
-<<<<<<< HEAD
         assert isinstance(logging_channel, discord.TextChannel)
-=======
->>>>>>> origin/public-refactor
 
         embed = helper.create_embed(
             author=interaction.user,
@@ -544,15 +520,9 @@ class Moderation(commands.Cog):
         if tot_time is None or tot_time <= 0:
             raise errors.InvalidInvocationError(content="Improper time provided")
         elif tot_time > 604801:
-<<<<<<< HEAD
             raise errors.InvalidInvocationError(content="Can't mute for longer than 7 days!")
         elif tot_time < 300:
             raise errors.InvalidInvocationError(content="Can't mute for shorter than 5 minutes!")
-=======
-            raise errors.InvalidInvocationError("Can't mute for longer than 7 days!")
-        elif tot_time < 300:
-            raise errors.InvalidInvocationError("Can't mute for shorter than 5 minutes!")
->>>>>>> origin/public-refactor
 
         duration = datetime.timedelta(seconds=tot_time)
         finished = discord.utils.utcnow() + duration
@@ -571,10 +541,7 @@ class Moderation(commands.Cog):
         )
 
         logging_channel = discord.utils.get(interaction.guild.channels, id=Reference.Channels.Logging.misc_actions)
-<<<<<<< HEAD
         assert isinstance(logging_channel, discord.TextChannel)
-=======
->>>>>>> origin/public-refactor
 
         embed = helper.create_embed(
             author=interaction.user,
@@ -619,11 +586,7 @@ class Moderation(commands.Cog):
 
         if member.top_role >= interaction.user.top_role:
 
-<<<<<<< HEAD
             raise errors.InvalidAuthorizationError(content="user could not be muted due to your clearance")
-=======
-            raise errors.InvalidAuthorizationError("user could not be muted due to your clearance")
->>>>>>> origin/public-refactor
 
         # time calculation
         tot_time, _ = helper.calc_time([time, ""])
@@ -633,11 +596,7 @@ class Moderation(commands.Cog):
         elif tot_time <= 0:
             raise errors.InvalidInvocationError(content="time can not be 0 or less")
         elif tot_time > 2419200:
-<<<<<<< HEAD
             raise errors.InvalidInvocationError(content="time can not be longer than 28 days (2419200 seconds)")
-=======
-            raise errors.InvalidInvocationError("time can not be longer than 28 days (2419200 seconds)")
->>>>>>> origin/public-refactor
 
         infractions = InfractionList.from_user(self.bot.get_user(member.id))
         if infractions.on_final:
@@ -686,10 +645,7 @@ class Moderation(commands.Cog):
         infractions.update()
 
         logging_channel = discord.utils.get(interaction.guild.channels, id=self.logging_channel)
-<<<<<<< HEAD
         assert isinstance(logging_channel, discord.TextChannel)
-=======
->>>>>>> origin/public-refactor
 
         embed = helper.create_embed(
             author=interaction.user,
@@ -722,15 +678,11 @@ class Moderation(commands.Cog):
             Reason for the action
         """
 
-<<<<<<< HEAD
         assert interaction.guild
         assert isinstance(interaction.channel, discord.TextChannel)
 
         logging_channel = discord.utils.get(interaction.guild.channels, id=self.logging_channel)
         assert isinstance(logging_channel, discord.TextChannel)
-=======
-        logging_channel = discord.utils.get(interaction.guild.channels, id=self.logging_channel)
->>>>>>> origin/public-refactor
 
         await member.timeout(None)
 
@@ -774,11 +726,7 @@ class Moderation(commands.Cog):
 
         if role >= interaction.user.top_role:
 
-<<<<<<< HEAD
             raise errors.InvalidAuthorizationError(content="You do not have clearance to do that")
-=======
-            raise errors.InvalidAuthorizationError("you do not have clearance to do that")
->>>>>>> origin/public-refactor
 
         # check if member has role
         action, preposition = "", ""
@@ -800,10 +748,7 @@ class Moderation(commands.Cog):
         )
 
         logging_channel = discord.utils.get(interaction.guild.channels, id=self.logging_channel)
-<<<<<<< HEAD
         assert isinstance(logging_channel, discord.TextChannel)
-=======
->>>>>>> origin/public-refactor
 
         embed = helper.create_embed(
             author=interaction.user,
@@ -847,13 +792,7 @@ class Moderation(commands.Cog):
         if member.top_role >= interaction.user.top_role:
             raise errors.InvalidAuthorizationError(content="user could not be warned due to your clearance")
 
-<<<<<<< HEAD
         infractions = InfractionList.from_user(self.bot.get_user(member.id))
-=======
-            raise errors.InvalidAuthorizationError("user could not be warned due to your clearance")
-
-        infractions = InfractionList.from_user(member)
->>>>>>> origin/public-refactor
         if infractions.on_final:
             result = await FinalReconfirmation.handle(interaction, infractions, member, interaction.user)
 
@@ -892,10 +831,7 @@ class Moderation(commands.Cog):
             )
 
         logging_channel = discord.utils.get(interaction.guild.channels, id=self.logging_channel)
-<<<<<<< HEAD
         assert isinstance(logging_channel, discord.TextChannel)
-=======
->>>>>>> origin/public-refactor
 
         embed = helper.create_embed(
             author=interaction.user,
@@ -992,10 +928,7 @@ class Moderation(commands.Cog):
 
             @discord.ui.button(label="x", style=discord.ButtonStyle.red, row=1)
             async def exit(self, interaction: discord.Interaction, button: discord.ui.Button):
-<<<<<<< HEAD
                 assert interaction.message
-=======
->>>>>>> origin/public-refactor
                 await interaction.message.edit(content="Exited!!!", embed=None, view=None, delete_after=5)
                 self.stop()
 
@@ -1055,10 +988,7 @@ class Moderation(commands.Cog):
                 the user to confirm the choice.
                 """
 
-<<<<<<< HEAD
                 assert button.label
-=======
->>>>>>> origin/public-refactor
                 self.delete_infraction_idx = int(button.label) + (5 * self.current_chunk)
 
                 user_infractions = self.user_infractions
@@ -1112,10 +1042,7 @@ class Moderation(commands.Cog):
 
         embed = div.build_embed()
 
-<<<<<<< HEAD
         assert isinstance(interaction.channel, discord.TextChannel)
-=======
->>>>>>> origin/public-refactor
         await interaction.response.send_message(embed=embed, view=div, ephemeral=is_public_channel(interaction.channel))
 
     @app_commands.command()
@@ -1282,10 +1209,7 @@ class Moderation(commands.Cog):
         )
 
         logging_channel = discord.utils.get(interaction.guild.channels, id=self.logging_channel)
-<<<<<<< HEAD
         assert isinstance(logging_channel, discord.TextChannel)
-=======
->>>>>>> origin/public-refactor
         await logging_channel.send(embed=embed)
 
     @app_commands.command()
@@ -1325,10 +1249,7 @@ class Moderation(commands.Cog):
         )
 
         logging_channel = discord.utils.get(interaction.guild.channels, id=self.logging_channel)
-<<<<<<< HEAD
         assert isinstance(logging_channel, discord.TextChannel)
-=======
->>>>>>> origin/public-refactor
 
         embed = helper.create_embed(
             author=interaction.user,
@@ -1364,12 +1285,9 @@ class Moderation(commands.Cog):
         command = discord.utils.get(self.bot.commands, name=command_name)
         if command is None:
             return await interaction.response.send_message(f"{command_name} is not a valid command", ephemeral=True)
-<<<<<<< HEAD
 
         assert isinstance(interaction.user, discord.Member)
 
-=======
->>>>>>> origin/public-refactor
         if interaction.user.top_role > member.top_role:
             blacklist_member(self.bot, member, command)
             await interaction.response.send_message(f"{member.name} can no longer use {command_name}", ephemeral=True)
