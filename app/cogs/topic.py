@@ -4,6 +4,7 @@ import logging
 import random
 import re
 import typing
+from typing import TYPE_CHECKING
 
 import discord
 from discord import Interaction, app_commands
@@ -13,6 +14,9 @@ from fuzzywuzzy import process
 
 from app.utils import checks, errors
 from app.utils.config import Reference
+
+if TYPE_CHECKING:
+    from pymongo.collection import Collection
 
 
 class TopicEditorModal(dui.Modal):
@@ -37,6 +41,7 @@ class TopicEditorModal(dui.Modal):
             return
 
         message = interaction.message
+        assert message
         embed = message.embeds[0]
 
         embed.description = self.topic.value
@@ -60,13 +65,14 @@ class TopicAcceptorView(dui.View):
         self._edit.custom_id = edit_id
 
         self.topics = topics
-        self.topic_db = topic_db
+        self.topic_db: Collection = topic_db
         self.editing = {}
 
     async def interaction_check(self, interaction: Interaction) -> bool:
         """
         Checks if another user is currently editing this topic.
         """
+        assert interaction.message
         editing = self.editing.get(interaction.message.id, 0)
         if editing != 0:
             who = f"<@{editing}> is currently editing this topic"
@@ -82,7 +88,7 @@ class TopicAcceptorView(dui.View):
 
     async def on_error(self, interaction: Interaction, error: Exception, item: dui.Item):
         """Raises the error to the command tree"""
-        await interaction.client.tree.on_error(interaction, error)
+        await interaction.client.tree.on_error(interaction, error)  # type: ignore
 
     @dui.button(
         label="Accept",
@@ -95,11 +101,12 @@ class TopicAcceptorView(dui.View):
         Changes the embed to indicate it was accepted and by who
         """
         message = interaction.message
+        assert message
         embed = message.embeds[0]
 
         topic = embed.description
         self.topics.append(topic)
-        self.topics_db.update_one({"name": "topics"}, {"$set": {"topics": self.topics}})
+        self.topics_db.update_one({"name": "topics"}, {"$set": {"topics": self.topics}})  # type: ignore
 
         embed.color = discord.Color.green()
         embed.title = f"Accepted by {interaction.user.name}"
@@ -107,11 +114,12 @@ class TopicAcceptorView(dui.View):
         await interaction.response.edit_message(embed=embed, view=None)
 
         try:
+            assert embed.author.name
             match = re.match(r".*\(([0-9]+)\)$", embed.author.name)
-            userid = match.group(1)
-
-            suggester = await interaction.client.fetch_user(int(userid))
-            await suggester.send(f"Your topic suggestion was accepted: **{topic}**")
+            if match:
+                userid = match.group(1)
+                suggester = await interaction.client.fetch_user(int(userid))
+                await suggester.send(f"Your topic suggestion was accepted: **{topic}**")
 
         except discord.Forbidden:
             pass
@@ -127,6 +135,7 @@ class TopicAcceptorView(dui.View):
         Changes the embed to indicate it was denied and by who
         """
         message = interaction.message
+        assert message
         embed = message.embeds[0]
 
         embed.color = discord.Color.red()
@@ -143,9 +152,11 @@ class TopicAcceptorView(dui.View):
         """
         Sends a modal to interact with the provided topic text
         """
+        assert interaction.message
         self.editing[interaction.message.id] = interaction.user.id
 
         embed = interaction.message.embeds[0]
+        assert embed.description
 
         topic_modal = TopicEditorModal(embed.description)
         await interaction.response.send_modal(topic_modal)

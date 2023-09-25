@@ -1,7 +1,6 @@
-import json
 import logging
 import typing
-from datetime import datetime, timedelta, timezone
+from datetime import timedelta, timezone
 
 import discord
 import numpy as np
@@ -10,7 +9,6 @@ from discord.ext import commands, tasks
 
 from app.utils import checks
 from app.utils.config import GiveawayBias, Reference
-from app.utils.custom_converters import member_converter
 from app.utils.helper import calc_time
 
 
@@ -46,12 +44,9 @@ class Giveaway(commands.Cog):
     async def choose_winner(self, giveaway):
         """does the giveaway logic"""
         messagefound = False
-        try:
-            channel = await self.bot.fetch_channel(giveaway["channel_id"])
-            message = await channel.fetch_message(giveaway["message_id"])
-            messagefound = True
-        except:
-            messagefound = False
+        channel = await self.bot.fetch_channel(giveaway["channel_id"])
+        message = await channel.fetch_message(giveaway["message_id"])
+        messagefound = channel is not None
 
         if messagefound:
             if message.author != self.bot.user:
@@ -208,7 +203,7 @@ class Giveaway(commands.Cog):
 
         await interaction.response.defer(ephemeral=True)
 
-        (time, _) = calc_time([time, ""])
+        (time, _) = calc_time([time, ""])  # type: ignore
         if time == 0:
             return await interaction.edit_original_response(content="Time can't be 0")
 
@@ -216,6 +211,7 @@ class Giveaway(commands.Cog):
             return await interaction.edit_original_response(content="Invalid time syntax.")
 
         if sponsor is None:
+            assert isinstance(interaction.user, discord.Member)
             sponsor = interaction.user
 
         fields = {
@@ -223,11 +219,11 @@ class Giveaway(commands.Cog):
             "sponsor": f"> **{'Hosted' if sponsor.id == interaction.user.id else 'Sponsored'} by**\n> {sponsor.mention}",
         }
 
-        time = discord.utils.utcnow() + timedelta(seconds=time)
+        time = discord.utils.utcnow() + timedelta(seconds=time)  # type: ignore
 
         embed = discord.Embed(
             title="Giveaway started!",
-            timestamp=time,
+            timestamp=time,  # type: ignore
             colour=discord.Colour.green(),
         )
         riggedinfo = ""
@@ -243,6 +239,8 @@ class Giveaway(commands.Cog):
         embed.description = description
 
         embed.set_footer(text="Giveaway Ends")
+
+        assert isinstance(interaction.channel, discord.TextChannel)
 
         message = await interaction.channel.send(embed=embed)
         await message.add_reaction("🎉")
@@ -286,12 +284,12 @@ class Giveaway(commands.Cog):
         await interaction.response.defer(ephemeral=True)
 
         try:
-            message_id = int(message_id)
+            message_id_ = int(message_id)
         except ValueError as ve:
             return await interaction.edit_original_response(content="Invalid message id.")
 
-        if message_id in self.active_giveaways:
-            await self.choose_winner(self.active_giveaways[message_id])
+        if message_id_ in self.active_giveaways:
+            await self.choose_winner(self.active_giveaways[message_id_])
             self.giveaway_task.restart()
             await interaction.edit_original_response(content=f"{Reference.Emoji.PartialString.kgsYes} Giveaway ended.")
             return
@@ -310,21 +308,22 @@ class Giveaway(commands.Cog):
         """
 
         await interaction.response.defer(ephemeral=True)
+        assert interaction.guild
 
         try:
-            message_id = int(message_id)
+            message_id_ = int(message_id)
         except ValueError as ve:
             return await interaction.edit_original_response(content="Invalid message id.")
 
-        if message_id in self.active_giveaways:
-            giveaway = self.active_giveaways[message_id]
+        if message_id_ in self.active_giveaways:
+            giveaway = self.active_giveaways[message_id_]
 
             try:
-                message = await interaction.guild.get_channel(giveaway["channel_id"]).fetch_message(
+                message = await interaction.guild.get_channel(giveaway["channel_id"]).fetch_message(  # type: ignore
                     giveaway["message_id"]
                 )
                 await message.delete()
-                del self.active_giveaways[message_id]
+                del self.active_giveaways[message_id_]
                 self.giveaway_task.restart()
                 self.giveaway_db.update_one(giveaway, {"$set": {"giveaway_cancelled": True}})
                 return await interaction.edit_original_response(
@@ -364,10 +363,10 @@ class Giveaway(commands.Cog):
         await interaction.response.defer(ephemeral=True)
 
         try:
-            message_id = int(message_id)
+            message_id_ = int(message_id)
         except ValueError as ve:
             return await interaction.edit_original_response(content="Invalid message id.")
-        doc = self.giveaway_db.find_one({"giveaway_over": True, "message_id": message_id})
+        doc = self.giveaway_db.find_one({"giveaway_over": True, "message_id": message_id_})
         if doc:
             if winner_count != None:
                 doc["winners_no"] = winner_count

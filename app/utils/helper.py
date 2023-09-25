@@ -1,5 +1,4 @@
 import datetime
-import json
 import logging
 import re
 import typing
@@ -147,7 +146,7 @@ def is_external_command(message: discord.Message):
 def create_embed(
     author: Union[discord.User, discord.Member],
     action: str,
-    users: List[Union[discord.User, discord.Member]] = None,
+    users: List[Union[discord.User, discord.Member]] | None = None,
     reason=None,
     extra=None,
     color=discord.Color.blurple,
@@ -232,7 +231,7 @@ def delete_timed_actions_uid(u_id: int):
     timed_actions_db.remove({"user_id": u_id})
 
 
-def calc_time(args: List[str]) -> Tuple[int, str]:
+def calc_time(args: List[str]) -> Tuple[int | None, str | None]:
     """Parses time from given list.
     Example:
     ["1hr", "12m30s", "extra", "string"] => (4350, "extra string")
@@ -347,6 +346,7 @@ def create_automod_embed(
     Returns:
         embed: A discord.Embed object.
     """
+    assert isinstance(message.channel, discord.TextChannel)
     embed = discord.Embed(
         title=f"Message deleted. ({automod_type})",
         description=f"Message author: {message.author.mention}\nChannel: {message.channel.mention}",
@@ -361,7 +361,7 @@ def create_automod_embed(
     return embed
 
 
-def get_active_staff(bot: commands.AutoShardedBot) -> str:
+def get_active_staff(bot: discord.Client) -> str:
     """
     Gets string containing mentions of active staff (mods, trainee mods and admins)
     Mentions both mod roles if no mod is online
@@ -369,10 +369,13 @@ def get_active_staff(bot: commands.AutoShardedBot) -> str:
     """
 
     guild = discord.utils.get(bot.guilds, id=Reference.guild)
+    assert guild
     active_staff = []
     mods_active = False
     for role_id in [Reference.Roles.moderator, Reference.Roles.administrator, Reference.Roles.trainee_mod]:
-        for member in discord.utils.get(guild.roles, id=role_id).members:
+        role = discord.utils.get(guild.roles, id=role_id)
+        assert role
+        for member in role.members:
             if member.bot:
                 continue
             if member in active_staff:

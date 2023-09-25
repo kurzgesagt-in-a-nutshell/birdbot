@@ -1,5 +1,6 @@
 from typing import Union
 
+import discord
 from discord import Interaction, app_commands
 from discord.ext import commands
 
@@ -40,6 +41,7 @@ def mod_and_above():
 
     async def predicate(info: Union[Interaction, commands.Context]):
         user = info.user if isinstance(info, Interaction) else info.author
+        assert isinstance(user, discord.Member)
 
         user_role_ids = [x.id for x in user.roles]
         check_role_ids = Reference.Roles.moderator_and_above()
@@ -57,6 +59,7 @@ def admin_and_above():
 
     async def predicate(info: Union[Interaction, commands.Context]):
         user = info.user if isinstance(info, Interaction) else info.author
+        assert isinstance(user, discord.Member)
 
         user_role_ids = [x.id for x in user.roles]
         check_role_ids = Reference.Roles.admin_and_above()
@@ -76,6 +79,7 @@ def role_and_above(id: int):
         user = info.user if isinstance(info, Interaction) else info.author
         guild = info.guild
 
+        assert isinstance(user, discord.Member)
         if guild is None:
             raise InvalidInvocationError
 
@@ -94,7 +98,7 @@ def mainbot_only():
 
     async def predicate(info: Union[Interaction, commands.Context]):
         me = info.client.user if isinstance(info, Interaction) else info.me
-
+        assert me
         if not me.id == Reference.mainbot:
             raise InvalidInvocationError
         return True
@@ -124,9 +128,10 @@ def general_only():
 
     async def predicate(info: Union[Interaction, commands.Context]):
         channel = info.channel
+        assert isinstance(channel, discord.TextChannel)
 
         if channel.category_id != Reference.Categories.moderation and channel.id != Reference.Channels.general:
-            raise InvalidInvocationError(f"This command can only be ran in <#{Reference.Channels.general}>")
+            raise InvalidInvocationError(content=f"This command can only be ran in <#{Reference.Channels.general}>")
         return True
 
     return check(predicate)
@@ -140,8 +145,11 @@ def bot_commands_only():
     async def predicate(info: Union[Interaction, commands.Context]):
         channel = info.channel
 
+        assert isinstance(channel, discord.TextChannel)
         if channel.category_id != Reference.Categories.moderation and channel.id != Reference.Channels.bot_commands:
-            raise InvalidInvocationError(f"This command can only be ran in <#{Reference.Channels.bot_commands}>")
+            raise InvalidInvocationError(
+                content=f"This command can only be ran in <#{Reference.Channels.bot_commands}>"
+            )
         return True
 
     return check(predicate)
@@ -157,6 +165,8 @@ def topic_perm_check():
         user = info.user if isinstance(info, Interaction) else info.author
         guild = info.guild
 
+        assert isinstance(user, discord.Member)
+
         if guild is None:
             raise InvalidInvocationError
 
@@ -166,7 +176,7 @@ def topic_perm_check():
         check_role_ids = Reference.Roles.patreon()
         if user.top_role >= check_role or any(x in user_role_ids for x in check_role_ids):
             return True
-        raise InvalidAuthorizationError("This can only be ran by ducks+ and patreon members")
+        raise InvalidAuthorizationError(content="This can only be ran by ducks+ and patreon members")
 
     return check(predicate)
 
@@ -180,7 +190,8 @@ def patreon_only():
         client = info.client if isinstance(info, Interaction) else info.bot
         user = info.user if isinstance(info, Interaction) else info.author
 
-        member = client.get_guild(Reference.guild).get_member(user.id)
+        member = client.get_guild(Reference.guild).get_member(user.id)  # type: ignore
+        assert member
         member_role_ids = [x.id for x in member.roles]
         check_role_ids = Reference.Roles.patreon()
         if not any(x in member_role_ids for x in check_role_ids):

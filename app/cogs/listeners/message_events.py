@@ -1,5 +1,4 @@
 import io
-import re
 
 import discord
 import requests
@@ -53,6 +52,7 @@ class MessageEvents(commands.Cog):
             color=0xC9322C,
             timestamp=discord.utils.utcnow(),
         )
+        assert embed.description
         embed.set_author(name=message.author.display_name, icon_url=message.author.display_avatar.url)
         embed.add_field(name="Content", value=message.content)
         search_terms = f"```Deleted in {message.channel.id}"
@@ -117,18 +117,22 @@ class MessageEvents(commands.Cog):
         moderator+
         """
 
+        assert isinstance(message.author, discord.Member)
+        assert message.guild
         # Check if message contains a moderator or traine moderator ping
         if not any(x in message.raw_role_mentions for x in [Reference.Roles.moderator, Reference.Roles.trainee_mod]):
             return
 
         # If the ping was done by a moderator or above then ignore
-        if message.author.top_role >= await message.guild.fetch_role(Reference.Roles.moderator):
+        if message.author.top_role >= message.guild.get_role(Reference.Roles.moderator):
             return
 
         # TODO BEFORE COMMIT, LOOK HERE TF DOES ROLE COME FROM?
 
-        role_names = [discord.utils.get(message.guild.roles, id=role).name for role in message.raw_role_mentions]
+        role_names = [discord.utils.get(message.guild.roles, id=role).name for role in message.raw_role_mentions]  # type: ignore
         mod_channel = self.bot.get_channel(Reference.Channels.mod_chat)
+
+        assert isinstance(message.channel, discord.TextChannel)
 
         embed = discord.Embed(
             title="Mod ping alert!",
@@ -196,6 +200,7 @@ class MessageEvents(commands.Cog):
             return
 
         embed = message.embeds[0].to_dict()
+        assert "description" in embed and "fields" in embed
         to_translate = sum(
             [[embed["description"]], [field["value"] for field in embed["fields"]]], []
         )  # flatten without numpy
@@ -215,7 +220,9 @@ class MessageEvents(commands.Cog):
 
         req = PreparedRequest()
         req.prepare_url(url, payload)
+        assert req.url
         response = requests.request("POST", req.url, verify=False).json()
+
         replace_str = response["translatedText"].split(" ### ")
         embed["description"] = replace_str[0]
         embed["fields"][0]["value"] = replace_str[1]

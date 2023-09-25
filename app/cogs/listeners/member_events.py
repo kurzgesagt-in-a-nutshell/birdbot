@@ -4,7 +4,6 @@ import aiohttp
 import discord
 from discord.ext import commands
 
-from app.birdbot import BirdBot
 from app.utils.config import Reference
 
 
@@ -45,8 +44,8 @@ class MemberEvents(commands.Cog):
         if self.bot.user.id != Reference.mainbot:
             return
 
-        await self.check_member_screen(self, before, after)
-        await self.log_nickname_change(self, before, after)
+        await self.check_member_screen(before, after)
+        await self.log_nickname_change(before, after)
 
     async def send_welcome(self, member):
         """

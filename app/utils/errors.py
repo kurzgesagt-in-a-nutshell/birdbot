@@ -5,14 +5,12 @@ Behavior for errors are within the InternalError class and alternations are made
 in inherited classes. 
 """
 
-from typing import Type, Union
+from typing import Union
 
 from discord import Embed, Interaction, app_commands
 from discord.ext import commands
 
 from .config import Reference
-
-Info = Type[Union[commands.Context, Interaction]]
 
 
 class InternalError(Exception):
@@ -24,7 +22,7 @@ class InternalError(Exception):
         if content is not None:
             self.content = content
 
-    def format_notif_embed(self, info: Info):
+    def format_notif_embed(self, info: commands.Context | Interaction):
         # interaction = info if isinstance(info, Interaction) else None
         # context = info if isinstance(info, commands.Context) else None
 

@@ -1,7 +1,6 @@
 import enum
 import logging
 import typing
-from typing import TYPE_CHECKING
 
 import discord
 

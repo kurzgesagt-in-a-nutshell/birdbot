@@ -1,4 +1,3 @@
-import datetime
 import logging
 
 import discord
@@ -40,6 +39,8 @@ class Help(commands.Cog):
 
         cmds = []
 
+        assert isinstance(interaction.user, discord.Member)
+        assert interaction.guild
         for cmd in command_tree_global:
             if isinstance(cmd, discord.app_commands.commands.Command):
                 cmds.append(cmd.name)
