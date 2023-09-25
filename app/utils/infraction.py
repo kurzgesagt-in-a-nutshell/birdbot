@@ -1,10 +1,6 @@
 import enum
 import logging
 import typing
-<<<<<<< HEAD
-=======
-from typing import TYPE_CHECKING
->>>>>>> origin/public-refactor
 
 import discord
 

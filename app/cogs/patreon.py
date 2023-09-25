@@ -1,11 +1,7 @@
 import asyncio
 
 import discord
-<<<<<<< HEAD
 from discord import app_commands
-=======
-from discord import Interaction, app_commands
->>>>>>> origin/public-refactor
 from discord.ext import commands
 
 from app.utils import checks

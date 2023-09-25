@@ -1,13 +1,6 @@
-<<<<<<< HEAD
 import logging
 import typing
 from datetime import timedelta, timezone
-=======
-import json
-import logging
-import typing
-from datetime import datetime, timedelta, timezone
->>>>>>> origin/public-refactor
 
 import discord
 import numpy as np
@@ -16,10 +9,6 @@ from discord.ext import commands, tasks
 
 from app.utils import checks
 from app.utils.config import GiveawayBias, Reference
-<<<<<<< HEAD
-=======
-from app.utils.custom_converters import member_converter
->>>>>>> origin/public-refactor
 from app.utils.helper import calc_time
 
 
@@ -330,19 +319,11 @@ class Giveaway(commands.Cog):
             giveaway = self.active_giveaways[message_id_]
 
             try:
-<<<<<<< HEAD
                 message = await interaction.guild.get_channel(giveaway["channel_id"]).fetch_message(  # type: ignore
                     giveaway["message_id"]
                 )
                 await message.delete()
                 del self.active_giveaways[message_id_]
-=======
-                message = await interaction.guild.get_channel(giveaway["channel_id"]).fetch_message(
-                    giveaway["message_id"]
-                )
-                await message.delete()
-                del self.active_giveaways[message_id]
->>>>>>> origin/public-refactor
                 self.giveaway_task.restart()
                 self.giveaway_db.update_one(giveaway, {"$set": {"giveaway_cancelled": True}})
                 return await interaction.edit_original_response(
@@ -385,11 +366,7 @@ class Giveaway(commands.Cog):
             message_id_ = int(message_id)
         except ValueError as ve:
             return await interaction.edit_original_response(content="Invalid message id.")
-<<<<<<< HEAD
         doc = self.giveaway_db.find_one({"giveaway_over": True, "message_id": message_id_})
-=======
-        doc = self.giveaway_db.find_one({"giveaway_over": True, "message_id": message_id})
->>>>>>> origin/public-refactor
         if doc:
             if winner_count != None:
                 doc["winners_no"] = winner_count

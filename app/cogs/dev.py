@@ -257,11 +257,8 @@ class Dev(commands.Cog):
         await interaction.response.send_message("sent", ephemeral=True)
 
         logging_channel = discord.utils.get(interaction.guild.channels, id=Reference.Channels.Logging.mod_actions)
-<<<<<<< HEAD
         assert isinstance(logging_channel, discord.TextChannel)
 
-=======
->>>>>>> origin/public-refactor
         embed = helper.create_embed(
             author=interaction.user,
             action="ran send command",

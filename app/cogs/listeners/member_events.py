@@ -1,18 +1,9 @@
 import random
-<<<<<<< HEAD
 
 import aiohttp
 import discord
 from discord.ext import commands
 
-=======
-
-import aiohttp
-import discord
-from discord.ext import commands
-
-from app.birdbot import BirdBot
->>>>>>> origin/public-refactor
 from app.utils.config import Reference
 
 
@@ -53,13 +44,8 @@ class MemberEvents(commands.Cog):
         if self.bot.user.id != Reference.mainbot:
             return
 
-<<<<<<< HEAD
         await self.check_member_screen(before, after)
         await self.log_nickname_change(before, after)
-=======
-        await self.check_member_screen(self, before, after)
-        await self.log_nickname_change(self, before, after)
->>>>>>> origin/public-refactor
 
     async def send_welcome(self, member):
         """
