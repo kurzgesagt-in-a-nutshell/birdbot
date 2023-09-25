@@ -172,7 +172,8 @@ class Topic(commands.Cog):
         self.bot = bot
 
         self.topics_db = self.bot.db.Topics
-        self.topics = self.topics_db.find_one({"name": "topics"})["topics"]  # Use this for DB interaction
+        topics_find: typing.Any = self.topics_db.find_one({"name": "topics"})
+        self.topics: typing.List = topics_find["topics"]  # Use this for DB interaction
 
         self.topics_list = copy.deepcopy(self.topics)  # This is used to stop topic repeats
 

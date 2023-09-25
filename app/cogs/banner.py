@@ -138,7 +138,8 @@ class Banner(commands.Cog):
         self.banner_db = self.bot.db.Banners
 
     async def cog_load(self) -> None:
-        self.banners = self.banner_db.find_one({"name": "banners"})["banners"]
+        banners_find: typing.Any = self.banner_db.find_one({"name": "banners"})
+        self.banners: typing.List = banners_find["banners"]
 
         self.BANNER_ACCEPT = f"BANNER-ACCEPT-{self.bot._user().id}"
         self.BANNER_DENY = f"BANNER-DENY-{self.bot._user().id}"
