@@ -278,14 +278,6 @@ class BirdBot(commands.AutoShardedBot):
             return True
         return False
 
-    async def _fetch_channel(self, id: int) -> discord.TextChannel:
-        channel = await self.fetch_channel(id)
-        if isinstance(channel, discord.abc.PrivateChannel | None | discord.Thread):
-            raise errors.InvalidFunctionUsage()
-        if isinstance(channel, discord.VoiceChannel | discord.CategoryChannel | discord.StageChannel | discord.ForumChannel):
-            raise errors.InvalidFunctionUsage()
-        return channel
-
     def _get_channel(self, id: int) -> discord.TextChannel:
         channel = self.get_channel(id)
         if isinstance(channel, discord.abc.PrivateChannel | None | discord.Thread):

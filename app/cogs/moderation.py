@@ -158,7 +158,7 @@ class Moderation(commands.Cog):
             mod_channel = interaction.guild.get_channel(Reference.Channels.mod_chat)
         else:
             kgs_guild = self.bot.get_mainguild()
-            mod_channel = await kgs_guild.fetch_channel(Reference.Channels.mod_chat)
+            mod_channel = kgs_guild.get_channel(Reference.Channels.mod_chat)
 
         class Modal(discord.ui.Modal):
             def __init__(self, member):

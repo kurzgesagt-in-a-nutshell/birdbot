@@ -237,7 +237,7 @@ class Filter(commands.Cog):
         if is_external_command(message):
             return
 
-        self.logging_channel = await self.bot.fetch_channel(self.logging_channel_id)
+        self.logging_channel = self.bot.get_channel(self.logging_channel_id)
         if not isinstance(message.channel, discord.DMChannel):
             await self.check_message(message)
             await self.check_member(message.author)

@@ -45,7 +45,7 @@ class Giveaway(commands.Cog):
     async def choose_winner(self, giveaway):
         """does the giveaway logic"""
         messagefound = False
-        channel = await self.bot._fetch_channel(giveaway["channel_id"])
+        channel = self.bot._get_channel(giveaway["channel_id"])
         message = await channel.fetch_message(giveaway["message_id"])
         messagefound = channel is not None
 

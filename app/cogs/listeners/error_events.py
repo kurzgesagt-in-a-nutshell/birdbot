@@ -33,7 +33,7 @@ class Errors(commands.Cog):
             return
 
         traceback_txt = "".join(TracebackException.from_exception(err).format())
-        channel = await self.bot._fetch_channel(self.dev_logging_channel)
+        channel = self.bot._get_channel(self.dev_logging_channel)
 
         if isinstance(err, InternalError):
             embed = err.format_notif_embed(ctx)
