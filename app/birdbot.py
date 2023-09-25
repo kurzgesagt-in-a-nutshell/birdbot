@@ -24,10 +24,7 @@ logger = logging.getLogger("BirdBot")
 
 @contextmanager
 def setup():
-<<<<<<< HEAD
     logger = logging.getLogger()
-=======
->>>>>>> origin/public-refactor
     try:
         dotenv.load_dotenv()
         logging.getLogger("discord").setLevel(logging.INFO)
@@ -115,14 +112,10 @@ class BirdTree(app_commands.CommandTree):
 
         # most cases this will consist of errors thrown by the actual code
 
-<<<<<<< HEAD
         if isinstance(interaction.channel, GuildChannel):
             is_in_public_channel = interaction.channel.category_id != Reference.Categories.moderation
         else:
             is_in_public_channel = False
-=======
-        is_in_public_channel = interaction.channel.category_id != Reference.Categories.moderation
->>>>>>> origin/public-refactor
 
         user_shown_error = errors.InternalError()
         await BirdTree.maybe_responded(
