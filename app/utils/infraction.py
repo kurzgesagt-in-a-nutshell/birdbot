@@ -40,7 +40,7 @@ class Infraction:
     def new(
         cls,
         kind: InfractionKind,
-        author: discord.User,
+        author: discord.User | discord.Member,
         level: int,
         reason: str,
         duration: Optional[str] = None,
@@ -86,7 +86,7 @@ class Infraction:
             + f"{self._kind.name.title()} ID: {id}\n```"
         )
 
-    def detailed_info_embed(self, user: discord.User):
+    def detailed_info_embed(self, user: discord.User | discord.Member):
         """
         Returns detailed information on the infraction as an embed
         """
@@ -157,7 +157,7 @@ class InfractionList:
     Represents a list of infractions for a user
     """
 
-    def __init__(self, user: discord.User, data: Optional[Dict] = None) -> None:
+    def __init__(self, user: discord.User | discord.Member, data: Optional[Dict] = None) -> None:
         if data is None:
             data = {}
 
@@ -175,7 +175,7 @@ class InfractionList:
         self._bans = [Infraction(InfractionKind.BAN, ban_data) for ban_data in data.pop("ban", [])]
 
     @classmethod
-    def from_user(cls, user: discord.User):
+    def from_user(cls, user: discord.User | discord.Member):
         """
         This searches the mongo db for an entry of a user. If no entry is found,
         none is returned and due to the behavior of the class, info is filled
@@ -192,10 +192,10 @@ class InfractionList:
     @classmethod
     def new_user_infraction(
         cls,
-        user: discord.User,
+        user: discord.User | discord.Member,
         kind: InfractionKind,
         level: int,
-        author: discord.User,
+        author: discord.User | discord.Member,
         reason: str,
         duration=None,
         final=False,
@@ -305,7 +305,7 @@ class InfractionList:
         self,
         kind: InfractionKind,
         level: int,
-        author: discord.User,
+        author: discord.User | discord.Member,
         reason: str,
         duration=None,
         final=False,

@@ -362,7 +362,7 @@ class Moderation(commands.Cog):
             user=user,
             kind=InfractionKind.BAN,
             level=inf_level,
-            author=self.bot.get_user(interaction.user.id),
+            author=interaction.user,
             reason=reason,
         )
 
@@ -455,7 +455,7 @@ class Moderation(commands.Cog):
 
             raise errors.InvalidAuthorizationError(content="User could not be kicked due to your clearance.")
 
-        infractions = InfractionList.from_user(self.bot.get_user(member.id))
+        infractions = InfractionList.from_user(member)
         if infractions.on_final:
             result = await FinalReconfirmation.handle(interaction, infractions, member, interaction.user)
 
@@ -475,7 +475,7 @@ class Moderation(commands.Cog):
         infractions.new_infraction(
             kind=InfractionKind.KICK,
             level=inf_level,
-            author=self.bot.get_user(interaction.user.id),
+            author=interaction.user,
             reason=reason,
         )
         infractions.update()
@@ -598,7 +598,7 @@ class Moderation(commands.Cog):
         elif tot_time > 2419200:
             raise errors.InvalidInvocationError(content="time can not be longer than 28 days (2419200 seconds)")
 
-        infractions = InfractionList.from_user(self.bot.get_user(member.id))
+        infractions = InfractionList.from_user(member)
         if infractions.on_final:
             result = await FinalReconfirmation.handle(interaction, infractions, member, interaction.user)
 
@@ -637,7 +637,7 @@ class Moderation(commands.Cog):
         infractions.new_infraction(
             kind=InfractionKind.MUTE,
             level=inf_level,
-            author=self.bot.get_user(interaction.user.id),
+            author=interaction.user,
             reason=reason,
             duration=time_str,
             final=final,
@@ -792,7 +792,7 @@ class Moderation(commands.Cog):
         if member.top_role >= interaction.user.top_role:
             raise errors.InvalidAuthorizationError(content="user could not be warned due to your clearance")
 
-        infractions = InfractionList.from_user(self.bot.get_user(member.id))
+        infractions = InfractionList.from_user(member)
         if infractions.on_final:
             result = await FinalReconfirmation.handle(interaction, infractions, member, interaction.user)
 
@@ -817,7 +817,7 @@ class Moderation(commands.Cog):
         infractions.new_infraction(
             kind=InfractionKind.WARN,
             level=inf_level,
-            author=self.bot.get_user(interaction.user.id),
+            author=interaction.user,
             reason=reason,
             final=final,
         )
