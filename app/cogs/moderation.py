@@ -159,7 +159,6 @@ class Moderation(commands.Cog):
             kgs_guild = self.bot.get_guild(Reference.guild)
             mod_channel = await kgs_guild.fetch_channel(Reference.Channels.mod_chat)
 
-
         class Modal(discord.ui.Modal):
             def __init__(self, member):
                 super().__init__(title="Report")
@@ -179,8 +178,8 @@ class Moderation(commands.Cog):
             async def on_submit(self, interaction: discord.Interaction):
 
                 assert isinstance(mod_channel, discord.TextChannel)
-                description = self.children[0].value # type: ignore
-                message_link = self.children[1].value # type: ignore
+                description = self.children[0].value  # type: ignore
+                message_link = self.children[1].value  # type: ignore
 
                 channel = interaction.channel
                 if isinstance(channel, (discord.abc.GuildChannel, discord.Thread)):
@@ -807,7 +806,7 @@ class Moderation(commands.Cog):
         if final:
             default_msg = final_msg
         else:
-            final=False
+            final = False
 
         try:
             await member.send(f"You have been warned for {reason} {default_msg}")
