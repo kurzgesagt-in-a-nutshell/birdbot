@@ -57,12 +57,6 @@ class Giveaway(commands.Cog):
                     del self.active_giveaways[giveaway["message_id"]]
                 return
 
-            embed = message.embeds[0].to_dict()
-
-            embed["title"] = "Giveaway ended"
-            embed["color"] = 15158332  # red
-            embed["footer"]["text"] = "Giveaway Ended"
-
             users = []
             self.logger.debug("Fetching reactions from users")
             for reaction in message.reactions:
@@ -116,15 +110,31 @@ class Giveaway(commands.Cog):
                 winnerids = ""
 
             self.logger.debug("Sending new embed")
-            newdescription = embed["description"].splitlines()
-            for i in range(len(newdescription)):
-                if newdescription[i].startswith("> **Winners"):
-                    newdescription.insert(i + 1, winners)
-                    break
 
-            embed["description"] = "\n".join(newdescription)
+            time = discord.utils.utcnow() + timedelta(seconds=giveaway["end_time"])  # type: ignore
 
-            embed = discord.Embed.from_dict(embed)
+            embed = discord.Embed(
+                title="Giveaway ended",
+                timestamp=time,  # type: ignore
+                colour=discord.Colour.red(),
+            )
+
+            embed.set_footer(text="Giveaway Ended")
+
+            riggedinfo = ""
+            if giveaway["rigged"]:
+                riggedinfo = (
+                    " [rigged](https://discord.com/channels/414027124836532234/414452106129571842/714496884844134401)"
+                )
+
+            description = f"**{giveaway['prize']}**\n{riggedinfo}\n"
+
+            description += f'> **Winners: {giveaway["winners_no"]}**\n'
+            description += winners + "\n"
+            description += f'> **{"Hosted" if giveaway["sponsor"] == giveaway["host"] else "Sponsored"} by**\n> <@{giveaway["sponsor"]}>'
+
+            embed.description = description
+
             await message.edit(embed=embed)
 
         else:
