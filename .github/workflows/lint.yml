@@ -4,8 +4,15 @@ on:
   push:
     branches:
       - master
+<<<<<<< HEAD
   pull_request:
     branches: []
+=======
+      - meta/workflows
+  pull_request:
+    branches: 
+      - '*'
+>>>>>>> origin/public-refactor
 
 jobs:
   lint:
@@ -15,14 +22,20 @@ jobs:
       - name: checkout
         uses: actions/checkout@v3
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> origin/public-refactor
       - name: Install Deps
         run: |
           pip install -r requirements.txt
       
+<<<<<<< HEAD
       - name: Run Pyright
         uses: jakebailey/pyright-action@v1
 
+=======
+>>>>>>> origin/public-refactor
       - name: black
         run: |
           black . --config pyproject.toml --check

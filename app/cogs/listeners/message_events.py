@@ -1,4 +1,8 @@
 import io
+<<<<<<< HEAD
+=======
+import re
+>>>>>>> origin/public-refactor
 
 import discord
 import requests
@@ -52,7 +56,10 @@ class MessageEvents(commands.Cog):
             color=0xC9322C,
             timestamp=discord.utils.utcnow(),
         )
+<<<<<<< HEAD
         assert embed.description
+=======
+>>>>>>> origin/public-refactor
         embed.set_author(name=message.author.display_name, icon_url=message.author.display_avatar.url)
         embed.add_field(name="Content", value=message.content)
         search_terms = f"```Deleted in {message.channel.id}"
@@ -117,19 +124,30 @@ class MessageEvents(commands.Cog):
         moderator+
         """
 
+<<<<<<< HEAD
         assert isinstance(message.author, discord.Member)
         assert message.guild
+=======
+>>>>>>> origin/public-refactor
         # Check if message contains a moderator or traine moderator ping
         if not any(x in message.raw_role_mentions for x in [Reference.Roles.moderator, Reference.Roles.trainee_mod]):
             return
 
         # If the ping was done by a moderator or above then ignore
+<<<<<<< HEAD
         if message.author.top_role >= message.guild.get_role(Reference.Roles.moderator):
+=======
+        if message.author.top_role >= await message.guild.fetch_role(Reference.Roles.moderator):
+>>>>>>> origin/public-refactor
             return
 
         # TODO BEFORE COMMIT, LOOK HERE TF DOES ROLE COME FROM?
 
+<<<<<<< HEAD
         role_names = [discord.utils.get(message.guild.roles, id=role).name for role in message.raw_role_mentions]  # type: ignore
+=======
+        role_names = [discord.utils.get(message.guild.roles, id=role).name for role in message.raw_role_mentions]
+>>>>>>> origin/public-refactor
         mod_channel = self.bot.get_channel(Reference.Channels.mod_chat)
 
         assert isinstance(message.channel, discord.TextChannel)

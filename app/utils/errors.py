@@ -13,6 +13,7 @@ from discord.ext import commands
 from .config import Reference
 
 
+
 class InternalError(Exception):
     title = "Internal Error"
     content = "an unhandled internal error occurred. if this continues please inform an active bot dev"

@@ -4,7 +4,10 @@ import logging
 import random
 import re
 import typing
+<<<<<<< HEAD
 from typing import TYPE_CHECKING
+=======
+>>>>>>> origin/public-refactor
 
 import discord
 from discord import Interaction, app_commands
@@ -15,9 +18,12 @@ from fuzzywuzzy import process
 from app.utils import checks, errors
 from app.utils.config import Reference
 
+<<<<<<< HEAD
 if TYPE_CHECKING:
     from pymongo.collection import Collection
 
+=======
+>>>>>>> origin/public-refactor
 
 class TopicEditorModal(dui.Modal):
     """
@@ -106,7 +112,11 @@ class TopicAcceptorView(dui.View):
 
         topic = embed.description
         self.topics.append(topic)
+<<<<<<< HEAD
         self.topics_db.update_one({"name": "topics"}, {"$set": {"topics": self.topics}})  # type: ignore
+=======
+        self.topics_db.update_one({"name": "topics"}, {"$set": {"topics": self.topics}})
+>>>>>>> origin/public-refactor
 
         embed.color = discord.Color.green()
         embed.title = f"Accepted by {interaction.user.name}"
@@ -116,10 +126,17 @@ class TopicAcceptorView(dui.View):
         try:
             assert embed.author.name
             match = re.match(r".*\(([0-9]+)\)$", embed.author.name)
+<<<<<<< HEAD
             if match:
                 userid = match.group(1)
                 suggester = await interaction.client.fetch_user(int(userid))
                 await suggester.send(f"Your topic suggestion was accepted: **{topic}**")
+=======
+            userid = match.group(1)
+
+            suggester = await interaction.client.fetch_user(int(userid))
+            await suggester.send(f"Your topic suggestion was accepted: **{topic}**")
+>>>>>>> origin/public-refactor
 
         except discord.Forbidden:
             pass

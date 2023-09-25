@@ -2,6 +2,10 @@ import asyncio
 import copy
 import datetime
 import io
+<<<<<<< HEAD
+=======
+import json
+>>>>>>> origin/public-refactor
 import logging
 import re
 import typing
@@ -30,9 +34,15 @@ class Filter(commands.Cog):
         self.message_history_list = {}
         self.message_history_lock = asyncio.Lock()
 
+<<<<<<< HEAD
         self.humanities_list: typing.List[str] = self.bot.db.filterlist.find_one({"name": "humanities"})["filter"]
         self.general_list: typing.List[str] = self.bot.db.filterlist.find_one({"name": "general"})["filter"]
         self.white_list: typing.List[str] = self.bot.db.filterlist.find_one({"name": "whitelist"})["filter"]
+=======
+        self.humanities_list = self.bot.db.filterlist.find_one({"name": "humanities"})["filter"]
+        self.general_list = self.bot.db.filterlist.find_one({"name": "general"})["filter"]
+        self.white_list = self.bot.db.filterlist.find_one({"name": "whitelist"})["filter"]
+>>>>>>> origin/public-refactor
         self.general_list_regex = self.generate_regex(self.general_list)
 
         self.humanities_list_regex = self.generate_regex(self.humanities_list)
