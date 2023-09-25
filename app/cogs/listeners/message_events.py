@@ -24,7 +24,7 @@ class MessageEvents(commands.Cog):
     @commands.Cog.listener()
     async def on_message_edit(self, before, after):
         # Mainbot only, Kgs server only, ignore bot edits
-        if self.bot.user.id != Reference.mainbot or before.guild.id != Reference.guild or before.author.bot:
+        if not self.bot.ismainbot() or before.guild.id != Reference.guild or before.author.bot:
             return
 
         await self.check_server_moments(after)
@@ -34,7 +34,7 @@ class MessageEvents(commands.Cog):
     async def on_message_delete(self, message):
         # Mainbot only, Kgs server only, ignore bot edits
         if (
-            self.bot.user.id != Reference.mainbot
+            not self.bot.ismainbot()
             or message.guild.id != Reference.guild
             or message.author.bot
             or message.channel.category.id == Reference.Categories.moderation
@@ -77,7 +77,7 @@ class MessageEvents(commands.Cog):
         embed.add_field(name="Search terms", value=search_terms, inline=False)
         embed.set_footer(text="Input the search terms in your discord search bar to easily sort through specific logs")
 
-        message_logging_channel = self.bot.get_channel(Reference.Channels.Logging.message_actions)
+        message_logging_channel = self.bot._get_channel(Reference.Channels.Logging.message_actions)
         await message_logging_channel.send(embed=embed)
 
     async def log_message_edit(self, before, after):
@@ -108,7 +108,7 @@ class MessageEvents(commands.Cog):
         embed.add_field(name="Search terms", value=search_terms, inline=False)
         embed.set_footer(text="Input the search terms in your discord search bar to easily sort through specific logs")
 
-        message_logging_channel = self.bot.get_channel(Reference.Channels.Logging.message_actions)
+        message_logging_channel = self.bot._get_channel(Reference.Channels.Logging.message_actions)
         await message_logging_channel.send(embed=embed)
 
     async def check_mod_alert(self, message: discord.Message):
@@ -131,7 +131,7 @@ class MessageEvents(commands.Cog):
         # TODO BEFORE COMMIT, LOOK HERE TF DOES ROLE COME FROM?
 
         role_names = [discord.utils.get(message.guild.roles, id=role).name for role in message.raw_role_mentions]  # type: ignore
-        mod_channel = self.bot.get_channel(Reference.Channels.mod_chat)
+        mod_channel = self.bot._get_channel(Reference.Channels.mod_chat)
 
         assert isinstance(message.channel, discord.TextChannel)
 

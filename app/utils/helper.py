@@ -1,7 +1,7 @@
 import datetime
 import logging
 import re
-import typing
+
 from typing import List, Tuple
 
 import discord

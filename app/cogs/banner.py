@@ -140,8 +140,8 @@ class Banner(commands.Cog):
     async def cog_load(self) -> None:
         self.banners = self.banner_db.find_one({"name": "banners"})["banners"]
 
-        self.BANNER_ACCEPT = f"BANNER-ACCEPT-{self.bot.user.id}"
-        self.BANNER_DENY = f"BANNER-DENY-{self.bot.user.id}"
+        self.BANNER_ACCEPT = f"BANNER-ACCEPT-{self.bot._user().id}"
+        self.BANNER_DENY = f"BANNER-DENY-{self.bot._user().id}"
 
         self.BANNER_VIEW = BannerView(
             banner_db=self.banner_db, banners=self.banners, accept_id=self.BANNER_ACCEPT, deny_id=self.BANNER_DENY
@@ -371,7 +371,7 @@ class Banner(commands.Cog):
         """
         Task that rotates the banner
         """
-        guild = discord.utils.get(self.bot.guilds, id=414027124836532234)
+        guild = self.bot.get_mainguild()
         if self.index >= len(self.banners):
             self.index = 0
         async with aiohttp.ClientSession() as session:

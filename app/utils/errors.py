@@ -47,3 +47,6 @@ class InvalidInvocationError(CheckFailure):
 class InvalidParameterError(CheckFailure):
     title = f"{Reference.Emoji.PartialString.kgsNo} Invalid Parameters"
     content = "The parameters you provided are not accepted in this context"
+
+class InvalidFunctionUsage(Exception):
+    pass

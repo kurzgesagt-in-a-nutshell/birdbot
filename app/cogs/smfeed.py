@@ -20,7 +20,7 @@ class Smfeed(commands.Cog):
     async def on_message(self, message):
         """React to the twitter webhooks"""
 
-        if self.bot.user.id != Reference.mainbot:
+        if not self.bot.ismainbot():
             return
         if message.channel.id == Reference.Channels.social_media_queue:
             await message.add_reaction(Reference.Emoji.PartialString.kgsYes)
@@ -29,14 +29,14 @@ class Smfeed(commands.Cog):
     async def on_raw_reaction_add(self, payload):
         """If mod or above reacts to twitter webhook tweet, sends it to proper channel"""
 
-        if self.bot.user.id != Reference.mainbot:
+        if not self.bot.ismainbot():
             return
         if (
             payload.channel_id == Reference.Channels.social_media_queue
             and not payload.member.bot
             and payload.emoji.id == Reference.Emoji.kgsYes
         ):
-            guild = discord.utils.get(self.bot.guilds, id=Reference.guild)
+            guild = self.bot.get_mainguild()
             trainee_mod_role = guild.get_role(Reference.Roles.moderator_and_above())
             if payload.member.top_role >= trainee_mod_role:
                 channel = guild.get_channel(Reference.Channels.social_media_queue)  # twitter posts

@@ -8,6 +8,7 @@ from app.utils import checks
 from app.utils.config import Reference
 from app.utils.infraction import InfractionList
 from app.birdbot import BirdBot
+import app.utils.errors as errors
 
 
 class Patreon(commands.Cog):
@@ -23,7 +24,7 @@ class Patreon(commands.Cog):
         diff_roles = [role.id for role in member.roles]
         if any(x in diff_roles for x in Reference.Roles.patreon()):
 
-            guild = discord.utils.get(self.bot.guilds, id=Reference.guild)
+            guild = self.bot.get_mainguild()
             await member.add_roles(
                 guild.get_role(Reference.Roles.verified),  # Verified
                 guild.get_role(Reference.Roles.english),  # English
@@ -76,9 +77,9 @@ class Patreon(commands.Cog):
             reaction, user = await self.bot.wait_for("reaction_add", timeout=120, check=check)
 
             if reaction.emoji.id == Reference.Emoji.kgsYes:
-
-                member = discord.utils.get(self.bot.guilds, id=Reference.guild).get_member(interaction.user.id)
-
+                member = self.bot.get_mainguild().get_member(interaction.user.id)
+                if member == None:
+                    raise errors.InvalidFunctionUsage()
                 user_infractions = InfractionList.from_user(member)
                 user_infractions.banned_patreon = True
                 user_infractions.update()

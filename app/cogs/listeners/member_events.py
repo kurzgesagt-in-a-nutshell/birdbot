@@ -22,7 +22,7 @@ class MemberEvents(commands.Cog):
     @commands.Cog.listener()
     async def on_member_join(self, member):
 
-        if self.bot.user.id != Reference.mainbot:
+        if not self.bot.ismainbot():
             return
 
         await self.send_welcome(member)
@@ -31,7 +31,7 @@ class MemberEvents(commands.Cog):
     @commands.Cog.listener()
     async def on_member_remove(self, member):
 
-        if self.bot.user.id != Reference.mainbot:
+        if not self.bot.ismainbot():
             return
 
         await self.log_member_remove(member)
@@ -42,7 +42,7 @@ class MemberEvents(commands.Cog):
         Grant roles upon passing membership screening
         """
 
-        if self.bot.user.id != Reference.mainbot:
+        if not self.bot.ismainbot():
             return
 
         await self.check_member_screen(before, after)
@@ -83,7 +83,7 @@ class MemberEvents(commands.Cog):
         embed.add_field(name="Search terms", value=f"```{member.id} joined```", inline=False)
         embed.set_footer(text="Input the search terms in your discord search bar to easily sort through specific logs")
 
-        member_logging_channel = self.bot.get_channel(Reference.Channels.Logging.member_actions)
+        member_logging_channel = self.bot._get_channel(Reference.Channels.Logging.member_actions)
         await member_logging_channel.send(embed=embed)
 
     async def log_member_remove(self, member):
@@ -114,12 +114,12 @@ class MemberEvents(commands.Cog):
         embed.add_field(name="Search terms", value=f"```{member.id} left```", inline=False)
         embed.set_footer(text="Input the search terms in your discord search bar to easily sort through specific logs")
 
-        member_logging_channel = self.bot.get_channel(Reference.Channels.Logging.member_actions)
+        member_logging_channel = self.bot._get_channel(Reference.Channels.Logging.member_actions)
         await member_logging_channel.send(embed=embed)
 
     async def check_member_screen(self, before, after):
         if before.pending and (not after.pending):
-            guild = discord.utils.get(self.bot.guilds, id=Reference.guild)
+            guild = self.bot.get_mainguild()
             await after.add_roles(
                 guild.get_role(Reference.Roles.verified),  # Verified
                 guild.get_role(Reference.Roles.english),  # English
@@ -147,7 +147,7 @@ class MemberEvents(commands.Cog):
         )
         embed.set_footer(text="Input the search terms in your discord search bar to easily sort through specific logs")
 
-        member_logging_channel = self.bot.get_channel(Reference.Channels.Logging.member_actions)
+        member_logging_channel = self.bot._get_channel(Reference.Channels.Logging.member_actions)
         await member_logging_channel.send(embed=embed)
 
 

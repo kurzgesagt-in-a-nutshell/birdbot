@@ -263,3 +263,39 @@ class BirdBot(commands.AutoShardedBot):
         logger.info(f"\tUser: {self.user.name}")
         logger.info(f"\tID  : {self.user.id}")
         logger.info("------")
+
+    """"
+    custom functions we can use
+    """
+    def _user(self) -> discord.ClientUser:
+        user = self.user
+        if user == None:
+            raise errors.InvalidFunctionUsage()
+        return user
+
+    def ismainbot(self) -> bool:
+        if self._user().id == Reference.mainbot:
+            return True
+        return False
+
+    async def _fetch_channel(self, id: int) -> discord.TextChannel:
+        channel = await self.fetch_channel(id)
+        if isinstance(channel, discord.abc.PrivateChannel | None | discord.Thread):
+            raise errors.InvalidFunctionUsage()
+        if isinstance(channel, discord.VoiceChannel | discord.CategoryChannel | discord.StageChannel | discord.ForumChannel):
+            raise errors.InvalidFunctionUsage()
+        return channel
+
+    def _get_channel(self, id: int) -> discord.TextChannel:
+        channel = self.get_channel(id)
+        if isinstance(channel, discord.abc.PrivateChannel | None | discord.Thread):
+            raise errors.InvalidFunctionUsage()
+        if isinstance(channel, discord.VoiceChannel | discord.CategoryChannel | discord.StageChannel | discord.ForumChannel):
+            raise errors.InvalidFunctionUsage()
+        return channel
+
+    def get_mainguild(self) -> discord.Guild:
+        guild = self.get_guild(Reference.guild)
+        if guild == None:
+            raise errors.InvalidFunctionUsage()
+        return guild

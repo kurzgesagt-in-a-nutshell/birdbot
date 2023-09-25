@@ -181,9 +181,9 @@ class Topic(commands.Cog):
         self.logger.info("loaded Topic")
 
     async def cog_load(self):
-        self.TOPIC_ACCEPT = f"TOPIC-ACCEPT-{self.bot.user.id}"
-        self.TOPIC_DENY = f"TOPIC-DENY-{self.bot.user.id}"
-        self.TOPIC_EDIT = f"TOPIC-EDIT-{self.bot.user.id}"
+        self.TOPIC_ACCEPT = f"TOPIC-ACCEPT-{self.bot._user().id}"
+        self.TOPIC_DENY = f"TOPIC-DENY-{self.bot._user().id}"
+        self.TOPIC_EDIT = f"TOPIC-EDIT-{self.bot._user().id}"
 
         self.TOPIC_VIEW = TopicAcceptorView(
             accept_id=self.TOPIC_ACCEPT,
@@ -384,7 +384,7 @@ class Topic(commands.Cog):
             Topic to suggest
         """
         await interaction.response.defer(ephemeral=True)
-        automated_channel = self.bot.get_channel(Reference.Channels.banners_and_topics)
+        automated_channel = self.bot._get_channel(Reference.Channels.banners_and_topics)
         embed = discord.Embed(description=topic, color=0xC8A2C8)
         embed.set_author(
             name=f"{interaction.user.name} ({interaction.user.id})",

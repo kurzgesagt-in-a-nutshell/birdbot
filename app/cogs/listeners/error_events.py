@@ -33,7 +33,7 @@ class Errors(commands.Cog):
             return
 
         traceback_txt = "".join(TracebackException.from_exception(err).format())
-        channel = await self.bot.fetch_channel(self.dev_logging_channel)
+        channel = await self.bot._fetch_channel(self.dev_logging_channel)
 
         if isinstance(err, InternalError):
             embed = err.format_notif_embed(ctx)
@@ -69,7 +69,7 @@ class Errors(commands.Cog):
         else:
             self.logger.exception(traceback_txt)
             await ctx.message.add_reaction(Reference.Emoji.PartialString.kgsStop)
-            if self.bot.user.id != Reference.mainbot:
+            if not self.bot.ismainbot():
                 return
             await ctx.send(
                 "Uh oh, an unhandled exception occured, if this issue persists please contact any of bot devs (Sloth, FC, Austin, Orav)."
