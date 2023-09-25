@@ -69,7 +69,7 @@ class Giveaway(commands.Cog):
                     users = []
                     for userid in userids:
                         try:
-                            member = await message.guild.fetch_member(userid)
+                            member = self.bot.get_user(userid)
                             users.append(member)
                         except discord.errors.NotFound:
                             pass
