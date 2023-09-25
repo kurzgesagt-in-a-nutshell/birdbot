@@ -362,6 +362,7 @@ class Banner(commands.Cog):
         assert interaction.guild
 
         await interaction.guild.edit(banner=url_)
+
         await interaction.response.send_message("Server banner changed!", ephemeral=True)
 
     @tasks.loop()

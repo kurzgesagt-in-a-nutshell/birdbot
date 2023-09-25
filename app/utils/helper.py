@@ -373,13 +373,9 @@ def get_active_staff(bot: discord.Client) -> str:
     active_staff = []
     mods_active = False
     for role_id in [Reference.Roles.moderator, Reference.Roles.administrator, Reference.Roles.trainee_mod]:
-<<<<<<< HEAD
         role = discord.utils.get(guild.roles, id=role_id)
         assert role
         for member in role.members:
-=======
-        for member in discord.utils.get(guild.roles, id=role_id).members:
->>>>>>> origin/public-refactor
             if member.bot:
                 continue
             if member in active_staff:
