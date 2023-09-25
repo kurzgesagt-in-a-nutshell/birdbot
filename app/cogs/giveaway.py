@@ -44,12 +44,14 @@ class Giveaway(commands.Cog):
 
     async def choose_winner(self, giveaway):
         """does the giveaway logic"""
-        messagefound = False
+        message = False
         channel = self.bot._get_channel(giveaway["channel_id"])
-        message = await channel.fetch_message(giveaway["message_id"])
-        messagefound = channel is not None
+        try:
+            message = await channel.fetch_message(giveaway["message_id"])
+        except discord.NotFound:
+            pass
 
-        if messagefound:
+        if message:
             if message.author != self.bot.user:
                 if giveaway["message_id"] in self.active_giveaways:
                     del self.active_giveaways[giveaway["message_id"]]
