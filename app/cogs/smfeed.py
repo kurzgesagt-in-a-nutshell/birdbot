@@ -17,7 +17,7 @@ class Smfeed(commands.Cog):
         self.logger.info("loaded Smfeed")
 
     @commands.Cog.listener()
-    async def on_message(self, message):
+    async def on_message(self, message: discord.Message):
         """React to the twitter webhooks"""
 
         if not self.bot.ismainbot():
@@ -26,28 +26,30 @@ class Smfeed(commands.Cog):
             await message.add_reaction(Reference.Emoji.PartialString.kgsYes)
 
     @commands.Cog.listener()
-    async def on_raw_reaction_add(self, payload):
+    async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent):
         """If mod or above reacts to twitter webhook tweet, sends it to proper channel"""
-
-        if not self.bot.ismainbot():
+        if payload.member == None:
             return
+        
         if (
-            payload.channel_id == Reference.Channels.social_media_queue
-            and not payload.member.bot
-            and payload.emoji.id == Reference.Emoji.kgsYes
+            payload.channel_id != Reference.Channels.social_media_queue
+            or payload.member.bot
+            or payload.emoji.id != Reference.Emoji.kgsYes
         ):
-            guild = self.bot.get_mainguild()
-            trainee_mod_role = guild.get_role(Reference.Roles.moderator_and_above())
-            if payload.member.top_role >= trainee_mod_role:
-                channel = guild.get_channel(Reference.Channels.social_media_queue)  # twitter posts
-                message = await channel.fetch_message(payload.message_id)
-                for reaction in message.reactions:
-                    if type(reaction.emoji) != type(""):
-                        if reaction.emoji.id == Reference.Emoji.kgsYes:
-                            if reaction.count < 3:
-                                channel = guild.get_channel(Reference.Channels.social_media_feed)  # social-media-feed
-                                await channel.send(message.content)
-                                break
+            return
+        
+        guild = self.bot.get_mainguild()
+        trainee_mod_role = guild.get_role(Reference.Roles.trainee_mod)
+        if payload.member.top_role < trainee_mod_role:
+            return
+        channel = self.bot._get_channel(Reference.Channels.social_media_queue)
+        message = await channel.fetch_message(payload.message_id)
+        for reaction in message.reactions:
+            if isinstance(reaction.emoji, str):
+                continue
+            if reaction.emoji.id == Reference.Emoji.kgsYes and reaction.count <= 2:
+                await channel.send(message.content)
+                break
 
 
 async def setup(bot: BirdBot):
