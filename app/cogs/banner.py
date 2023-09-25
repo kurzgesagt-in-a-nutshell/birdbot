@@ -18,10 +18,6 @@ updated to display the chocie made and the banner is added or not.
 """
 
 import io
-<<<<<<< HEAD
-=======
-import json
->>>>>>> origin/public-refactor
 import logging
 import re
 import typing
@@ -100,17 +96,10 @@ class BannerView(dui.View):
         assert embed.author.name
         try:
             match = re.match(r".*\(([0-9]+)\)$", embed.author.name)
-<<<<<<< HEAD
             if match:
                 userid = match.group(1)
                 suggester = await interaction.client.fetch_user(int(userid))
                 await suggester.send(f"Your banner suggestion was accepted {url}")
-=======
-            userid = match.group(1)
-
-            suggester = await interaction.client.fetch_user(int(userid))
-            await suggester.send(f"Your banner suggestion was accepted {url}")
->>>>>>> origin/public-refactor
 
         except discord.Forbidden:
             pass
@@ -364,12 +353,7 @@ class Banner(commands.Cog):
             url_ = await self.verify_url(url=url, byte=True)
 
         elif image:
-<<<<<<< HEAD
             url_ = await self.verify_url(url=image.url, byte=True)
-=======
-
-            url = await self.verify_url(url=image.url, byte=True)
->>>>>>> origin/public-refactor
 
         else:
             raise errors.InvalidParameterError(content="An image file or url is required")
@@ -377,11 +361,7 @@ class Banner(commands.Cog):
         assert isinstance(url_, bytes)
         assert interaction.guild
 
-<<<<<<< HEAD
         await interaction.guild.edit(banner=url_)
-
-=======
->>>>>>> origin/public-refactor
         await interaction.response.send_message("Server banner changed!", ephemeral=True)
 
     @tasks.loop()
