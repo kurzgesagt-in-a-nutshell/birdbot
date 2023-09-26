@@ -7,11 +7,11 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
+from app.birdbot import BirdBot
 from app.utils import checks, errors, helper
 from app.utils.config import Reference
 from app.utils.helper import blacklist_member, get_active_staff, is_public_channel, whitelist_member
 from app.utils.infraction import InfractionKind, InfractionList
-from app.birdbot import BirdBot
 
 
 class FinalReconfirmation(discord.ui.View):

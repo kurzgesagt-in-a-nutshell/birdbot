@@ -1,6 +1,6 @@
 import enum
 import logging
-from typing import Optional, Dict, List
+from typing import Dict, List, Optional
 
 import discord
 

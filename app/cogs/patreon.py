@@ -4,11 +4,11 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
+import app.utils.errors as errors
+from app.birdbot import BirdBot
 from app.utils import checks
 from app.utils.config import Reference
 from app.utils.infraction import InfractionList
-from app.birdbot import BirdBot
-import app.utils.errors as errors
 
 
 class Patreon(commands.Cog):

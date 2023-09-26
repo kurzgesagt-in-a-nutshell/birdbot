@@ -5,9 +5,9 @@ import requests
 from discord.ext import commands
 from requests.models import PreparedRequest
 
+from app.birdbot import BirdBot
 from app.utils.config import Reference
 from app.utils.helper import is_internal_command
-from app.birdbot import BirdBot
 
 
 class MessageEvents(commands.Cog):

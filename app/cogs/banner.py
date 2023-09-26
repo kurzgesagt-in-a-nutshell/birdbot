@@ -29,10 +29,10 @@ from discord import ui as dui
 from discord.ext import commands, tasks
 from discord.interactions import Interaction
 
+from app.birdbot import BirdBot
 from app.utils import checks, errors
 from app.utils.config import Reference
 from app.utils.helper import calc_time, get_time_string
-from app.birdbot import BirdBot
 
 logger = logging.getLogger(__name__)
 

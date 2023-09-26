@@ -7,10 +7,10 @@ import discord
 from discord.ext import commands
 from discord.ext.commands import errors
 
+from app.birdbot import BirdBot
 from app.utils.config import Reference
 from app.utils.errors import *
 from app.utils.helper import NoAuthorityError
-from app.birdbot import BirdBot
 
 
 class Errors(commands.Cog):

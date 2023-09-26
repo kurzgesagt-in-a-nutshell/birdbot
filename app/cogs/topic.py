@@ -12,9 +12,9 @@ from discord import ui as dui
 from discord.ext import commands
 from fuzzywuzzy import process
 
+from app.birdbot import BirdBot
 from app.utils import checks, errors
 from app.utils.config import Reference
-from app.birdbot import BirdBot
 
 if TYPE_CHECKING:
     from pymongo.collection import Collection

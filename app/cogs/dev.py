@@ -12,9 +12,9 @@ from discord import app_commands
 from discord.ext import commands
 from discord.ext.commands.errors import ExtensionNotFound
 
+from app.birdbot import BirdBot
 from app.utils import checks, helper
 from app.utils.config import Reference
-from app.birdbot import BirdBot
 
 
 class Dev(commands.Cog):

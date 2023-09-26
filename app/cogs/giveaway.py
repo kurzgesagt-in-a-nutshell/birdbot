@@ -7,10 +7,10 @@ import numpy as np
 from discord import app_commands
 from discord.ext import commands, tasks
 
+from app.birdbot import BirdBot
 from app.utils import checks
 from app.utils.config import GiveawayBias, Reference
 from app.utils.helper import calc_time
-from app.birdbot import BirdBot
 
 
 class Giveaway(commands.Cog):

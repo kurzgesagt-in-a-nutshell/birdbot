@@ -4,8 +4,8 @@ import aiohttp
 import discord
 from discord.ext import commands
 
-from app.utils.config import Reference
 from app.birdbot import BirdBot
+from app.utils.config import Reference
 
 
 class MemberEvents(commands.Cog):
