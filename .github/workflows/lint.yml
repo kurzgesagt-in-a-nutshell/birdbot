@@ -11,4 +11,4 @@ on:
 
 jobs:
   lint:
-    uses: kurzgesagt-in-a-nutshell/.github/.github/workflows/lint-python.yml@main
+    uses: kurzgesagt-in-a-nutshell/.github/.github/workflows/python-lint.yml@main
