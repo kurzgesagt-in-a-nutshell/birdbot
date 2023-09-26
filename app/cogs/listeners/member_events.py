@@ -20,7 +20,7 @@ class MemberEvents(commands.Cog):
         self.greeting_webhook_url = "https://discord.com/api/webhooks/909052135864410172/5Fky0bSJMC3vh3Pz69nYc2PfEV3W2IAwAsSFinBFuUXXzDc08X5dv085XlLDGz3MmQvt"
 
     @commands.Cog.listener()
-    async def on_member_join(self, member):
+    async def on_member_join(self, member: discord.Member):
 
         if not self.bot.ismainbot():
             return
@@ -29,7 +29,7 @@ class MemberEvents(commands.Cog):
         await self.log_member_join(member)
 
     @commands.Cog.listener()
-    async def on_member_remove(self, member):
+    async def on_member_remove(self, member: discord.Member):
 
         if not self.bot.ismainbot():
             return
@@ -37,7 +37,7 @@ class MemberEvents(commands.Cog):
         await self.log_member_remove(member)
 
     @commands.Cog.listener()
-    async def on_member_update(self, before, after):
+    async def on_member_update(self, before: discord.Member, after: discord.Member):
         """
         Grant roles upon passing membership screening
         """
@@ -48,7 +48,7 @@ class MemberEvents(commands.Cog):
         await self.check_member_screen(before, after)
         await self.log_nickname_change(before, after)
 
-    async def send_welcome(self, member):
+    async def send_welcome(self, member: discord.Member):
         """
         Send welcome message
         """
@@ -64,7 +64,7 @@ class MemberEvents(commands.Cog):
                 allowed_mentions=discord.AllowedMentions(users=True, roles=True),
             )
 
-    async def log_member_join(self, member):
+    async def log_member_join(self, member: discord.Member):
 
         embed = discord.Embed(
             title="Member joined",
@@ -86,7 +86,7 @@ class MemberEvents(commands.Cog):
         member_logging_channel = self.bot._get_channel(Reference.Channels.Logging.member_actions)
         await member_logging_channel.send(embed=embed)
 
-    async def log_member_remove(self, member):
+    async def log_member_remove(self, member: discord.Member):
         embed = discord.Embed(
             title="Member Left",
             description=f"{member.name}#{member.discriminator} ({member.id})",
@@ -102,7 +102,7 @@ class MemberEvents(commands.Cog):
         )
         embed.add_field(
             name="Joined Server",
-            value=f"<t:{round(member.joined_at.timestamp())}:R>",
+            value=f"<t:{round(member.joined_at.timestamp())}:R>" if member.joined_at else "NONE",
             inline=True,
         )
         embed.add_field(
@@ -117,16 +117,20 @@ class MemberEvents(commands.Cog):
         member_logging_channel = self.bot._get_channel(Reference.Channels.Logging.member_actions)
         await member_logging_channel.send(embed=embed)
 
-    async def check_member_screen(self, before, after):
+    async def check_member_screen(self, before: discord.Member, after: discord.Member):
         if before.pending and (not after.pending):
             guild = self.bot.get_mainguild()
+            verified = guild.get_role(Reference.Roles.verified)
+            english = guild.get_role(Reference.Roles.english)
+            assert verified
+            assert english
             await after.add_roles(
-                guild.get_role(Reference.Roles.verified),  # Verified
-                guild.get_role(Reference.Roles.english),  # English
+                verified,
+                english, 
                 reason="Membership screening passed",
             )
 
-    async def log_nickname_change(self, before, after):
+    async def log_nickname_change(self, before: discord.Member, after: discord.Member):
         if before.nick == after.nick:
             return
 

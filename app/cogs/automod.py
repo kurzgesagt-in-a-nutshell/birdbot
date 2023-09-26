@@ -198,13 +198,13 @@ class Filter(commands.Cog):
             await interaction.response.send_message("No profanity.")
 
     @commands.Cog.listener()
-    async def on_member_update(self, before, after):
+    async def on_member_update(self, before: discord.Member, after: discord.Member):
         if before.nick == after.nick:
             return
         await self.check_member(after)
 
     @commands.Cog.listener()
-    async def on_message(self, message):
+    async def on_message(self, message: discord.Message):
         if isinstance(message.channel, discord.DMChannel):
             return
         if (
@@ -243,7 +243,7 @@ class Filter(commands.Cog):
             await self.check_member(message.author)
 
     @commands.Cog.listener()
-    async def on_message_edit(self, before, after):
+    async def on_message_edit(self, before: discord.Message, after: discord.Message):
         if after.channel.id == Reference.Channels.bot_commands:
             return
 
@@ -293,7 +293,7 @@ class Filter(commands.Cog):
             if any(s in member.nick for s in ("nazi", "hitler", "führer", "fuhrer")):
                 await member.edit(nick=None)
 
-    async def execute_action_on_message(self, message, actions):
+    async def execute_action_on_message(self, message: discord.Message, actions):
         # TODO: make embeds more consistent once mod policy is set
         if "ping" in actions:
             if "delete_after" in actions:

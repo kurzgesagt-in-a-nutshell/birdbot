@@ -210,10 +210,8 @@ class Banner(commands.Cog):
         """
 
         await interaction.response.defer(ephemeral=True)
-        assert interaction.guild
 
-        automated_channel = interaction.guild.get_channel(Reference.Channels.banners_and_topics)
-        assert isinstance(automated_channel, discord.TextChannel)
+        automated_channel = self.bot._get_channel(Reference.Channels.banners_and_topics)
 
         url_: bytes | str
         if url:
@@ -305,9 +303,8 @@ class Banner(commands.Cog):
             URL or Link of an image
         """
         await interaction.response.defer(ephemeral=True)
-        assert interaction.guild
-        automated_channel = interaction.guild.get_channel(Reference.Channels.banners_and_topics)
-        assert isinstance(automated_channel, discord.TextChannel)
+
+        automated_channel = self.bot._get_channel(Reference.Channels.banners_and_topics)
 
         url_: bytes | str
         if url:
@@ -361,9 +358,8 @@ class Banner(commands.Cog):
             raise errors.InvalidParameterError(content="An image file or url is required")
 
         assert isinstance(url_, bytes)
-        assert interaction.guild
 
-        await interaction.guild.edit(banner=url_)
+        await self.bot.get_mainguild().edit(banner=url_)
 
         await interaction.response.send_message("Server banner changed!", ephemeral=True)
 

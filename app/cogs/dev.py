@@ -250,15 +250,13 @@ class Dev(commands.Cog):
     ):
 
         assert isinstance(interaction.channel, discord.TextChannel)
-        assert interaction.guild
 
         if not channel:
             channel = interaction.channel
         await channel.send(msg)
         await interaction.response.send_message("sent", ephemeral=True)
 
-        logging_channel = discord.utils.get(interaction.guild.channels, id=Reference.Channels.Logging.mod_actions)
-        assert isinstance(logging_channel, discord.TextChannel)
+        logging_channel = self.bot._get_channel(Reference.Channels.Logging.mod_actions)
 
         embed = helper.create_embed(
             author=interaction.user,

@@ -130,8 +130,6 @@ class Moderation(commands.Cog):
         self.logger = logging.getLogger("Moderation")
         self.bot = bot
 
-        self.logging_channel = Reference.Channels.Logging.mod_actions
-        self.message_logging_channel = Reference.Channels.Logging.message_actions
         self.mod_role = Reference.Roles.moderator
         self.admin_role = Reference.Roles.administrator
 
@@ -153,12 +151,7 @@ class Moderation(commands.Cog):
         member: discord.Member
             Mention or ID of member to report (is optional)
         """
-
-        if interaction.guild:
-            mod_channel = interaction.guild.get_channel(Reference.Channels.mod_chat)
-        else:
-            kgs_guild = self.bot.get_mainguild()
-            mod_channel = kgs_guild.get_channel(Reference.Channels.mod_chat)
+        mod_channel = self.bot._get_channel(Reference.Channels.mod_chat)
 
         class Modal(discord.ui.Modal):
             def __init__(self, member):
@@ -178,7 +171,6 @@ class Moderation(commands.Cog):
 
             async def on_submit(self, interaction: discord.Interaction):
 
-                assert isinstance(mod_channel, discord.TextChannel)
                 description = self.children[0].value  # type: ignore
                 message_link = self.children[1].value  # type: ignore
 
@@ -305,8 +297,7 @@ class Moderation(commands.Cog):
                 )
             )
 
-        message_logging_channel = discord.utils.get(interaction.guild.channels, id=self.message_logging_channel)
-        assert isinstance(message_logging_channel, discord.TextChannel)
+        message_logging_channel = self.bot._get_channel(Reference.Channels.Logging.message_actions)
 
         await message_logging_channel.send(
             f"{len(deleted_messages)} messages deleted in {channel.mention}",
@@ -366,8 +357,7 @@ class Moderation(commands.Cog):
             reason=reason,
         )
 
-        logging_channel = discord.utils.get(interaction.guild.channels, id=self.logging_channel)
-        assert isinstance(logging_channel, discord.TextChannel)
+        logging_channel = self.bot._get_channel(Reference.Channels.Logging.mod_actions)
 
         embed = helper.create_embed(
             author=interaction.user,
@@ -413,8 +403,7 @@ class Moderation(commands.Cog):
 
         await interaction.response.send_message("user was unbanned", ephemeral=is_public_channel(interaction.channel))
 
-        logging_channel = discord.utils.get(interaction.guild.channels, id=self.logging_channel)
-        assert isinstance(logging_channel, discord.TextChannel)
+        logging_channel = self.bot._get_channel(Reference.Channels.Logging.mod_actions)
 
         embed = helper.create_embed(
             author=interaction.user,
@@ -480,8 +469,7 @@ class Moderation(commands.Cog):
         )
         infractions.update()
 
-        logging_channel = discord.utils.get(interaction.guild.channels, id=self.logging_channel)
-        assert isinstance(logging_channel, discord.TextChannel)
+        logging_channel = self.bot._get_channel(Reference.Channels.Logging.mod_actions)
 
         embed = helper.create_embed(
             author=interaction.user,
@@ -540,8 +528,7 @@ class Moderation(commands.Cog):
             ephemeral=True,
         )
 
-        logging_channel = discord.utils.get(interaction.guild.channels, id=Reference.Channels.Logging.misc_actions)
-        assert isinstance(logging_channel, discord.TextChannel)
+        logging_channel = self.bot._get_channel(Reference.Channels.Logging.misc_actions)
 
         embed = helper.create_embed(
             author=interaction.user,
@@ -644,8 +631,7 @@ class Moderation(commands.Cog):
         )
         infractions.update()
 
-        logging_channel = discord.utils.get(interaction.guild.channels, id=self.logging_channel)
-        assert isinstance(logging_channel, discord.TextChannel)
+        logging_channel = self.bot._get_channel(Reference.Channels.Logging.mod_actions)
 
         embed = helper.create_embed(
             author=interaction.user,
@@ -681,8 +667,7 @@ class Moderation(commands.Cog):
         assert interaction.guild
         assert isinstance(interaction.channel, discord.TextChannel)
 
-        logging_channel = discord.utils.get(interaction.guild.channels, id=self.logging_channel)
-        assert isinstance(logging_channel, discord.TextChannel)
+        logging_channel = self.bot._get_channel(Reference.Channels.Logging.mod_actions)
 
         await member.timeout(None)
 
@@ -747,8 +732,7 @@ class Moderation(commands.Cog):
             allowed_mentions=discord.AllowedMentions.none(),
         )
 
-        logging_channel = discord.utils.get(interaction.guild.channels, id=self.logging_channel)
-        assert isinstance(logging_channel, discord.TextChannel)
+        logging_channel = self.bot._get_channel(Reference.Channels.Logging.mod_actions)
 
         embed = helper.create_embed(
             author=interaction.user,
@@ -830,8 +814,7 @@ class Moderation(commands.Cog):
                 "user has been warned", ephemeral=is_public_channel(interaction.channel)
             )
 
-        logging_channel = discord.utils.get(interaction.guild.channels, id=self.logging_channel)
-        assert isinstance(logging_channel, discord.TextChannel)
+        logging_channel = self.bot._get_channel(Reference.Channels.Logging.mod_actions)
 
         embed = helper.create_embed(
             author=interaction.user,
@@ -1208,8 +1191,7 @@ class Moderation(commands.Cog):
             color=discord.Color.red(),
         )
 
-        logging_channel = discord.utils.get(interaction.guild.channels, id=self.logging_channel)
-        assert isinstance(logging_channel, discord.TextChannel)
+        logging_channel = self.bot._get_channel(Reference.Channels.Logging.mod_actions)
         await logging_channel.send(embed=embed)
 
     @app_commands.command()
@@ -1248,8 +1230,7 @@ class Moderation(commands.Cog):
             ephemeral=True,
         )
 
-        logging_channel = discord.utils.get(interaction.guild.channels, id=self.logging_channel)
-        assert isinstance(logging_channel, discord.TextChannel)
+        logging_channel = self.bot._get_channel(Reference.Channels.Logging.mod_actions)
 
         embed = helper.create_embed(
             author=interaction.user,

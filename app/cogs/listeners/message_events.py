@@ -15,31 +15,37 @@ class MessageEvents(commands.Cog):
         self.bot = bot
 
     @commands.Cog.listener()
-    async def on_message(self, message):
+    async def on_message(self, message: discord.Message):
 
         await self.check_mod_alert(message)
         await self.check_server_moments(message)
         await self.translate_bannsystem(message)
 
     @commands.Cog.listener()
-    async def on_message_edit(self, before, after):
+    async def on_message_edit(self, before: discord.Message, after: discord.Message):
         # Mainbot only, Kgs server only, ignore bot edits
-        if not self.bot.ismainbot() or before.guild.id != Reference.guild or before.author.bot:
+        if not self.bot.ismainbot() or before.guild != self.bot.get_mainguild() or before.author.bot:
             return
 
         await self.check_server_moments(after)
         await self.log_message_edit(before, after)
 
     @commands.Cog.listener()
-    async def on_message_delete(self, message):
+    async def on_message_delete(self, message: discord.Message):
         # Mainbot only, Kgs server only, ignore bot edits
         if (
             not self.bot.ismainbot()
-            or message.guild.id != Reference.guild
+            or message.guild != self.bot.get_mainguild()
             or message.author.bot
-            or message.channel.category.id == Reference.Categories.moderation
         ):
             return
+        if (
+        isinstance(message.channel, discord.TextChannel)
+        and message.channel.category
+        and message.channel.category.id == Reference.Categories.moderation
+        ):
+            return
+
 
         if is_internal_command(self.bot, message):
             return

@@ -321,7 +321,6 @@ class Giveaway(commands.Cog):
         """
 
         await interaction.response.defer(ephemeral=True)
-        assert interaction.guild
 
         try:
             message_id_ = int(message_id)
@@ -332,7 +331,7 @@ class Giveaway(commands.Cog):
             giveaway = self.active_giveaways[message_id_]
 
             try:
-                message = await interaction.guild.get_channel(giveaway["channel_id"]).fetch_message(  # type: ignore
+                message = await self.bot._get_channel(giveaway["channel_id"]).fetch_message(  # type: ignore
                     giveaway["message_id"]
                 )
                 await message.delete()

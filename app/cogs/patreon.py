@@ -16,7 +16,7 @@ class Patreon(commands.Cog):
         self.bot = bot
 
     @commands.Cog.listener()
-    async def on_member_join(self, member):
+    async def on_member_join(self, member: discord.Member):
         """Listen for new patrons and provide
         them the option to unenroll from autojoining
         Listen for new members and fire webhook for greeting"""
@@ -25,9 +25,13 @@ class Patreon(commands.Cog):
         if any(x in diff_roles for x in Reference.Roles.patreon()):
 
             guild = self.bot.get_mainguild()
+            verified = guild.get_role(Reference.Roles.verified)
+            english = guild.get_role(Reference.Roles.english)
+            assert verified
+            assert english
             await member.add_roles(
-                guild.get_role(Reference.Roles.verified),  # Verified
-                guild.get_role(Reference.Roles.english),  # English
+                verified,
+                english,
                 reason="Patron auto join",
             )
 
