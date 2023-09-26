@@ -170,7 +170,6 @@ class Moderation(commands.Cog):
             )
 
             async def on_submit(self, interaction: discord.Interaction):
-
                 description = self.children[0].value  # type: ignore
                 message_link = self.children[1].value  # type: ignore
 
@@ -441,7 +440,6 @@ class Moderation(commands.Cog):
         assert isinstance(interaction.user, discord.Member)
         assert isinstance(interaction.channel, discord.TextChannel)
         if member.top_role >= interaction.user.top_role:
-
             raise errors.InvalidAuthorizationError(content="User could not be kicked due to your clearance.")
 
         infractions = InfractionList.from_user(member)
@@ -572,7 +570,6 @@ class Moderation(commands.Cog):
         assert isinstance(interaction.channel, discord.TextChannel)
 
         if member.top_role >= interaction.user.top_role:
-
             raise errors.InvalidAuthorizationError(content="user could not be muted due to your clearance")
 
         # time calculation
@@ -710,7 +707,6 @@ class Moderation(commands.Cog):
         assert isinstance(interaction.channel, discord.TextChannel)
 
         if role >= interaction.user.top_role:
-
             raise errors.InvalidAuthorizationError(content="You do not have clearance to do that")
 
         # check if member has role

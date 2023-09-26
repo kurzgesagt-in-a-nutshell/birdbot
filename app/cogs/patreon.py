@@ -23,7 +23,6 @@ class Patreon(commands.Cog):
 
         diff_roles = [role.id for role in member.roles]
         if any(x in diff_roles for x in Reference.Roles.patreon()):
-
             guild = self.bot.get_mainguild()
             verified = guild.get_role(Reference.Roles.verified)
             english = guild.get_role(Reference.Roles.english)

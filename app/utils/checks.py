@@ -13,17 +13,13 @@ def check(predicate):
     """
 
     def true_decorator(decked_func):
-
         if isinstance(decked_func, app_commands.Command):
-
             app_commands.check(predicate)(decked_func)
 
         elif isinstance(decked_func, commands.Command):
-
             commands.check(predicate)(decked_func)
 
         else:
-
             app_commands.check(predicate)(decked_func)
             commands.check(predicate)(decked_func)
 
@@ -159,7 +155,6 @@ def topic_perm_check():
     """
 
     async def predicate(info: Interaction | commands.Context):
-
         user = info.user if isinstance(info, Interaction) else info.author
         guild = info.guild
 

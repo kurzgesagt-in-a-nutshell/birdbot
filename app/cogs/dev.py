@@ -248,7 +248,6 @@ class Dev(commands.Cog):
         msg: str,
         channel: typing.Optional[discord.TextChannel] = None,
     ):
-
         assert isinstance(interaction.channel, discord.TextChannel)
 
         if not channel:
@@ -269,7 +268,6 @@ class Dev(commands.Cog):
     @commands.command()
     @checks.devs_only()
     async def sync_apps(self, ctx: commands.Context):
-
         await ctx.bot.tree.sync()
         await ctx.bot.tree.sync(guild=discord.Object(Reference.guild))
         await ctx.reply("Synced local guild commands")
@@ -277,7 +275,6 @@ class Dev(commands.Cog):
     @commands.command()
     @checks.devs_only()
     async def clear_apps(self, ctx: commands.Context):
-
         ctx.bot.tree.clear_commands(guild=discord.Object(Reference.guild))
         ctx.bot.tree.clear_commands(guild=None)
         await ctx.bot.tree.sync(guild=discord.Object(Reference.guild))

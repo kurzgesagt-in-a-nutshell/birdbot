@@ -28,7 +28,6 @@ class Errors(commands.Cog):
 
     @commands.Cog.listener()
     async def on_command_error(self, ctx: commands.Context, err):
-
         if isinstance(err, commands.CommandNotFound):
             return
 

@@ -102,7 +102,6 @@ class BirdTree(app_commands.CommandTree):
 
             return
         elif isinstance(error, app_commands.CheckFailure):
-
             user_shown_error = errors.CheckFailure(content=str(error))
 
             embed = user_shown_error.format_notif_embed(interaction)
@@ -267,6 +266,7 @@ class BirdBot(commands.AutoShardedBot):
     """"
     custom functions we can use
     """
+
     def _user(self) -> discord.ClientUser:
         user = self.user
         if user == None:
@@ -282,7 +282,9 @@ class BirdBot(commands.AutoShardedBot):
         channel = self.get_channel(id)
         if isinstance(channel, discord.abc.PrivateChannel | None | discord.Thread):
             raise errors.InvalidFunctionUsage()
-        if isinstance(channel, discord.VoiceChannel | discord.CategoryChannel | discord.StageChannel | discord.ForumChannel):
+        if isinstance(
+            channel, discord.VoiceChannel | discord.CategoryChannel | discord.StageChannel | discord.ForumChannel
+        ):
             raise errors.InvalidFunctionUsage()
         return channel
 

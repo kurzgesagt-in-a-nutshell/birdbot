@@ -554,7 +554,6 @@ class Filter(commands.Cog):
 
         # this one goes last due to lock
         async with self.message_history_lock:
-
             # if getting past this point we write to message history and pop if to many messages
 
             if message.author.id in self.message_history_list:

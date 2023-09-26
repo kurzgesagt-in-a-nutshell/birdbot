@@ -68,8 +68,12 @@ class Misc(commands.Cog):
 
         msg = await intro_channel.fetch_message(intro["message_id"])
         embed = msg.embeds[0]
-        if embed.author.name != member.display_name or embed.author.icon_url != (member.avatar.url if member.avatar else member.display_avatar.url):
-            embed.set_author(name=member.display_name, icon_url=member.avatar.url if member.avatar else member.display_avatar.url)
+        if embed.author.name != member.display_name or embed.author.icon_url != (
+            member.avatar.url if member.avatar else member.display_avatar.url
+        ):
+            embed.set_author(
+                name=member.display_name, icon_url=member.avatar.url if member.avatar else member.display_avatar.url
+            )
             await msg.edit(embed=embed)
 
     @app_commands.command()
@@ -448,8 +452,6 @@ class IntroModal(discord.ui.Modal):
         self.timezone_txt = self.add_emojis(self.timezone.value)
         self.bio_txt = self.add_emojis(self.bio.value)
         self.image_txt = self.image.value
-
-        assert isinstance(self.intro_channel, discord.TextChannel)
 
         async def edit_intro(oldIntroMessage: discord.Message):
             embed = oldIntroMessage.embeds[0]

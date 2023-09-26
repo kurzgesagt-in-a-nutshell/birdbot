@@ -16,7 +16,6 @@ class MessageEvents(commands.Cog):
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
-
         await self.check_mod_alert(message)
         await self.check_server_moments(message)
         await self.translate_bannsystem(message)
@@ -33,26 +32,24 @@ class MessageEvents(commands.Cog):
     @commands.Cog.listener()
     async def on_message_delete(self, message: discord.Message):
         # Mainbot only, Kgs server only, ignore bot edits
-        if (
-            not self.bot.ismainbot()
-            or message.guild != self.bot.get_mainguild()
-            or message.author.bot
-        ):
+        if not self.bot.ismainbot() or message.guild != self.bot.get_mainguild() or message.author.bot:
             return
         if (
-        isinstance(message.channel, discord.TextChannel)
-        and message.channel.category
-        and message.channel.category.id == Reference.Categories.moderation
+            isinstance(message.channel, discord.TextChannel)
+            and message.channel.category
+            and message.channel.category.id == Reference.Categories.moderation
         ):
             return
-
 
         if is_internal_command(self.bot, message):
             return
 
         await self.log_message_delete(message)
 
-    async def log_message_delete(self, message):
+    async def log_message_delete(self, message: discord.Message):
+        assert isinstance(message.channel, discord.TextChannel)
+        assert message.guild
+
         embed = discord.Embed(
             title="Message Deleted",
             description=f"Message deleted in {message.channel.mention}",
@@ -68,6 +65,7 @@ class MessageEvents(commands.Cog):
             log async for log in message.guild.audit_logs(limit=1, action=discord.AuditLogAction.message_delete)
         ][0]
 
+        assert latest_logged_delete.user
         self_deleted = False
         if message.author == latest_logged_delete.target:
             embed.description += f"\nDeleted by {latest_logged_delete.user.mention} {latest_logged_delete.user.name}"
@@ -86,16 +84,18 @@ class MessageEvents(commands.Cog):
         message_logging_channel = self.bot._get_channel(Reference.Channels.Logging.message_actions)
         await message_logging_channel.send(embed=embed)
 
-    async def log_message_edit(self, before, after):
+    async def log_message_edit(self, before: discord.Message, after: discord.Message):
         """
         Logs message edits outside of the moderator category
         """
+        assert isinstance(before.channel, discord.TextChannel)
 
-        if (
+        if before.channel.category and (
             before.channel.category.id == Reference.Categories.moderation
             or before.channel.category.id == Reference.Categories.server_logs
-            or before.content == after.content
         ):
+            return
+        if before.content == after.content:
             return
 
         embed = discord.Embed(
@@ -161,7 +161,7 @@ class MessageEvents(commands.Cog):
             file=discord.File(io.BytesIO(to_file.encode()), filename="history.txt"),
         )
 
-    async def check_server_moments(self, message):
+    async def check_server_moments(self, message: discord.Message):
         """
         Checks incoming messages to server-moments to validate the have an image
         or is sent by a moderator+
@@ -170,6 +170,7 @@ class MessageEvents(commands.Cog):
         # Return if channel is not server moments
         if message.channel.id != Reference.Channels.server_moments:
             return
+        assert isinstance(message.author, discord.Member)
 
         # Return if author is a moderator or above
         if any(_id in [role.id for role in message.author.roles] for _id in Reference.Roles.moderator_and_above()):

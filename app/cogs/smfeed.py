@@ -30,14 +30,14 @@ class Smfeed(commands.Cog):
         """If mod or above reacts to twitter webhook tweet, sends it to proper channel"""
         if payload.member == None:
             return
-        
+
         if (
             payload.channel_id != Reference.Channels.social_media_queue
             or payload.member.bot
             or payload.emoji.id != Reference.Emoji.kgsYes
         ):
             return
-        
+
         guild = self.bot.get_mainguild()
         trainee_mod_role = guild.get_role(Reference.Roles.trainee_mod)
         if payload.member.top_role < trainee_mod_role:

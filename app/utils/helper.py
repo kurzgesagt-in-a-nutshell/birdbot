@@ -268,10 +268,8 @@ def calc_time(args: List[str]) -> Tuple[int | None, str | None]:
             if a[:s] == "":
                 break
             else:
-
                 t = 0
                 for i in a:
-
                     if i.isdigit():
                         t = t * 10 + int(i)
 

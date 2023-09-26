@@ -195,7 +195,7 @@ class Giveaway(commands.Cog):
                 1,
             ]
         ] = 1,
-        sponsor: typing.Optional[discord.Member] = None,
+        sponsor: typing.Optional[discord.Member | discord.User] = None,
         rigged: typing.Optional[bool] = True,
     ):
         """Starts a new giveaway
@@ -224,7 +224,6 @@ class Giveaway(commands.Cog):
             return await interaction.edit_original_response(content="Invalid time syntax.")
 
         if sponsor is None:
-            assert isinstance(interaction.user, discord.Member)
             sponsor = interaction.user
 
         fields = {

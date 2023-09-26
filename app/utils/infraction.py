@@ -24,7 +24,6 @@ class Infraction:
     """
 
     def __init__(self, kind: InfractionKind, data: Dict):
-
         self._kind = kind
         self._author_id = data.pop("author_id", None)
         self._author_name = data.pop("author_name", None)
@@ -332,7 +331,6 @@ class InfractionList:
         )
 
     def detail_infraction(self, kind: InfractionKind, id: int, title: str, description: str) -> bool:
-
         """
         Allows the local editing of extra info on the infraction.
 
@@ -350,7 +348,6 @@ class InfractionList:
             return True
 
     def delete_infraction(self, kind: InfractionKind, id: int) -> bool:
-
         """
         Deletes an infraction from the list.
 
@@ -438,7 +435,6 @@ class InfractionList:
         return data
 
     def update(self):
-
         """
         syncs local updates to the database
 

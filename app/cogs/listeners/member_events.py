@@ -21,7 +21,6 @@ class MemberEvents(commands.Cog):
 
     @commands.Cog.listener()
     async def on_member_join(self, member: discord.Member):
-
         if not self.bot.ismainbot():
             return
 
@@ -30,7 +29,6 @@ class MemberEvents(commands.Cog):
 
     @commands.Cog.listener()
     async def on_member_remove(self, member: discord.Member):
-
         if not self.bot.ismainbot():
             return
 
@@ -65,7 +63,6 @@ class MemberEvents(commands.Cog):
             )
 
     async def log_member_join(self, member: discord.Member):
-
         embed = discord.Embed(
             title="Member joined",
             description=f"{member.name}#{member.discriminator} ({member.id}) {member.mention}",
@@ -126,7 +123,7 @@ class MemberEvents(commands.Cog):
             assert english
             await after.add_roles(
                 verified,
-                english, 
+                english,
                 reason="Membership screening passed",
             )
 
