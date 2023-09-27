@@ -11,12 +11,11 @@ from discord import Interaction, app_commands
 from discord import ui as dui
 from discord.ext import commands
 from fuzzywuzzy import process
+from pymongo.errors import CollectionInvalid
 
 from app.birdbot import BirdBot
 from app.utils import checks, errors
 from app.utils.config import Reference
-
-from pymongo.errors import CollectionInvalid
 
 if TYPE_CHECKING:
     from pymongo.collection import Collection

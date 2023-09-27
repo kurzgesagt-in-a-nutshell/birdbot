@@ -28,13 +28,12 @@ from discord import Interaction, app_commands
 from discord import ui as dui
 from discord.ext import commands, tasks
 from discord.interactions import Interaction
+from pymongo.errors import CollectionInvalid
 
 from app.birdbot import BirdBot
 from app.utils import checks, errors
 from app.utils.config import Reference
 from app.utils.helper import calc_time, get_time_string
-
-from pymongo.errors import CollectionInvalid
 
 if typing.TYPE_CHECKING:
     from pymongo.collection import Collection
