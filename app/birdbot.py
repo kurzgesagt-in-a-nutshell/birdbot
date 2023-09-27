@@ -268,17 +268,26 @@ class BirdBot(commands.AutoShardedBot):
     """
 
     def _user(self) -> discord.ClientUser:
+        """
+        Get self.bot.user. This can only be used after login, as it can't be none.
+        """
         user = self.user
         if user == None:
             raise errors.InvalidFunctionUsage()
         return user
 
     def ismainbot(self) -> bool:
+        """
+        Checks if self.bot is mainbot. Only works after login.
+        """
         if self._user().id == Reference.mainbot:
             return True
         return False
 
     def _get_channel(self, id: int) -> discord.TextChannel:
+        """
+        Used to get Reference channels, only works with TextChannel.
+        """
         channel = self.get_channel(id)
         if isinstance(channel, discord.abc.PrivateChannel | None | discord.Thread):
             raise errors.InvalidFunctionUsage()
@@ -289,6 +298,9 @@ class BirdBot(commands.AutoShardedBot):
         return channel
 
     def get_mainguild(self) -> discord.Guild:
+        """
+        Returns Reference guild.
+        """
         guild = self.get_guild(Reference.guild)
         if guild == None:
             raise errors.InvalidFunctionUsage()

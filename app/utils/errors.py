@@ -49,5 +49,5 @@ class InvalidParameterError(CheckFailure):
     content = "The parameters you provided are not accepted in this context"
 
 
-class InvalidFunctionUsage(Exception):
+class InvalidFunctionUsage(InternalError):
     pass

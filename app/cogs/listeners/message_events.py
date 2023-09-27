@@ -16,6 +16,12 @@ class MessageEvents(commands.Cog):
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
+        # Mainbot only, Kgs server only
+        # TextChannel and Thread only
+        if not self.bot.ismainbot() or message.guild != self.bot.get_mainguild():
+            return
+        if not isinstance(message.channel, discord.TextChannel | discord.Thread):
+            return
         await self.check_mod_alert(message)
         await self.check_server_moments(message)
         await self.translate_bannsystem(message)
@@ -23,7 +29,15 @@ class MessageEvents(commands.Cog):
     @commands.Cog.listener()
     async def on_message_edit(self, before: discord.Message, after: discord.Message):
         # Mainbot only, Kgs server only, ignore bot edits
+        # TextChannel and Thread only
+        # Ignore moderation and log channels
         if not self.bot.ismainbot() or before.guild != self.bot.get_mainguild() or before.author.bot:
+            return
+        if not isinstance(before.channel, discord.TextChannel | discord.Thread):
+            return
+        if before.channel.category and before.channel.category.id == (
+            Reference.Categories.moderation or Reference.Categories.server_logs
+        ):
             return
 
         await self.check_server_moments(after)
@@ -32,12 +46,14 @@ class MessageEvents(commands.Cog):
     @commands.Cog.listener()
     async def on_message_delete(self, message: discord.Message):
         # Mainbot only, Kgs server only, ignore bot edits
+        # TextChannel and Thread only
+        # Ignore moderation and log channels
         if not self.bot.ismainbot() or message.guild != self.bot.get_mainguild() or message.author.bot:
             return
-        if (
-            isinstance(message.channel, discord.TextChannel)
-            and message.channel.category
-            and message.channel.category.id == Reference.Categories.moderation
+        if not isinstance(message.channel, discord.TextChannel | discord.Thread):
+            return
+        if message.channel.category and message.channel.category.id == (
+            Reference.Categories.moderation or Reference.Categories.server_logs
         ):
             return
 
@@ -47,7 +63,7 @@ class MessageEvents(commands.Cog):
         await self.log_message_delete(message)
 
     async def log_message_delete(self, message: discord.Message):
-        assert isinstance(message.channel, discord.TextChannel)
+        assert isinstance(message.channel, discord.TextChannel | discord.Thread)
         assert message.guild
 
         embed = discord.Embed(
@@ -88,13 +104,8 @@ class MessageEvents(commands.Cog):
         """
         Logs message edits outside of the moderator category
         """
-        assert isinstance(before.channel, discord.TextChannel)
+        assert isinstance(before.channel, discord.TextChannel | discord.Thread)
 
-        if before.channel.category and (
-            before.channel.category.id == Reference.Categories.moderation
-            or before.channel.category.id == Reference.Categories.server_logs
-        ):
-            return
         if before.content == after.content:
             return
 
@@ -123,7 +134,6 @@ class MessageEvents(commands.Cog):
         the moderator or trainee moderator role. Ignores if the member is a
         moderator+
         """
-
         assert isinstance(message.author, discord.Member)
         assert message.guild
         # Check if message contains a moderator or traine moderator ping
@@ -139,7 +149,7 @@ class MessageEvents(commands.Cog):
         role_names = [discord.utils.get(message.guild.roles, id=role).name for role in message.raw_role_mentions]  # type: ignore
         mod_channel = self.bot._get_channel(Reference.Channels.mod_chat)
 
-        assert isinstance(message.channel, discord.TextChannel)
+        assert isinstance(message.channel, discord.TextChannel | discord.Thread)
 
         embed = discord.Embed(
             title="Mod ping alert!",
@@ -245,7 +255,7 @@ class MessageEvents(commands.Cog):
 
     # TODO: Move to slash
     @commands.command()
-    async def translate(self, ctx, msg_id):
+    async def translate(self, ctx: commands.Context, msg_id: int):
         msg = await ctx.channel.fetch_message(msg_id)
         embed = await self.translate_bannsystem(msg)
         await ctx.send(embed=embed)

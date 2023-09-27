@@ -34,6 +34,11 @@ from app.utils import checks, errors
 from app.utils.config import Reference
 from app.utils.helper import calc_time, get_time_string
 
+from pymongo.errors import CollectionInvalid
+
+if typing.TYPE_CHECKING:
+    from pymongo.collection import Collection
+
 logger = logging.getLogger(__name__)
 
 
@@ -135,10 +140,12 @@ class Banner(commands.Cog):
         self.bot = bot
 
         self.index = 0
-        self.banner_db = self.bot.db.Banners
+        self.banner_db: Collection = self.bot.db.Banners
 
     async def cog_load(self) -> None:
-        banners_find: typing.Any = self.banner_db.find_one({"name": "banners"})
+        banners_find = self.banner_db.find_one({"name": "banners"})
+        if banners_find == None:
+            raise CollectionInvalid
         self.banners: typing.List = banners_find["banners"]
 
         self.BANNER_ACCEPT = f"BANNER-ACCEPT-{self.bot._user().id}"

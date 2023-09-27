@@ -16,6 +16,8 @@ from app.birdbot import BirdBot
 from app.utils import checks, errors
 from app.utils.config import Reference
 
+from pymongo.errors import CollectionInvalid
+
 if TYPE_CHECKING:
     from pymongo.collection import Collection
 
@@ -171,8 +173,10 @@ class Topic(commands.Cog):
         self.logger = logging.getLogger("Fun")
         self.bot = bot
 
-        self.topics_db = self.bot.db.Topics
-        topics_find: typing.Any = self.topics_db.find_one({"name": "topics"})
+        self.topics_db: Collection = self.bot.db.Topics
+        topics_find = self.topics_db.find_one({"name": "topics"})
+        if topics_find == None:
+            raise CollectionInvalid
         self.topics: typing.List = topics_find["topics"]  # Use this for DB interaction
 
         self.topics_list = copy.deepcopy(self.topics)  # This is used to stop topic repeats
