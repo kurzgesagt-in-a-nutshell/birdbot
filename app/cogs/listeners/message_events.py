@@ -253,13 +253,5 @@ class MessageEvents(commands.Cog):
         await translated_msg.add_reaction(Reference.Emoji.PartialString.kgsNo)
         await message.delete()
 
-    # TODO: Move to slash
-    @commands.command()
-    async def translate(self, ctx: commands.Context, msg_id: int):
-        msg = await ctx.channel.fetch_message(msg_id)
-        embed = await self.translate_bannsystem(msg)
-        await ctx.send(embed=embed)
-
-
 async def setup(bot: BirdBot):
     await bot.add_cog(MessageEvents(bot))
