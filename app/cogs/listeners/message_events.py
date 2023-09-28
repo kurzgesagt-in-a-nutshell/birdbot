@@ -253,5 +253,6 @@ class MessageEvents(commands.Cog):
         await translated_msg.add_reaction(Reference.Emoji.PartialString.kgsNo)
         await message.delete()
 
+
 async def setup(bot: BirdBot):
     await bot.add_cog(MessageEvents(bot))

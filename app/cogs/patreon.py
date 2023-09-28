@@ -104,7 +104,6 @@ class Patreon(commands.Cog):
         except asyncio.TimeoutError:
             if confirm_msg != None:
                 await confirm_msg.edit(embed=fallback_embed)
-            
 
 
 async def setup(bot: BirdBot):
