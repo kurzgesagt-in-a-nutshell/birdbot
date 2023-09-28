@@ -78,6 +78,7 @@ class Patreon(commands.Cog):
             await confirm_msg.add_reaction(Reference.Emoji.PartialString.kgsYes)
             await confirm_msg.add_reaction(Reference.Emoji.PartialString.kgsNo)
             reaction, user = await self.bot.wait_for("reaction_add", timeout=120, check=check)
+            assert isinstance(reaction.emoji, discord.Emoji)
 
             if reaction.emoji.id == Reference.Emoji.kgsYes:
                 member = self.bot.get_mainguild().get_member(interaction.user.id)
@@ -103,6 +104,7 @@ class Patreon(commands.Cog):
         except asyncio.TimeoutError:
             if confirm_msg != None:
                 await confirm_msg.edit(embed=fallback_embed)
+            
 
 
 async def setup(bot: BirdBot):
