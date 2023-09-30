@@ -21,6 +21,7 @@ import io
 import logging
 import re
 import typing
+from itertools import cycle
 
 import aiohttp
 import discord
@@ -375,13 +376,12 @@ class Banner(commands.Cog):
         Task that rotates the banner
         """
         guild = self.bot.get_mainguild()
-        if self.index >= len(self.banners):
-            self.index = 0
+        banners = cycle(self.banners)
         async with aiohttp.ClientSession() as session:
-            async with session.get(self.banners[self.index]) as response:
+            cur_banner = next(banners)
+            async with session.get(cur_banner) as response:
                 banner = await response.content.read()
                 await guild.edit(banner=banner)
-                self.index += 1
 
 
 async def setup(bot: BirdBot):

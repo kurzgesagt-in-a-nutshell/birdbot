@@ -77,8 +77,11 @@ class Patreon(commands.Cog):
             await interaction.response.send_message("Please check your DMs.")
             await confirm_msg.add_reaction(Reference.Emoji.PartialString.kgsYes)
             await confirm_msg.add_reaction(Reference.Emoji.PartialString.kgsNo)
-            reaction, user = await self.bot.wait_for("reaction_add", timeout=120, check=check)
+            reaction, _ = await self.bot.wait_for("reaction_add", timeout=120, check=check)
 
+            if isinstance(reaction.emoji, str):
+                await confirm_msg.edit(embed=fallback_embed)
+                return
             if reaction.emoji.id == Reference.Emoji.kgsYes:
                 member = self.bot.get_mainguild().get_member(interaction.user.id)
                 if member == None:
