@@ -14,7 +14,6 @@ parser.add_argument("-a", "--alpha", help="Run the alpha instance of the bot", a
 
 async def main() -> None:
     with setup():
-
         logger = logging.getLogger("Startbot")
         dotenv.load_dotenv()
         args = parser.parse_args()

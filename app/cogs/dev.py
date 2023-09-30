@@ -12,12 +12,13 @@ from discord import app_commands
 from discord.ext import commands
 from discord.ext.commands.errors import ExtensionNotFound
 
+from app.birdbot import BirdBot
 from app.utils import checks, helper
 from app.utils.config import Reference
 
 
 class Dev(commands.Cog):
-    def __init__(self, bot):
+    def __init__(self, bot: BirdBot):
         self.logger = logging.getLogger("Dev")
         self.bot = bot
 
@@ -247,17 +248,14 @@ class Dev(commands.Cog):
         msg: str,
         channel: typing.Optional[discord.TextChannel] = None,
     ):
-
         assert isinstance(interaction.channel, discord.TextChannel)
-        assert interaction.guild
 
         if not channel:
             channel = interaction.channel
         await channel.send(msg)
         await interaction.response.send_message("sent", ephemeral=True)
 
-        logging_channel = discord.utils.get(interaction.guild.channels, id=Reference.Channels.Logging.mod_actions)
-        assert isinstance(logging_channel, discord.TextChannel)
+        logging_channel = self.bot._get_channel(Reference.Channels.Logging.mod_actions)
 
         embed = helper.create_embed(
             author=interaction.user,
@@ -270,7 +268,6 @@ class Dev(commands.Cog):
     @commands.command()
     @checks.devs_only()
     async def sync_apps(self, ctx: commands.Context):
-
         await ctx.bot.tree.sync()
         await ctx.bot.tree.sync(guild=discord.Object(Reference.guild))
         await ctx.reply("Synced local guild commands")
@@ -278,7 +275,6 @@ class Dev(commands.Cog):
     @commands.command()
     @checks.devs_only()
     async def clear_apps(self, ctx: commands.Context):
-
         ctx.bot.tree.clear_commands(guild=discord.Object(Reference.guild))
         ctx.bot.tree.clear_commands(guild=None)
         await ctx.bot.tree.sync(guild=discord.Object(Reference.guild))
@@ -287,5 +283,5 @@ class Dev(commands.Cog):
         await ctx.send("cleared all commands")
 
 
-async def setup(bot):
+async def setup(bot: BirdBot):
     await bot.add_cog(Dev(bot))

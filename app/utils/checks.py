@@ -1,5 +1,3 @@
-from typing import Union
-
 import discord
 from discord import Interaction, app_commands
 from discord.ext import commands
@@ -15,17 +13,13 @@ def check(predicate):
     """
 
     def true_decorator(decked_func):
-
         if isinstance(decked_func, app_commands.Command):
-
             app_commands.check(predicate)(decked_func)
 
         elif isinstance(decked_func, commands.Command):
-
             commands.check(predicate)(decked_func)
 
         else:
-
             app_commands.check(predicate)(decked_func)
             commands.check(predicate)(decked_func)
 
@@ -39,7 +33,7 @@ def mod_and_above():
     Checks if the command invoker has a mod role
     """
 
-    async def predicate(info: Union[Interaction, commands.Context]):
+    async def predicate(info: Interaction | commands.Context):
         user = info.user if isinstance(info, Interaction) else info.author
         assert isinstance(user, discord.Member)
 
@@ -57,7 +51,7 @@ def admin_and_above():
     Checks if the author of the context is an administrator or kgs official
     """
 
-    async def predicate(info: Union[Interaction, commands.Context]):
+    async def predicate(info: Interaction | commands.Context):
         user = info.user if isinstance(info, Interaction) else info.author
         assert isinstance(user, discord.Member)
 
@@ -75,7 +69,7 @@ def role_and_above(id: int):
     Check if user has role above or equal to passed role
     """
 
-    async def predicate(info: Union[Interaction, commands.Context]):
+    async def predicate(info: Interaction | commands.Context):
         user = info.user if isinstance(info, Interaction) else info.author
         guild = info.guild
 
@@ -96,7 +90,7 @@ def mainbot_only():
     Checks if the bot running the context is the main bot
     """
 
-    async def predicate(info: Union[Interaction, commands.Context]):
+    async def predicate(info: Interaction | commands.Context):
         me = info.client.user if isinstance(info, Interaction) else info.me
         assert me
         if not me.id == Reference.mainbot:
@@ -111,7 +105,7 @@ def devs_only():
     Checks if the command invoker is in the dev list
     """
 
-    async def predicate(info: Union[Interaction, commands.Context]):
+    async def predicate(info: Interaction | commands.Context):
         user = info.user if isinstance(info, Interaction) else info.author
 
         if not user.id in Reference.botdevlist:
@@ -126,7 +120,7 @@ def general_only():
     Checks if the command is invoked in general chat or the moderation category
     """
 
-    async def predicate(info: Union[Interaction, commands.Context]):
+    async def predicate(info: Interaction | commands.Context):
         channel = info.channel
         assert isinstance(channel, discord.TextChannel)
 
@@ -142,7 +136,7 @@ def bot_commands_only():
     Checks if the command is invoked in bot_commands or the moderation category
     """
 
-    async def predicate(info: Union[Interaction, commands.Context]):
+    async def predicate(info: Interaction | commands.Context):
         channel = info.channel
 
         assert isinstance(channel, discord.TextChannel)
@@ -160,8 +154,7 @@ def topic_perm_check():
     Checks if the command invoker has the duck role+ or a patreon role
     """
 
-    async def predicate(info: Union[Interaction, commands.Context]):
-
+    async def predicate(info: Interaction | commands.Context):
         user = info.user if isinstance(info, Interaction) else info.author
         guild = info.guild
 
@@ -186,7 +179,7 @@ def patreon_only():
     Checks if the command invoker has the duck role+ or a patreon role
     """
 
-    async def predicate(info: Union[Interaction, commands.Context]):
+    async def predicate(info: Interaction | commands.Context):
         client = info.client if isinstance(info, Interaction) else info.bot
         user = info.user if isinstance(info, Interaction) else info.author
 

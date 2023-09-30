@@ -2,7 +2,7 @@ aiohttp==3.8.3
 black==22.12.0
 certifi==2022.12.7
 demoji==1.1.0
-discord.py==2.1.0
+discord.py==2.3.2
 fuzzywuzzy==0.18.0
 numpy==1.24.1
 pymongo==4.3.3
@@ -10,3 +10,4 @@ python-dotenv==0.21.0
 requests==2.28.1
 rich==13.0.0
 isort==5.12.0
+pyright==1.1.327

@@ -7,13 +7,14 @@ import numpy as np
 from discord import app_commands
 from discord.ext import commands, tasks
 
+from app.birdbot import BirdBot
 from app.utils import checks
 from app.utils.config import GiveawayBias, Reference
 from app.utils.helper import calc_time
 
 
 class Giveaway(commands.Cog):
-    def __init__(self, bot):
+    def __init__(self, bot: BirdBot):
         self.logger = logging.getLogger("Giveaway")
         self.bot = bot
         self.active_giveaways = {}
@@ -43,32 +44,28 @@ class Giveaway(commands.Cog):
 
     async def choose_winner(self, giveaway):
         """does the giveaway logic"""
-        messagefound = False
-        channel = await self.bot.fetch_channel(giveaway["channel_id"])
-        message = await channel.fetch_message(giveaway["message_id"])
-        messagefound = channel is not None
+        message = False
+        channel = self.bot._get_channel(giveaway["channel_id"])
+        try:
+            message = await channel.fetch_message(giveaway["message_id"])
+        except discord.NotFound:
+            pass
 
-        if messagefound:
+        if message:
             if message.author != self.bot.user:
                 if giveaway["message_id"] in self.active_giveaways:
                     del self.active_giveaways[giveaway["message_id"]]
                 return
 
-            embed = message.embeds[0].to_dict()
-
-            embed["title"] = "Giveaway ended"
-            embed["color"] = 15158332  # red
-            embed["footer"]["text"] = "Giveaway Ended"
-
             users = []
             self.logger.debug("Fetching reactions from users")
             for reaction in message.reactions:
                 if reaction.emoji == "🎉":
-                    userids = [user.id async for user in reaction.users() if user.id != self.bot.user.id]
+                    userids = [user.id async for user in reaction.users() if user.id != self.bot._user().id]
                     users = []
                     for userid in userids:
                         try:
-                            member = await message.guild.fetch_member(userid)
+                            member = self.bot.get_user(userid)
                             users.append(member)
                         except discord.errors.NotFound:
                             pass
@@ -113,15 +110,31 @@ class Giveaway(commands.Cog):
                 winnerids = ""
 
             self.logger.debug("Sending new embed")
-            newdescription = embed["description"].splitlines()
-            for i in range(len(newdescription)):
-                if newdescription[i].startswith("> **Winners"):
-                    newdescription.insert(i + 1, winners)
-                    break
 
-            embed["description"] = "\n".join(newdescription)
+            time = discord.utils.utcnow() + timedelta(seconds=giveaway["end_time"])  # type: ignore
 
-            embed = discord.Embed.from_dict(embed)
+            embed = discord.Embed(
+                title="Giveaway ended",
+                timestamp=time,  # type: ignore
+                colour=discord.Colour.red(),
+            )
+
+            embed.set_footer(text="Giveaway Ended")
+
+            riggedinfo = ""
+            if giveaway["rigged"]:
+                riggedinfo = (
+                    " [rigged](https://discord.com/channels/414027124836532234/414452106129571842/714496884844134401)"
+                )
+
+            description = f"**{giveaway['prize']}**\n{riggedinfo}\n"
+
+            description += f'> **Winners: {giveaway["winners_no"]}**\n'
+            description += winners + "\n"
+            description += f'> **{"Hosted" if giveaway["sponsor"] == giveaway["host"] else "Sponsored"} by**\n> <@{giveaway["sponsor"]}>'
+
+            embed.description = description
+
             await message.edit(embed=embed)
 
         else:
@@ -182,7 +195,7 @@ class Giveaway(commands.Cog):
                 1,
             ]
         ] = 1,
-        sponsor: typing.Optional[discord.Member] = None,
+        sponsor: typing.Optional[discord.Member | discord.User] = None,
         rigged: typing.Optional[bool] = True,
     ):
         """Starts a new giveaway
@@ -211,7 +224,6 @@ class Giveaway(commands.Cog):
             return await interaction.edit_original_response(content="Invalid time syntax.")
 
         if sponsor is None:
-            assert isinstance(interaction.user, discord.Member)
             sponsor = interaction.user
 
         fields = {
@@ -308,7 +320,6 @@ class Giveaway(commands.Cog):
         """
 
         await interaction.response.defer(ephemeral=True)
-        assert interaction.guild
 
         try:
             message_id_ = int(message_id)
@@ -319,7 +330,7 @@ class Giveaway(commands.Cog):
             giveaway = self.active_giveaways[message_id_]
 
             try:
-                message = await interaction.guild.get_channel(giveaway["channel_id"]).fetch_message(  # type: ignore
+                message = await self.bot._get_channel(giveaway["channel_id"]).fetch_message(  # type: ignore
                     giveaway["message_id"]
                 )
                 await message.delete()
@@ -401,5 +412,5 @@ class Giveaway(commands.Cog):
         await interaction.response.send_message(embed=embed)
 
 
-async def setup(bot):
+async def setup(bot: BirdBot):
     await bot.add_cog(Giveaway(bot))

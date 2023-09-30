@@ -7,6 +7,7 @@ import discord
 from discord.ext import commands
 from discord.ext.commands import errors
 
+from app.birdbot import BirdBot
 from app.utils.config import Reference
 from app.utils.errors import *
 from app.utils.helper import NoAuthorityError
@@ -15,7 +16,7 @@ from app.utils.helper import NoAuthorityError
 class Errors(commands.Cog):
     """Catches all exceptions coming in through commands"""
 
-    def __init__(self, bot):
+    def __init__(self, bot: BirdBot):
         self.dev_logging_channel = Reference.Channels.Logging.dev
 
         self.logger = logging.getLogger("Listeners")
@@ -27,12 +28,11 @@ class Errors(commands.Cog):
 
     @commands.Cog.listener()
     async def on_command_error(self, ctx: commands.Context, err):
-
         if isinstance(err, commands.CommandNotFound):
             return
 
         traceback_txt = "".join(TracebackException.from_exception(err).format())
-        channel = await self.bot.fetch_channel(self.dev_logging_channel)
+        channel = self.bot._get_channel(self.dev_logging_channel)
 
         if isinstance(err, InternalError):
             embed = err.format_notif_embed(ctx)
@@ -68,7 +68,7 @@ class Errors(commands.Cog):
         else:
             self.logger.exception(traceback_txt)
             await ctx.message.add_reaction(Reference.Emoji.PartialString.kgsStop)
-            if self.bot.user.id != Reference.mainbot:
+            if not self.bot.ismainbot():
                 return
             await ctx.send(
                 "Uh oh, an unhandled exception occured, if this issue persists please contact any of bot devs (Sloth, FC, Austin, Orav)."
@@ -82,5 +82,5 @@ class Errors(commands.Cog):
             await channel.send(embed=embed, file=file)
 
 
-async def setup(bot):
+async def setup(bot: BirdBot):
     await bot.add_cog(Errors(bot))
