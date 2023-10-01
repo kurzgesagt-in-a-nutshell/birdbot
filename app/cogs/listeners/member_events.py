@@ -1,6 +1,3 @@
-import random
-
-import aiohttp
 import discord
 from discord.ext import commands
 
@@ -45,7 +42,7 @@ class MemberEvents(commands.Cog):
         """
         new_member_channel = self.bot._get_channel(Reference.Channels.new_members)
         await new_member_channel.send(
-            content=f"Welcome hatchling {member.mention}!\n" \
+            content=f"Welcome hatchling {member.mention}!\n"
             "Make sure to read the <#414268041787080708> and say hello to our <@&584461501109108738>s",
             allowed_mentions=discord.AllowedMentions(users=True, roles=True),
         )
