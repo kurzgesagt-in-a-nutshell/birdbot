@@ -11,13 +11,6 @@ from app.utils.config import Reference
 class MemberEvents(commands.Cog):
     def __init__(self, bot: BirdBot):
         self.bot = bot
-        self.pfp_list = [
-            "https://cdn.discordapp.com/emojis/909047588160942140.png?size=256",
-            "https://cdn.discordapp.com/emojis/909047567030059038.png?size=256",
-            "https://cdn.discordapp.com/emojis/909046980599250964.png?size=256",
-            "https://cdn.discordapp.com/emojis/909047000253734922.png?size=256",
-        ]
-        self.greeting_webhook_url = "https://discord.com/api/webhooks/909052135864410172/5Fky0bSJMC3vh3Pz69nYc2PfEV3W2IAwAsSFinBFuUXXzDc08X5dv085XlLDGz3MmQvt"
 
     @commands.Cog.listener()
     async def on_member_join(self, member: discord.Member):
@@ -50,17 +43,12 @@ class MemberEvents(commands.Cog):
         """
         Send welcome message
         """
-        async with aiohttp.ClientSession() as session:
-            hook = discord.Webhook.from_url(
-                self.greeting_webhook_url,
-                session=session,
-            )
-            await hook.send(
-                f"Welcome hatchling {member.mention}!\n"
-                "Make sure to read the <#414268041787080708> and say hello to our <@&584461501109108738>s",
-                avatar_url=random.choice(self.pfp_list),
-                allowed_mentions=discord.AllowedMentions(users=True, roles=True),
-            )
+        new_member_channel = self.bot._get_channel(Reference.Channels.new_members)
+        await new_member_channel.send(
+            content=f"Welcome hatchling {member.mention}!\n" \
+            "Make sure to read the <#414268041787080708> and say hello to our <@&584461501109108738>s",
+            allowed_mentions=discord.AllowedMentions(users=True, roles=True),
+        )
 
     async def log_member_join(self, member: discord.Member):
         embed = discord.Embed(
