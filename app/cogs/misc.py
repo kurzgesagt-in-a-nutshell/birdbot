@@ -1,13 +1,10 @@
 import asyncio
-import json
 import logging
 import re
 import typing
 
-import birdbot
 import demoji
 import discord
-import pymongo
 from discord import app_commands
 from discord.ext import commands
 
@@ -35,12 +32,11 @@ class Misc(commands.Cog):
         self.logger.info("Loaded Misc Cog")
 
     @commands.Cog.listener()
-    async def on_member_update(self, before, after):
+    async def on_member_update(self, before: discord.Member, after: discord.Member):
         if before.nick == after.nick:
             return
 
-        self.kgs_guild: discord.Guild = self.bot.get_guild(Reference.guild)
-        assert self.kgs_guild != None
+        self.kgs_guild = self.bot.get_mainguild()
 
         subreddit_role = discord.utils.get(self.kgs_guild.roles, id=Reference.Roles.subreddit_mod)
         if not after.top_role >= subreddit_role:
@@ -50,9 +46,8 @@ class Misc(commands.Cog):
             await self.edit_intro(after)
 
     @commands.Cog.listener()
-    async def on_user_update(self, before, after):
-        self.kgs_guild = self.bot.get_guild(Reference.guild)
-        assert self.kgs_guild != None
+    async def on_user_update(self, before: discord.User, after: discord.User):
+        self.kgs_guild = self.bot.get_mainguild()
 
         member = self.kgs_guild.get_member(before.id)
         if not member:
@@ -64,15 +59,21 @@ class Misc(commands.Cog):
         async with IntroLock.reorder_lock:
             await self.edit_intro(after)
 
-    async def edit_intro(self, member):
+    async def edit_intro(self, member: discord.Member | discord.User):
         intro = self.intro_db.find_one({"_id": member.id})
         if not intro:
             return
-        intro_channel = self.kgs_guild.get_channel(Reference.Channels.intro_channel)
+
+        intro_channel = self.bot._get_channel(Reference.Channels.intro_channel)
+
         msg = await intro_channel.fetch_message(intro["message_id"])
         embed = msg.embeds[0]
-        if embed.author.name != member.display_name or embed.author.icon_url != member.avatar.url:
-            embed.set_author(name=member.display_name, icon_url=member.avatar.url)
+        if embed.author.name != member.display_name or embed.author.icon_url != (
+            member.avatar.url if member.avatar else member.display_avatar.url
+        ):
+            embed.set_author(
+                name=member.display_name, icon_url=member.avatar.url if member.avatar else member.display_avatar.url
+            )
             await msg.edit(embed=embed)
 
     @app_commands.command()
@@ -81,8 +82,8 @@ class Misc(commands.Cog):
         """
         Staff intro command, create or edit an intro
         """
-        oldIntro: dict = self.intro_db.find_one({"_id": interaction.user.id})
-        await interaction.response.send_modal(IntroModal(oldIntro=oldIntro, bot=self.bot))
+        oldIntro = self.intro_db.find_one({"_id": interaction.user.id})
+        await interaction.response.send_modal(IntroModal(oldIntro=oldIntro, bot=self.bot))  # type: ignore
 
     @app_commands.command()
     @checks.admin_and_above()
@@ -113,7 +114,7 @@ class Misc(commands.Cog):
 
             return embed
 
-        kgs_guild: discord.Guild = self.bot.get_guild(Reference.guild)
+        kgs_guild = self.bot.get_mainguild()
 
         lowest_role = kgs_guild.get_role(Reference.Roles.subreddit_mod)
 
@@ -134,7 +135,7 @@ class Misc(commands.Cog):
 
         embedList.sort(key=embed_sort, reverse=True)
 
-        intro_channel: discord.TextChannel = kgs_guild.get_channel(Reference.Channels.intro_channel)
+        intro_channel = self.bot._get_channel(Reference.Channels.intro_channel)
 
         def purge_check(msg: discord.Message) -> bool:
             return bool(msg.author == self.bot.user and msg.embeds and msg.embeds[0].type == "rich")
@@ -190,7 +191,7 @@ class Misc(commands.Cog):
                 await interaction.response.send_message("Could not process this emoji")
 
 
-async def setup(bot):
+async def setup(bot: BirdBot):
     await bot.add_cog(Misc(bot))
 
 
@@ -207,7 +208,9 @@ class IntroModal(discord.ui.Modal):
         self.oldIntro = oldIntro
         self.intro_db = bot.db.StaffIntros
 
-        self.kgs_guild: discord.Guild = bot.get_guild(Reference.guild)
+        self.bot = bot
+
+        self.kgs_guild = bot.get_mainguild()
 
         timezone_ph = bio_ph = image_ph = None
         timezone_default = bio_default = image_default = None
@@ -260,6 +263,7 @@ class IntroModal(discord.ui.Modal):
 
     def create_embed(self) -> discord.Embed:
         """Make and return a new intro embed"""
+        assert self.user
         description = f"**{self.timezone_txt}**\n\n" + self.bio_txt
 
         footer_name, footer_icon = self.get_footer(self.role)
@@ -292,6 +296,8 @@ class IntroModal(discord.ui.Modal):
     async def reorder_demotion(self, oldmessage: discord.Message):
         # make a list of messages that have to be edited (doc, msg)
         # limit = self.intro_db.count_documents({})
+        assert self.user
+
         limit = 100
         embeds: typing.List[typing.Tuple[dict, discord.Message]] = []
         newPos = 0
@@ -338,6 +344,8 @@ class IntroModal(discord.ui.Modal):
     async def reorder_promotion(self, oldmessage: discord.Message):
         # make a list of messages that have to be edited (doc, msg)
         # limit = self.intro_db.count_documents({})
+        assert self.user
+
         limit = 100
         embeds: typing.List[typing.Tuple[dict, discord.Message]] = []
         newPos = 0
@@ -383,6 +391,8 @@ class IntroModal(discord.ui.Modal):
     async def reorder_add(self):
         # make a list of messages that have to be edited (doc, msg)
         # limit = self.intro_db.count_documents({})
+        assert self.user
+
         limit = 100
         embeds: typing.List[typing.Tuple[dict, discord.Message]] = []
         newPos = 0
@@ -434,10 +444,10 @@ class IntroModal(discord.ui.Modal):
         """Most of the intro command logic is here"""
         oldIntroMessage = None  # if we're adding a new intro this will remain None
 
-        self.user: discord.Member = self.kgs_guild.get_member(interaction.user.id)
+        self.user = self.kgs_guild.get_member(interaction.user.id)
         assert self.user
         self.role = self.user.top_role
-        self.intro_channel: discord.TextChannel = self.kgs_guild.get_channel(Reference.Channels.intro_channel)
+        self.intro_channel = self.bot._get_channel(Reference.Channels.intro_channel)
 
         self.timezone_txt = self.add_emojis(self.timezone.value)
         self.bio_txt = self.add_emojis(self.bio.value)

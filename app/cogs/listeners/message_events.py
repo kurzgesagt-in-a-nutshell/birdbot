@@ -1,43 +1,59 @@
 import io
-import re
 
 import discord
 import requests
 from discord.ext import commands
 from requests.models import PreparedRequest
 
+from app.birdbot import BirdBot
 from app.utils.config import Reference
 from app.utils.helper import is_internal_command
 
 
 class MessageEvents(commands.Cog):
-    def __init__(self, bot):
+    def __init__(self, bot: BirdBot):
         self.bot = bot
 
     @commands.Cog.listener()
-    async def on_message(self, message):
-
+    async def on_message(self, message: discord.Message):
+        # Mainbot only, Kgs server only
+        # TextChannel and Thread only
+        if not self.bot.ismainbot() or message.guild != self.bot.get_mainguild():
+            return
+        if not isinstance(message.channel, discord.TextChannel | discord.Thread):
+            return
         await self.check_mod_alert(message)
         await self.check_server_moments(message)
         await self.translate_bannsystem(message)
 
     @commands.Cog.listener()
-    async def on_message_edit(self, before, after):
+    async def on_message_edit(self, before: discord.Message, after: discord.Message):
         # Mainbot only, Kgs server only, ignore bot edits
-        if self.bot.user.id != Reference.mainbot or before.guild.id != Reference.guild or before.author.bot:
+        # TextChannel and Thread only
+        # Ignore moderation and log channels
+        if not self.bot.ismainbot() or before.guild != self.bot.get_mainguild() or before.author.bot:
+            return
+        if not isinstance(before.channel, discord.TextChannel | discord.Thread):
+            return
+        if before.channel.category and before.channel.category.id == (
+            Reference.Categories.moderation or Reference.Categories.server_logs
+        ):
             return
 
         await self.check_server_moments(after)
         await self.log_message_edit(before, after)
 
     @commands.Cog.listener()
-    async def on_message_delete(self, message):
+    async def on_message_delete(self, message: discord.Message):
         # Mainbot only, Kgs server only, ignore bot edits
-        if (
-            self.bot.user.id != Reference.mainbot
-            or message.guild.id != Reference.guild
-            or message.author.bot
-            or message.channel.category.id == Reference.Categories.moderation
+        # TextChannel and Thread only
+        # Ignore moderation and log channels
+        if not self.bot.ismainbot() or message.guild != self.bot.get_mainguild() or message.author.bot:
+            return
+        if not isinstance(message.channel, discord.TextChannel | discord.Thread):
+            return
+        if message.channel.category and message.channel.category.id == (
+            Reference.Categories.moderation or Reference.Categories.server_logs
         ):
             return
 
@@ -46,13 +62,17 @@ class MessageEvents(commands.Cog):
 
         await self.log_message_delete(message)
 
-    async def log_message_delete(self, message):
+    async def log_message_delete(self, message: discord.Message):
+        assert isinstance(message.channel, discord.TextChannel | discord.Thread)
+        assert message.guild
+
         embed = discord.Embed(
             title="Message Deleted",
             description=f"Message deleted in {message.channel.mention}",
             color=0xC9322C,
             timestamp=discord.utils.utcnow(),
         )
+        assert embed.description
         embed.set_author(name=message.author.display_name, icon_url=message.author.display_avatar.url)
         embed.add_field(name="Content", value=message.content)
         search_terms = f"```Deleted in {message.channel.id}"
@@ -61,6 +81,7 @@ class MessageEvents(commands.Cog):
             log async for log in message.guild.audit_logs(limit=1, action=discord.AuditLogAction.message_delete)
         ][0]
 
+        assert latest_logged_delete.user
         self_deleted = False
         if message.author == latest_logged_delete.target:
             embed.description += f"\nDeleted by {latest_logged_delete.user.mention} {latest_logged_delete.user.name}"
@@ -76,19 +97,16 @@ class MessageEvents(commands.Cog):
         embed.add_field(name="Search terms", value=search_terms, inline=False)
         embed.set_footer(text="Input the search terms in your discord search bar to easily sort through specific logs")
 
-        message_logging_channel = self.bot.get_channel(Reference.Channels.Logging.message_actions)
+        message_logging_channel = self.bot._get_channel(Reference.Channels.Logging.message_actions)
         await message_logging_channel.send(embed=embed)
 
-    async def log_message_edit(self, before, after):
+    async def log_message_edit(self, before: discord.Message, after: discord.Message):
         """
         Logs message edits outside of the moderator category
         """
+        assert isinstance(before.channel, discord.TextChannel | discord.Thread)
 
-        if (
-            before.channel.category.id == Reference.Categories.moderation
-            or before.channel.category.id == Reference.Categories.server_logs
-            or before.content == after.content
-        ):
+        if before.content == after.content:
             return
 
         embed = discord.Embed(
@@ -107,7 +125,7 @@ class MessageEvents(commands.Cog):
         embed.add_field(name="Search terms", value=search_terms, inline=False)
         embed.set_footer(text="Input the search terms in your discord search bar to easily sort through specific logs")
 
-        message_logging_channel = self.bot.get_channel(Reference.Channels.Logging.message_actions)
+        message_logging_channel = self.bot._get_channel(Reference.Channels.Logging.message_actions)
         await message_logging_channel.send(embed=embed)
 
     async def check_mod_alert(self, message: discord.Message):
@@ -116,19 +134,22 @@ class MessageEvents(commands.Cog):
         the moderator or trainee moderator role. Ignores if the member is a
         moderator+
         """
-
+        assert isinstance(message.author, discord.Member)
+        assert message.guild
         # Check if message contains a moderator or traine moderator ping
         if not any(x in message.raw_role_mentions for x in [Reference.Roles.moderator, Reference.Roles.trainee_mod]):
             return
 
         # If the ping was done by a moderator or above then ignore
-        if message.author.top_role >= await message.guild.fetch_role(Reference.Roles.moderator):
+        if message.author.top_role >= message.guild.get_role(Reference.Roles.moderator):
             return
 
         # TODO BEFORE COMMIT, LOOK HERE TF DOES ROLE COME FROM?
 
-        role_names = [discord.utils.get(message.guild.roles, id=role).name for role in message.raw_role_mentions]
-        mod_channel = self.bot.get_channel(Reference.Channels.mod_chat)
+        role_names = [discord.utils.get(message.guild.roles, id=role).name for role in message.raw_role_mentions]  # type: ignore
+        mod_channel = self.bot._get_channel(Reference.Channels.mod_chat)
+
+        assert isinstance(message.channel, discord.TextChannel | discord.Thread)
 
         embed = discord.Embed(
             title="Mod ping alert!",
@@ -150,7 +171,7 @@ class MessageEvents(commands.Cog):
             file=discord.File(io.BytesIO(to_file.encode()), filename="history.txt"),
         )
 
-    async def check_server_moments(self, message):
+    async def check_server_moments(self, message: discord.Message):
         """
         Checks incoming messages to server-moments to validate the have an image
         or is sent by a moderator+
@@ -159,6 +180,7 @@ class MessageEvents(commands.Cog):
         # Return if channel is not server moments
         if message.channel.id != Reference.Channels.server_moments:
             return
+        assert isinstance(message.author, discord.Member)
 
         # Return if author is a moderator or above
         if any(_id in [role.id for role in message.author.roles] for _id in Reference.Roles.moderator_and_above()):
@@ -196,6 +218,7 @@ class MessageEvents(commands.Cog):
             return
 
         embed = message.embeds[0].to_dict()
+        assert "description" in embed and "fields" in embed
         to_translate = sum(
             [[embed["description"]], [field["value"] for field in embed["fields"]]], []
         )  # flatten without numpy
@@ -215,7 +238,9 @@ class MessageEvents(commands.Cog):
 
         req = PreparedRequest()
         req.prepare_url(url, payload)
+        assert req.url
         response = requests.request("POST", req.url, verify=False).json()
+
         replace_str = response["translatedText"].split(" ### ")
         embed["description"] = replace_str[0]
         embed["fields"][0]["value"] = replace_str[1]
@@ -228,13 +253,6 @@ class MessageEvents(commands.Cog):
         await translated_msg.add_reaction(Reference.Emoji.PartialString.kgsNo)
         await message.delete()
 
-    # TODO: Move to slash
-    @commands.command()
-    async def translate(self, ctx, msg_id):
-        msg = await ctx.channel.fetch_message(msg_id)
-        embed = await self.translate_bannsystem(msg)
-        await ctx.send(embed=embed)
 
-
-async def setup(bot):
+async def setup(bot: BirdBot):
     await bot.add_cog(MessageEvents(bot))

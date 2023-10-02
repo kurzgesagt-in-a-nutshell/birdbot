@@ -1,16 +1,16 @@
-import datetime
 import logging
 
 import discord
 from discord import app_commands
 from discord.ext import commands
 
+from app.birdbot import BirdBot
 from app.utils import checks
 from app.utils.config import Reference
 
 
 class Help(commands.Cog):
-    def __init__(self, bot):
+    def __init__(self, bot: BirdBot):
         self.logger = logging.getLogger("Help")
         self.bot = bot
         self.bot.remove_command("help")
@@ -40,6 +40,8 @@ class Help(commands.Cog):
 
         cmds = []
 
+        assert isinstance(interaction.user, discord.Member)
+        assert interaction.guild
         for cmd in command_tree_global:
             if isinstance(cmd, discord.app_commands.commands.Command):
                 cmds.append(cmd.name)
@@ -93,5 +95,5 @@ class Help(commands.Cog):
         await interaction.response.send_message(f"{int(self.bot.latency * 1000)} ms")
 
 
-async def setup(bot):
+async def setup(bot: BirdBot):
     await bot.add_cog(Help(bot))

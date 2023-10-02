@@ -5,14 +5,10 @@ Behavior for errors are within the InternalError class and alternations are made
 in inherited classes. 
 """
 
-from typing import Type, Union
-
 from discord import Embed, Interaction, app_commands
 from discord.ext import commands
 
 from .config import Reference
-
-Info = Type[Union[commands.Context, Interaction]]
 
 
 class InternalError(Exception):
@@ -20,11 +16,11 @@ class InternalError(Exception):
     content = "an unhandled internal error occurred. if this continues please inform an active bot dev"
     color = 0xC6612A
 
-    def __init__(self, *, content: Union[str, None] = None):
+    def __init__(self, *, content: str | None = None):
         if content is not None:
             self.content = content
 
-    def format_notif_embed(self, info: Info):
+    def format_notif_embed(self, info: commands.Context | Interaction):
         # interaction = info if isinstance(info, Interaction) else None
         # context = info if isinstance(info, commands.Context) else None
 
@@ -51,3 +47,7 @@ class InvalidInvocationError(CheckFailure):
 class InvalidParameterError(CheckFailure):
     title = f"{Reference.Emoji.PartialString.kgsNo} Invalid Parameters"
     content = "The parameters you provided are not accepted in this context"
+
+
+class InvalidFunctionUsage(InternalError):
+    pass

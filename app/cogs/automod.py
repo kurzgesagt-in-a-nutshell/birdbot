@@ -2,7 +2,6 @@ import asyncio
 import copy
 import datetime
 import io
-import json
 import logging
 import re
 import typing
@@ -12,6 +11,7 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
+from app.birdbot import BirdBot
 from app.utils import checks
 from app.utils.config import Reference
 from app.utils.helper import create_automod_embed, is_external_command, is_internal_command
@@ -22,7 +22,7 @@ from app.utils.helper import create_automod_embed, is_external_command, is_inter
 
 
 class Filter(commands.Cog):
-    def __init__(self, bot):
+    def __init__(self, bot: BirdBot):
         self.logger = logging.getLogger("Automod")
         self.bot = bot
 
@@ -31,9 +31,9 @@ class Filter(commands.Cog):
         self.message_history_list = {}
         self.message_history_lock = asyncio.Lock()
 
-        self.humanities_list = self.bot.db.filterlist.find_one({"name": "humanities"})["filter"]
-        self.general_list = self.bot.db.filterlist.find_one({"name": "general"})["filter"]
-        self.white_list = self.bot.db.filterlist.find_one({"name": "whitelist"})["filter"]
+        self.humanities_list: typing.List[str] = self.bot.db.filterlist.find_one({"name": "humanities"})["filter"]
+        self.general_list: typing.List[str] = self.bot.db.filterlist.find_one({"name": "general"})["filter"]
+        self.white_list: typing.List[str] = self.bot.db.filterlist.find_one({"name": "whitelist"})["filter"]
         self.general_list_regex = self.generate_regex(self.general_list)
 
         self.humanities_list_regex = self.generate_regex(self.humanities_list)
@@ -52,13 +52,15 @@ class Filter(commands.Cog):
     )
 
     # return the required list
-    def return_list(self, listtype):
+    def return_list(self, listtype) -> typing.List[str]:
         if listtype == "whitelist":
             return self.white_list
         elif listtype == "general":
             return self.general_list
         elif listtype == "humanities":
             return self.humanities_list
+        else:
+            return []
 
     def return_regex(self, listtype):
         if listtype == "whitelist":
@@ -196,13 +198,13 @@ class Filter(commands.Cog):
             await interaction.response.send_message("No profanity.")
 
     @commands.Cog.listener()
-    async def on_member_update(self, before, after):
+    async def on_member_update(self, before: discord.Member, after: discord.Member):
         if before.nick == after.nick:
             return
         await self.check_member(after)
 
     @commands.Cog.listener()
-    async def on_message(self, message):
+    async def on_message(self, message: discord.Message):
         if isinstance(message.channel, discord.DMChannel):
             return
         if (
@@ -235,13 +237,13 @@ class Filter(commands.Cog):
         if is_external_command(message):
             return
 
-        self.logging_channel = await self.bot.fetch_channel(self.logging_channel_id)
+        self.logging_channel = self.bot.get_channel(self.logging_channel_id)
         if not isinstance(message.channel, discord.DMChannel):
             await self.check_message(message)
             await self.check_member(message.author)
 
     @commands.Cog.listener()
-    async def on_message_edit(self, before, after):
+    async def on_message_edit(self, before: discord.Message, after: discord.Message):
         if after.channel.id == Reference.Channels.bot_commands:
             return
 
@@ -291,7 +293,7 @@ class Filter(commands.Cog):
             if any(s in member.nick for s in ("nazi", "hitler", "führer", "fuhrer")):
                 await member.edit(nick=None)
 
-    async def execute_action_on_message(self, message, actions):
+    async def execute_action_on_message(self, message: discord.Message, actions):
         # TODO: make embeds more consistent once mod policy is set
         if "ping" in actions:
             if "delete_after" in actions:
@@ -552,7 +554,6 @@ class Filter(commands.Cog):
 
         # this one goes last due to lock
         async with self.message_history_lock:
-
             # if getting past this point we write to message history and pop if to many messages
 
             if message.author.id in self.message_history_list:
@@ -726,5 +727,5 @@ class Filter(commands.Cog):
         return regexlist
 
 
-async def setup(bot):
+async def setup(bot: BirdBot):
     await bot.add_cog(Filter(bot))

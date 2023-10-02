@@ -1,31 +1,36 @@
 import asyncio
 
 import discord
-from discord import Interaction, app_commands
+from discord import app_commands
 from discord.ext import commands
 
+import app.utils.errors as errors
+from app.birdbot import BirdBot
 from app.utils import checks
 from app.utils.config import Reference
 from app.utils.infraction import InfractionList
 
 
 class Patreon(commands.Cog):
-    def __init__(self, bot):
+    def __init__(self, bot: BirdBot):
         self.bot = bot
 
     @commands.Cog.listener()
-    async def on_member_join(self, member):
+    async def on_member_join(self, member: discord.Member):
         """Listen for new patrons and provide
         them the option to unenroll from autojoining
         Listen for new members and fire webhook for greeting"""
 
         diff_roles = [role.id for role in member.roles]
         if any(x in diff_roles for x in Reference.Roles.patreon()):
-
-            guild = discord.utils.get(self.bot.guilds, id=Reference.guild)
+            guild = self.bot.get_mainguild()
+            verified = guild.get_role(Reference.Roles.verified)
+            english = guild.get_role(Reference.Roles.english)
+            assert verified
+            assert english
             await member.add_roles(
-                guild.get_role(Reference.Roles.verified),  # Verified
-                guild.get_role(Reference.Roles.english),  # English
+                verified,
+                english,
                 reason="Patron auto join",
             )
 
@@ -72,12 +77,15 @@ class Patreon(commands.Cog):
             await interaction.response.send_message("Please check your DMs.")
             await confirm_msg.add_reaction(Reference.Emoji.PartialString.kgsYes)
             await confirm_msg.add_reaction(Reference.Emoji.PartialString.kgsNo)
-            reaction, user = await self.bot.wait_for("reaction_add", timeout=120, check=check)
+            reaction, _ = await self.bot.wait_for("reaction_add", timeout=120, check=check)
 
+            if isinstance(reaction.emoji, str):
+                await confirm_msg.edit(embed=fallback_embed)
+                return
             if reaction.emoji.id == Reference.Emoji.kgsYes:
-
-                member = discord.utils.get(self.bot.guilds, id=Reference.guild).get_member(interaction.user.id)
-
+                member = self.bot.get_mainguild().get_member(interaction.user.id)
+                if member == None:
+                    raise errors.InvalidFunctionUsage()
                 user_infractions = InfractionList.from_user(member)
                 user_infractions.banned_patreon = True
                 user_infractions.update()
@@ -100,5 +108,5 @@ class Patreon(commands.Cog):
                 await confirm_msg.edit(embed=fallback_embed)
 
 
-async def setup(bot):
+async def setup(bot: BirdBot):
     await bot.add_cog(Patreon(bot))

@@ -11,7 +11,8 @@ from pathlib import Path
 import certifi
 import discord
 import dotenv
-from discord import Interaction, app_commands
+from discord import Interaction, TextChannel, app_commands
+from discord.abc import GuildChannel
 from discord.ext import commands
 from rich.logging import RichHandler
 
@@ -23,12 +24,12 @@ logger = logging.getLogger("BirdBot")
 
 @contextmanager
 def setup():
+    logger = logging.getLogger()
     try:
         dotenv.load_dotenv()
         logging.getLogger("discord").setLevel(logging.INFO)
         logging.getLogger("discord.http").setLevel(logging.INFO)
 
-        logger = logging.getLogger()
         logger.setLevel(logging.DEBUG)
         dtfmt = "%Y-%m-%d %H:%M:%S"
         if not os.path.isdir("logs/"):
@@ -72,12 +73,13 @@ class BirdTree(app_commands.CommandTree):
 
         await interaction.response.send_message(*args, **kwargs)
 
-    async def alert(self, interaction: Interaction, error: Exception):
+    async def alert(self, interaction: Interaction, error: app_commands.AppCommandError):
         """
         Attempts to altert the discord channel logs of an exception
         """
 
         channel = await interaction.client.fetch_channel(Reference.Channels.Logging.dev)
+        assert isinstance(channel, TextChannel)
 
         content = traceback.format_exc()
 
@@ -100,7 +102,6 @@ class BirdTree(app_commands.CommandTree):
 
             return
         elif isinstance(error, app_commands.CheckFailure):
-
             user_shown_error = errors.CheckFailure(content=str(error))
 
             embed = user_shown_error.format_notif_embed(interaction)
@@ -110,7 +111,10 @@ class BirdTree(app_commands.CommandTree):
 
         # most cases this will consist of errors thrown by the actual code
 
-        is_in_public_channel = interaction.channel.category_id != Reference.Categories.moderation
+        if isinstance(interaction.channel, GuildChannel):
+            is_in_public_channel = interaction.channel.category_id != Reference.Categories.moderation
+        else:
+            is_in_public_channel = False
 
         user_shown_error = errors.InternalError()
         await BirdTree.maybe_responded(
@@ -119,7 +123,7 @@ class BirdTree(app_commands.CommandTree):
 
         try:
             await self.alert(interaction, error)
-        except Exception as e:
+        except app_commands.AppCommandError as e:
             await super().on_error(interaction, e)
 
 
@@ -129,6 +133,7 @@ class BirdBot(commands.AutoShardedBot):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.get_database()
+        self.args = None
 
     @classmethod
     def from_parseargs(cls, args: argparse.Namespace):
@@ -194,10 +199,10 @@ class BirdBot(commands.AutoShardedBot):
         """
         Async setup for after the bot logs in
         """
+        if self.args:
+            await self.load_extensions("app/cogs", self.args)
 
-        await self.load_extensions("app/cogs", self.args)
-
-    async def load_extensions(self, folder: str, args: argparse.Namespace) -> None:
+    async def load_extensions(self, folder: Path | str, args: argparse.Namespace) -> None:
         """
         Iterates over the extension folder and attempts to load all python files
         found.
@@ -252,7 +257,51 @@ class BirdBot(commands.AutoShardedBot):
         await super().close()
 
     async def on_ready(self):
+        assert self.user is not None
         logger.info("Logged in as")
         logger.info(f"\tUser: {self.user.name}")
         logger.info(f"\tID  : {self.user.id}")
         logger.info("------")
+
+    """"
+    custom functions we can use
+    """
+
+    def _user(self) -> discord.ClientUser:
+        """
+        Get self.bot.user. This can only be used after login, as it can't be none.
+        """
+        user = self.user
+        if user == None:
+            raise errors.InvalidFunctionUsage()
+        return user
+
+    def ismainbot(self) -> bool:
+        """
+        Checks if self.bot is mainbot. Only works after login.
+        """
+        if self._user().id == Reference.mainbot:
+            return True
+        return False
+
+    def _get_channel(self, id: int) -> discord.TextChannel:
+        """
+        Used to get Reference channels, only works with TextChannel.
+        """
+        channel = self.get_channel(id)
+        if isinstance(channel, discord.abc.PrivateChannel | None | discord.Thread):
+            raise errors.InvalidFunctionUsage()
+        if isinstance(
+            channel, discord.VoiceChannel | discord.CategoryChannel | discord.StageChannel | discord.ForumChannel
+        ):
+            raise errors.InvalidFunctionUsage()
+        return channel
+
+    def get_mainguild(self) -> discord.Guild:
+        """
+        Returns Reference guild.
+        """
+        guild = self.get_guild(Reference.guild)
+        if guild == None:
+            raise errors.InvalidFunctionUsage()
+        return guild

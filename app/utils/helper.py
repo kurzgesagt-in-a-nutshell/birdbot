@@ -1,9 +1,7 @@
 import datetime
-import json
 import logging
 import re
-import typing
-from typing import List, Tuple, Union
+from typing import List, Tuple
 
 import discord
 from discord.ext import commands
@@ -145,9 +143,9 @@ def is_external_command(message: discord.Message):
 
 
 def create_embed(
-    author: Union[discord.User, discord.Member],
+    author: discord.User | discord.Member,
     action: str,
-    users: List[Union[discord.User, discord.Member]] = None,
+    users: List[discord.User | discord.Member] | None = None,
     reason=None,
     extra=None,
     color=discord.Color.blurple,
@@ -198,12 +196,12 @@ def create_embed(
     return embed
 
 
-def create_timed_action(users: List[Union[discord.User, discord.Member]], action: str, time: int):
+def create_timed_action(users: List[discord.User | discord.Member], action: str, time: int):
     # TODO DELETE
     """Creates a database entry for timed action [not in use currently]
 
     Args:
-        users (List[Union[discord.User, discord.Member]]): List of affected users
+        users (List[discord.User | discord.Member]): List of affected users
         action (str): Action ("mute")
         time (int): Duration for which action will last
     """
@@ -232,7 +230,7 @@ def delete_timed_actions_uid(u_id: int):
     timed_actions_db.remove({"user_id": u_id})
 
 
-def calc_time(args: List[str]) -> Tuple[int, str]:
+def calc_time(args: List[str]) -> Tuple[int | None, str | None]:
     """Parses time from given list.
     Example:
     ["1hr", "12m30s", "extra", "string"] => (4350, "extra string")
@@ -269,10 +267,8 @@ def calc_time(args: List[str]) -> Tuple[int, str]:
             if a[:s] == "":
                 break
             else:
-
                 t = 0
                 for i in a:
-
                     if i.isdigit():
                         t = t * 10 + int(i)
 
@@ -347,6 +343,7 @@ def create_automod_embed(
     Returns:
         embed: A discord.Embed object.
     """
+    assert isinstance(message.channel, discord.TextChannel)
     embed = discord.Embed(
         title=f"Message deleted. ({automod_type})",
         description=f"Message author: {message.author.mention}\nChannel: {message.channel.mention}",
@@ -361,7 +358,7 @@ def create_automod_embed(
     return embed
 
 
-def get_active_staff(bot: commands.AutoShardedBot) -> str:
+def get_active_staff(bot: discord.Client) -> str:
     """
     Gets string containing mentions of active staff (mods, trainee mods and admins)
     Mentions both mod roles if no mod is online
@@ -369,10 +366,13 @@ def get_active_staff(bot: commands.AutoShardedBot) -> str:
     """
 
     guild = discord.utils.get(bot.guilds, id=Reference.guild)
+    assert guild
     active_staff = []
     mods_active = False
     for role_id in [Reference.Roles.moderator, Reference.Roles.administrator, Reference.Roles.trainee_mod]:
-        for member in discord.utils.get(guild.roles, id=role_id).members:
+        role = discord.utils.get(guild.roles, id=role_id)
+        assert role
+        for member in role.members:
             if member.bot:
                 continue
             if member in active_staff:
@@ -421,7 +421,7 @@ def whitelist_member(member: discord.Member, command: commands.Command) -> bool:
     return True
 
 
-def is_public_channel(channel: typing.Union[discord.TextChannel, discord.Thread]) -> bool:
+def is_public_channel(channel: discord.TextChannel | discord.Thread) -> bool:
     """
     Returns true for all channels except those under the moderation category
 
