@@ -42,13 +42,14 @@ class Smfeed(commands.Cog):
         trainee_mod_role = guild.get_role(Reference.Roles.trainee_mod)
         if payload.member.top_role < trainee_mod_role:
             return
-        channel = self.bot._get_channel(Reference.Channels.social_media_queue)
-        message = await channel.fetch_message(payload.message_id)
+        smq_channel = self.bot._get_channel(Reference.Channels.social_media_queue)
+        smf_channel = self.bot._get_channel(Reference.Channels.social_media_feed)
+        message = await smq_channel.fetch_message(payload.message_id)
         for reaction in message.reactions:
             if isinstance(reaction.emoji, str):
                 continue
             if reaction.emoji.id == Reference.Emoji.kgsYes and reaction.count <= 2:
-                await channel.send(message.content)
+                await smf_channel.send(message.content)
                 break
 
 
