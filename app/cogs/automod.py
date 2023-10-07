@@ -465,7 +465,7 @@ class Filter(commands.Cog):
 
     # check for gif bypass
     def check_gif_bypass(self, message):
-        filetypes = ["mp4", "gif", "webm", "gifv"]
+        filetypes = ["mp4", "gif", "webm", "gifv","mov"]
 
         if message.channel.id not in (
             Reference.Channels.general,
