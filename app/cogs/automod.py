@@ -52,15 +52,13 @@ class Filter(commands.Cog):
     )
 
     # return the required list
-    def return_list(self, listtype) -> typing.List[str]:
+    def return_list(self, listtype) -> typing.List[str] | None:
         if listtype == "whitelist":
             return self.white_list
         elif listtype == "general":
             return self.general_list
         elif listtype == "humanities":
             return self.humanities_list
-        else:
-            return []
 
     def return_regex(self, listtype):
         if listtype == "whitelist":
