@@ -69,11 +69,11 @@ class Reference:
         server_logs = 879399341561892905
 
     class Channels:
-        general = 414027124836532236
+        general = 1162035011025911889
         bot_commands = 414452106129571842
         bot_tests = 414179142020366336
         new_members = 526882555174191125
-        humanities = 546315063745839115
+        humanities = 1162034723758034964
         server_moments = 960927545639972994
         mod_chat = 1092578562608988290
         social_media_queue = 580354435302031360
