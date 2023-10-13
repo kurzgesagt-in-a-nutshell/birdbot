@@ -1,14 +1,14 @@
 import logging
 from typing import List, Literal
-from discord.app_commands.models import Choice
-from discord.ext import commands
-from app.birdbot import BirdBot
 
 import discord
 from discord import Interaction, app_commands
+from discord.app_commands.models import Choice
+from discord.ext import commands
 
-from app.utils.config import ExclusiveColors, Reference
+from app.birdbot import BirdBot
 from app.utils import errors
+from app.utils.config import ExclusiveColors, Reference
 
 logger = logging.getLogger(__name__)
 
