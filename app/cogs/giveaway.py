@@ -57,27 +57,26 @@ class Giveaway(commands.Cog):
                     del self.active_giveaways[giveaway["message_id"]]
                 return
 
-            users = []
+            members: typing.List[discord.Member] = []
             self.logger.debug("Fetching reactions from users")
+            guild = message.guild
+            assert guild
             for reaction in message.reactions:
                 if reaction.emoji == "🎉":
-                    userids = [user.id async for user in reaction.users() if user.id != self.bot._user().id]
-                    users = []
+                    userids = [user.id async for user in reaction.users() if not user.bot]
                     for userid in userids:
-                        try:
-                            member = self.bot.get_user(userid)
-                            users.append(member)
-                        except discord.errors.NotFound:
-                            pass
+                        member = guild.get_member(userid)
+                        if member:
+                            members.append(member)
 
             self.logger.debug("Fetched users")
 
-            if users != []:
+            if members != []:
                 self.logger.debug("Calculating weights")
                 weights = []
-                for user in users:
+                for member in members:
                     bias = GiveawayBias.default
-                    roles = [role.id for role in user.roles]
+                    roles = [role.id for role in member.roles]
                     for role in GiveawayBias.roles:
                         if role["id"] in roles:
                             bias = role["bias"]
@@ -92,10 +91,11 @@ class Giveaway(commands.Cog):
                     prob = None
 
                 size = giveaway["winners_no"]
-                if len(users) < size:
-                    size = len(users)
+                if len(members) < size:
+                    size = len(members)
 
                 self.logger.debug("Choosing winner(s)")
+                users: list = members  # why is type hinting
                 choice = np.random.choice(users, size=size, replace=False, p=prob)
                 winners = []
                 winnerids = ", ".join([str(i.id) for i in choice])
