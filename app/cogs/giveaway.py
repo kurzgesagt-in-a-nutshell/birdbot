@@ -23,6 +23,8 @@ class Giveaway(commands.Cog):
     @commands.Cog.listener()
     async def on_ready(self):
         self.logger.info("loaded Giveaway")
+
+    def cog_load(self):
         for giveaway in self.giveaway_db.find({"giveaway_over": False, "giveaway_cancelled": False}):
             giveaway["end_time"] = giveaway["end_time"].replace(tzinfo=timezone.utc)
             self.active_giveaways[giveaway["message_id"]] = giveaway
@@ -43,9 +45,10 @@ class Giveaway(commands.Cog):
     async def choose_winner(self, giveaway):
         """does the giveaway logic"""
         message = False
-        channel = self.bot._get_channel(giveaway["channel_id"])
         try:
-            message = await channel.fetch_message(giveaway["message_id"])
+            channel = await self.bot.fetch_channel(giveaway["channel_id"])
+            if isinstance(channel, discord.TextChannel):
+                message = await channel.fetch_message(giveaway["message_id"])
         except discord.NotFound:
             pass
 
