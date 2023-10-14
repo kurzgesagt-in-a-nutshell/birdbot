@@ -23,8 +23,6 @@ class Giveaway(commands.Cog):
     @commands.Cog.listener()
     async def on_ready(self):
         self.logger.info("loaded Giveaway")
-
-    def cog_load(self) -> None:
         for giveaway in self.giveaway_db.find({"giveaway_over": False, "giveaway_cancelled": False}):
             giveaway["end_time"] = giveaway["end_time"].replace(tzinfo=timezone.utc)
             self.active_giveaways[giveaway["message_id"]] = giveaway
@@ -111,7 +109,7 @@ class Giveaway(commands.Cog):
 
             self.logger.debug("Sending new embed")
 
-            time = discord.utils.utcnow() + timedelta(seconds=giveaway["end_time"])  # type: ignore
+            time = giveaway["end_time"]
 
             embed = discord.Embed(
                 title="Giveaway ended",
@@ -124,10 +122,10 @@ class Giveaway(commands.Cog):
             riggedinfo = ""
             if giveaway["rigged"]:
                 riggedinfo = (
-                    " [rigged](https://discord.com/channels/414027124836532234/414452106129571842/714496884844134401)"
+                    "[rigged](https://discord.com/channels/414027124836532234/414452106129571842/714496884844134401) "
                 )
 
-            description = f"**{giveaway['prize']}**\n{riggedinfo}\n"
+            description = f"**{giveaway['prize']}**\nThe {riggedinfo}giveaway has ended\n"
 
             description += f'> **Winners: {giveaway["winners_no"]}**\n'
             description += winners + "\n"
@@ -241,10 +239,10 @@ class Giveaway(commands.Cog):
         riggedinfo = ""
         if rigged:
             riggedinfo = (
-                "[rigged](https://discord.com/channels/414027124836532234/414452106129571842/714496884844134401)"
+                "[rigged](https://discord.com/channels/414027124836532234/414452106129571842/714496884844134401) "
             )
 
-        description = f"**{prize}**\nReact with 🎉 to join the {riggedinfo} giveaway\n"
+        description = f"**{prize}**\nReact with 🎉 to join the {riggedinfo}giveaway\n"
         for field in fields:
             description += "\n" + fields[field]
 
