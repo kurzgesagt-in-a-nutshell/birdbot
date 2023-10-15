@@ -1,5 +1,3 @@
-import io
-
 import discord
 import requests
 from discord.ext import commands
@@ -22,8 +20,6 @@ class MessageEvents(commands.Cog):
             return
         if not isinstance(message.channel, discord.TextChannel | discord.Thread):
             return
-        await self.check_mod_alert(message)
-        await self.check_server_moments(message)
         await self.translate_bannsystem(message)
 
     @commands.Cog.listener()
@@ -40,7 +36,6 @@ class MessageEvents(commands.Cog):
         ):
             return
 
-        await self.check_server_moments(after)
         await self.log_message_edit(before, after)
 
     @commands.Cog.listener()
@@ -127,85 +122,6 @@ class MessageEvents(commands.Cog):
 
         message_logging_channel = self.bot._get_channel(Reference.Channels.Logging.message_actions)
         await message_logging_channel.send(embed=embed)
-
-    async def check_mod_alert(self, message: discord.Message):
-        """
-        Checks incoming messages sent by members to check if they have pinged
-        the moderator or trainee moderator role. Ignores if the member is a
-        moderator+
-        """
-        assert isinstance(message.author, discord.Member)
-        assert message.guild
-        # Check if message contains a moderator or traine moderator ping
-        if not any(x in message.raw_role_mentions for x in [Reference.Roles.moderator, Reference.Roles.trainee_mod]):
-            return
-
-        # If the ping was done by a moderator or above then ignore
-        if message.author.top_role >= message.guild.get_role(Reference.Roles.moderator):
-            return
-
-        # TODO BEFORE COMMIT, LOOK HERE TF DOES ROLE COME FROM?
-
-        role_names = [discord.utils.get(message.guild.roles, id=role).name for role in message.raw_role_mentions]  # type: ignore
-        mod_channel = self.bot._get_channel(Reference.Channels.mod_chat)
-
-        assert isinstance(message.channel, discord.TextChannel | discord.Thread)
-
-        embed = discord.Embed(
-            title="Mod ping alert!",
-            description=f"{' and '.join(role_names)} got pinged in {message.channel.mention} - [view message]({message.jump_url})",
-            color=0x00FF00,
-        )
-        embed.set_author(
-            name=message.author.display_name,
-            icon_url=message.author.display_avatar.url,
-        )
-        embed.set_footer(text="Last 50 messages in the channel are attached for reference")
-
-        to_file = ""
-        async for msg in message.channel.history(limit=50):
-            to_file += f"{msg.author.display_name}: {msg.content}\n"
-
-        await mod_channel.send(
-            embed=embed,
-            file=discord.File(io.BytesIO(to_file.encode()), filename="history.txt"),
-        )
-
-    async def check_server_moments(self, message: discord.Message):
-        """
-        Checks incoming messages to server-moments to validate the have an image
-        or is sent by a moderator+
-        """
-
-        # Return if channel is not server moments
-        if message.channel.id != Reference.Channels.server_moments:
-            return
-        assert isinstance(message.author, discord.Member)
-
-        # Return if author is a moderator or above
-        if any(_id in [role.id for role in message.author.roles] for _id in Reference.Roles.moderator_and_above()):
-            return
-
-        # Returns if author is a bot account
-        if message.author.bot:
-            return
-
-        if len(message.attachments) == 0 and len(message.embeds) == 0:
-            await message.delete()
-            await message.channel.send(
-                f"{message.author.mention} You can only send screenshots in this channel. ",
-                delete_after=5,
-            )
-            return
-        else:
-            for e in message.embeds:
-                if e.type != "image":
-                    await message.delete()
-                    await message.channel.send(
-                        f"{message.author.mention} You can only send screenshots in this channel. ",
-                        delete_after=5,
-                    )
-                    return
 
     async def translate_bannsystem(self, message: discord.Message):
         """

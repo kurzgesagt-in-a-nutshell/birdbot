@@ -18,6 +18,7 @@ class Reference:
     bannsystembot = 697374082509045800
 
     class Roles:
+
         moderator = 414092550031278091
         administrator = 414029841101225985
         kgsofficial = 414954904382210049
@@ -30,6 +31,9 @@ class Reference:
         patreon_3 = 753258289185161248
         patreon_2 = 415154206970740737
         patreon_1 = 753268671107039274
+
+        nitro_bird = 598031301622104095
+        contributor = 476852559311798280
 
         galacduck = 698479120878665729  # GalacDuck
         legendary_duck = 662937489220173884  # LegendDuck
@@ -65,11 +69,11 @@ class Reference:
         server_logs = 879399341561892905
 
     class Channels:
-        general = 414027124836532236
+        general = 1162035011025911889
         bot_commands = 414452106129571842
         bot_tests = 414179142020366336
         new_members = 526882555174191125
-        humanities = 546315063745839115
+        humanities = 1162034723758034964
         server_moments = 960927545639972994
         mod_chat = 1092578562608988290
         social_media_queue = 580354435302031360
@@ -132,3 +136,24 @@ class GiveawayBias:
         },
     ]
     default = 1
+
+
+class ExclusiveColors:
+    """
+    Contains a list of selectable colored roles that can be provided to a user
+    if they have the role that unlocks the color.
+    """
+
+    exclusive_colors = {
+        "Patreon Orange": {
+            "id": 976158045639946300,
+            "unlockers": [Reference.Roles.patreon_1, Reference.Roles.patreon_2, Reference.Roles.patreon_3],
+        },
+        "Patreon Green": {
+            "id": 976158006616137748,
+            "unlockers": [Reference.Roles.patreon_2, Reference.Roles.patreon_3],
+        },
+        "Patreon Blue": {"id": 976157262718582784, "unlockers": [Reference.Roles.patreon_3]},
+        "Nitro Pink": {"id": 976157185971204157, "unlockers": [Reference.Roles.nitro_bird]},
+        "Contributor Gold": {"id": 976176253826654329, "unlockers": [Reference.Roles.contributor]},
+    }
