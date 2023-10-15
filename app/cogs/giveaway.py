@@ -24,7 +24,7 @@ class Giveaway(commands.Cog):
     async def on_ready(self):
         self.logger.info("loaded Giveaway")
 
-    def cog_load(self) -> None:
+    def cog_load(self):
         for giveaway in self.giveaway_db.find({"giveaway_over": False, "giveaway_cancelled": False}):
             giveaway["end_time"] = giveaway["end_time"].replace(tzinfo=timezone.utc)
             self.active_giveaways[giveaway["message_id"]] = giveaway
@@ -45,9 +45,10 @@ class Giveaway(commands.Cog):
     async def choose_winner(self, giveaway):
         """does the giveaway logic"""
         message = False
-        channel = self.bot._get_channel(giveaway["channel_id"])
         try:
-            message = await channel.fetch_message(giveaway["message_id"])
+            channel = await self.bot.fetch_channel(giveaway["channel_id"])
+            if isinstance(channel, discord.TextChannel):
+                message = await channel.fetch_message(giveaway["message_id"])
         except discord.NotFound:
             pass
 
@@ -57,27 +58,26 @@ class Giveaway(commands.Cog):
                     del self.active_giveaways[giveaway["message_id"]]
                 return
 
-            users = []
+            members: typing.List[discord.Member] = []
             self.logger.debug("Fetching reactions from users")
+            guild = message.guild
+            assert guild
             for reaction in message.reactions:
                 if reaction.emoji == "🎉":
-                    userids = [user.id async for user in reaction.users() if user.id != self.bot._user().id]
-                    users = []
+                    userids = [user.id async for user in reaction.users() if not user.bot]
                     for userid in userids:
-                        try:
-                            member = self.bot.get_user(userid)
-                            users.append(member)
-                        except discord.errors.NotFound:
-                            pass
+                        member = guild.get_member(userid)
+                        if member:
+                            members.append(member)
 
             self.logger.debug("Fetched users")
 
-            if users != []:
+            if members != []:
                 self.logger.debug("Calculating weights")
                 weights = []
-                for user in users:
+                for member in members:
                     bias = GiveawayBias.default
-                    roles = [role.id for role in user.roles]
+                    roles = [role.id for role in member.roles]
                     for role in GiveawayBias.roles:
                         if role["id"] in roles:
                             bias = role["bias"]
@@ -92,10 +92,11 @@ class Giveaway(commands.Cog):
                     prob = None
 
                 size = giveaway["winners_no"]
-                if len(users) < size:
-                    size = len(users)
+                if len(members) < size:
+                    size = len(members)
 
                 self.logger.debug("Choosing winner(s)")
+                users: list = members  # why is type hinting
                 choice = np.random.choice(users, size=size, replace=False, p=prob)
                 winners = []
                 winnerids = ", ".join([str(i.id) for i in choice])
@@ -111,7 +112,7 @@ class Giveaway(commands.Cog):
 
             self.logger.debug("Sending new embed")
 
-            time = discord.utils.utcnow() + timedelta(seconds=giveaway["end_time"])  # type: ignore
+            time = giveaway["end_time"]
 
             embed = discord.Embed(
                 title="Giveaway ended",
@@ -124,10 +125,10 @@ class Giveaway(commands.Cog):
             riggedinfo = ""
             if giveaway["rigged"]:
                 riggedinfo = (
-                    " [rigged](https://discord.com/channels/414027124836532234/414452106129571842/714496884844134401)"
+                    "[rigged](https://discord.com/channels/414027124836532234/414452106129571842/714496884844134401) "
                 )
 
-            description = f"**{giveaway['prize']}**\n{riggedinfo}\n"
+            description = f"**{giveaway['prize']}**\nThe {riggedinfo}giveaway has ended\n"
 
             description += f'> **Winners: {giveaway["winners_no"]}**\n'
             description += winners + "\n"
@@ -241,10 +242,10 @@ class Giveaway(commands.Cog):
         riggedinfo = ""
         if rigged:
             riggedinfo = (
-                "[rigged](https://discord.com/channels/414027124836532234/414452106129571842/714496884844134401)"
+                "[rigged](https://discord.com/channels/414027124836532234/414452106129571842/714496884844134401) "
             )
 
-        description = f"**{prize}**\nReact with 🎉 to join the {riggedinfo} giveaway\n"
+        description = f"**{prize}**\nReact with 🎉 to join the {riggedinfo}giveaway\n"
         for field in fields:
             description += "\n" + fields[field]
 

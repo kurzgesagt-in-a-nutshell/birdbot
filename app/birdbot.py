@@ -289,11 +289,7 @@ class BirdBot(commands.AutoShardedBot):
         Used to get Reference channels, only works with TextChannel.
         """
         channel = self.get_channel(id)
-        if isinstance(channel, discord.abc.PrivateChannel | None | discord.Thread):
-            raise errors.InvalidFunctionUsage()
-        if isinstance(
-            channel, discord.VoiceChannel | discord.CategoryChannel | discord.StageChannel | discord.ForumChannel
-        ):
+        if not isinstance(channel, discord.TextChannel):
             raise errors.InvalidFunctionUsage()
         return channel
 
