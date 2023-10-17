@@ -101,7 +101,8 @@ class ColorSelect(commands.Cog):
                     break
 
             if value["id"] in roleids and not has_unlocker_role:
-                logger.info(f"removing : {value['id']} from user who does not \
+                logger.info(
+                    f"removing : {value['id']} from user who does not \
                     have access to it anymore"
                 )
 
