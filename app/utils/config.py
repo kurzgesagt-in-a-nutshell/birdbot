@@ -45,7 +45,6 @@ class Reference:
         duck_egg = 821961644425871390  # Duck Egg
 
         english = 901136119863844864
-        verified = 542343829785804811
 
         @staticmethod
         def admin_and_above():
