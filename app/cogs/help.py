@@ -1,13 +1,135 @@
 import logging
 
 import discord
-from discord import app_commands
+from discord import Interaction, app_commands, ui as dui
 from discord.ext import commands
+
+from discord.ext import tasks
 
 from app.birdbot import BirdBot
 from app.utils import checks
 from app.utils.config import Reference
+from app.utils.helper import get_active_staff
 
+class ReportView(dui.View):
+    """
+    Handles the interactions with the buttons below a report embed as well as
+    the continual pestering of active reports.
+    """
+
+    def __init__(self, *, resolve_id:str, claim_id:str):
+        super().__init__(timeout=None)
+
+        self._resolve.custom_id = resolve_id
+        self._claim.custom_id = claim_id
+
+        self.active_reports = []
+
+    async def insert_issue(self):
+        """
+        Inserts a new issue into the active issues
+        """
+        
+        pass
+    
+    @dui.button(label="Mark as resolved")
+    async def _resolve(self, interaction: Interaction, button: dui.Button):
+        """
+        Marks the embed as resolved and removes the report from the ping cycle.
+        """
+        
+        pass
+
+    @dui.button(label="Claim this issue")
+    async def _claim(self, interaction: Interaction, button: dui.Button):
+        """
+        Adds the user to the active actors of the report. If one user has
+        selected this then this is prioritized over active moderators.
+
+        This also makes it remind the moderator who has claimed the report every
+        15 minutes rather than every 5
+        """
+
+    @tasks.loop()
+    async def _reminder_task(self,):
+        """
+        Checks periodically for reports that have not been dealt with.
+        """
+        
+        for report in self.active_reports:
+            pass
+
+class ReportModal(dui.Modal):
+    text = dui.TextInput(
+        label="Please describe your issue:",
+        style=discord.TextStyle.long,
+    )
+    message = dui.TextInput(
+        label="Provide a link to a relevant message if helpful:",
+        style=discord.TextStyle.short,
+        placeholder="https://discord.com/channels/414027124836532234/414268041787080708/937750299165208607",
+        required=False,
+    )
+
+    def __init__(self, member):
+        super().__init__(title="Report")
+        self.member = member
+
+    def build_embed(
+            self, 
+            interaction: Interaction, 
+            channel_mention: str, 
+            message_link: str
+        ) -> discord.Embed:
+        description = self.text.value
+        
+        mod_embed = discord.Embed(
+            title="NEW REPORT",
+            color=0xFF9000,
+            description=f"\
+            **Content:** {description} \n\
+            **User Involved:** {self.member} \n\
+            **Channel Location:** {channel_mention} | **Link:** {message_link}\
+            ",
+        )
+        mod_embed.set_author(
+            name=f"{interaction.user.name} ({interaction.user.id})",
+            icon_url=interaction.user.display_avatar.url,
+        )
+
+        return mod_embed
+
+    async def on_submit(self, interaction: discord.Interaction):
+        """
+        Validates the user input where needed and provides a report embed in the
+        moderation chat
+        """
+        
+        message_link = self.message.value
+
+        channel = interaction.channel
+        if isinstance(channel, (discord.abc.GuildChannel, discord.Thread)):
+            channel_mention = channel.mention
+
+            # This allows you to jump to the history in chat when the report was
+            # made
+            if message_link is None or message_link == "":
+                message_link = f"https://discord.com/channels/414027124836532234/{channel.id}/{interaction.id}"
+
+        else:
+            channel_mention = "Sent through DMs"
+
+        mod_channel = interaction.client.get_channel(Reference.Channels.mod_chat)
+        if not isinstance(mod_channel, discord.TextChannel): 
+            raise Exception("The destination of the report does not exist")
+
+        await mod_channel.send(
+            get_active_staff(interaction.client),
+            embed=self.build_embed(interaction, channel_mention, message_link),
+            allowed_mentions=discord.AllowedMentions.all(),
+        )
+
+        await interaction.response.send_message("Your report has been sent!", ephemeral=True)
 
 class Help(commands.Cog):
     def __init__(self, bot: BirdBot):
@@ -93,6 +215,24 @@ class Help(commands.Cog):
         Ping Pong 🏓
         """
         await interaction.response.send_message(f"{int(self.bot.latency * 1000)} ms")
+
+    @app_commands.command()
+    @app_commands.checks.cooldown(1, 30)
+    async def report(
+        self,
+        interaction: discord.Interaction,
+        member: discord.Member | discord.User | None,
+    ):
+        """Report issues to the moderation team, gives you an UI
+
+        Parameters
+        ----------
+        member: discord.Member
+            Mention or ID of member to report (is optional)
+        """
+        mod_channel = self.bot._get_channel(Reference.Channels.mod_chat)
+
+        await interaction.response.send_modal(ReportModal(member=member))
 
 
 async def setup(bot: BirdBot):

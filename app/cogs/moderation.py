@@ -10,7 +10,7 @@ from discord.ext import commands
 from app.birdbot import BirdBot
 from app.utils import checks, errors, helper
 from app.utils.config import Reference
-from app.utils.helper import blacklist_member, get_active_staff, is_public_channel, whitelist_member
+from app.utils.helper import blacklist_member, is_public_channel, whitelist_member
 from app.utils.infraction import InfractionKind, InfractionList
 
 
@@ -136,79 +136,6 @@ class Moderation(commands.Cog):
     @commands.Cog.listener()
     async def on_ready(self):
         self.logger.info("loaded Moderation")
-
-    @app_commands.command()
-    @app_commands.checks.cooldown(1, 30)
-    async def report(
-        self,
-        interaction: discord.Interaction,
-        member: Optional[discord.Member | discord.User] = None,
-    ):
-        """Report issues to the moderation team, gives you an UI
-
-        Parameters
-        ----------
-        member: discord.Member
-            Mention or ID of member to report (is optional)
-        """
-        mod_channel = self.bot._get_channel(Reference.Channels.mod_chat)
-
-        class Modal(discord.ui.Modal):
-            def __init__(self, member):
-                super().__init__(title="Report")
-                self.member = member
-
-            text = discord.ui.TextInput(
-                label="Briefly describe your issue",
-                style=discord.TextStyle.long,
-            )
-            message = discord.ui.TextInput(
-                label="Message link",
-                style=discord.TextStyle.short,
-                placeholder="https://discord.com/channels/414027124836532234/414268041787080708/937750299165208607",
-                required=False,
-            )
-
-            async def on_submit(self, interaction: discord.Interaction):
-                description = self.children[0].value  # type: ignore
-                message_link = self.children[1].value  # type: ignore
-
-                channel = interaction.channel
-                if isinstance(channel, (discord.abc.GuildChannel, discord.Thread)):
-                    channel_mention = channel.mention
-
-                    # What this does is allow you to click the link to go to the
-                    # messages around the time the report was made
-                    if message_link is None or message_link == "":
-                        message_link = f"https://discord.com/channels/414027124836532234/{channel.id}/{interaction.id}"
-
-                else:
-                    channel_mention = "Sent through DMs"
-
-                mod_embed = discord.Embed(
-                    title="New Report",
-                    color=0x00FF00,
-                    description=f"""
-                    **Report description:** {description}
-                    **User:** {self.member}
-                    **Message Link:** [click to jump]({message_link})
-                    **Reported in:** {channel_mention}
-                    """,
-                )
-                mod_embed.set_author(
-                    name=f"{interaction.user.name} ({interaction.user.id})",
-                    icon_url=interaction.user.display_avatar.url,
-                )
-
-                await mod_channel.send(
-                    get_active_staff(interaction.client),
-                    embed=mod_embed,
-                    allowed_mentions=discord.AllowedMentions.all(),
-                )
-
-                await interaction.response.send_message("Report has been sent!", ephemeral=True)
-
-        await interaction.response.send_modal(Modal(member=member))
 
     @app_commands.command()
     @app_commands.guilds(Reference.guild)
