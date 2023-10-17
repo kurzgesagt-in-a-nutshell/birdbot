@@ -147,6 +147,7 @@ class Banner(commands.Cog):
         if banners_find == None:
             raise CollectionInvalid
         self.banners: typing.List = banners_find["banners"]
+        self.banner_cycle = cycle(self.banners)
 
         self.BANNER_ACCEPT = f"BANNER-ACCEPT-{self.bot._user().id}"
         self.BANNER_DENY = f"BANNER-DENY-{self.bot._user().id}"
@@ -376,12 +377,12 @@ class Banner(commands.Cog):
         Task that rotates the banner
         """
         guild = self.bot.get_mainguild()
-        banners = cycle(self.banners)
         async with aiohttp.ClientSession() as session:
-            cur_banner = next(banners)
+            cur_banner = next(self.banner_cycle)
             async with session.get(cur_banner) as response:
                 banner = await response.content.read()
                 await guild.edit(banner=banner)
+                self.logger.info(f"Rotated Banner {cur_banner}")
 
 
 async def setup(bot: BirdBot):
