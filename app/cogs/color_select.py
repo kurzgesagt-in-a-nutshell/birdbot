@@ -42,11 +42,9 @@ class ExclusiveColorTransformer(app_commands.Transformer):
             raise errors.InvalidInvocationError(content="This command must be ran in a server")
 
         roles = ExclusiveColorTransformer.selectable_roles(interaction.user)
-        logger.debug(roles)
 
         for role in roles:
             if role.name == value:
-                logger.debug(role)
                 return role
 
         raise errors.InvalidParameterError(
@@ -64,7 +62,6 @@ class ExclusiveColorTransformer(app_commands.Transformer):
             return []
 
         roles = ExclusiveColorTransformer.selectable_roles(interaction.user)
-        logger.debug(roles)
 
         return [Choice(name=r.name, value=r.name) for r in roles]
 
@@ -93,12 +90,6 @@ class ColorSelect(commands.Cog):
         # check if selectable roles list is less than 'before'. if so then check
         # for possible exclusive roles to remove.
 
-        if len(ExclusiveColorTransformer.selectable_roles(after)) >= len(
-            ExclusiveColorTransformer.selectable_roles(before)
-        ):
-            return
-
-        logger.debug("selectable roles differ")
         roleids = [r.id for r in after.roles]
 
         for name, value in ExclusiveColors.exclusive_colors.items():
@@ -109,10 +100,10 @@ class ColorSelect(commands.Cog):
                     has_unlocker_role = True
                     break
 
-            logger.debug(f"has_unlocker_role: {has_unlocker_role}")
-
             if value["id"] in roleids and not has_unlocker_role:
-                logger.debug(f"removing : {value['id']}")
+                logger.info(f"removing : {value['id']} from user who does not \
+                    have access to it anymore"
+                )
 
                 await after.remove_roles(discord.Object(value["id"]), reason="auto remove color")
 
