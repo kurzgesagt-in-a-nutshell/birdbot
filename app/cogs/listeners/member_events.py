@@ -102,12 +102,9 @@ class MemberEvents(commands.Cog):
     async def check_member_screen(self, before: discord.Member, after: discord.Member):
         if before.pending and (not after.pending):
             guild = self.bot.get_mainguild()
-            verified = guild.get_role(Reference.Roles.verified)
             english = guild.get_role(Reference.Roles.english)
-            assert verified
             assert english
             await after.add_roles(
-                verified,
                 english,
                 reason="Membership screening passed",
             )
