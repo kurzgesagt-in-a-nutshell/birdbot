@@ -52,6 +52,21 @@ class ReportView(dui.View):
 
         return [int(i) for i in matches]
     
+    async def get_report_author(self, embed: discord.Embed) -> discord.User:
+        """
+        Strips the user id out of the author text for use
+        """
+        
+        author_text = embed.author.name
+        if author_text is None \
+            or (match := re.search(r"\([\d]+\)", author_text)) is None: 
+            
+            raise Exception("Report author does not appear to be defined")
+
+        user_id = int(match.group(0).strip('()'))
+
+        return await self.bot.fetch_user(user_id)
+    
     @dui.button(label="Mark as resolved")
     async def _resolve(self, interaction: Interaction, button: dui.Button):
         """
@@ -90,14 +105,17 @@ class ReportView(dui.View):
             )
 
         # finally once we are out of the lock, DM the user who reported
-
-        """
-        Your report has been marked as resolved
-        *Provide report content*
-
-        If you think this is not the case, please submit a new report with more
-        detailed information.
-        """
+        report_author = await self.get_report_author(embed)
+        try:
+            await report_author.send(
+                "Your report has been marked as resolved \n"+
+                "If you think this is not the case, please submit a new report"+
+                " with more detailed information. \n\n"+
+                "# Your report details \n"+
+                f"{embed.description}"
+            )
+        except discord.Forbidden: 
+            pass
 
     @dui.button(label="Claim this issue")
     async def _claim(self, interaction: Interaction, button: dui.Button):
@@ -158,7 +176,6 @@ class ReportView(dui.View):
             raise Exception("Mod chat is appearing as a non text channel")
         
         for report in self.active_reports:
-            logger.debug("Report Reminder Task report iteration")
             try:
                 message = await mod_channel.fetch_message(report)
                 embed = message.embeds[0]
@@ -222,11 +239,10 @@ class ReportModal(dui.Modal):
         mod_embed = discord.Embed(
             title="NEW REPORT",
             color=0xFF9000,
-            description=f"\
-            **Content:** {description} \n\
-            **User Involved:** {self.member} \n\
-            **Channel Location:** {channel_mention} | **Link:** {message_link}\
-            ",
+            description=
+            f"**Content:** {description} \n" +
+            f"**User Involved:** {self.member} \n"+
+            f"**Channel Location:** {channel_mention} | **Link:** {message_link}"
         )
         mod_embed.set_author(
             name=f"{interaction.user.name} ({interaction.user.id})",
