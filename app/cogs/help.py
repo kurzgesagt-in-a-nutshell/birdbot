@@ -13,13 +13,14 @@ from app.utils.helper import get_active_staff
 
 logger = logging.getLogger(__name__)
 
+
 class ReportView(dui.View):
     """
     Handles the interactions with the buttons below a report embed as well as
     the continual pestering of active reports.
     """
 
-    def __init__(self, *, bot: BirdBot, resolve_id:str, claim_id:str):
+    def __init__(self, *, bot: BirdBot, resolve_id: str, claim_id: str):
         super().__init__(timeout=None)
 
         self.bot = bot
@@ -37,36 +38,36 @@ class ReportView(dui.View):
         """
         Inserts a new issue into the active issues
         """
-        
+
         self.active_reports.append(message.id)
 
     def collect_claimed(self, embed: discord.Embed) -> list[int]:
         """
         Collects a list of users who have claimed the issue
         """
-        
+
         footer = embed.footer.text
-        if footer is None: return []
+        if footer is None:
+            return []
 
         matches = re.findall(r"([\d]+)", footer)
 
         return [int(i) for i in matches]
-    
+
     async def get_report_author(self, embed: discord.Embed) -> discord.User:
         """
         Strips the user id out of the author text for use
         """
-        
+
         author_text = embed.author.name
-        if author_text is None \
-            or (match := re.search(r"\([\d]+\)", author_text)) is None: 
-            
+        if author_text is None or (match := re.search(r"\([\d]+\)", author_text)) is None:
+
             raise Exception("Report author does not appear to be defined")
 
-        user_id = int(match.group(0).strip('()'))
+        user_id = int(match.group(0).strip("()"))
 
         return await self.bot.fetch_user(user_id)
-    
+
     @dui.button(label="Mark as resolved")
     async def _resolve(self, interaction: Interaction, button: dui.Button):
         """
@@ -77,44 +78,34 @@ class ReportView(dui.View):
         await interaction.response.defer(ephemeral=True)
 
         async with self.resolve_lock:
-            if (message := interaction.message) is None \
-                or (embed := message.embeds[0]) is None: 
+            if (message := interaction.message) is None or (embed := message.embeds[0]) is None:
                 return
-            
+
             if message.id not in self.active_reports:
-                await interaction.followup.send(
-                    "This issue has already been marked as resolved",
-                    ephemeral=True
-                )
+                await interaction.followup.send("This issue has already been marked as resolved", ephemeral=True)
                 return
-            
+
             user = interaction.user
 
             # Update the embed
 
             embed.color = 0x00FF00
-            embed.set_footer(
-                text=f"Marked resolved by {user.name}({user.id})", 
-                icon_url=user.display_avatar.url
-            )
+            embed.set_footer(text=f"Marked resolved by {user.name}({user.id})", icon_url=user.display_avatar.url)
 
             self.active_reports.remove(message.id)
-            await interaction.followup.edit_message(
-                message.id,
-                embed = embed, view = None
-            )
+            await interaction.followup.edit_message(message.id, embed=embed, view=None)
 
         # finally once we are out of the lock, DM the user who reported
         report_author = await self.get_report_author(embed)
         try:
             await report_author.send(
-                "Your report has been marked as resolved \n"+
-                "If you think this is not the case, please submit a new report"+
-                " with more detailed information. \n\n"+
-                "# Your report details \n"+
-                f"{embed.description}"
+                "Your report has been marked as resolved \n"
+                + "If you think this is not the case, please submit a new report"
+                + " with more detailed information. \n\n"
+                + "# Your report details \n"
+                + f"{embed.description}"
             )
-        except discord.Forbidden: 
+        except discord.Forbidden:
             pass
 
     @dui.button(label="Claim this issue")
@@ -127,18 +118,13 @@ class ReportView(dui.View):
         15 minutes rather than every 5
         """
 
-        if (message := interaction.message) is None \
-            or (embed := message.embeds[0]) is None: 
+        if (message := interaction.message) is None or (embed := message.embeds[0]) is None:
             return
-        
 
         claimed = self.collect_claimed(embed)
 
         if interaction.user.id in claimed:
-            await interaction.response.send_message(
-                "You have already claimed this issue",
-                ephemeral=True
-            )
+            await interaction.response.send_message("You have already claimed this issue", ephemeral=True)
             return
 
         claimed.append(interaction.user.id)
@@ -151,12 +137,12 @@ class ReportView(dui.View):
         """
         Stops the view and the task
         """
-        
+
         super().stop()
 
         self._reminder_task.stop()
 
-    @tasks.loop(minutes = 5)
+    @tasks.loop(minutes=5)
     async def _reminder_task(self):
         """
         Checks periodically for reports that have not been dealt with.
@@ -165,21 +151,21 @@ class ReportView(dui.View):
         Reports that are claimed and unresolved are reminded about each 3
         iterations
         """
-        unresolved:list[discord.Message] = []
-        in_progress:list[discord.Message] = []
+        unresolved: list[discord.Message] = []
+        in_progress: list[discord.Message] = []
 
         logger.debug("Report Reminder task begins")
         logger.debug(self._reminder_task.current_loop)
 
         mod_channel = self.bot.get_channel(Reference.Channels.mod_chat)
-        if not isinstance(mod_channel, discord.TextChannel): 
+        if not isinstance(mod_channel, discord.TextChannel):
             raise Exception("Mod chat is appearing as a non text channel")
-        
+
         for report in self.active_reports:
             try:
                 message = await mod_channel.fetch_message(report)
                 embed = message.embeds[0]
-                
+
                 claimed = self.collect_claimed(embed)
                 to_add = in_progress if len(claimed) > 0 else unresolved
 
@@ -192,10 +178,9 @@ class ReportView(dui.View):
         if len(unresolved) == 0 and len(in_progress) == 0:
             logger.debug("Report Reminder no active reports to remind")
             return
-        
-        content = ", ".join([m.jump_url for m in unresolved]) + "\n" + \
-            ", ".join([m.jump_url for m in in_progress])
-        
+
+        content = ", ".join([m.jump_url for m in unresolved]) + "\n" + ", ".join([m.jump_url for m in in_progress])
+
         await mod_channel.send(content)
 
     @_reminder_task.before_loop
@@ -205,10 +190,8 @@ class ReportView(dui.View):
         and for following loops when the bot may not be actively connected to
         discord
         """
-        
+
         await self.bot.wait_until_ready()
-        
-        
 
 
 class ReportModal(dui.Modal):
@@ -228,21 +211,15 @@ class ReportModal(dui.Modal):
         self.member = member
         self.report_view = report_view
 
-    def build_embed(
-            self, 
-            interaction: Interaction, 
-            channel_mention: str, 
-            message_link: str
-        ) -> discord.Embed:
+    def build_embed(self, interaction: Interaction, channel_mention: str, message_link: str) -> discord.Embed:
         description = self.text.value
-        
+
         mod_embed = discord.Embed(
             title="NEW REPORT",
             color=0xFF9000,
-            description=
-            f"**Content:** {description} \n" +
-            f"**User Involved:** {self.member} \n"+
-            f"**Channel Location:** {channel_mention} | **Link:** {message_link}"
+            description=f"**Content:** {description} \n"
+            + f"**User Involved:** {self.member} \n"
+            + f"**Channel Location:** {channel_mention} | **Link:** {message_link}",
         )
         mod_embed.set_author(
             name=f"{interaction.user.name} ({interaction.user.id})",
@@ -256,7 +233,7 @@ class ReportModal(dui.Modal):
         Validates the user input where needed and provides a report embed in the
         moderation chat.
         """
-        
+
         message_link = self.message.value
 
         channel = interaction.channel
@@ -272,7 +249,7 @@ class ReportModal(dui.Modal):
             channel_mention = "Sent through DMs"
 
         mod_channel = interaction.client.get_channel(Reference.Channels.mod_chat)
-        if not isinstance(mod_channel, discord.TextChannel): 
+        if not isinstance(mod_channel, discord.TextChannel):
             raise Exception("The destination of the report does not exist")
 
         report_message = await mod_channel.send(
@@ -286,6 +263,7 @@ class ReportModal(dui.Modal):
 
         await interaction.response.send_message("Your report has been sent!", ephemeral=True)
 
+
 class Help(commands.Cog):
     def __init__(self, bot: BirdBot):
         self.logger = logging.getLogger("Help")
@@ -298,9 +276,9 @@ class Help(commands.Cog):
         """
 
         buser = self.bot._user()
-        
+
         self.REPORT_VIEW = ReportView(
-            bot = self.bot,
+            bot=self.bot,
             resolve_id=f"REPORT-RESOLVE-{buser.id}",
             claim_id=f"REPORT-CLAIM-{buser.id}",
         )
@@ -311,7 +289,7 @@ class Help(commands.Cog):
         """
         Stops both the ReportView listening and task loop within the ReportView
         """
-        
+
         self.REPORT_VIEW.stop()
 
     # TODO: Convert the output to embed or some UI
@@ -404,9 +382,7 @@ class Help(commands.Cog):
             Mention or ID of member to report (is optional)
         """
 
-        await interaction.response.send_modal(
-            ReportModal(member=member, report_view=self.REPORT_VIEW)
-        )
+        await interaction.response.send_modal(ReportModal(member=member, report_view=self.REPORT_VIEW))
 
 
 async def setup(bot: BirdBot):
