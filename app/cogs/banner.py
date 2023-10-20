@@ -21,7 +21,6 @@ import io
 import logging
 import re
 import typing
-from itertools import cycle
 
 import aiohttp
 import discord
@@ -34,7 +33,7 @@ from pymongo.errors import CollectionInvalid
 from app.birdbot import BirdBot
 from app.utils import checks, errors
 from app.utils.config import Reference
-from app.utils.helper import calc_time, get_time_string
+from app.utils.helper import BannerCycle, calc_time, get_time_string
 
 if typing.TYPE_CHECKING:
     from pymongo.collection import Collection
@@ -97,6 +96,10 @@ class BannerView(dui.View):
 
         self.banners.append(url)
         self.banner_db.update_one({"name": "banners"}, {"$set": {"banners": self.banners}})
+        if banner_cycle := BannerCycle.__instance:
+            banner_cycle.queue_last(url)
+        else:
+            BannerCycle(self.banners).queue_last(url)
 
         await interaction.response.edit_message(embed=embed, view=None)
         assert embed.author.name
@@ -147,7 +150,7 @@ class Banner(commands.Cog):
         if banners_find == None:
             raise CollectionInvalid
         self.banners: typing.List = banners_find["banners"]
-        self.banner_cycle = cycle(self.banners)
+        self.banner_cycle = BannerCycle(self.banners)
 
         self.BANNER_ACCEPT = f"BANNER-ACCEPT-{self.bot._user().id}"
         self.BANNER_DENY = f"BANNER-DENY-{self.bot._user().id}"
@@ -247,6 +250,7 @@ class Banner(commands.Cog):
         url = embed.image.url
 
         self.banners.append(url)
+        self.banner_cycle.queue_last(url)
         self.banner_db.update_one({"name": "banners"}, {"$set": {"banners": self.banners}})
 
         await interaction.edit_original_response(content="Banner added.")
@@ -288,6 +292,7 @@ class Banner(commands.Cog):
 
         assert time
         self.timed_banner_rotation.change_interval(seconds=time)
+
         await interaction.response.send_message(f"Banners are rotating every {get_time_string(time)}.", ephemeral=True)
 
     # Making this standalone command cause can not override default permissions, and we need only this command to be visible to users.
@@ -345,8 +350,9 @@ class Banner(commands.Cog):
         interaction: discord.Interaction,
         image: typing.Optional[discord.Attachment] = None,
         url: typing.Optional[str] = None,
+        queue: typing.Optional[bool] = False,
     ):
-        """Change server banner
+        """Change the current server banner
 
         Parameters
         ----------
@@ -354,35 +360,44 @@ class Banner(commands.Cog):
             An image file
         url: str
             URL or Link of an image
+        queue: bool
+            Queue this banner next in rotation
         """
         url_: str | bytes
         if url:
-            url_ = await self.verify_url(url=url, byte=True)
+            url_ = await self.verify_url(url=url, byte=not queue)
 
         elif image:
-            url_ = await self.verify_url(url=image.url, byte=True)
+            url_ = await self.verify_url(url=image.url, byte=not queue)
 
         else:
             raise errors.InvalidParameterError(content="An image file or url is required")
 
-        assert isinstance(url_, bytes)
-
-        await self.bot.get_mainguild().edit(banner=url_)
-
-        await interaction.response.send_message("Server banner changed!", ephemeral=True)
+        if not queue:
+            assert isinstance(url_, bytes)
+            await self.bot.get_mainguild().edit(banner=url_)
+            await interaction.response.send_message("Server banner changed!", ephemeral=True)
+        else:
+            logger.info(type(url_))
+            self.banner_cycle.queue_next(url_)
+            await interaction.response.send_message("Banner queued next", ephemeral=True)
 
     @tasks.loop()
     async def timed_banner_rotation(self):
         """
         Task that rotates the banner
         """
-        guild = self.bot.get_mainguild()
-        async with aiohttp.ClientSession() as session:
-            cur_banner = next(self.banner_cycle)
-            async with session.get(cur_banner) as response:
-                banner = await response.content.read()
-                await guild.edit(banner=banner)
-                self.logger.info(f"Rotated Banner {cur_banner}")
+        try:
+            guild = self.bot.get_mainguild()
+            async with aiohttp.ClientSession() as session:
+                cur_banner = next(self.banner_cycle)
+                async with session.get(cur_banner) as response:
+                    banner = await response.content.read()
+                    await guild.edit(banner=banner)
+                    self.logger.info(f"Rotated Banner {cur_banner}")
+        except Exception as e:
+            logger.error("Failed rotating banner")
+            logger.error(e.__traceback__)
 
 
 async def setup(bot: BirdBot):

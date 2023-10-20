@@ -1,6 +1,8 @@
 import datetime
 import logging
+import random
 import re
+from collections import deque
 from typing import List, Tuple
 
 import discord
@@ -8,11 +10,12 @@ from discord.ext import commands
 
 from app.birdbot import BirdBot
 
+from .config import Reference
+
 infraction_db = BirdBot.db.Infraction
 timed_actions_db = BirdBot.db.TimedAction
 cmd_blacklist_db = BirdBot.db.CommandBlacklist
 
-from .config import Reference
 
 logger = logging.getLogger("Helper")
 
@@ -105,7 +108,7 @@ class NoAuthorityError(commands.CheckFailure):
 
 
 class WrongChannel(commands.CheckFailure):
-    """Raised when trying to run a command in the wrong channel"""
+    """Raisunlied when trying to run a command in the wrong channel"""
 
     def __init__(self, id):
         super().__init__(f"This command can only be run in <#{id}>")
@@ -430,3 +433,52 @@ def is_public_channel(channel: discord.TextChannel | discord.Thread) -> bool:
     """
 
     return channel.category_id != Reference.Categories.moderation
+
+
+class BannerCycle(object):
+    """
+    Singleton iterator class used to cycle through random banners infinitely
+    """
+
+    __instance = None
+
+    def __new__(cls, *args, **kwargs):
+        print("new called")
+        if cls.__instance is None:
+            cls.__instance = super(BannerCycle, cls).__new__(cls)
+        return cls.__instance
+
+    def __init__(self, banners, *args, **kwargs):
+        print("init called")
+        super().__init__(*args, **kwargs)
+        self.banners = banners
+        self.deque = deque(random.sample(self.banners, len(self.banners)))
+
+    def __iter__(self):
+        return self
+
+    def __next__(
+        self,
+    ):
+        if len(self.deque) == 1:
+            self.deque.extend(random.sample(self.banners, len(self.banners)))
+
+        if not self.deque:
+            raise StopIteration
+
+        cur = self.deque.popleft()
+        return cur
+
+    def queue_last(self, banner):
+        """
+        Adds banner to end of queue
+        """
+        self.deque.append(banner)
+
+    def queue_next(self, banner):
+        """
+        Adds banner to beginning of queue
+        """
+        logger.info("queued banner")
+        logger.info(banner)
+        self.deque.extendleft([banner])
