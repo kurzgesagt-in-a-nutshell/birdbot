@@ -443,13 +443,11 @@ class BannerCycle(object):
     __instance = None
 
     def __new__(cls, *args, **kwargs):
-        print("new called")
         if cls.__instance is None:
             cls.__instance = super(BannerCycle, cls).__new__(cls)
         return cls.__instance
 
     def __init__(self, banners, *args, **kwargs):
-        print("init called")
         super().__init__(*args, **kwargs)
         self.banners = banners
         self.deque = deque(random.sample(self.banners, len(self.banners)))
