@@ -108,7 +108,7 @@ class NoAuthorityError(commands.CheckFailure):
 
 
 class WrongChannel(commands.CheckFailure):
-    """Raisunlied when trying to run a command in the wrong channel"""
+    """Raised when trying to run a command in the wrong channel"""
 
     def __init__(self, id):
         super().__init__(f"This command can only be run in <#{id}>")
