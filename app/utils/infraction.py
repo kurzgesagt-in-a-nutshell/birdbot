@@ -370,10 +370,20 @@ class InfractionList:
         Returns a discord.Embed with a list and information of infractions of
         the given kind
         """
-
         # enumerate over infractions of kind requested to insert into the embed
         infractions = self._kind_to_list(kind)
-        infractions_info = [v.info_str(i) for i, v in enumerate(infractions)]
+        infractions_info = [[]]
+        idx = 0
+        curr_len = 0
+        for i, v in enumerate(infractions):
+            info_str = v.info_str(i)
+            if curr_len + len(info_str) > 1000:
+                infractions_info.append([])
+                idx += 1
+                curr_len = 0
+
+            curr_len += len(info_str)
+            infractions_info[idx].append(info_str)
 
         embed = discord.Embed(
             title="Infractions",
@@ -382,11 +392,13 @@ class InfractionList:
             timestamp=discord.utils.utcnow(),
         )
 
-        if len(infractions_info) == 0:
-            infractions_info.append("```\nNone\n```")
+        if len(infractions_info[0]) == 0:
+            infractions_info.append(["```\nNone\n```"])
 
         embed.add_field(name=f"{self._user_name} ({self._user_id})", value=f"```\n{self.summary()}\n```", inline=False)
-        embed.add_field(name=kind.name.title() + "s", value="\n".join(infractions_info))
+
+        for i, infr_info in enumerate(infractions_info):
+            embed.add_field(name=f"{kind.name.title()}s", value="\n".join(infr_info), inline=False)
 
         return embed
 
