@@ -435,22 +435,25 @@ def is_public_channel(channel: discord.TextChannel | discord.Thread) -> bool:
     return channel.category_id != Reference.Categories.moderation
 
 
-class BannerCycle(object):
+class Cycle(object):
     """
-    Singleton iterator class used to cycle through random banners infinitely
+    Singleton iterator class used to cycle through random list infinitely
     """
 
     __instance = None
+    queue = []
+    deque = deque([], 0)
 
     def __new__(cls, *args, **kwargs):
         if cls.__instance is None:
-            cls.__instance = super(BannerCycle, cls).__new__(cls)
+            cls.__instance = super(Cycle, cls).__new__(cls)
         return cls.__instance
 
-    def __init__(self, banners, *args, **kwargs):
+    def __init__(self, queue: list | None = None, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.banners = banners
-        self.deque = deque(random.sample(self.banners, len(self.banners)))
+        if queue:
+            self.queue = queue
+            self.deque = deque(random.sample(self.queue, len(self.queue)))
 
     def __iter__(self):
         return self
@@ -459,7 +462,7 @@ class BannerCycle(object):
         self,
     ):
         if len(self.deque) == 1:
-            self.deque.extend(random.sample(self.banners, len(self.banners)))
+            self.deque.extend(random.sample(self.queue, len(self.queue)))
 
         if not self.deque:
             raise StopIteration
@@ -467,16 +470,31 @@ class BannerCycle(object):
         cur = self.deque.popleft()
         return cur
 
-    def queue_last(self, banner):
+    def queue_last(self, entry):
         """
         Adds banner to end of queue
         """
-        self.deque.append(banner)
+        self.deque.append(entry)
+        self.queue.append(entry)
 
-    def queue_next(self, banner):
+    def queue_next(self, entry):
         """
         Adds banner to beginning of queue
         """
         logger.info("queued banner")
-        logger.info(banner)
-        self.deque.extendleft([banner])
+        logger.info(entry)
+        self.deque.extendleft([entry])
+
+    def queue_remove(self, entry):
+        try:
+            self.queue.remove(entry)
+            self.deque.remove(entry)
+        except:
+            pass
+
+
+class BannerCycle(Cycle):
+    pass
+
+class TopicCycle(Cycle):
+    pass
