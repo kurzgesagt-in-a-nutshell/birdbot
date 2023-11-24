@@ -492,9 +492,13 @@ class Cycle(object):
         except:
             pass
 
+    def update_list(self, entry):
+        self.queue = entry
+
 
 class BannerCycle(Cycle):
     pass
+
 
 class TopicCycle(Cycle):
     pass

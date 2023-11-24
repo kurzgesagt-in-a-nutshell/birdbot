@@ -14,7 +14,6 @@ from pymongo.errors import CollectionInvalid
 from app.birdbot import BirdBot
 from app.utils import checks, errors
 from app.utils.config import Reference
-
 from app.utils.helper import TopicCycle
 
 if TYPE_CHECKING:
@@ -221,7 +220,6 @@ class Topic(commands.Cog):
         """Fetches a random topic"""
         topic = next(self.topics_cycle)
         await interaction.response.send_message(f"{topic}")
-
 
     @topics_command.command()
     @checks.mod_and_above()
