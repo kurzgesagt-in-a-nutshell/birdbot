@@ -58,7 +58,6 @@ class TopicAcceptorView(dui.View):
     suggestions
     """
 
-
     def __init__(self, accept_id: str, deny_id: str, edit_id: str, topics: list, topic_db):
         super().__init__(timeout=None)
 
