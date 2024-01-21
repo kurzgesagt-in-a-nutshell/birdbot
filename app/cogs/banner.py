@@ -96,10 +96,7 @@ class BannerView(dui.View):
 
         self.banners.append(url)
         self.banner_db.update_one({"name": "banners"}, {"$set": {"banners": self.banners}})
-        if banner_cycle := BannerCycle.__instance:
-            banner_cycle.queue_last(url)
-        else:
-            BannerCycle(self.banners).queue_last(url)
+        BannerCycle().queue_last(url)
 
         await interaction.response.edit_message(embed=embed, view=None)
         assert embed.author.name
