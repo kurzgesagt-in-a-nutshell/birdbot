@@ -58,7 +58,8 @@ class TopicAcceptorView(dui.View):
     suggestions
     """
 
-    def __init__(self, accept_id, deny_id, edit_id, topics: list, topic_db):
+
+    def __init__(self, accept_id: str, deny_id: str, edit_id: str, topics: list, topic_db):
         super().__init__(timeout=None)
 
         self._accept.custom_id = accept_id
@@ -66,7 +67,7 @@ class TopicAcceptorView(dui.View):
         self._edit.custom_id = edit_id
 
         self.topics = topics
-        self.topic_db: Collection = topic_db
+        self.topics_db: Collection = topic_db
         self.editing = {}
 
     async def interaction_check(self, interaction: Interaction) -> bool:

@@ -468,6 +468,7 @@ class Filter(commands.Cog):
         filetypes = ["mp4", "gif", "webm", "gifv", "mov"]
 
         if message.channel.id not in (
+            Reference.Channels.the_perch,
             Reference.Channels.general,
             Reference.Channels.bot_tests,
             Reference.Channels.humanities,
