@@ -442,7 +442,7 @@ class Cycle(object):
 
     __instance = None
     queue = []
-    deque = deque([], 0)
+    dequeue = deque([], 0)
 
     def __new__(cls, *args, **kwargs):
         if cls.__instance is None:
@@ -453,7 +453,7 @@ class Cycle(object):
         super().__init__(*args, **kwargs)
         if queue:
             self.queue = queue
-            self.deque = deque(random.sample(self.queue, len(self.queue)))
+            self.dequeueue = deque(random.sample(self.queue, len(self.queue)))
 
     def __iter__(self):
         return self
@@ -461,20 +461,20 @@ class Cycle(object):
     def __next__(
         self,
     ):
-        if len(self.deque) == 1:
-            self.deque.extend(random.sample(self.queue, len(self.queue)))
+        if len(self.dequeue) == 1:
+            self.dequeue.extend(random.sample(self.queue, len(self.queue)))
 
-        if not self.deque:
+        if not self.dequeue:
             raise StopIteration
 
-        cur = self.deque.popleft()
+        cur = self.dequeue.popleft()
         return cur
 
     def queue_last(self, entry):
         """
         Adds banner to end of queue
         """
-        self.deque.append(entry)
+        self.dequeue.append(entry)
         self.queue.append(entry)
 
     def queue_next(self, entry):
@@ -483,12 +483,12 @@ class Cycle(object):
         """
         logger.info("queued banner")
         logger.info(entry)
-        self.deque.extendleft([entry])
+        self.dequeue.extendleft([entry])
 
     def queue_remove(self, entry):
         try:
             self.queue.remove(entry)
-            self.deque.remove(entry)
+            self.dequeue.remove(entry)
         except:
             pass
 
