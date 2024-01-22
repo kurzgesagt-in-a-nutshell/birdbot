@@ -68,6 +68,19 @@ class ReportView(dui.View):
         user_id = int(match.group(0).strip("()"))
 
         return await self.bot.fetch_user(user_id)
+    
+    def format_embed(self, embed: discord.Embed, name: str, content: list[discord.Message]):
+        """
+        Adds a field to the embed with the given name and content
+        """
+
+        if len(content) == 0: return
+        values = [f"{i}. {v.jump_url}" for i,v in enumerate(content)]
+
+        embed.add_field(
+            name=name, 
+            value="\n".join(values)
+        )
 
     @dui.button(label="Mark as resolved")
     async def _resolve(self, interaction: Interaction, button: dui.Button):
@@ -143,7 +156,7 @@ class ReportView(dui.View):
 
         self._reminder_task.stop()
 
-    @tasks.loop(minutes=5)
+    @tasks.loop(minutes=1)
     async def _reminder_task(self):
         """
         Checks periodically for reports that have not been dealt with.
@@ -180,9 +193,29 @@ class ReportView(dui.View):
             logger.debug("Report Reminder no active reports to remind")
             return
 
-        content = ", ".join([m.jump_url for m in unresolved]) + "\n" + ", ".join([m.jump_url for m in in_progress])
+        embed = discord.Embed(
+            title="ACTIVE REPORT SUMMARY",
+            color=0xFF00FF,
+        )
 
-        await mod_channel.send(content)
+        active_mods = await get_active_staff(self.bot)
+
+        self.format_embed(embed, "Unclaimed", unresolved)
+
+        if self._reminder_task.current_loop % 3 == 0:
+            claimers = set()
+            for report in in_progress:
+                claimers.update(self.collect_claimed(report.embeds[0]))
+            
+            
+            active_mods += "\n" + " ".join([f"<@{i}>" for i in claimers])
+            self.format_embed(embed, "Claimed", in_progress)
+
+        await mod_channel.send(
+            active_mods, 
+            embed=embed, 
+            allowed_mentions=discord.AllowedMentions.none()
+        )
 
     @_reminder_task.before_loop
     async def _before_reminder(self):
@@ -254,7 +287,7 @@ class ReportModal(dui.Modal):
             raise Exception("The destination of the report does not exist")
 
         report_message = await mod_channel.send(
-            get_active_staff(interaction.client),
+            await get_active_staff(interaction.client),
             embed=self.build_embed(interaction, channel_mention, message_link),
             view=self.report_view,
             allowed_mentions=discord.AllowedMentions.none(),
@@ -369,7 +402,7 @@ class Help(commands.Cog):
         await interaction.response.send_message(f"{int(self.bot.latency * 1000)} ms")
 
     @app_commands.command()
-    @app_commands.checks.cooldown(1, 30)
+    
     async def report(
         self,
         interaction: discord.Interaction,
