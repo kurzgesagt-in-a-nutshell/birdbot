@@ -358,7 +358,7 @@ def create_automod_embed(
     return embed
 
 
-def get_active_staff(bot: discord.Client) -> str:
+async def get_active_staff(bot: discord.Client) -> str:
     """
     Gets string containing mentions of active staff (mods, trainee mods and admins)
     Mentions both mod roles if no mod is online
@@ -367,10 +367,12 @@ def get_active_staff(bot: discord.Client) -> str:
 
     guild = discord.utils.get(bot.guilds, id=Reference.guild)
     assert guild
+
+    roles = await guild.fetch_roles()
     active_staff = []
     mods_active = False
     for role_id in [Reference.Roles.moderator, Reference.Roles.administrator, Reference.Roles.trainee_mod]:
-        role = discord.utils.get(guild.roles, id=role_id)
+        role = discord.utils.get(roles, id=role_id)
         assert role
         for member in role.members:
             if member.bot:
