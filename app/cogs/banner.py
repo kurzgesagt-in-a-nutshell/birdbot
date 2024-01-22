@@ -94,9 +94,9 @@ class BannerView(dui.View):
         # the file itself and the image in the embed. (duplicate images)
         embed.set_image(url="attachment://banner.png")
 
-        self.banners.append(url)
+        self.banners.append(message.id)
         self.banner_db.update_one({"name": "banners"}, {"$set": {"banners": self.banners}})
-        BannerCycle().queue_last(url)
+        BannerCycle().queue_last(message.id)
         BannerCycle().update_list(self.banners)
 
         await interaction.response.edit_message(embed=embed, view=None)
@@ -144,7 +144,7 @@ class Banner(commands.Cog):
         self.banner_db: Collection = self.bot.db.Banners
 
     async def cog_load(self) -> None:
-        banners_find = self.banner_db.find_one({"name": "banners"})
+        banners_find = self.banner_db.find_one({"name": "banners_id"})
         if banners_find == None:
             raise CollectionInvalid
         self.banners: typing.List = banners_find["banners"]
@@ -241,15 +241,13 @@ class Banner(commands.Cog):
         embed.set_footer(text="banner")
 
         # Uploads the information to the banners channel
-        # The url is then extracted from this embed to keep a static reference
+        # The message ID is then extracted from this embed to keep a static reference
+        # The message ID is later used to fetch the image
         message = await automated_channel.send(embed=embed, file=file)
 
-        embed = message.embeds[0]
-        url = embed.image.url
-
-        self.banners.append(url)
+        self.banners.append(message.id)
         self.banner_db.update_one({"name": "banners"}, {"$set": {"banners": self.banners}})
-        BannerCycle().queue_last(url)
+        BannerCycle().queue_last(message.id)
         BannerCycle().update_list(self.banners)
 
         await interaction.edit_original_response(content="Banner added.")
@@ -320,6 +318,8 @@ class Banner(commands.Cog):
 
         url_: bytes | str
         if url:
+            if not url.startswith("https://cdn.discordapp.com"):
+                raise errors.InvalidParameterError(content="Only discord cdn links are supported")
             url_ = await self.verify_url(url=url, byte=True)
 
         elif image:
@@ -389,11 +389,22 @@ class Banner(commands.Cog):
         try:
             guild = self.bot.get_mainguild()
             async with aiohttp.ClientSession() as session:
-                cur_banner = next(self.banner_cycle)
-                async with session.get(cur_banner) as response:
+                cur_banner_id = next(self.banner_cycle)
+                automated_channel = self.bot._get_channel(Reference.Channels.banners_and_topics)
+                message = await automated_channel.fetch_message(cur_banner_id)
+                url = None
+                if message.embeds:
+                    url = message.embeds[0].image.url
+                # this is necessary for legacy reasons
+                elif message.attachments:
+                    url = message.attachments[0].url
+                if url is None:
+                    raise commands.BadArgument()
+
+                async with session.get(url) as response:
                     banner = await response.content.read()
                     await guild.edit(banner=banner)
-                    self.logger.info(f"Rotated Banner {cur_banner}")
+                    self.logger.info(f"Rotated Banner {url}")
         except Exception as e:
             logger.error("Failed rotating banner")
             logger.error(e.__traceback__)
