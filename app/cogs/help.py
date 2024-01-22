@@ -68,19 +68,17 @@ class ReportView(dui.View):
         user_id = int(match.group(0).strip("()"))
 
         return await self.bot.fetch_user(user_id)
-    
+
     def format_embed(self, embed: discord.Embed, name: str, content: list[discord.Message]):
         """
         Adds a field to the embed with the given name and content
         """
 
-        if len(content) == 0: return
-        values = [f"{i}. {v.jump_url}" for i,v in enumerate(content)]
+        if len(content) == 0:
+            return
+        values = [f"{i}. {v.jump_url}" for i, v in enumerate(content)]
 
-        embed.add_field(
-            name=name, 
-            value="\n".join(values)
-        )
+        embed.add_field(name=name, value="\n".join(values))
 
     @dui.button(label="Mark as resolved")
     async def _resolve(self, interaction: Interaction, button: dui.Button):
@@ -206,16 +204,11 @@ class ReportView(dui.View):
             claimers = set()
             for report in in_progress:
                 claimers.update(self.collect_claimed(report.embeds[0]))
-            
-            
+
             active_mods += "\n" + " ".join([f"<@{i}>" for i in claimers])
             self.format_embed(embed, "Claimed", in_progress)
 
-        await mod_channel.send(
-            active_mods, 
-            embed=embed, 
-            allowed_mentions=discord.AllowedMentions.none()
-        )
+        await mod_channel.send(active_mods, embed=embed, allowed_mentions=discord.AllowedMentions.none())
 
     @_reminder_task.before_loop
     async def _before_reminder(self):
@@ -402,7 +395,6 @@ class Help(commands.Cog):
         await interaction.response.send_message(f"{int(self.bot.latency * 1000)} ms")
 
     @app_commands.command()
-    
     async def report(
         self,
         interaction: discord.Interaction,
