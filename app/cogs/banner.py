@@ -97,6 +97,7 @@ class BannerView(dui.View):
         self.banners.append(url)
         self.banner_db.update_one({"name": "banners"}, {"$set": {"banners": self.banners}})
         BannerCycle().queue_last(url)
+        BannerCycle().update_list(self.banners)
 
         await interaction.response.edit_message(embed=embed, view=None)
         assert embed.author.name
@@ -247,8 +248,9 @@ class Banner(commands.Cog):
         url = embed.image.url
 
         self.banners.append(url)
-        self.banner_cycle.queue_last(url)
         self.banner_db.update_one({"name": "banners"}, {"$set": {"banners": self.banners}})
+        BannerCycle().queue_last(url)
+        BannerCycle().update_list(self.banners)
 
         await interaction.edit_original_response(content="Banner added.")
 
@@ -376,7 +378,7 @@ class Banner(commands.Cog):
             await interaction.response.send_message("Server banner changed!", ephemeral=True)
         else:
             logger.info(type(url_))
-            self.banner_cycle.queue_next(url_)
+            BannerCycle().queue_next(url_)
             await interaction.response.send_message("Banner queued next", ephemeral=True)
 
     @tasks.loop()

@@ -472,27 +472,31 @@ class Cycle(object):
 
     def queue_last(self, entry):
         """
-        Adds banner to end of queue
+        Adds item to end of queue
         """
         self.dequeue.append(entry)
-        self.queue.append(entry)
 
     def queue_next(self, entry):
         """
-        Adds banner to beginning of queue
+        Adds item to beginning of queue
         """
         logger.info("queued banner")
         logger.info(entry)
         self.dequeue.extendleft([entry])
 
     def queue_remove(self, entry):
+        """
+        Removes item from the queue
+        """
         try:
-            self.queue.remove(entry)
             self.dequeue.remove(entry)
         except:
             pass
 
     def update_list(self, entry):
+        """
+        Syncs the queue with mongo list
+        """
         self.queue = entry
 
 

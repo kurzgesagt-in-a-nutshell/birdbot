@@ -110,6 +110,7 @@ class TopicAcceptorView(dui.View):
         self.topic_db.update_one({"name": "topics"}, {"$set": {"topics": self.topics}})  # type: ignore
 
         TopicCycle().queue_last(topic)
+        TopicCycle().update_list(self.topics)
 
         embed.color = discord.Color.green()
         embed.title = f"Accepted by {interaction.user.name}"
@@ -266,6 +267,7 @@ class Topic(commands.Cog):
         self.topics_db.update_one({"name": "topics"}, {"$set": {"topics": self.topics}})
 
         TopicCycle().queue_last(text)
+        TopicCycle().update_list(self.topics)
 
         await interaction.response.send_message(f"Topic added.")
 
@@ -311,6 +313,7 @@ class Topic(commands.Cog):
             self.topics_db.update_one({"name": "topics"}, {"$set": {"topics": self.topics}})
 
             TopicCycle().queue_remove(topic)
+            TopicCycle().update_list(self.topics)
 
             emb = discord.Embed(
                 title="Success",
@@ -375,6 +378,7 @@ class Topic(commands.Cog):
                 self.topics_db.update_one({"name": "topics"}, {"$set": {"topics": self.topics}})
 
                 TopicCycle().queue_remove(search_result[i][0])
+                TopicCycle().update_list(self.topics)
 
                 await msg.edit(embed=emb)
                 await msg.clear_reactions()
