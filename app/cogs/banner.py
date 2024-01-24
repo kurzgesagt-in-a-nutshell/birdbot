@@ -92,12 +92,15 @@ class BannerView(dui.View):
 
         # This is needed for discord to understand we are not trying to display
         # the file itself and the image in the embed. (duplicate images)
-        embed.set_image(url="attachment://banner.png")
+        if embed.image.url:
+            filename = embed.image.url.split("/")[6].split("?")[0]
+        else:
+            filename = "banner.png"
+        embed.set_image(url=f"attachment://{filename}")
 
         self.banners.append(message.id)
-        self.banner_db.update_one({"name": "banners"}, {"$set": {"banners": self.banners}})
+        self.banner_db.update_one({"name": "banners_id"}, {"$set": {"banners": self.banners}})
         BannerCycle().queue_last(message.id)
-        BannerCycle().update_list(self.banners)
 
         await interaction.response.edit_message(embed=embed, view=None)
         assert embed.author.name
@@ -130,7 +133,11 @@ class BannerView(dui.View):
 
         # This is needed for discord to understand we are not trying to display
         # the file itself and the image in the embed. (duplicate images)
-        embed.set_image(url="attachment://banner.png")
+        if embed.image.url:
+            filename = embed.image.url.split("/")[6].split("?")[0]
+        else:
+            filename = "banner.png"
+        embed.set_image(url=f"attachment://{filename}")
 
         await interaction.response.edit_message(embed=embed, view=None)
 
@@ -187,8 +194,8 @@ class Banner(commands.Cog):
 
                         if len(banner) / 1024 < 10240:
                             if byte:
-                                return banner
-                            return url
+                                return banner, response.content_type.split("/")[1]
+                            return url, response.content_type.split("/")[1]
                         raise errors.InvalidParameterError(
                             content=f"Image must be less than 10240kb, yours is {int(len(banner)/1024)}kb."
                         )
@@ -224,20 +231,20 @@ class Banner(commands.Cog):
 
         url_: bytes | str
         if url:
-            url_ = await self.verify_url(url=url, byte=True)
+            url_, img_type = await self.verify_url(url=url, byte=True)
         elif image:
-            url_ = await self.verify_url(url=image.url, byte=True)
+            url_, img_type = await self.verify_url(url=image.url, byte=True)
         else:
             raise errors.InvalidParameterError(content="An image file or url is required")
 
-        file = discord.File(io.BytesIO(url), filename="banner.png")  # type: ignore
+        file = discord.File(io.BytesIO(url), filename=f"banner.{img_type}")  # type: ignore
 
         embed = discord.Embed(title="Banner Added", color=discord.Color.green())
         embed.set_author(
             name=interaction.user.name + "#" + interaction.user.discriminator,
             icon_url=interaction.user.display_avatar.url,
         )
-        embed.set_image(url="attachment://banner.png")
+        embed.set_image(url=f"attachment://banner.{img_type}")
         embed.set_footer(text="banner")
 
         # Uploads the information to the banners channel
@@ -248,7 +255,6 @@ class Banner(commands.Cog):
         self.banners.append(message.id)
         self.banner_db.update_one({"name": "banners"}, {"$set": {"banners": self.banners}})
         BannerCycle().queue_last(message.id)
-        BannerCycle().update_list(self.banners)
 
         await interaction.edit_original_response(content="Banner added.")
 
@@ -320,22 +326,22 @@ class Banner(commands.Cog):
         if url:
             if not url.startswith("https://cdn.discordapp.com"):
                 raise errors.InvalidParameterError(content="Only discord cdn links are supported")
-            url_ = await self.verify_url(url=url, byte=True)
+            url_, img_type = await self.verify_url(url=url, byte=True)
 
         elif image:
-            url_ = await self.verify_url(url=image.url, byte=True)
+            url_, img_type = await self.verify_url(url=image.url, byte=True)
 
         else:
             raise errors.InvalidParameterError(content="An image file or url is required")
 
-        file = discord.File(io.BytesIO(url_), filename="banner.png")  # type: ignore
+        file = discord.File(io.BytesIO(url_), filename=f"banner.{img_type}")  # type: ignore
 
         embed = discord.Embed(color=0xC8A2C8)
         embed.set_author(
             name=f"{interaction.user.name} ({interaction.user.id})",
             icon_url=interaction.user.display_avatar.url,
         )
-        embed.set_image(url="attachment://banner.png")
+        embed.set_image(url=f"attachment://banner.{img_type}")
         embed.set_footer(text="banner")
         await automated_channel.send(embed=embed, file=file, view=self.BANNER_VIEW)
 
@@ -364,10 +370,10 @@ class Banner(commands.Cog):
         """
         url_: str | bytes
         if url:
-            url_ = await self.verify_url(url=url, byte=not queue)
+            url_, img_type = await self.verify_url(url=url, byte=not queue)
 
         elif image:
-            url_ = await self.verify_url(url=image.url, byte=not queue)
+            url_, img_type = await self.verify_url(url=image.url, byte=not queue)
 
         else:
             raise errors.InvalidParameterError(content="An image file or url is required")
@@ -386,11 +392,12 @@ class Banner(commands.Cog):
         """
         Task that rotates the banner
         """
+        guild = self.bot.get_mainguild()
+        cur_banner_id = next(self.banner_cycle)
+        self.logger.info(f"{cur_banner_id}")
+        automated_channel = self.bot._get_channel(Reference.Channels.banners_and_topics)
         try:
-            guild = self.bot.get_mainguild()
-            async with aiohttp.ClientSession() as session:
-                cur_banner_id = next(self.banner_cycle)
-                automated_channel = self.bot._get_channel(Reference.Channels.banners_and_topics)
+            if type(cur_banner_id) is not str:
                 message = await automated_channel.fetch_message(cur_banner_id)
                 url = None
                 if message.embeds:
@@ -400,7 +407,9 @@ class Banner(commands.Cog):
                     url = message.attachments[0].url
                 if url is None:
                     raise commands.BadArgument()
-
+            else:
+                url = cur_banner_id
+            async with aiohttp.ClientSession() as session:
                 async with session.get(url) as response:
                     banner = await response.content.read()
                     await guild.edit(banner=banner)
