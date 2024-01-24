@@ -453,7 +453,7 @@ class Cycle(object):
         super().__init__(*args, **kwargs)
         if queue:
             self.queue = queue
-            self.dequeueue = deque(random.sample(self.queue, len(self.queue)))
+            self.dequeue = deque(random.sample(self.queue, len(self.queue)))
 
     def __iter__(self):
         return self
