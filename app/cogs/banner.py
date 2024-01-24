@@ -237,7 +237,7 @@ class Banner(commands.Cog):
         else:
             raise errors.InvalidParameterError(content="An image file or url is required")
 
-        file = discord.File(io.BytesIO(url), filename=f"banner.{img_type}")  # type: ignore
+        file = discord.File(io.BytesIO(url_), filename=f"banner.{img_type}")  # type: ignore
 
         embed = discord.Embed(title="Banner Added", color=discord.Color.green())
         embed.set_author(
@@ -253,7 +253,7 @@ class Banner(commands.Cog):
         message = await automated_channel.send(embed=embed, file=file)
 
         self.banners.append(message.id)
-        self.banner_db.update_one({"name": "banners"}, {"$set": {"banners": self.banners}})
+        self.banner_db.update_one({"name": "banners_id"}, {"$set": {"banners": self.banners}})
         BannerCycle().queue_last(message.id)
 
         await interaction.edit_original_response(content="Banner added.")
