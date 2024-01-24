@@ -493,12 +493,6 @@ class Cycle(object):
         except:
             pass
 
-    def update_list(self, entry):
-        """
-        Syncs the queue with mongo list
-        """
-        self.queue = entry
-
 
 class BannerCycle(Cycle):
     pass
