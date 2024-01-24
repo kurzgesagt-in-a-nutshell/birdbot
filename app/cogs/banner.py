@@ -56,6 +56,14 @@ class BannerView(dui.View):
         self._accept.custom_id = accept_id
         self._deny.custom_id = deny_id
 
+    def filename_from_url(self, url: str | None):
+        # yes this only works for cdn.discordapp links
+        if url:
+            filename = url.split("/")[6].split("?")[0]
+        else:
+            filename = "banner.png"
+        return filename
+
     async def interaction_check(self, interaction: Interaction) -> bool:
         """
         Checks that the interactor is a moderator+ for the defined guild
@@ -92,10 +100,8 @@ class BannerView(dui.View):
 
         # This is needed for discord to understand we are not trying to display
         # the file itself and the image in the embed. (duplicate images)
-        if embed.image.url:
-            filename = embed.image.url.split("/")[6].split("?")[0]
-        else:
-            filename = "banner.png"
+
+        filename = self.filename_from_url(url)
         embed.set_image(url=f"attachment://{filename}")
 
         self.banners.append(message.id)
@@ -133,10 +139,8 @@ class BannerView(dui.View):
 
         # This is needed for discord to understand we are not trying to display
         # the file itself and the image in the embed. (duplicate images)
-        if embed.image.url:
-            filename = embed.image.url.split("/")[6].split("?")[0]
-        else:
-            filename = "banner.png"
+
+        filename = self.filename_from_url(embed.image.url)
         embed.set_image(url=f"attachment://{filename}")
 
         await interaction.response.edit_message(embed=embed, view=None)
