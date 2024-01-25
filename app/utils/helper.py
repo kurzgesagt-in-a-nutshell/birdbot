@@ -441,8 +441,6 @@ class Cycle(object):
     """
 
     __instance = None
-    queue = []
-    dequeue = deque([], 0)
 
     def __new__(cls, *args, **kwargs):
         if cls.__instance is None:
@@ -454,6 +452,9 @@ class Cycle(object):
         if queue:
             self.queue = queue
             self.dequeue = deque(random.sample(self.queue, len(self.queue)))
+        else:
+            self.queue = []
+            self.dequeue = deque([], 0)
 
     def __iter__(self):
         return self
