@@ -418,9 +418,8 @@ class Banner(commands.Cog):
                     banner = await response.content.read()
                     await guild.edit(banner=banner)
                     self.logger.info(f"Rotated Banner {url}")
-        except Exception as e:
-            logger.error("Failed rotating banner")
-            logger.error(e.__traceback__)
+        except:
+            logger.exception("Failed rotating banner")
 
 
 async def setup(bot: BirdBot):
