@@ -21,7 +21,6 @@ import io
 import logging
 import re
 import typing
-from itertools import cycle
 
 import aiohttp
 import discord
@@ -34,7 +33,7 @@ from pymongo.errors import CollectionInvalid
 from app.birdbot import BirdBot
 from app.utils import checks, errors
 from app.utils.config import Reference
-from app.utils.helper import calc_time, get_time_string
+from app.utils.helper import BannerCycle, calc_time, get_time_string
 
 if typing.TYPE_CHECKING:
     from pymongo.collection import Collection
@@ -56,6 +55,14 @@ class BannerView(dui.View):
 
         self._accept.custom_id = accept_id
         self._deny.custom_id = deny_id
+
+    def filename_from_url(self, url: str | None):
+        # yes this only works for cdn.discordapp links
+        if url:
+            filename = url.split("/")[6].split("?")[0]
+        else:
+            filename = "banner.png"
+        return filename
 
     async def interaction_check(self, interaction: Interaction) -> bool:
         """
@@ -93,10 +100,13 @@ class BannerView(dui.View):
 
         # This is needed for discord to understand we are not trying to display
         # the file itself and the image in the embed. (duplicate images)
-        embed.set_image(url="attachment://banner.png")
 
-        self.banners.append(url)
-        self.banner_db.update_one({"name": "banners"}, {"$set": {"banners": self.banners}})
+        filename = self.filename_from_url(url)
+        embed.set_image(url=f"attachment://{filename}")
+
+        self.banners.append(message.id)
+        self.banner_db.update_one({"name": "banners_id"}, {"$set": {"banners": self.banners}})
+        BannerCycle().queue_last(message.id)
 
         await interaction.response.edit_message(embed=embed, view=None)
         assert embed.author.name
@@ -129,7 +139,9 @@ class BannerView(dui.View):
 
         # This is needed for discord to understand we are not trying to display
         # the file itself and the image in the embed. (duplicate images)
-        embed.set_image(url="attachment://banner.png")
+
+        filename = self.filename_from_url(embed.image.url)
+        embed.set_image(url=f"attachment://{filename}")
 
         await interaction.response.edit_message(embed=embed, view=None)
 
@@ -143,10 +155,11 @@ class Banner(commands.Cog):
         self.banner_db: Collection = self.bot.db.Banners
 
     async def cog_load(self) -> None:
-        banners_find = self.banner_db.find_one({"name": "banners"})
+        banners_find = self.banner_db.find_one({"name": "banners_id"})
         if banners_find == None:
             raise CollectionInvalid
         self.banners: typing.List = banners_find["banners"]
+        self.banner_cycle = BannerCycle(self.banners)
 
         self.BANNER_ACCEPT = f"BANNER-ACCEPT-{self.bot._user().id}"
         self.BANNER_DENY = f"BANNER-DENY-{self.bot._user().id}"
@@ -185,8 +198,8 @@ class Banner(commands.Cog):
 
                         if len(banner) / 1024 < 10240:
                             if byte:
-                                return banner
-                            return url
+                                return banner, response.content_type.split("/")[1]
+                            return url, response.content_type.split("/")[1]
                         raise errors.InvalidParameterError(
                             content=f"Image must be less than 10240kb, yours is {int(len(banner)/1024)}kb."
                         )
@@ -222,31 +235,30 @@ class Banner(commands.Cog):
 
         url_: bytes | str
         if url:
-            url_ = await self.verify_url(url=url, byte=True)
+            url_, img_type = await self.verify_url(url=url, byte=True)
         elif image:
-            url_ = await self.verify_url(url=image.url, byte=True)
+            url_, img_type = await self.verify_url(url=image.url, byte=True)
         else:
             raise errors.InvalidParameterError(content="An image file or url is required")
 
-        file = discord.File(io.BytesIO(url), filename="banner.png")  # type: ignore
+        file = discord.File(io.BytesIO(url_), filename=f"banner.{img_type}")  # type: ignore
 
         embed = discord.Embed(title="Banner Added", color=discord.Color.green())
         embed.set_author(
             name=interaction.user.name + "#" + interaction.user.discriminator,
             icon_url=interaction.user.display_avatar.url,
         )
-        embed.set_image(url="attachment://banner.png")
+        embed.set_image(url=f"attachment://banner.{img_type}")
         embed.set_footer(text="banner")
 
         # Uploads the information to the banners channel
-        # The url is then extracted from this embed to keep a static reference
+        # The message ID is then extracted from this embed to keep a static reference
+        # The message ID is later used to fetch the image
         message = await automated_channel.send(embed=embed, file=file)
 
-        embed = message.embeds[0]
-        url = embed.image.url
-
-        self.banners.append(url)
-        self.banner_db.update_one({"name": "banners"}, {"$set": {"banners": self.banners}})
+        self.banners.append(message.id)
+        self.banner_db.update_one({"name": "banners_id"}, {"$set": {"banners": self.banners}})
+        BannerCycle().queue_last(message.id)
 
         await interaction.edit_original_response(content="Banner added.")
 
@@ -287,6 +299,7 @@ class Banner(commands.Cog):
 
         assert time
         self.timed_banner_rotation.change_interval(seconds=time)
+
         await interaction.response.send_message(f"Banners are rotating every {get_time_string(time)}.", ephemeral=True)
 
     # Making this standalone command cause can not override default permissions, and we need only this command to be visible to users.
@@ -315,22 +328,24 @@ class Banner(commands.Cog):
 
         url_: bytes | str
         if url:
-            url_ = await self.verify_url(url=url, byte=True)
+            if not url.startswith("https://cdn.discordapp.com"):
+                raise errors.InvalidParameterError(content="Only discord cdn links are supported")
+            url_, img_type = await self.verify_url(url=url, byte=True)
 
         elif image:
-            url_ = await self.verify_url(url=image.url, byte=True)
+            url_, img_type = await self.verify_url(url=image.url, byte=True)
 
         else:
             raise errors.InvalidParameterError(content="An image file or url is required")
 
-        file = discord.File(io.BytesIO(url_), filename="banner.png")  # type: ignore
+        file = discord.File(io.BytesIO(url_), filename=f"banner.{img_type}")  # type: ignore
 
         embed = discord.Embed(color=0xC8A2C8)
         embed.set_author(
             name=f"{interaction.user.name} ({interaction.user.id})",
             icon_url=interaction.user.display_avatar.url,
         )
-        embed.set_image(url="attachment://banner.png")
+        embed.set_image(url=f"attachment://banner.{img_type}")
         embed.set_footer(text="banner")
         await automated_channel.send(embed=embed, file=file, view=self.BANNER_VIEW)
 
@@ -344,8 +359,9 @@ class Banner(commands.Cog):
         interaction: discord.Interaction,
         image: typing.Optional[discord.Attachment] = None,
         url: typing.Optional[str] = None,
+        queue: typing.Optional[bool] = False,
     ):
-        """Change server banner
+        """Change the current server banner
 
         Parameters
         ----------
@@ -353,22 +369,27 @@ class Banner(commands.Cog):
             An image file
         url: str
             URL or Link of an image
+        queue: bool
+            Queue this banner next in rotation
         """
         url_: str | bytes
         if url:
-            url_ = await self.verify_url(url=url, byte=True)
+            url_, img_type = await self.verify_url(url=url, byte=not queue)
 
         elif image:
-            url_ = await self.verify_url(url=image.url, byte=True)
+            url_, img_type = await self.verify_url(url=image.url, byte=not queue)
 
         else:
             raise errors.InvalidParameterError(content="An image file or url is required")
 
-        assert isinstance(url_, bytes)
-
-        await self.bot.get_mainguild().edit(banner=url_)
-
-        await interaction.response.send_message("Server banner changed!", ephemeral=True)
+        if not queue:
+            assert isinstance(url_, bytes)
+            await self.bot.get_mainguild().edit(banner=url_)
+            await interaction.response.send_message("Server banner changed!", ephemeral=True)
+        else:
+            logger.info(type(url_))
+            BannerCycle().queue_next(url_)
+            await interaction.response.send_message("Banner queued next", ephemeral=True)
 
     @tasks.loop()
     async def timed_banner_rotation(self):
@@ -376,12 +397,29 @@ class Banner(commands.Cog):
         Task that rotates the banner
         """
         guild = self.bot.get_mainguild()
-        banners = cycle(self.banners)
-        async with aiohttp.ClientSession() as session:
-            cur_banner = next(banners)
-            async with session.get(cur_banner) as response:
-                banner = await response.content.read()
-                await guild.edit(banner=banner)
+        cur_banner_id = next(self.banner_cycle)
+        self.logger.info(f"{cur_banner_id}")
+        automated_channel = self.bot._get_channel(Reference.Channels.banners_and_topics)
+        try:
+            if type(cur_banner_id) is not str:
+                message = await automated_channel.fetch_message(cur_banner_id)
+                url = None
+                if message.embeds:
+                    url = message.embeds[0].image.url
+                # this is necessary for legacy reasons
+                elif message.attachments:
+                    url = message.attachments[0].url
+                if url is None:
+                    raise commands.BadArgument()
+            else:
+                url = cur_banner_id
+            async with aiohttp.ClientSession() as session:
+                async with session.get(url) as response:
+                    banner = await response.content.read()
+                    await guild.edit(banner=banner)
+                    self.logger.info(f"Rotated Banner {url}")
+        except:
+            logger.exception("Failed rotating banner")
 
 
 async def setup(bot: BirdBot):

@@ -1,7 +1,5 @@
 import asyncio
-import copy
 import logging
-import random
 import re
 import typing
 from typing import TYPE_CHECKING
@@ -16,6 +14,7 @@ from pymongo.errors import CollectionInvalid
 from app.birdbot import BirdBot
 from app.utils import checks, errors
 from app.utils.config import Reference
+from app.utils.helper import TopicCycle
 
 if TYPE_CHECKING:
     from pymongo.collection import Collection
@@ -108,7 +107,9 @@ class TopicAcceptorView(dui.View):
 
         topic = embed.description
         self.topics.append(topic)
-        self.topics_db.update_one({"name": "topics"}, {"$set": {"topics": self.topics}})  # type: ignore
+        self.topic_db.update_one({"name": "topics"}, {"$set": {"topics": self.topics}})  # type: ignore
+
+        TopicCycle().queue_last(topic)
 
         embed.color = discord.Color.green()
         embed.title = f"Accepted by {interaction.user.name}"
@@ -178,8 +179,6 @@ class Topic(commands.Cog):
             raise CollectionInvalid
         self.topics: typing.List = topics_find["topics"]  # Use this for DB interaction
 
-        self.topics_list = copy.deepcopy(self.topics)  # This is used to stop topic repeats
-
     @commands.Cog.listener()
     async def on_ready(self):
         self.logger.info("loaded Topic")
@@ -199,6 +198,8 @@ class Topic(commands.Cog):
 
         self.bot.add_view(self.TOPIC_VIEW)
 
+        self.topics_cycle = TopicCycle(self.topics)
+
     async def cog_unload(self) -> None:
         self.TOPIC_VIEW.stop()
 
@@ -217,11 +218,8 @@ class Topic(commands.Cog):
     @app_commands.checks.cooldown(1, 300, key=lambda i: (i.guild_id, i.user.id))
     async def topic(self, interaction: discord.Interaction):
         """Fetches a random topic"""
-        random_index = random.randint(0, len(self.topics_list) - 1)
-        await interaction.response.send_message(f"{self.topics_list.pop(random_index)}")
-
-        if self.topics_list == []:
-            self.topics_list = copy.deepcopy(self.topics)
+        topic = next(self.topics_cycle)
+        await interaction.response.send_message(f"{topic}")
 
     @topics_command.command()
     @checks.mod_and_above()
@@ -267,7 +265,9 @@ class Topic(commands.Cog):
 
         self.topics_db.update_one({"name": "topics"}, {"$set": {"topics": self.topics}})
 
-        await interaction.response.send_message(f"Topic added at index {len(self.topics)}")
+        TopicCycle().queue_last(text)
+
+        await interaction.response.send_message(f"Topic added.")
 
     @topics_command.command()
     @checks.mod_and_above()
@@ -286,6 +286,10 @@ class Topic(commands.Cog):
         search_text: str
             Search string
         """
+        topics_find = self.topics_db.find_one({"name": "topics"})
+        if topics_find == None:
+            raise CollectionInvalid
+        self.topics = topics_find["topics"]
 
         if index is None and search_text is None:
             return await interaction.response.send_message(
@@ -305,6 +309,8 @@ class Topic(commands.Cog):
             del self.topics[index]
 
             self.topics_db.update_one({"name": "topics"}, {"$set": {"topics": self.topics}})
+
+            TopicCycle().queue_remove(topic)
 
             emb = discord.Embed(
                 title="Success",
@@ -367,6 +373,8 @@ class Topic(commands.Cog):
                 self.topics.remove(search_result[i][0])
 
                 self.topics_db.update_one({"name": "topics"}, {"$set": {"topics": self.topics}})
+
+                TopicCycle().queue_remove(search_result[i][0])
 
                 await msg.edit(embed=emb)
                 await msg.clear_reactions()

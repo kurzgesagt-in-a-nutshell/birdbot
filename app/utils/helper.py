@@ -1,6 +1,8 @@
 import datetime
 import logging
+import random
 import re
+from collections import deque
 from typing import List, Tuple
 
 import discord
@@ -8,11 +10,12 @@ from discord.ext import commands
 
 from app.birdbot import BirdBot
 
+from .config import Reference
+
 infraction_db = BirdBot.db.Infraction
 timed_actions_db = BirdBot.db.TimedAction
 cmd_blacklist_db = BirdBot.db.CommandBlacklist
 
-from .config import Reference
 
 logger = logging.getLogger("Helper")
 
@@ -430,3 +433,71 @@ def is_public_channel(channel: discord.TextChannel | discord.Thread) -> bool:
     """
 
     return channel.category_id != Reference.Categories.moderation
+
+
+class Cycle(object):
+    """
+    Singleton iterator class used to cycle through random list infinitely
+    """
+
+    __instance = None
+
+    def __new__(cls, *args, **kwargs):
+        if cls.__instance is None:
+            cls.__instance = super(Cycle, cls).__new__(cls)
+        return cls.__instance
+
+    def __init__(self, queue: list | None = None, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if queue:
+            self.queue = queue
+            self.dequeue = deque(random.sample(self.queue, len(self.queue)))
+        else:
+            self.queue = []
+            self.dequeue = deque([], 0)
+
+    def __iter__(self):
+        return self
+
+    def __next__(
+        self,
+    ):
+        if len(self.dequeue) == 1:
+            self.dequeue.extend(random.sample(self.queue, len(self.queue)))
+
+        if not self.dequeue:
+            raise StopIteration
+
+        cur = self.dequeue.popleft()
+        return cur
+
+    def queue_last(self, entry):
+        """
+        Adds item to end of queue
+        """
+        self.dequeue.append(entry)
+
+    def queue_next(self, entry):
+        """
+        Adds item to beginning of queue
+        """
+        logger.info("queued banner")
+        logger.info(entry)
+        self.dequeue.extendleft([entry])
+
+    def queue_remove(self, entry):
+        """
+        Removes item from the queue
+        """
+        try:
+            self.dequeue.remove(entry)
+        except:
+            pass
+
+
+class BannerCycle(Cycle):
+    pass
+
+
+class TopicCycle(Cycle):
+    pass
