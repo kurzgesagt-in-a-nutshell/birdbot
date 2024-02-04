@@ -384,10 +384,11 @@ class Banner(commands.Cog):
 
         if not queue:
             assert isinstance(url_, bytes)
+            self.logger.info(f"Changed Banner to {url_}")
             await self.bot.get_mainguild().edit(banner=url_)
             await interaction.response.send_message("Server banner changed!", ephemeral=True)
         else:
-            logger.info(type(url_))
+            logger.info("Added banner to be queued next")
             BannerCycle().queue_next(url_)
             await interaction.response.send_message("Banner queued next", ephemeral=True)
 

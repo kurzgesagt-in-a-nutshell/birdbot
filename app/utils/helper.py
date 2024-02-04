@@ -481,8 +481,6 @@ class Cycle(object):
         """
         Adds item to beginning of queue
         """
-        logger.info("queued banner")
-        logger.info(entry)
         self.dequeue.extendleft([entry])
 
     def queue_remove(self, entry):
