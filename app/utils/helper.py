@@ -459,9 +459,10 @@ class Cycle(object):
     def __iter__(self):
         return self
 
-    def __next__(
-        self,
-    ):
+    def __next__(self):
+        """
+        Returns current item in the deque and makes a new random deque if necessary
+        """
         if len(self.dequeue) == 1:
             self.dequeue.extend(random.sample(self.queue, len(self.queue)))
 

@@ -402,6 +402,7 @@ class Banner(commands.Cog):
         self.logger.info(f"{cur_banner_id}")
         automated_channel = self.bot._get_channel(Reference.Channels.banners_and_topics)
         try:
+            # check if banner is a message id (int) or url (str)
             if type(cur_banner_id) is not str:
                 message = await automated_channel.fetch_message(cur_banner_id)
                 url = None
