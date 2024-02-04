@@ -442,6 +442,9 @@ class Cycle(object):
 
     __instance = None
 
+    queue = []
+    dequeue = deque([], 0)
+
     def __new__(cls, *args, **kwargs):
         if cls.__instance is None:
             cls.__instance = super(Cycle, cls).__new__(cls)
@@ -452,16 +455,14 @@ class Cycle(object):
         if queue:
             self.queue = queue
             self.dequeue = deque(random.sample(self.queue, len(self.queue)))
-        else:
-            self.queue = []
-            self.dequeue = deque([], 0)
 
     def __iter__(self):
         return self
 
-    def __next__(
-        self,
-    ):
+    def __next__(self):
+        """
+        Returns current item in the deque and makes a new random deque if necessary
+        """
         if len(self.dequeue) == 1:
             self.dequeue.extend(random.sample(self.queue, len(self.queue)))
 
@@ -481,8 +482,6 @@ class Cycle(object):
         """
         Adds item to beginning of queue
         """
-        logger.info("queued banner")
-        logger.info(entry)
         self.dequeue.extendleft([entry])
 
     def queue_remove(self, entry):

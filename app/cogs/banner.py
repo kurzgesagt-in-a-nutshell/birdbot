@@ -47,10 +47,10 @@ class BannerView(dui.View):
     denying a banner suggestion
     """
 
-    def __init__(self, banner_db, banners, accept_id, deny_id):
+    def __init__(self, banner_db, banners: list, accept_id: str, deny_id: str):
         super().__init__(timeout=None)
 
-        self.banner_db = banner_db
+        self.banner_db: Collection = banner_db
         self.banners = banners
 
         self._accept.custom_id = accept_id
@@ -384,10 +384,11 @@ class Banner(commands.Cog):
 
         if not queue:
             assert isinstance(url_, bytes)
+            self.logger.info(f"Changed Banner to {url_}")
             await self.bot.get_mainguild().edit(banner=url_)
             await interaction.response.send_message("Server banner changed!", ephemeral=True)
         else:
-            logger.info(type(url_))
+            logger.info("Added banner to be queued next")
             BannerCycle().queue_next(url_)
             await interaction.response.send_message("Banner queued next", ephemeral=True)
 
@@ -401,6 +402,7 @@ class Banner(commands.Cog):
         self.logger.info(f"{cur_banner_id}")
         automated_channel = self.bot._get_channel(Reference.Channels.banners_and_topics)
         try:
+            # check if banner is a message id (int) or url (str)
             if type(cur_banner_id) is not str:
                 message = await automated_channel.fetch_message(cur_banner_id)
                 url = None
