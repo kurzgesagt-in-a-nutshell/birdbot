@@ -107,7 +107,7 @@ class TopicAcceptorView(dui.View):
 
         topic = embed.description
         self.topics.append(topic)
-        self.topics_db.update_one({"name": "topics"}, {"$set": {"topics": self.topics}})  # type: ignore
+        self.topics_db.update_one({"name": "topics"}, {"$set": {"topics": self.topics}})
 
         TopicCycle().queue_last(topic)
 

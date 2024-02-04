@@ -47,10 +47,10 @@ class BannerView(dui.View):
     denying a banner suggestion
     """
 
-    def __init__(self, banner_db, banners, accept_id, deny_id):
+    def __init__(self, banner_db, banners: list, accept_id: str, deny_id: str):
         super().__init__(timeout=None)
 
-        self.banner_db = banner_db
+        self.banner_db: Collection = banner_db
         self.banners = banners
 
         self._accept.custom_id = accept_id
