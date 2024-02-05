@@ -43,7 +43,11 @@ class Giveaway(commands.Cog):
     )
 
     async def choose_winner(self, giveaway):
-        """does the giveaway logic"""
+        """
+        Does the giveaway logic.
+
+        Chooses a winner, edits the giveaway embed and pings the winners.
+        """
         message = False
         try:
             channel = await self.bot.fetch_channel(giveaway["channel_id"])
@@ -159,6 +163,11 @@ class Giveaway(commands.Cog):
 
     @tasks.loop()
     async def giveaway_task(self):
+        """
+        Keep track of active giveaways.
+
+        Ends giveaways and queues up active ones.
+        """
         templist = list(self.active_giveaways)
         firstgiveaway = {}
 
@@ -199,7 +208,8 @@ class Giveaway(commands.Cog):
         sponsor: typing.Optional[discord.Member | discord.User] = None,
         rigged: typing.Optional[bool] = True,
     ):
-        """Starts a new giveaway
+        """
+        Starts a new giveaway.
 
         Parameters
         ----------
@@ -286,7 +296,8 @@ class Giveaway(commands.Cog):
     @giveaway_commands.command()
     @checks.mod_and_above()
     async def end(self, interaction: discord.Interaction, message_id: str):
-        """Ends the giveaway preemptively
+        """
+        Ends the giveaway preemptively.
 
         Parameters
         ----------
@@ -312,7 +323,8 @@ class Giveaway(commands.Cog):
     @giveaway_commands.command()
     @checks.mod_and_above()
     async def cancel(self, interaction: discord.Interaction, message_id: str):
-        """Cancels the giveaway
+        """
+        Cancels a giveaway.
 
         Parameters
         ----------
@@ -360,7 +372,8 @@ class Giveaway(commands.Cog):
         ] = None,
         rigged: typing.Optional[bool] = None,
     ):
-        """Reroll the giveaway to select new winners.
+        """
+        Reroll the giveaway to select new winners.
 
         Parameters
         ----------
@@ -395,7 +408,9 @@ class Giveaway(commands.Cog):
     @giveaway_commands.command()
     @checks.mod_and_above()
     async def list(self, interaction: discord.Interaction):
-        """List all active giveaways"""
+        """
+        List all active giveaways.
+        """
 
         embed = discord.Embed(title="Active giveaways:")
         for messageid in self.active_giveaways:

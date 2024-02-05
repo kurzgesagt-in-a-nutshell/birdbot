@@ -17,7 +17,7 @@ class ExclusiveColorTransformer(app_commands.Transformer):
     @staticmethod
     def selectable_roles(member: discord.Member) -> List[discord.Role]:
         """
-        Returns a list of selectable roles from the member's found roles
+        Returns a list of selectable roles from the member's found roles.
         """
 
         # iterate through all of the exclusive colors
@@ -35,7 +35,7 @@ class ExclusiveColorTransformer(app_commands.Transformer):
 
     async def transform(self, interaction: Interaction, value: str) -> discord.Role:
         """
-        Transforms the string value into an exclusive colored role
+        Transforms the string value into an exclusive colored role.
         """
 
         if not isinstance(interaction.user, discord.Member):
@@ -54,8 +54,9 @@ class ExclusiveColorTransformer(app_commands.Transformer):
 
     async def autocomplete(self, interaction: Interaction, value: str) -> List[Choice[str]]:
         """
-        Returns a list of chocies (exclusive colored roles) for the member to
-        pick from. This method only returns roles that they have access to.
+        Returns a list of chocies (exclusive colored roles) for the member to pick from.
+
+        This method only returns roles that they have access to.
         """
 
         if not isinstance(interaction.user, discord.Member):
@@ -68,8 +69,7 @@ class ExclusiveColorTransformer(app_commands.Transformer):
 
 class ColorSelect(commands.Cog):
     """
-    Handles the removal of exclusive colored roles when a member no longer has
-    the role that proves the color.
+    Handles the removal of exclusive colored roles when a member no longer has the role that proves the color.
 
     Allows users to add or remove a colored role based on their current roles.
     """
@@ -80,8 +80,9 @@ class ColorSelect(commands.Cog):
     @commands.Cog.listener()
     async def on_member_update(self, before: discord.Member, after: discord.Member):
         """
-        Checks if the provided members roles are different. If so, check if the
-        exclusive colored roles applied, if any, are valid.
+        Checks if the provided members roles are different.
+
+        If so, check if the exclusive colored roles applied, if any, are valid.
         """
 
         if before.roles == after.roles:
@@ -116,9 +117,9 @@ class ColorSelect(commands.Cog):
         color: app_commands.Transform[discord.Role, ExclusiveColorTransformer],
     ):
         """
-        Allows the member to select a role to apply to themselves based on the
-        colored configuration. They can select to add or remove the role and
-        only roles they have access to apply are provided in autocomplete.
+        Allows the member to select a role to apply to themselves based on the colored configuration.
+
+        They can select to add or remove the role and only roles they have access to apply are provided in autocomplete.
         """
 
         if (

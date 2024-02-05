@@ -27,7 +27,7 @@ class MemberEvents(commands.Cog):
     @commands.Cog.listener()
     async def on_member_update(self, before: discord.Member, after: discord.Member):
         """
-        Grant roles upon passing membership screening
+        Grant roles upon passing membership screening.
         """
 
         if not self.bot.ismainbot():
@@ -38,7 +38,7 @@ class MemberEvents(commands.Cog):
 
     async def send_welcome(self, member: discord.Member):
         """
-        Send welcome message
+        Send welcome message.
         """
         new_member_channel = self.bot._get_channel(Reference.Channels.new_members)
         await new_member_channel.send(
@@ -48,6 +48,9 @@ class MemberEvents(commands.Cog):
         )
 
     async def log_member_join(self, member: discord.Member):
+        """
+        Logs member joins in the logging channel.
+        """
         embed = discord.Embed(
             title="Member joined",
             description=f"{member.name}#{member.discriminator} ({member.id}) {member.mention}",
@@ -69,6 +72,9 @@ class MemberEvents(commands.Cog):
         await member_logging_channel.send(embed=embed)
 
     async def log_member_remove(self, member: discord.Member):
+        """
+        Logs member leaves in the logging channel.
+        """
         embed = discord.Embed(
             title="Member Left",
             description=f"{member.name}#{member.discriminator} ({member.id})",
@@ -110,6 +116,9 @@ class MemberEvents(commands.Cog):
             )
 
     async def log_nickname_change(self, before: discord.Member, after: discord.Member):
+        """
+        Logs member nickname change in the logging channel.
+        """
         if before.nick == after.nick:
             return
 

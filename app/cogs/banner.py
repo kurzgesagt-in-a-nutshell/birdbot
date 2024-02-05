@@ -43,8 +43,7 @@ logger = logging.getLogger(__name__)
 
 class BannerView(dui.View):
     """
-    The static view that is used for handling the controls of accepting or
-    denying a banner suggestion
+    The static view that is used for handling the controls of accepting or denying a banner suggestion.
     """
 
     def __init__(self, banner_db, banners: list, accept_id: str, deny_id: str):
@@ -57,7 +56,11 @@ class BannerView(dui.View):
         self._deny.custom_id = deny_id
 
     def filename_from_url(self, url: str | None):
-        # yes this only works for cdn.discordapp links
+        """
+        Get the image filename from the discord link.
+
+        Only works for cdn.discordapp.com links.
+        """
         if url:
             filename = url.split("/")[6].split("?")[0]
         else:
@@ -66,7 +69,7 @@ class BannerView(dui.View):
 
     async def interaction_check(self, interaction: Interaction) -> bool:
         """
-        Checks that the interactor is a moderator+ for the defined guild
+        Checks that the interactor is a moderator+ for the defined guild.
         """
 
         guild = discord.utils.get(interaction.client.guilds, id=Reference.guild)
@@ -86,8 +89,9 @@ class BannerView(dui.View):
     )
     async def _accept(self, interaction: Interaction, button: dui.Button):
         """
-        Accepts the banner and removes the view from the message
-        Changes the embed to indicate it was accepted and by who
+        Accepts the banner and removes the view from the message.
+
+        Changes the embed to indicate it was accepted and by who.
         """
         message = interaction.message
         assert message
@@ -127,8 +131,9 @@ class BannerView(dui.View):
     )
     async def _deny(self, interaction: Interaction, button: dui.Button):
         """
-        Denys the banner and removes the view from the message
-        Changes the embed to indicate it was denied and by who
+        Denies the banner and removes the view from the message.
+
+        Changes the embed to indicate it was denied and by who.
         """
         message = interaction.message
         assert message
@@ -187,8 +192,9 @@ class Banner(commands.Cog):
 
     async def verify_url(self, url: str, byte: bool = False):
         """
-        returns url after verifyng size and content_type
-        returns bytes object if byte is set to True
+        Returns url or bytes after verifyng size and content_type.
+
+        Returns bytes object if byte is set to True.
         """
         try:
             async with aiohttp.ClientSession() as session:
@@ -219,7 +225,8 @@ class Banner(commands.Cog):
         image: typing.Optional[discord.Attachment] = None,
         url: typing.Optional[str] = None,
     ):
-        """Add or upload a banner
+        """
+        Add or upload a banner.
 
         Parameters
         ----------
@@ -270,7 +277,8 @@ class Banner(commands.Cog):
         duration: typing.Optional[str] = None,
         stop: typing.Optional[bool] = False,
     ):
-        """Change server banner rotation duration or stop the rotation
+        """
+        Change server banner rotation duration or stop the rotation.
 
         Parameters
         ----------
@@ -302,7 +310,6 @@ class Banner(commands.Cog):
 
         await interaction.response.send_message(f"Banners are rotating every {get_time_string(time)}.", ephemeral=True)
 
-    # Making this standalone command cause can not override default permissions, and we need only this command to be visible to users.
     @app_commands.command()
     @app_commands.default_permissions(send_messages=True)
     @app_commands.guilds(Reference.guild)
@@ -313,7 +320,8 @@ class Banner(commands.Cog):
         image: typing.Optional[discord.Attachment] = None,
         url: typing.Optional[str] = None,
     ):
-        """Suggest an image from kurzgesagt for server banner
+        """
+        Suggest an image from kurzgesagt for server banner.
 
         Parameters
         ----------
@@ -361,7 +369,8 @@ class Banner(commands.Cog):
         url: typing.Optional[str] = None,
         queue: typing.Optional[bool] = False,
     ):
-        """Change the current server banner
+        """
+        Change the current server banner.
 
         Parameters
         ----------
@@ -395,7 +404,7 @@ class Banner(commands.Cog):
     @tasks.loop()
     async def timed_banner_rotation(self):
         """
-        Task that rotates the banner
+        Task that rotates the banners.
         """
         guild = self.bot.get_mainguild()
         cur_banner_id = next(self.banner_cycle)

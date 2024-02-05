@@ -14,7 +14,9 @@ from app.utils.helper import NoAuthorityError
 
 
 class Errors(commands.Cog):
-    """Catches all exceptions coming in through commands"""
+    """
+    Catches all exceptions coming in through commands.
+    """
 
     def __init__(self, bot: BirdBot):
         self.dev_logging_channel = Reference.Channels.Logging.dev

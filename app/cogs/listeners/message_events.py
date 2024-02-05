@@ -58,6 +58,9 @@ class MessageEvents(commands.Cog):
         await self.log_message_delete(message)
 
     async def log_message_delete(self, message: discord.Message):
+        """
+        Logs deleted message in the logging channel.
+        """
         assert isinstance(message.channel, discord.TextChannel | discord.Thread)
         assert message.guild
 
@@ -97,7 +100,7 @@ class MessageEvents(commands.Cog):
 
     async def log_message_edit(self, before: discord.Message, after: discord.Message):
         """
-        Logs message edits outside of the moderator category
+        Logs message edits outside of the moderator category.
         """
         assert isinstance(before.channel, discord.TextChannel | discord.Thread)
 
@@ -125,7 +128,7 @@ class MessageEvents(commands.Cog):
 
     async def translate_bannsystem(self, message: discord.Message):
         """
-        Translate incoming bannsystem reports
+        Translate incoming bannsystem reports.
         """
 
         if not (

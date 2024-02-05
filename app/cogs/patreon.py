@@ -17,9 +17,10 @@ class Patreon(commands.Cog):
 
     @commands.Cog.listener()
     async def on_member_join(self, member: discord.Member):
-        """Listen for new patrons and provide
-        them the option to unenroll from autojoining
-        Listen for new members and fire webhook for greeting"""
+        """
+        Listen for new patrons and provide them the option to unenroll from autojoining.
+        Listen for new members and fire webhook for greeting.
+        """
 
         diff_roles = [role.id for role in member.roles]
         if any(x in diff_roles for x in Reference.Roles.patreon()):
@@ -50,7 +51,9 @@ class Patreon(commands.Cog):
     @checks.patreon_only()
     @app_commands.checks.cooldown(1, 300, key=lambda i: (i.user.id))
     async def unenrol(self, interaction: discord.Interaction):
-        """Unenrol from Patron auto join"""
+        """
+        Unenrol from Patron auto join.
+        """
 
         embed = discord.Embed(
             title="We're sorry to see you go",

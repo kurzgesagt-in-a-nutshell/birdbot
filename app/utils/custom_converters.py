@@ -8,11 +8,17 @@ logger = logging.getLogger("CustomConverters")
 
 
 def _get_id_match(argument):
+    """
+    Check if string could be a user id.
+    """
     _id_regex = re.compile(r"([0-9]{15,21})$")
     return _id_regex.match(argument)
 
 
 def member_converter(ctx: commands.Context, argument):
+    """
+    Find a guild member from an id or mention string.
+    """
     try:
         bot = ctx.bot
         guild = ctx.guild
@@ -33,6 +39,9 @@ def member_converter(ctx: commands.Context, argument):
 
 
 def get_members(ctx: commands.Context, *args):
+    """
+    Return a list of members found and leftover text.
+    """
     try:
         members = []
         extra = []

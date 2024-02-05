@@ -88,7 +88,8 @@ class Filter(commands.Cog):
         interaction: discord.Interaction,
         list_type: typing.Literal["whitelist", "general", "humanities"],
     ):
-        """Show words in selected filter list
+        """
+        Show words in selected filter list.
 
         Parameters
         ----------
@@ -109,7 +110,8 @@ class Filter(commands.Cog):
         list_type: typing.Literal["whitelist", "general", "humanities"],
         word: str,
     ):
-        """Add a word in selected filter list
+        """
+        Add a word in selected filter list.
 
         Parameters
         ----------
@@ -141,7 +143,8 @@ class Filter(commands.Cog):
         list_type: typing.Literal["whitelist", "general", "humanities"],
         word: str,
     ):
-        """Remove a word in selected filter list
+        """
+        Remove a word in selected filter list.
 
         Parameters
         ----------
@@ -173,7 +176,8 @@ class Filter(commands.Cog):
         list_type: typing.Literal["general", "humanities"],
         text: str,
     ):
-        """Check if a word/phrase contains profanity
+        """
+        Check if a word/phrase contains profanity.
 
         Parameters
         ----------

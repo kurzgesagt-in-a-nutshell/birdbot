@@ -60,6 +60,9 @@ class Misc(commands.Cog):
             await self.edit_intro(after)
 
     async def edit_intro(self, member: discord.Member | discord.User):
+        """
+        Edits the intro with new name or avatar.
+        """
         intro = self.intro_db.find_one({"_id": member.id})
         if not intro:
             return
@@ -80,7 +83,7 @@ class Misc(commands.Cog):
     @checks.role_and_above(Reference.Roles.subreddit_mod)
     async def intro(self, interaction: discord.Interaction):
         """
-        Staff intro command, create or edit an intro
+        Staff intro command, create or edit an intro.
         """
         oldIntro = self.intro_db.find_one({"_id": interaction.user.id})
         await interaction.response.send_modal(IntroModal(oldIntro=oldIntro, bot=self.bot))  # type: ignore
@@ -89,9 +92,10 @@ class Misc(commands.Cog):
     @checks.admin_and_above()
     async def intro_reorg(self, interaction: discord.Interaction):
         """
-        Admin intro command, reorganize all intros
+        Admin intro command, reorganizes all intros.
+
+        Delete demoted entries in mongo, purge the channel and send all up to date intro embeds.
         """
-        """Delete demoted entries in mongo, purge the channel and send all up to date intro embeds"""
 
         await interaction.response.send_message("Will be done!", ephemeral=True)
 
@@ -152,16 +156,13 @@ class Misc(commands.Cog):
     @app_commands.checks.cooldown(1, 10)
     @checks.bot_commands_only()
     async def big_emote(self, interaction: discord.Interaction, emoji: str):
-        """Get image for server emote
+        """
+        Get image for server emote.
 
         Parameters
         ----------
         emoji: str
             Discord Emoji (only use in #bot-commands)
-        """
-        """
-        if len(args) > 1:
-            ctx.send("Please only send one emoji at a time")
         """
         print(len(demoji.findall_list(emoji)))
         if len(demoji.findall_list(emoji)) == 1:
@@ -253,7 +254,9 @@ class IntroModal(discord.ui.Modal):
         self.add_item(self.image)
 
     def get_footer(self, role: discord.Role) -> typing.Tuple[str, str | None]:
-        """Make the footer with role name and icon"""
+        """
+        Get the role name and icon for the footer.
+        """
         footer_name = "Kurzgesagt Official" if role.id == Reference.Roles.kgsmaintenance else role.name
         if role.icon:
             footer_icon = role.icon.url
@@ -262,7 +265,9 @@ class IntroModal(discord.ui.Modal):
         return footer_name, footer_icon
 
     def create_embed(self) -> discord.Embed:
-        """Make and return a new intro embed"""
+        """
+        Make and return a new intro embed.
+        """
         assert self.user
         description = f"**{self.timezone_txt}**\n\n" + self.bio_txt
 
@@ -279,7 +284,9 @@ class IntroModal(discord.ui.Modal):
         return embed
 
     def add_emojis(self, text: str) -> str:
-        """Add server emojis, because modals don't support them"""
+        """
+        Add server emojis, because modals don't support them.
+        """
         # make a simplified version of emojis
         serverEmojis: dict = {}
         for emoji in self.kgs_guild.emojis:
@@ -294,6 +301,9 @@ class IntroModal(discord.ui.Modal):
         )
 
     async def reorder_demotion(self, oldmessage: discord.Message):
+        """
+        Reorder the intros when user was demoted.
+        """
         # make a list of messages that have to be edited (doc, msg)
         # limit = self.intro_db.count_documents({})
         assert self.user
@@ -342,6 +352,9 @@ class IntroModal(discord.ui.Modal):
         self.intro_db.update_one({"_id": self.user.id}, {"$set": {"message_id": msg.id}})
 
     async def reorder_promotion(self, oldmessage: discord.Message):
+        """
+        Reorder intros when user was promoted.
+        """
         # make a list of messages that have to be edited (doc, msg)
         # limit = self.intro_db.count_documents({})
         assert self.user
@@ -389,6 +402,9 @@ class IntroModal(discord.ui.Modal):
         self.intro_db.update_one({"_id": self.user.id}, {"$set": {"message_id": msg.id}})
 
     async def reorder_add(self):
+        """
+        Reorder intros when a new intro was added.
+        """
         # make a list of messages that have to be edited (doc, msg)
         # limit = self.intro_db.count_documents({})
         assert self.user
@@ -441,7 +457,9 @@ class IntroModal(discord.ui.Modal):
         await message.edit(embed=newembed)
 
     async def on_submit(self, interaction: discord.Interaction):
-        """Most of the intro command logic is here"""
+        """
+        Most of the intro command logic is here.
+        """
         oldIntroMessage = None  # if we're adding a new intro this will remain None
 
         self.user = self.kgs_guild.get_member(interaction.user.id)

@@ -140,8 +140,7 @@ class GiveawayBias:
 
 class ExclusiveColors:
     """
-    Contains a list of selectable colored roles that can be provided to a user
-    if they have the role that unlocks the color.
+    Contains a list of selectable colored roles that can be provided to a user if they have the role that unlocks the color.
     """
 
     exclusive_colors = {

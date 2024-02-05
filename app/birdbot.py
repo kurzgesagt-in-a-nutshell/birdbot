@@ -24,6 +24,9 @@ logger = logging.getLogger("BirdBot")
 
 @contextmanager
 def setup():
+    """
+    Setup the logger.
+    """
     logger = logging.getLogger()
     try:
         dotenv.load_dotenv()
@@ -55,16 +58,15 @@ def setup():
 
 class BirdTree(app_commands.CommandTree):
     """
-    Subclass of app_commands.CommandTree to define the behavior for the birdbot
-    tree.
+    Subclass of app_commands.CommandTree to define the behavior for the birdbot tree.
 
-    Handles thrown errors within the tree and interactions between all commands
+    Handles thrown errors within the tree and interactions between all commands.
     """
 
     @classmethod
     async def maybe_responded(cls, interaction: Interaction, *args, **kwargs):
         """
-        Either responds or sends a followup on an interaction response
+        Either responds or sends a followup on an interaction response.
         """
         if interaction.response.is_done():
             await interaction.followup.send(*args, **kwargs)
@@ -75,7 +77,7 @@ class BirdTree(app_commands.CommandTree):
 
     async def alert(self, interaction: Interaction, error: app_commands.AppCommandError):
         """
-        Attempts to altert the discord channel logs of an exception
+        Attempts to alert the discord channel logs of an exception.
         """
 
         channel = await interaction.client.fetch_channel(Reference.Channels.Logging.dev)
@@ -93,7 +95,11 @@ class BirdTree(app_commands.CommandTree):
         await channel.send(embed=embed, file=file)
 
     async def on_error(self, interaction: Interaction, error: app_commands.AppCommandError):
-        """Handles errors thrown within the command tree"""
+        """
+        Handles errors thrown within the command tree.
+
+        Informs the user of failure and logs code errors.
+        """
         if isinstance(error, errors.InternalError):
             # Inform user of failure ephemerally
 
@@ -128,7 +134,9 @@ class BirdTree(app_commands.CommandTree):
 
 
 class BirdBot(commands.AutoShardedBot):
-    """Main Bot"""
+    """
+    Main Bot, inherited from AutoShardedBot.
+    """
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -137,7 +145,9 @@ class BirdBot(commands.AutoShardedBot):
 
     @classmethod
     def from_parseargs(cls, args: argparse.Namespace):
-        """Create and return an instance of a Bot from argparse Namespace instance"""
+        """
+        Create and return an instance of a Bot from argparse Namespace instance.
+        """
         logger.info(args)
         allowed_mentions = discord.AllowedMentions(roles=False, everyone=False, users=True)
         loop = asyncio.get_event_loop()
@@ -184,7 +194,9 @@ class BirdBot(commands.AutoShardedBot):
 
     @classmethod
     def get_database(cls):
-        """Return MongoClient instance to self.db"""
+        """
+        Return MongoClient instance to self.db.
+        """
         from pymongo import MongoClient
 
         db_key = os.environ.get("DB_KEY")
@@ -197,15 +209,14 @@ class BirdBot(commands.AutoShardedBot):
 
     async def setup_hook(self):
         """
-        Async setup for after the bot logs in
+        Async setup for after the bot logs in.
         """
         if self.args:
             await self.load_extensions("app/cogs", self.args)
 
     async def load_extensions(self, folder: Path | str, args: argparse.Namespace) -> None:
         """
-        Iterates over the extension folder and attempts to load all python files
-        found.
+        Iterates over the extension folder and attempts to load all python files found.
         """
 
         if folder is None:
@@ -216,6 +227,7 @@ class BirdBot(commands.AutoShardedBot):
             return
 
         for item in extdir.iterdir():
+            # Ignore some cogs for the test bots.
             if item.stem in ("antiraid", "automod", "giveaway") and (args.beta or args.alpha):
                 logger.debug("Skipping: %s", item.name)
                 continue
@@ -231,8 +243,7 @@ class BirdBot(commands.AutoShardedBot):
 
     async def try_load(self, path: Path) -> bool:
         """
-        Attempts to load the given path and returns a boolean indicating
-        successful status
+        Attempts to load the given path and returns a boolean indicating successful status.
         """
 
         extension = ".".join(path.with_suffix("").parts)
@@ -245,7 +256,9 @@ class BirdBot(commands.AutoShardedBot):
             return False
 
     async def close(self):
-        """Close the Discord connection and the aiohttp sessions if any (future perhaps?)."""
+        """
+        Close the Discord connection and the aiohttp sessions if any (future perhaps?).
+        """
         for ext in list(self.extensions):
             with suppress(Exception):
                 await self.unload_extension(ext)
@@ -264,12 +277,14 @@ class BirdBot(commands.AutoShardedBot):
         logger.info("------")
 
     """"
-    custom functions we can use
+    From here on it's custom functions we can use in cogs.
     """
 
     def _user(self) -> discord.ClientUser:
         """
-        Get self.bot.user. This can only be used after login, as it can't be none.
+        Get self.bot.user.
+
+        This can only be used after login, as user can't be none.
         """
         user = self.user
         if user == None:
@@ -278,7 +293,9 @@ class BirdBot(commands.AutoShardedBot):
 
     def ismainbot(self) -> bool:
         """
-        Checks if self.bot is mainbot. Only works after login.
+        Checks if self.bot is mainbot.
+
+        Only works after login.
         """
         if self._user().id == Reference.mainbot:
             return True
