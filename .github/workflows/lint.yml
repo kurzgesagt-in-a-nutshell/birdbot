@@ -12,3 +12,5 @@ on:
 jobs:
   lint:
     uses: kurzgesagt-in-a-nutshell/.github/.github/workflows/python-lint.yml@main
+  license-check:
+    uses: kurzgesagt-in-a-nutshell/.github/.github/workflows/license-check.yml@license-check
