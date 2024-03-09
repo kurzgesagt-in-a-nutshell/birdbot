@@ -1,4 +1,4 @@
-name: Lint Python
+name: Lint Python and check license headers
 
 on:
   pull_request:
@@ -13,4 +13,4 @@ jobs:
   lint:
     uses: kurzgesagt-in-a-nutshell/.github/.github/workflows/python-lint.yml@main
   license-checker:
-    uses: kurzgesagt-in-a-nutshell/.github/.github/workflows/license-check.yml@license-check
+    uses: kurzgesagt-in-a-nutshell/.github/.github/workflows/license-check.yml@main
