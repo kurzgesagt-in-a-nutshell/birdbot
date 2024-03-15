@@ -1,3 +1,7 @@
+"""
+Checks for the bot commands.
+These checks are used to ensure that the command invoker has the necessary permissions to run the command.
+"""
 import discord
 from discord import Interaction, app_commands
 from discord.ext import commands

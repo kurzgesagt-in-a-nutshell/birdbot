@@ -11,7 +11,9 @@ from .config import Reference
 
 
 class InternalError(Exception):
-    """ """
+    """
+    Base class for all internal errors.
+    """
 
     title = "Internal Error"
     content = "an unhandled internal error occurred. if this continues please inform an active bot dev"

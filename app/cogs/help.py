@@ -1,3 +1,7 @@
+"""
+This cog provides the help command and the ping command.
+"""
+
 import logging
 
 import discord

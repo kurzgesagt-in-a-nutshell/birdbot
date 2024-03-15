@@ -1,3 +1,7 @@
+"""
+This cog defines the ColorSelect class, which is responsible for handling the removal and addition of exclusive colored roles when a member no longer has the role that proves the color.
+It also allows users to add or remove a colored role based on their current roles.
+"""
 import logging
 from typing import List, Literal
 

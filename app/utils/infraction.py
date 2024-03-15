@@ -1,3 +1,12 @@
+"""
+This module provides classes for managing infractions in the kurzgesagt server.
+
+Classes:
+- InfractionKind: An enumeration representing the different types of infractions.
+- Infraction: Represents an individual infraction.
+- InfractionList: Represents a list of infractions for a user.
+"""
+
 import enum
 import logging
 from typing import Dict, List, Optional
@@ -47,6 +56,16 @@ class Infraction:
     ):
         """
         Creates a new infraction instance with the provided details.
+
+        Args:
+            kind (InfractionKind): The kind of infraction.
+            author (discord.User | discord.Member): The author of the infraction.
+            level (int): The level of the infraction.
+            reason (str): The reason for the infraction.
+            duration (Optional[str], optional): The duration of the infraction. Defaults to None.
+
+        Returns:
+            Infraction: The newly created infraction instance.
         """
 
         data = {

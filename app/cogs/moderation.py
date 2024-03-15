@@ -1,3 +1,26 @@
+"""
+This module contains the `Moderation` cog, which handles moderation-related commands and functionalities for the bot.
+
+Commands Defined:
+- `report`: Report issues to the moderation team, gives you an UI.
+- `clean` : Cleans/Purge messages from a channel.
+- `ban` : Ban or Force ban a user.
+- `unban` : Unban a user.
+- `kick` : Kick a user.
+- `selfmute` : Mute yourself.
+- `mute` : Mute a user.
+- `unmute` : Unmutes a user.
+- `role` : Add or Remove role to/from a user.
+- `warn` : Warns a user.
+- `delete_infr` : Allows for the deletion of an infraction.
+- `infraction` : Get infraction details of a user.
+- `detailed_inf` : Get detailed infraction details of a user.
+- `editinfr` : Edit an infraction.
+- `slowmode` : Set slowmode in a channel.
+-  `nocmd` : blacklists a user from using commands.
+- `yescmd` : whitelists a user from using commands.
+"""
+
 import datetime
 import io
 import logging
@@ -122,6 +145,10 @@ class FinalReconfirmation(discord.ui.View):
 
 
 class Moderation(commands.Cog):
+    """
+    A cog that provides moderation-related commands and functionalities.
+    """
+
     def __init__(self, bot: BirdBot):
         self.logger = logging.getLogger("Moderation")
         self.bot = bot

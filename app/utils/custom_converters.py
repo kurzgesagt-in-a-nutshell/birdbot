@@ -1,3 +1,7 @@
+"""
+This module provides custom converters for Discord bot commands.
+"""
+
 import logging
 import re
 
@@ -9,7 +13,13 @@ logger = logging.getLogger("CustomConverters")
 
 def _get_id_match(argument):
     """
-    Check if string could be a user id.
+    Check if the string could be a user id.
+
+    Args:
+        argument (str): The string to check.
+
+    Returns:
+        re.Match: A match object if the string is a user id, None otherwise.
     """
     _id_regex = re.compile(r"([0-9]{15,21})$")
     return _id_regex.match(argument)
@@ -18,6 +28,13 @@ def _get_id_match(argument):
 def member_converter(ctx: commands.Context, argument):
     """
     Find a guild member from an id or mention string.
+
+    Args:
+        ctx (commands.Context): The context of the command.
+        argument (str): The id or mention string.
+
+    Returns:
+        discord.Member: The guild member if found, None otherwise.
     """
     try:
         bot = ctx.bot
@@ -41,6 +58,15 @@ def member_converter(ctx: commands.Context, argument):
 def get_members(ctx: commands.Context, *args):
     """
     Return a list of members found and leftover text.
+
+    Args:
+        ctx (commands.Context): The context of the command.
+        *args (str): Variable number of arguments representing id or mention strings.
+
+    Returns:
+        tuple: A tuple containing a list of members found and leftover text.
+            - list: The list of members found.
+            - list: The leftover text.
     """
     try:
         members = []

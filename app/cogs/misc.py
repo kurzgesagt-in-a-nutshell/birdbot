@@ -1,3 +1,8 @@
+"""
+Miscellaneous commands and listeners that dont fit in with other cogs
+
+Included here is the staff intro commands and big_emote command 
+"""
 import asyncio
 import logging
 import re

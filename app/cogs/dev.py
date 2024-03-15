@@ -1,3 +1,16 @@
+"""
+This cog implements commands for bot developers
+Commands include:
+- `eval`: Evaluate a piece of python code
+- `activity`: Set bot activity status
+- `reload`: Reload a module
+- `kill`: Kill the bot
+- `restart`: Restart a sub process
+- `log`: View the bot's logs
+- `launch`: Spawn child process of alpha/beta bot instance on the VM
+- `sync_apps`: Sync slash commands
+- `clear_apps`: Clear slash commands
+"""
 import asyncio
 import io
 import logging

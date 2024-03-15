@@ -1,3 +1,6 @@
+"""
+To be removed
+"""
 import asyncio
 
 import discord

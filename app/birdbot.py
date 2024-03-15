@@ -1,3 +1,7 @@
+"""
+This module contains the implementation of the BirdBot class. Along with the setup function
+"""
+
 import argparse
 import asyncio
 import io

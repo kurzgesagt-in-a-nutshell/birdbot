@@ -1,3 +1,7 @@
+"""
+This module contains the configuration settings for guild level items such as roles, channels and emojis.
+"""
+
 import discord
 
 

@@ -1,3 +1,7 @@
+"""
+Social Media Feed Approval queue implementation. 
+Social media posts that are sent to the queue are approved by mods and above and sent to the feed channel.
+"""
 import logging
 
 import discord

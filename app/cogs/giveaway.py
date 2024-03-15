@@ -1,3 +1,7 @@
+"""
+Cog implementing the giveaway system for the server
+"""
+
 import logging
 import typing
 from datetime import timedelta, timezone

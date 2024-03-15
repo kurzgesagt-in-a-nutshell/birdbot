@@ -1,3 +1,7 @@
+"""
+Miscallaneous helper functions and classes that are used throught the bot.
+"""
+
 import datetime
 import logging
 import random

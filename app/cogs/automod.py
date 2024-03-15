@@ -1,3 +1,7 @@
+"""
+Magic written by austin. Do not touch unless you know what you are doing. XD
+"""
+
 import asyncio
 import copy
 import datetime

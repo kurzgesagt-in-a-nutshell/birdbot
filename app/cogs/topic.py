@@ -1,3 +1,13 @@
+"""
+This module contains the `Topic` cog, which provides commands for managing and interacting with topics.
+
+Commands Defined:
+- `topic`: Fetches a random topic.
+- `search`: Search a topic.
+- `add`: Moderators can add a topic directly.
+- `remove`: Moderators can remove a topic.
+"""
+
 import asyncio
 import logging
 import re
