@@ -1,3 +1,15 @@
+# Copyright (C) 2024, Kurzgesagt Community Devs
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+
 """
 This cog defines the ColorSelect class, which is responsible for handling the removal and addition of exclusive colored roles when a member no longer has the role that proves the color.
 It also allows users to add or remove a colored role based on their current roles.
