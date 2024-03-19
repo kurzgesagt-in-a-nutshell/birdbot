@@ -11,7 +11,10 @@
 # GNU General Public License for more details.
 
 """
-Magic written by austin. Do not touch unless you know what you are doing. XD
+Magic written by austin. Handles text and gif filtering.
+
+Proceed at your own risk. Comments within the document may not be entirely
+accurate. 
 """
 
 import asyncio
@@ -31,10 +34,6 @@ from app.birdbot import BirdBot
 from app.utils import checks
 from app.utils.config import Reference
 from app.utils.helper import create_automod_embed, is_external_command, is_internal_command
-
-"""
-
-"""
 
 
 class Filter(commands.Cog):

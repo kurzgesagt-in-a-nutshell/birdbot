@@ -11,8 +11,9 @@
 # GNU General Public License for more details.
 
 """
-This cog defines the ColorSelect class, which is responsible for handling the removal and addition of exclusive colored roles when a member no longer has the role that proves the color.
-It also allows users to add or remove a colored role based on their current roles.
+This cog defines ColorSelect, which is responsible for handling the removal and addition 
+of exclusive colored roles. It also listens when a member no longer has the role that provides an 
+exclusive color.
 """
 import logging
 from typing import List, Literal
@@ -30,6 +31,11 @@ logger = logging.getLogger(__name__)
 
 
 class ExclusiveColorTransformer(app_commands.Transformer):
+    """
+    A transformer that filters through member roles to determine what exclusive
+    colored roles can be added.
+    """
+
     @staticmethod
     def selectable_roles(member: discord.Member) -> List[discord.Role]:
         """
