@@ -10,6 +10,10 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 
+"""
+This cog provides the help command and the ping command.
+"""
+
 import logging
 
 import discord
@@ -42,7 +46,7 @@ class Help(commands.Cog):
     )
     async def help(self, interaction: discord.Interaction):
         """
-        Display help (Incomplete command)
+        Display help (Incomplete command).
         """
 
         await interaction.response.defer(ephemeral=True)
@@ -102,7 +106,7 @@ class Help(commands.Cog):
     )
     async def ping(self, interaction: discord.Interaction):
         """
-        Ping Pong 🏓
+        Ping Pong 🏓.
         """
         await interaction.response.send_message(f"{int(self.bot.latency * 1000)} ms")
 

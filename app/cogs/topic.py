@@ -10,6 +10,16 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 
+"""
+This module contains the `Topic` cog, which provides commands for managing and interacting with topics.
+
+Commands Defined:
+- `topic`: Fetches a random topic.
+- `search`: Search a topic.
+- `add`: Moderators can add a topic directly.
+- `remove`: Moderators can remove a topic.
+"""
+
 import asyncio
 import logging
 import re
@@ -34,7 +44,7 @@ if TYPE_CHECKING:
 
 class TopicEditorModal(dui.Modal):
     """
-    A modal sent to the user attempting to change the topic
+    A modal sent to the user attempting to change the topic.
     """
 
     topic = dui.TextInput(
@@ -47,7 +57,7 @@ class TopicEditorModal(dui.Modal):
 
     async def on_submit(self, interaction: Interaction) -> None:
         """
-        Edits the message if the input value is different than the default
+        Edits the message if the input value is different than the default.
         """
         if self.topic.value == self.topic.default:
             await interaction.response.defer(thinking=False)
@@ -66,8 +76,7 @@ class TopicEditorModal(dui.Modal):
 
 class TopicAcceptorView(dui.View):
     """
-    A class that is meant to be instantiated once and used on all topic
-    suggestions
+    A class that is meant to be instantiated once and used on all topic suggestions.
     """
 
     def __init__(self, accept_id: str, deny_id: str, edit_id: str, topics: list, topics_db):
@@ -100,7 +109,9 @@ class TopicAcceptorView(dui.View):
         return True
 
     async def on_error(self, interaction: Interaction, error: Exception, item: dui.Item):
-        """Raises the error to the command tree"""
+        """
+        Raises the error to the command tree.
+        """
         await interaction.client.tree.on_error(interaction, error)  # type: ignore
 
     @dui.button(
@@ -110,8 +121,9 @@ class TopicAcceptorView(dui.View):
     )
     async def _accept(self, interaction: Interaction, button: dui.Button):
         """
-        Accepts the topic and removes the view from the message
-        Changes the embed to indicate it was accepted and by who
+        Accepts the topic and removes the view from the message.
+
+        Changes the embed to indicate it was accepted and by who.
         """
         message = interaction.message
         assert message
@@ -146,8 +158,9 @@ class TopicAcceptorView(dui.View):
     )
     async def _deny(self, interaction: Interaction, button: dui.Button):
         """
-        Denys the topic and removes the view from the message
-        Changes the embed to indicate it was denied and by who
+        Denys the topic and removes the view from the message.
+
+        Changes the embed to indicate it was denied and by who.
         """
         message = interaction.message
         assert message
@@ -165,7 +178,7 @@ class TopicAcceptorView(dui.View):
     )
     async def _edit(self, interaction: Interaction, button: dui.Button):
         """
-        Sends a modal to interact with the provided topic text
+        Sends a modal to interact with the provided topic text.
         """
         assert interaction.message
         self.editing[interaction.message.id] = interaction.user.id
@@ -229,14 +242,17 @@ class Topic(commands.Cog):
     @checks.topic_perm_check()
     @app_commands.checks.cooldown(1, 300, key=lambda i: (i.guild_id, i.user.id))
     async def topic(self, interaction: discord.Interaction):
-        """Fetches a random topic"""
+        """
+        Fetches a random topic.
+        """
         topic = next(self.topics_cycle)
         await interaction.response.send_message(f"{topic}")
 
     @topics_command.command()
     @checks.mod_and_above()
     async def search(self, interaction: discord.Interaction, text: str):
-        """Search a topic
+        """
+        Search a topic.
 
         Parameters
         ----------
@@ -265,7 +281,8 @@ class Topic(commands.Cog):
     @topics_command.command()
     @checks.mod_and_above()
     async def add(self, interaction: discord.Interaction, text: str):
-        """Add a topic
+        """
+        Moderators can add a topic directly.
 
         Parameters
         ----------
@@ -289,7 +306,8 @@ class Topic(commands.Cog):
         index: typing.Optional[int] = None,
         search_text: typing.Optional[str] = None,
     ):
-        """Removes a topic
+        """
+        Moderators can remove a topic.
 
         Parameters
         ----------
@@ -400,7 +418,8 @@ class Topic(commands.Cog):
     @app_commands.guilds(Reference.guild)
     @app_commands.checks.cooldown(1, 60, key=lambda i: (i.guild_id, i.user.id))
     async def topic_suggest(self, interaction: discord.Interaction, topic: str):
-        """Suggest a topic
+        """
+        Users can suggest a new topic.
 
         Parameters
         ----------

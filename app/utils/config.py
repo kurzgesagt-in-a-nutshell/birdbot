@@ -10,6 +10,10 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 
+"""
+This module contains the configuration settings for guild level items such as roles, channels and emojis.
+"""
+
 import discord
 
 
@@ -152,8 +156,7 @@ class GiveawayBias:
 
 class ExclusiveColors:
     """
-    Contains a list of selectable colored roles that can be provided to a user
-    if they have the role that unlocks the color.
+    Contains a list of selectable colored roles that can be provided to a user if they have the role that unlocks the color.
     """
 
     exclusive_colors = {

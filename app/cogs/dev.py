@@ -10,6 +10,19 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 
+"""
+This cog implements commands for bot developers
+Commands include:
+- `eval`: Evaluate a piece of python code
+- `activity`: Set bot activity status
+- `reload`: Reload a module
+- `kill`: Kill the bot
+- `restart`: Restart a sub process
+- `log`: View the bot's logs
+- `launch`: Spawn child process of alpha/beta bot instance on the VM
+- `sync_apps`: Sync slash commands
+- `clear_apps`: Clear slash commands
+"""
 import asyncio
 import io
 import logging
@@ -40,7 +53,7 @@ class Dev(commands.Cog):
 
     def cleanup_code(self, content: str):
         """
-        Remove code-block from eval
+        Remove code-block from eval.
         """
         if content.startswith("```") and content.endswith("```"):
             return "\n".join(content.split("\n")[1:-1])
@@ -62,7 +75,8 @@ class Dev(commands.Cog):
         activity_type: typing.Literal["listening", "watching", "playing"],
         message: str,
     ):
-        """Set bot activity status
+        """
+        Set bot activity status.
 
         Parameters
         ----------
@@ -85,7 +99,9 @@ class Dev(commands.Cog):
     @commands.is_owner()
     @commands.command()
     async def eval(self, ctx: commands.Context, *, body: str):
-        """Evaluates a code"""
+        """
+        Evaluates a code.
+        """
         env = {
             "bot": self.bot,
             "ctx": ctx,
@@ -152,7 +168,9 @@ class Dev(commands.Cog):
     @checks.devs_only()
     @commands.command(name="reload", hidden=True)
     async def reload(self, ctx: commands.Context, *, module_name: str):
-        """Reload a module"""
+        """
+        Reload a module.
+        """
         try:
             try:
                 await self.bot.unload_extension(module_name)
@@ -174,14 +192,18 @@ class Dev(commands.Cog):
     @commands.command(hidden=True)
     @checks.mod_and_above()
     async def kill(self, ctx: commands.Context):
-        """Kill the bot"""
+        """
+        Kill the bot.
+        """
         await ctx.send("Bravo 6 going dark.")
         await self.bot.close()
 
     @commands.command(hidden=True)
     @checks.mod_and_above()
     async def restart(self, ctx: commands.Context, instance: str):
-        """restarts sub processes"""
+        """
+        Restarts a sub processes.
+        """
         if instance not in ("songbirdalpha", "songbirdbeta", "twitterfeed", "youtubefeed"):
             raise commands.BadArgument(
                 "Instance argument must be songbirdalpha, songbirdbeta, twitterfeed, youtubefeed"
@@ -227,7 +249,9 @@ class Dev(commands.Cog):
     @commands.is_owner()
     @checks.mainbot_only()
     async def launch(self, ctx: commands.Context, instance: str):
-        """Spawn child process of alpha/beta bot instance on the VM, only works on main bot"""
+        """
+        Spawn child process of alpha/beta bot instance on the VM, only works on main bot.
+        """
 
         if instance not in ("alpha", "beta"):
             raise commands.BadArgument("Instance argument must be `alpha` or `beta`")
@@ -260,6 +284,9 @@ class Dev(commands.Cog):
         msg: str,
         channel: typing.Optional[discord.TextChannel] = None,
     ):
+        """
+        Send a message in a channel.
+        """
         assert isinstance(interaction.channel, discord.TextChannel)
 
         if not channel:
@@ -280,6 +307,9 @@ class Dev(commands.Cog):
     @commands.command()
     @checks.devs_only()
     async def sync_apps(self, ctx: commands.Context):
+        """
+        Sync slash commands.
+        """
         await ctx.bot.tree.sync()
         await ctx.bot.tree.sync(guild=discord.Object(Reference.guild))
         await ctx.reply("Synced local guild commands")
@@ -287,6 +317,9 @@ class Dev(commands.Cog):
     @commands.command()
     @checks.devs_only()
     async def clear_apps(self, ctx: commands.Context):
+        """
+        Clear slash commands.
+        """
         ctx.bot.tree.clear_commands(guild=discord.Object(Reference.guild))
         ctx.bot.tree.clear_commands(guild=None)
         await ctx.bot.tree.sync(guild=discord.Object(Reference.guild))

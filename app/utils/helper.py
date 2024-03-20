@@ -10,6 +10,10 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 
+"""
+Miscallaneous helper functions and classes that are used throught the bot.
+"""
+
 import datetime
 import logging
 import random
@@ -116,18 +120,24 @@ possible_commands = [
 
 # ----Exception classes begin------#
 class NoAuthorityError(commands.CheckFailure):
-    """Raised when user has no clearance to run a command"""
+    """
+    Raised when user has no clearance to run a command.
+    """
 
 
 class WrongChannel(commands.CheckFailure):
-    """Raised when trying to run a command in the wrong channel"""
+    """
+    Raised when trying to run a command in the wrong channel.
+    """
 
     def __init__(self, id):
         super().__init__(f"This command can only be run in <#{id}>")
 
 
 class DevBotOnly(commands.CheckFailure):
-    """Raised when trying to run commands meant for dev bots"""
+    """
+    Raised when trying to run commands meant for dev bots.
+    """
 
 
 # ----Exception classes end------#
@@ -135,8 +145,9 @@ class DevBotOnly(commands.CheckFailure):
 
 def is_internal_command(bot: commands.AutoShardedBot, message: discord.Message):
     """
-    check if message is a bird bot command
-    returns bool
+    Check if message is a bird bot command.
+
+    Returns bool.
     """
     for x in bot.commands:
         if any(message.content.startswith(f"!{y}") for y in x.aliases):
@@ -148,8 +159,9 @@ def is_internal_command(bot: commands.AutoShardedBot, message: discord.Message):
 
 def is_external_command(message: discord.Message):
     """
-    check if message is a third party bot command
-    returns bool
+    Check if message is a third party bot command.
+
+    Returns bool.
     """
     for command in possible_commands:
         if re.match(possible_prefixes + command, message.content, re.IGNORECASE):
@@ -168,7 +180,7 @@ def create_embed(
     inf_level=None,
 ) -> discord.Embed:
     """
-    Creates an embed
+    Creates an embed.
 
     Args:
         author (discord.User or discord.Member): The author of the action (eg ctx.author)
@@ -246,7 +258,9 @@ def delete_timed_actions_uid(u_id: int):
 
 
 def calc_time(args: List[str]) -> Tuple[int | None, str | None]:
-    """Parses time from given list.
+    """
+    Parses time from given list (string.split(" ")).
+
     Example:
     ["1hr", "12m30s", "extra", "string"] => (4350, "extra string")
 
@@ -321,7 +335,8 @@ def calc_time(args: List[str]) -> Tuple[int | None, str | None]:
 
 
 def get_time_string(t: int) -> str:
-    """Convert provided time input (seconds) to Day-Hours-Mins-Second string
+    """
+    Convert provided time input (seconds) to Day-Hours-Mins-Second string.
 
     Args:
         t (int): Time in seconds
@@ -349,7 +364,8 @@ def create_automod_embed(
     message: discord.Message,
     automod_type: str,
 ):
-    """Create embed for automod
+    """
+    Create embed for automod.
 
     Args:
         message (discord.Message): The message object
@@ -375,7 +391,8 @@ def create_automod_embed(
 
 def get_active_staff(bot: discord.Client) -> str:
     """
-    Gets string containing mentions of active staff (mods, trainee mods and admins)
+    Gets string containing mentions of active staff (mods, trainee mods and admins).
+
     Mentions both mod roles if no mod is online
     Returns: str
     """
@@ -411,7 +428,7 @@ def get_active_staff(bot: discord.Client) -> str:
 # This is useless due to slash migration
 def blacklist_member(bot: commands.AutoShardedBot, member: discord.Member, command: commands.Command):
     """
-    Blacklists a member from a command
+    Blacklists a member from a command.
     """
 
     cmd = cmd_blacklist_db.find_one({"command_name": command.name})
@@ -438,10 +455,10 @@ def whitelist_member(member: discord.Member, command: commands.Command) -> bool:
 
 def is_public_channel(channel: discord.TextChannel | discord.Thread) -> bool:
     """
-    Returns true for all channels except those under the moderation category
+    Returns true for all channels except those under the moderation category.
 
     Currently used within the moderation cog to determine if an interaction
-    should be ephemeral
+    should be ephemeral.
     """
 
     return channel.category_id != Reference.Categories.moderation
@@ -449,7 +466,7 @@ def is_public_channel(channel: discord.TextChannel | discord.Thread) -> bool:
 
 class Cycle(object):
     """
-    Singleton iterator class used to cycle through random list infinitely
+    Singleton iterator class used to cycle through a list randomly infinitely.
     """
 
     __instance = None
@@ -473,7 +490,7 @@ class Cycle(object):
 
     def __next__(self):
         """
-        Returns current item in the deque and makes a new random deque if necessary
+        Returns the current item in the queue and makes a new random queue if empty.
         """
         if len(self.dequeue) == 1:
             self.dequeue.extend(random.sample(self.queue, len(self.queue)))
@@ -486,19 +503,19 @@ class Cycle(object):
 
     def queue_last(self, entry):
         """
-        Adds item to end of queue
+        Adds an item to the end of the queue.
         """
         self.dequeue.append(entry)
 
     def queue_next(self, entry):
         """
-        Adds item to beginning of queue
+        Adds an item to the beginning of the queue.
         """
         self.dequeue.extendleft([entry])
 
     def queue_remove(self, entry):
         """
-        Removes item from the queue
+        Removes an item from the queue.
         """
         try:
             self.dequeue.remove(entry)
@@ -507,8 +524,16 @@ class Cycle(object):
 
 
 class BannerCycle(Cycle):
+    """
+    The iterator class for banners.
+    """
+
     pass
 
 
 class TopicCycle(Cycle):
+    """
+    The iterator class for topics.
+    """
+
     pass

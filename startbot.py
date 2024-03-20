@@ -10,6 +10,19 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 
+"""
+This is the entrypoint used to start the bot.
+It provides command-line arguments to specify which instance of the bot to run (beta, alpha, or main).
+It loads the necessary environment variables from a .env file and starts the bot with the specified token.
+
+Usage:
+    python3 startbot.py [-b] [-a]
+
+Options:
+    -b, --beta      Run the beta instance of the bot
+    -a, --alpha     Run the alpha instance of the bot
+"""
+
 import argparse
 import asyncio
 import logging

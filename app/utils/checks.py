@@ -10,6 +10,10 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 
+"""
+Checks for the bot commands.
+These checks are used to ensure that the command invoker has the necessary permissions to run the command.
+"""
 import discord
 from discord import Interaction, app_commands
 from discord.ext import commands
@@ -21,7 +25,7 @@ from .errors import InvalidAuthorizationError, InvalidInvocationError
 def check(predicate):
     """
     This is a custom check decorator that works for both app_commands and
-    regular text commands
+    regular text commands.
     """
 
     def true_decorator(decked_func):
@@ -42,7 +46,7 @@ def check(predicate):
 
 def mod_and_above():
     """
-    Checks if the command invoker has a mod role
+    Checks if the command invoker has a mod role or above.
     """
 
     async def predicate(info: Interaction | commands.Context):
@@ -60,7 +64,7 @@ def mod_and_above():
 
 def admin_and_above():
     """
-    Checks if the author of the context is an administrator or kgs official
+    Checks if the author of the context is an administrator or kgs official.
     """
 
     async def predicate(info: Interaction | commands.Context):
@@ -78,7 +82,7 @@ def admin_and_above():
 
 def role_and_above(id: int):
     """
-    Check if user has role above or equal to passed role
+    Checks if the user has role above or equal to the passed role.
     """
 
     async def predicate(info: Interaction | commands.Context):
@@ -99,7 +103,7 @@ def role_and_above(id: int):
 
 def mainbot_only():
     """
-    Checks if the bot running the context is the main bot
+    Checks if the bot running the context is the main bot.
     """
 
     async def predicate(info: Interaction | commands.Context):
@@ -114,7 +118,7 @@ def mainbot_only():
 
 def devs_only():
     """
-    Checks if the command invoker is in the dev list
+    Checks if the command invoker is in the dev list.
     """
 
     async def predicate(info: Interaction | commands.Context):
@@ -129,7 +133,7 @@ def devs_only():
 
 def general_only():
     """
-    Checks if the command is invoked in general chat or the moderation category
+    Checks if the command is invoked in general chat or the moderation category.
     """
 
     async def predicate(info: Interaction | commands.Context):
@@ -145,7 +149,7 @@ def general_only():
 
 def bot_commands_only():
     """
-    Checks if the command is invoked in bot_commands or the moderation category
+    Checks if the command is invoked in bot_commands or the moderation category.
     """
 
     async def predicate(info: Interaction | commands.Context):
@@ -163,7 +167,7 @@ def bot_commands_only():
 
 def topic_perm_check():
     """
-    Checks if the command invoker has the duck role+ or a patreon role
+    Checks if the command invoker has the duck role+ or a patreon role.
     """
 
     async def predicate(info: Interaction | commands.Context):
@@ -188,7 +192,7 @@ def topic_perm_check():
 
 def patreon_only():
     """
-    Checks if the command invoker has the duck role+ or a patreon role
+    Checks if the command invoker has the duck role+ or a patreon role.
     """
 
     async def predicate(info: Interaction | commands.Context):

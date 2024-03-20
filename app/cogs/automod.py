@@ -10,6 +10,13 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 
+"""
+Magic written by austin. Handles text and gif filtering.
+
+Proceed at your own risk. Comments within the document may not be entirely
+accurate. 
+"""
+
 import asyncio
 import copy
 import datetime
@@ -27,10 +34,6 @@ from app.birdbot import BirdBot
 from app.utils import checks
 from app.utils.config import Reference
 from app.utils.helper import create_automod_embed, is_external_command, is_internal_command
-
-"""
-
-"""
 
 
 class Filter(commands.Cog):
@@ -100,7 +103,8 @@ class Filter(commands.Cog):
         interaction: discord.Interaction,
         list_type: typing.Literal["whitelist", "general", "humanities"],
     ):
-        """Show words in selected filter list
+        """
+        Show words in selected filter list.
 
         Parameters
         ----------
@@ -121,7 +125,8 @@ class Filter(commands.Cog):
         list_type: typing.Literal["whitelist", "general", "humanities"],
         word: str,
     ):
-        """Add a word in selected filter list
+        """
+        Add a word in selected filter list.
 
         Parameters
         ----------
@@ -153,7 +158,8 @@ class Filter(commands.Cog):
         list_type: typing.Literal["whitelist", "general", "humanities"],
         word: str,
     ):
-        """Remove a word in selected filter list
+        """
+        Remove a word in selected filter list.
 
         Parameters
         ----------
@@ -185,7 +191,8 @@ class Filter(commands.Cog):
         list_type: typing.Literal["general", "humanities"],
         text: str,
     ):
-        """Check if a word/phrase contains profanity
+        """
+        Check if a word/phrase contains profanity.
 
         Parameters
         ----------
