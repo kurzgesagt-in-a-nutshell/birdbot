@@ -1,0 +1,15 @@
+name: Deploy Birdbot
+
+on:
+  pull_request:
+    branches:
+      - '**'
+  push:
+    branches:
+      - 'master'
+      - 'main'
+      - 'public-refactor'
+
+jobs:
+  deploy:
+    uses: kurzgesagt-in-a-nutshell/.github/.github/workflows/deploy-birdbot.yml@self-hosted-runner
