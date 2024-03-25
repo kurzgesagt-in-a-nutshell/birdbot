@@ -961,6 +961,19 @@ class Moderation(commands.Cog):
                     await interaction.response.send_message("An infraction is not selected", ephemeral=True)
                     return
 
+                # Log before deletion
+                logging_channel = await interaction.client.fetch_channel(Reference.Channels.Logging.mod_actions)
+                if isinstance(logging_channel, discord.abc.Messageable):
+                    embed = helper.create_embed(
+                        author=interaction.user,
+                        action="Deleted Infraction",
+                        users=[self.user_infractions._user],
+                        extra=self.user_infractions.get_infraction_info_str(infr_type, self.delete_infraction_idx),
+                        color=discord.Color.red(),
+                    )
+
+                    await logging_channel.send(embed=embed)
+
                 success = self.user_infractions.delete_infraction(infr_type, self.delete_infraction_idx)
 
                 if not success:
@@ -970,8 +983,6 @@ class Moderation(commands.Cog):
                     return
 
                 self.user_infractions.update()
-
-                # TODO, log this in mod-action-logs
 
                 await interaction.response.edit_message(
                     content="Infraction deleted successfully.", embed=None, view=None
