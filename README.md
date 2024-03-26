@@ -56,9 +56,10 @@ If you need additional help you may join our [Discord Server](https://discord.gg
 
 Please read our contributor guidelines [here](https://github.com/kurzgesagt-in-a-nutshell/.github/blob/main/CONTRIBUTING.md) before contributing
 
-Before submitting a pull request please ensure you conform to our [PyRight](https://github.com/microsoft/pyright) standards and the [Black](https://github.com/psf/black) code formatter.
-Run these commands and make sure they do not throw any errors
+Before submitting a pull request please ensure you conform to our [PyRight](https://github.com/microsoft/pyright) standards and be sure to use [ISort](https://pycqa.github.io/isort/#using-isort) import sorter and the [Black](https://github.com/psf/black) code formatter.
+Run these commands (preferably in the given order) and make sure they do not throw any errors:
 ```
 pyright .
+isort .
 black .
 ```
