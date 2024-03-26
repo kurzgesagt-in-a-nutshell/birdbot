@@ -311,9 +311,9 @@ class IntroModal(discord.ui.Modal):
 
         return re.sub(
             r"(?<!<):[A-Za-z0-9_]+:(?![0-9]+>)",
-            lambda emoji: f"<{emoji.group()}{serverEmojis[emoji.group()]}>"
-            if emoji.group() in serverEmojis
-            else emoji.group(),
+            lambda emoji: (
+                f"<{emoji.group()}{serverEmojis[emoji.group()]}>" if emoji.group() in serverEmojis else emoji.group()
+            ),
             text,
         )
 
