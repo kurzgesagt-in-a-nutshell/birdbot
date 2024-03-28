@@ -1,15 +1,32 @@
-import datetime
+# Copyright (C) 2024, Kurzgesagt Community Devs
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+
+"""
+This cog provides the help command and the ping command.
+"""
+
 import logging
 
 import discord
-from discord.ext import commands
 from discord import app_commands
+from discord.ext import commands
 
-from utils import app_checks
+from app.birdbot import BirdBot
+from app.utils import checks
+from app.utils.config import Reference
 
 
 class Help(commands.Cog):
-    def __init__(self, bot):
+    def __init__(self, bot: BirdBot):
         self.logger = logging.getLogger("Help")
         self.bot = bot
         self.bot.remove_command("help")
@@ -21,7 +38,7 @@ class Help(commands.Cog):
     # TODO: Convert the output to embed or some UI
     # TODO: Remove mod_and_above and default_permission check.
     @app_commands.command()
-    @app_checks.mod_and_above()
+    @checks.mod_and_above()
     @app_commands.default_permissions(manage_messages=True)
     @app_commands.checks.cooldown(
         1,
@@ -29,7 +46,7 @@ class Help(commands.Cog):
     )
     async def help(self, interaction: discord.Interaction):
         """
-        Display help (Incomplete command)
+        Display help (Incomplete command).
         """
 
         await interaction.response.defer(ephemeral=True)
@@ -39,6 +56,8 @@ class Help(commands.Cog):
 
         cmds = []
 
+        assert isinstance(interaction.user, discord.Member)
+        assert interaction.guild
         for cmd in command_tree_global:
             if isinstance(cmd, discord.app_commands.commands.Command):
                 cmds.append(cmd.name)
@@ -50,9 +69,7 @@ class Help(commands.Cog):
         for cmd in command_tree_guild:
             if isinstance(cmd, discord.app_commands.commands.Command):
                 if cmd.default_permissions and cmd.default_permissions.manage_messages:
-                    if interaction.user.top_role >= interaction.guild.get_role(
-                        414092550031278091
-                    ):
+                    if interaction.user.top_role >= interaction.guild.get_role(Reference.Roles.moderator):
                         cmds.append(cmd.name)
                     else:
                         continue
@@ -63,9 +80,7 @@ class Help(commands.Cog):
                 for c in cmd.commands:
                     if cmd.default_permissions:
                         if cmd.default_permissions.manage_messages:
-                            if interaction.user.top_role >= interaction.guild.get_role(
-                                414092550031278091
-                            ):
+                            if interaction.user.top_role >= interaction.guild.get_role(Reference.Roles.moderator):
                                 cmds.append(f"{cmd.name} {c.name}")
                             else:
                                 continue
@@ -74,9 +89,7 @@ class Help(commands.Cog):
 
                     elif c.default_permissions:
                         if c.default_permissions.manage_messages:
-                            if interaction.user.top_role >= interaction.guild.get_role(
-                                414092550031278091
-                            ):
+                            if interaction.user.top_role >= interaction.guild.get_role(Reference.Roles.moderator):
                                 cmds.append(f"{cmd.name} {c.name}")
                             else:
                                 continue
@@ -93,10 +106,10 @@ class Help(commands.Cog):
     )
     async def ping(self, interaction: discord.Interaction):
         """
-        Ping Pong 🏓
+        Ping Pong 🏓.
         """
         await interaction.response.send_message(f"{int(self.bot.latency * 1000)} ms")
 
 
-async def setup(bot):
+async def setup(bot: BirdBot):
     await bot.add_cog(Help(bot))

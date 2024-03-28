@@ -1,7 +1,31 @@
-import enum, typing, logging
+# Copyright (C) 2024, Kurzgesagt Community Devs
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+
+"""
+This module provides classes for managing infractions in the kurzgesagt server.
+
+Classes:
+- InfractionKind: An enumeration representing the different types of infractions.
+- Infraction: Represents an individual infraction.
+- InfractionList: Represents a list of infractions for a user.
+"""
+
+import enum
+import logging
+from typing import Dict, List, Optional
+
 import discord
 
-from birdbot import BirdBot
+from app.birdbot import BirdBot
 
 INFRACTION_DB = BirdBot.db.Infraction
 logger = logging.getLogger(__name__)
@@ -16,12 +40,12 @@ class InfractionKind(enum.Enum):
 
 class Infraction:
     """
-    Represents an infraction in the kurzgesagt server. Supports warns, mutes,
-    kicks and bans
+    Represents an infraction in the kurzgesagt server.
+
+    Supports warns, mutes, kicks and bans.
     """
 
-    def __init__(self, kind: InfractionKind, data: typing.Dict):
-
+    def __init__(self, kind: InfractionKind, data: Dict):
         self._kind = kind
         self._author_id = data.pop("author_id", None)
         self._author_name = data.pop("author_name", None)
@@ -37,12 +61,24 @@ class Infraction:
     def new(
         cls,
         kind: InfractionKind,
-        author: discord.User,
+        author: discord.User | discord.Member,
         level: int,
         reason: str,
-        duration: str = None,
+        duration: Optional[str] = None,
     ):
-        """Creates a new infraction instance with the provided details"""
+        """
+        Creates a new infraction instance with the provided details.
+
+        Args:
+            kind (InfractionKind): The kind of infraction.
+            author (discord.User | discord.Member): The author of the infraction.
+            level (int): The level of the infraction.
+            reason (str): The reason for the infraction.
+            duration (Optional[str], optional): The duration of the infraction. Defaults to None.
+
+        Returns:
+            Infraction: The newly created infraction instance.
+        """
 
         data = {
             "author_id": author.id,
@@ -58,19 +94,18 @@ class Infraction:
         return cls(kind, data)
 
     @property
-    def level(self) -> typing.Union[int, str]:
+    def level(self) -> int | str:
         """
-        A property that returns the integer level of the infraction or the
-        string 'legacy' if there is no level.
+        A property that returns the integer level of the infraction or the string 'legacy' if there is no level.
         """
 
         return self._level if self._level is not None else "legacy"
 
     def info_str(self, id: int):
         """
-        Returns basic information of the infraction as a string
+        Returns basic information of the infraction as a string.
 
-        The infraction's index must be passed into the method to provide an id
+        The infraction's index must be passed into the method to provide an id.
         """
         duration = "" if self._duration is None else f"Duration: {self._duration}\n"
 
@@ -83,9 +118,9 @@ class Infraction:
             + f"{self._kind.name.title()} ID: {id}\n```"
         )
 
-    def detailed_info_embed(self, user: discord.User):
+    def detailed_info_embed(self, user: discord.User | discord.Member):
         """
-        Returns detailed information on the infraction as an embed
+        Returns detailed information on the infraction as an embed.
         """
 
         embed = discord.Embed(
@@ -115,19 +150,18 @@ class Infraction:
 
     def detail(self, title: str, description: str):
         """
-        Appends extra details to the infraction. This also allows for editing of
-        contents such as the reason though I dont really want to recommend this
-        method.
+        Appends extra details to the infraction.
+
+        This also allows for editing of contents such as the reason though I dont really want to recommend this method.
         """
 
         self._extra[title] = description
 
     def to_dict(self):
         """
-        Serialize this instance into a dict for storage
+        Serialize this instance into a dict for storage.
 
-        Always serialize the default info: author_id, author_name, datetime,
-        reason, and infraction_level.
+        Always serialize the default info: author_id, author_name, datetime, reason, and infraction_level.
 
         Always append any extra info left over in the original data.
         If a duration value is present, include it into the data.
@@ -151,12 +185,10 @@ class Infraction:
 
 class InfractionList:
     """
-    Represents a list of infractions for a user
+    Represents a list of infractions for a user.
     """
 
-    def __init__(
-        self, user: discord.User, data: typing.Optional[typing.Dict] = None
-    ) -> None:
+    def __init__(self, user: discord.User | discord.Member, data: Optional[Dict] = None) -> None:
         if data is None:
             data = {}
 
@@ -168,28 +200,17 @@ class InfractionList:
         self._banned_patreon = data.pop("banned_patreon", False)
         self._final_warn = data.pop("final_warn", False)
 
-        self._warns = [
-            Infraction(InfractionKind.WARN, warn_data)
-            for warn_data in data.pop("warn", [])
-        ]
-        self._mutes = [
-            Infraction(InfractionKind.MUTE, mute_data)
-            for mute_data in data.pop("mute", [])
-        ]
-        self._kicks = [
-            Infraction(InfractionKind.KICK, kick_data)
-            for kick_data in data.pop("kick", [])
-        ]
-        self._bans = [
-            Infraction(InfractionKind.BAN, ban_data) for ban_data in data.pop("ban", [])
-        ]
+        self._warns = [Infraction(InfractionKind.WARN, warn_data) for warn_data in data.pop("warn", [])]
+        self._mutes = [Infraction(InfractionKind.MUTE, mute_data) for mute_data in data.pop("mute", [])]
+        self._kicks = [Infraction(InfractionKind.KICK, kick_data) for kick_data in data.pop("kick", [])]
+        self._bans = [Infraction(InfractionKind.BAN, ban_data) for ban_data in data.pop("ban", [])]
 
     @classmethod
-    def from_user(cls, user: discord.User):
+    def from_user(cls, user: discord.User | discord.Member):
         """
-        This searches the mongo db for an entry of a user. If no entry is found,
-        none is returned and due to the behavior of the class, info is filled
-        out accordingly.
+        This searches the mongo db for an entry of a user.
+
+        If no entry is found, none is returned and due to the behavior of the class, info is filled out accordingly.
 
         The user is linked to this instance and it can be updated to the
         database whenever.
@@ -202,17 +223,18 @@ class InfractionList:
     @classmethod
     def new_user_infraction(
         cls,
-        user: discord.User,
+        user: discord.User | discord.Member,
         kind: InfractionKind,
         level: int,
-        author: discord.User,
+        author: discord.User | discord.Member,
         reason: str,
         duration=None,
         final=False,
     ):
         """
-        A shorthand for running InteractionList.from_user(user), adding a new
-        infraction and calling update.
+        A shorthand for running InfractionList.from_user(user) and new_infraction().
+
+        Adds a new infraction and calls an update.
         """
 
         user_infractions = cls.from_user(user)
@@ -231,14 +253,16 @@ class InfractionList:
 
     @property
     def on_final(self) -> bool:
-        """A value indicating whether the user is on final warn or not"""
+        """
+        A value indicating whether the user is on final warn or not.
+        """
 
         return self._final_warn
 
     @property
     def banned_patreon(self) -> bool:
         """
-        A property detailing if the user is banned through unenrol
+        A property detailing if the user is banned through unenrol.
         """
 
         return self._banned_patreon
@@ -246,12 +270,12 @@ class InfractionList:
     @banned_patreon.setter
     def banned_patreon(self, value: bool):
         """
-        Updates the property detailing if the user is banned through unenrol
+        Updates the property detailing if the user is banned through unenrol.
         """
 
         self._banned_patreon = value
 
-    def _kind_to_list(self, kind: InfractionKind) -> typing.List[Infraction]:
+    def _kind_to_list(self, kind: InfractionKind) -> List[Infraction]:
         """
         Returns the list of infractions corresponding to the given kind.
 
@@ -269,15 +293,12 @@ class InfractionList:
 
     def summary(self) -> str:
         """
-        Returns a summary of the users infractions. This is the blurb of text
-        shown on a user's infraction embed which contains the total infraction
-        count, if the user is on final warning or not, and the quick summary of
-        the layout of infraction levels.
+        Returns a summary of the users infractions.
+
+        This is the blurb of text shown on a user's infraction embed which contains the total infraction count, if the user is on final warning or not, and the quick summary of the layout of infraction levels.
         """
 
-        final_warn = (
-            "" if self._final_warn is not True else "USER IS ON FINAL WARNING\n"
-        )
+        final_warn = "" if self._final_warn is not True else "USER IS ON FINAL WARNING\n"
 
         # count infraction levels
         # legacies are handled by the infraction.level property
@@ -309,7 +330,7 @@ class InfractionList:
             valuelist.append(f"{legacy}x{dectoroman['legacy']}")
 
         for key in sorted(inflevels):
-            valuelist.append(f"{inflevels[key]}x{dectoroman[key]}")
+            valuelist.append(f"{inflevels[key]}x{dectoroman[key]}")  # type: ignore
 
         return f"Total Infractions: {inf_sum}\n{final_warn}{', '.join(valuelist)}"
 
@@ -317,7 +338,7 @@ class InfractionList:
         self,
         kind: InfractionKind,
         level: int,
-        author: discord.User,
+        author: discord.User | discord.Member,
         reason: str,
         duration=None,
         final=False,
@@ -343,10 +364,7 @@ class InfractionList:
             final,
         )
 
-    def detail_infraction(
-        self, kind: InfractionKind, id: int, title: str, description: str
-    ) -> bool:
-
+    def detail_infraction(self, kind: InfractionKind, id: int, title: str, description: str) -> bool:
         """
         Allows the local editing of extra info on the infraction.
 
@@ -364,12 +382,11 @@ class InfractionList:
             return True
 
     def delete_infraction(self, kind: InfractionKind, id: int) -> bool:
-
         """
         Deletes an infraction from the list.
 
         Returns the success status as a bool in case an out of range index is
-        provided
+        provided.
         """
 
         try:
@@ -384,13 +401,22 @@ class InfractionList:
 
     def get_infractions_of_kind(self, kind: InfractionKind) -> discord.Embed:
         """
-        Returns a discord.Embed with a list and information of infractions of
-        the given kind
+        Returns a discord.Embed with a list and information of infractions of the given kind.
         """
-
         # enumerate over infractions of kind requested to insert into the embed
         infractions = self._kind_to_list(kind)
-        infractions_info = [v.info_str(i) for i, v in enumerate(infractions)]
+        infractions_info = [[]]
+        idx = 0
+        curr_len = 0
+        for i, v in enumerate(infractions):
+            info_str = v.info_str(i)
+            if curr_len + len(info_str) > 1000:
+                infractions_info.append([])
+                idx += 1
+                curr_len = 0
+
+            curr_len += len(info_str)
+            infractions_info[idx].append(info_str)
 
         embed = discord.Embed(
             title="Infractions",
@@ -399,21 +425,20 @@ class InfractionList:
             timestamp=discord.utils.utcnow(),
         )
 
-        if len(infractions_info) == 0:
-            infractions_info.append("```\nNone\n```")
+        if len(infractions_info[0]) == 0:
+            infractions_info.append(["```\nNone\n```"])
 
-        embed.add_field(
-            name=self._user_id, value=f"```\n{self.summary()}\n```", inline=False
-        )
-        embed.add_field(name=kind.name.title() + "s", value="\n".join(infractions_info))
+        embed.add_field(name=f"{self._user_name} ({self._user_id})", value=f"```\n{self.summary()}\n```", inline=False)
+
+        for i, infr_info in enumerate(infractions_info):
+            embed.add_field(name=f"{kind.name.title()}s", value="\n".join(infr_info), inline=False)
 
         return embed
 
-    def get_infraction_info_str(
-        self, kind: InfractionKind, id: int
-    ) -> typing.Optional[str]:
+    def get_infraction_info_str(self, kind: InfractionKind, id: int) -> Optional[str]:
         """
         Returns a string of infraction info for the infraction requested.
+
         None is returned if the index is out of range
         """
 
@@ -423,9 +448,7 @@ class InfractionList:
         except IndexError:
             return None
 
-    def get_detailed_infraction(
-        self, kind: InfractionKind, id: int
-    ) -> typing.Optional[discord.Embed]:
+    def get_detailed_infraction(self, kind: InfractionKind, id: int) -> Optional[discord.Embed]:
         """
         Returns a discord.Embed with information about the requested infraction.
 
@@ -440,7 +463,7 @@ class InfractionList:
 
     def to_dict(self):
         """
-        Serialize the data into a dict for storage
+        Serialize the data into a dict for storage.
         """
 
         data = {
@@ -458,11 +481,8 @@ class InfractionList:
         return data
 
     def update(self):
-
         """
-        syncs local updates to the database
-
-        convert the data stored in the class into a dict
+        Converts the data stored in the class into a dict and updates the database.
         """
         logger.debug("updating infraction info for %s", self._user_id)
 

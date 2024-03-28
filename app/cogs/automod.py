@@ -1,48 +1,54 @@
+# Copyright (C) 2024, Kurzgesagt Community Devs
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+
+"""
+Magic written by austin. Handles text and gif filtering.
+
+Proceed at your own risk. Comments within the document may not be entirely
+accurate. 
+"""
+
+import asyncio
 import copy
-import json
-import typing
 import datetime
+import io
 import logging
 import re
-import asyncio
-import io
-import demoji
+import typing
 
+import demoji
 import discord
 from discord import app_commands
 from discord.ext import commands
 
-from utils import app_checks
-from utils.helper import (
-    create_automod_embed,
-    is_internal_command,
-    is_external_command,
-)
+from app.birdbot import BirdBot
+from app.utils import checks
+from app.utils.config import Reference
+from app.utils.helper import create_automod_embed, is_external_command, is_internal_command
 
 
 class Filter(commands.Cog):
-    def __init__(self, bot):
+    def __init__(self, bot: BirdBot):
         self.logger = logging.getLogger("Automod")
         self.bot = bot
 
-        config_file = open("config.json", "r")
-        self.config_json = json.loads(config_file.read())
-        config_file.close()
-
-        self.logging_channel_id = self.config_json["logging"]["automod_logging_channel"]
+        self.logging_channel_id = Reference.Channels.Logging.automod_actions
         self.logging_channel = None
         self.message_history_list = {}
         self.message_history_lock = asyncio.Lock()
 
-        self.humanities_list = self.bot.db.filterlist.find_one({"name": "humanities"})[
-            "filter"
-        ]
-        self.general_list = self.bot.db.filterlist.find_one({"name": "general"})[
-            "filter"
-        ]
-        self.white_list = self.bot.db.filterlist.find_one({"name": "whitelist"})[
-            "filter"
-        ]
+        self.humanities_list: typing.List[str] = self.bot.db.filterlist.find_one({"name": "humanities"})["filter"]
+        self.general_list: typing.List[str] = self.bot.db.filterlist.find_one({"name": "general"})["filter"]
+        self.white_list: typing.List[str] = self.bot.db.filterlist.find_one({"name": "whitelist"})["filter"]
         self.general_list_regex = self.generate_regex(self.general_list)
 
         self.humanities_list_regex = self.generate_regex(self.humanities_list)
@@ -56,12 +62,12 @@ class Filter(commands.Cog):
     filter_commands = app_commands.Group(
         name="filter",
         description="Automod filter commands",
-        guild_ids=[414027124836532234],
+        guild_ids=[Reference.guild],
         default_permissions=discord.permissions.Permissions(manage_messages=True),
     )
 
     # return the required list
-    def return_list(self, listtype):
+    def return_list(self, listtype) -> typing.List[str] | None:
         if listtype == "whitelist":
             return self.white_list
         elif listtype == "general":
@@ -80,30 +86,25 @@ class Filter(commands.Cog):
     # Updates filter list from Mongo based on listtype
     async def updatelist(self, listtype):
         if listtype == "whitelist":
-            self.white_list = self.bot.db.filterlist.find_one({"name": "whitelist"})[
-                "filter"
-            ]
+            self.white_list = self.bot.db.filterlist.find_one({"name": "whitelist"})["filter"]
 
         elif listtype == "general":
-            self.general_list = self.bot.db.filterlist.find_one({"name": "general"})[
-                "filter"
-            ]
+            self.general_list = self.bot.db.filterlist.find_one({"name": "general"})["filter"]
             self.general_list_regex = self.generate_regex(self.general_list)
 
         elif listtype == "humanities":
-            self.humanities_list = self.bot.db.filterlist.find_one(
-                {"name": "humanities"}
-            )["filter"]
+            self.humanities_list = self.bot.db.filterlist.find_one({"name": "humanities"})["filter"]
             self.humanities_list_regex = self.generate_regex(self.humanities_list)
 
     @filter_commands.command()
-    @app_checks.mod_and_above()
+    @checks.mod_and_above()
     async def show(
         self,
         interaction: discord.Interaction,
         list_type: typing.Literal["whitelist", "general", "humanities"],
     ):
-        """Show words in selected filter list
+        """
+        Show words in selected filter list.
 
         Parameters
         ----------
@@ -113,20 +114,19 @@ class Filter(commands.Cog):
         filelist = self.return_list(list_type)
         await interaction.response.send_message(
             f"These are the words which are in the {list_type}{'blacklist' if list_type != 'whitelist' else ''}",
-            file=discord.File(
-                io.BytesIO("\n".join(filelist).encode("UTF-8")), f"{list_type}.txt"
-            ),
+            file=discord.File(io.BytesIO("\n".join(filelist).encode("UTF-8")), f"{list_type}.txt"),
         )
 
     @filter_commands.command()
-    @app_checks.mod_and_above()
+    @checks.mod_and_above()
     async def add(
         self,
         interaction: discord.Interaction,
         list_type: typing.Literal["whitelist", "general", "humanities"],
         word: str,
     ):
-        """Add a word in selected filter list
+        """
+        Add a word in selected filter list.
 
         Parameters
         ----------
@@ -146,21 +146,20 @@ class Filter(commands.Cog):
             f"`{word}` added to the {list_type}{' list' if list_type != 'whitelist' else ''}."
         )
 
-        self.bot.db.filterlist.update_one(
-            {"name": list_type}, {"$push": {"filter": word}}
-        )
+        self.bot.db.filterlist.update_one({"name": list_type}, {"$push": {"filter": word}})
 
         await self.updatelist(list_type)
 
     @filter_commands.command()
-    @app_checks.mod_and_above()
+    @checks.mod_and_above()
     async def remove(
         self,
         interaction: discord.Interaction,
         list_type: typing.Literal["whitelist", "general", "humanities"],
         word: str,
     ):
-        """Remove a word in selected filter list
+        """
+        Remove a word in selected filter list.
 
         Parameters
         ----------
@@ -180,13 +179,11 @@ class Filter(commands.Cog):
             f"`{word}` removed from the {list_type}{' list' if list_type != 'whitelist' else ''}."
         )
 
-        self.bot.db.filterlist.update_one(
-            {"name": list_type}, {"$pull": {"filter": word}}
-        )
+        self.bot.db.filterlist.update_one({"name": list_type}, {"$pull": {"filter": word}})
 
         await self.updatelist(list_type)
 
-    @app_checks.mod_and_above()
+    @checks.mod_and_above()
     @filter_commands.command()
     async def check(
         self,
@@ -194,7 +191,8 @@ class Filter(commands.Cog):
         list_type: typing.Literal["general", "humanities"],
         text: str,
     ):
-        """Check if a word/phrase contains profanity
+        """
+        Check if a word/phrase contains profanity.
 
         Parameters
         ----------
@@ -217,23 +215,23 @@ class Filter(commands.Cog):
             await interaction.response.send_message("No profanity.")
 
     @commands.Cog.listener()
-    async def on_member_update(self, before, after):
+    async def on_member_update(self, before: discord.Member, after: discord.Member):
         if before.nick == after.nick:
             return
         await self.check_member(after)
 
     @commands.Cog.listener()
-    async def on_message(self, message):
+    async def on_message(self, message: discord.Message):
         if isinstance(message.channel, discord.DMChannel):
             return
         if (
-            message.channel.category.id == 414095379156434945  # mod category
-            and message.channel.id != 414179142020366336  # bot testing
+            message.channel.category.id == Reference.Categories.moderation
+            and message.channel.id != Reference.Channels.bot_tests
         ):
             return
 
-        if message.channel.category.id ==974333356688965672: # language testing
-            return 
+        if message.channel.category.id == Reference.Channels.language_tests:  # language testing
+            return
         if self.is_member_excluded(message.author):
             return
 
@@ -256,22 +254,22 @@ class Filter(commands.Cog):
         if is_external_command(message):
             return
 
-        self.logging_channel = await self.bot.fetch_channel(self.logging_channel_id)
+        self.logging_channel = self.bot.get_channel(self.logging_channel_id)
         if not isinstance(message.channel, discord.DMChannel):
             await self.check_message(message)
             await self.check_member(message.author)
 
     @commands.Cog.listener()
-    async def on_message_edit(self, before, after):
-        if after.channel.id == 414452106129571842:
+    async def on_message_edit(self, before: discord.Message, after: discord.Message):
+        if after.channel.id == Reference.Channels.bot_commands:
             return
 
         if self.is_member_excluded(after.author):
             return
 
         if (
-            before.channel.category.id == 414095379156434945  # mod category
-            and before.channel.id != 414179142020366336  # bot testing
+            before.channel.category.id == Reference.Categories.moderation  # mod category
+            and before.channel.id != Reference.Channels.bot_tests  # bot testing
         ):
             return
         if before.content == after.content:
@@ -301,22 +299,18 @@ class Filter(commands.Cog):
                 await member.edit(nick="Kurzgesagt Fan")
 
         if member.nick is None:
-            if not re.search(
-                r"[a-zA-Z0-9~!@#$%^&*()_+`;':\",./<>?]{3,}", member.name, re.IGNORECASE
-            ):
+            if not re.search(r"[a-zA-Z0-9~!@#$%^&*()_+`;':\",./<>?]{3,}", member.name, re.IGNORECASE):
                 await member.edit(nick="Unpingable Username")
             if any(s in member.name for s in ("nazi", "hitler", "führer", "fuhrer")):
                 await member.edit(nick="Parrot")
 
         else:
-            if not re.search(
-                r"[a-zA-Z0-9~!@#$%^&*()_+`;':\",./<>?]{3,}", member.nick, re.IGNORECASE
-            ):
+            if not re.search(r"[a-zA-Z0-9~!@#$%^&*()_+`;':\",./<>?]{3,}", member.nick, re.IGNORECASE):
                 await member.edit(nick="Unpingable Nickname")
             if any(s in member.nick for s in ("nazi", "hitler", "führer", "fuhrer")):
                 await member.edit(nick=None)
 
-    async def execute_action_on_message(self, message, actions):
+    async def execute_action_on_message(self, message: discord.Message, actions):
         # TODO: make embeds more consistent once mod policy is set
         if "ping" in actions:
             if "delete_after" in actions:
@@ -334,12 +328,10 @@ class Filter(commands.Cog):
             if isinstance(actions["delete_message"], int):
                 async with self.message_history_lock:
                     for i in range(4):
-                        await self.message_history_list[actions["delete_message"]][
-                            i
-                        ].delete()
-                    self.message_history_list[
+                        await self.message_history_list[actions["delete_message"]][i].delete()
+                    self.message_history_list[actions["delete_message"]] = self.message_history_list[
                         actions["delete_message"]
-                    ] = self.message_history_list[actions["delete_message"]][4:]
+                    ][4:]
             else:
                 await message.delete()
 
@@ -348,9 +340,7 @@ class Filter(commands.Cog):
             await message.author.timeout(time, reason="spam")
 
             try:
-                await message.author.send(
-                    f"You have been muted for 30 minutes.\nGiven reason: Spam\n"
-                )
+                await message.author.send(f"You have been muted for 30 minutes.\nGiven reason: Spam\n")
 
             except discord.Forbidden:
                 pass
@@ -362,18 +352,16 @@ class Filter(commands.Cog):
         # logic for messaging the user
 
         if "log" in actions:
-            embed = create_automod_embed(
-                message=message, automod_type=actions.get("log")
-            )
+            embed = create_automod_embed(message=message, automod_type=actions.get("log"))
             await self.logging_channel.send(embed=embed)
 
     def is_member_excluded(self, author):
         rolelist = [
-            414092550031278091,  # mod
-            414029841101225985,  # admin
-            414954904382210049,  # offical
-            414155501518061578,  # robobird
-            240254129333731328,  # stealth
+            Reference.Roles.moderator,  # mod
+            Reference.Roles.administrator,  # admin
+            Reference.Roles.kgsofficial,  # offical
+            Reference.Roles.robobird,  # robobird
+            Reference.Roles.stealthbot,  # stealth
         ]
         if author.bot:
             return True
@@ -409,13 +397,7 @@ class Filter(commands.Cog):
         indexes = [x.start() for x in re.finditer(r"\?", message_clean)]
         # get rid of all other non ascii characters
         message_clean = demoji.replace(message_clean, "*")
-        message_clean = (
-            str(message_clean)
-            .encode("ascii", "replace")
-            .decode()
-            .lower()
-            .replace("?", "*")
-        )
+        message_clean = str(message_clean).encode("ascii", "replace").decode().lower().replace("?", "*")
         # put back question marks
         message_clean = list(message_clean)
         for i in indexes:
@@ -458,7 +440,7 @@ class Filter(commands.Cog):
 
     # check for emoji spam
     def check_emoji_spam(self, message):
-        if message.channel.id == 526882555174191125:  # new-members
+        if message.channel.id == Reference.Channels.new_members:  # new-members
             return False
 
         if (
@@ -480,25 +462,19 @@ class Filter(commands.Cog):
 
     # check for text spam
     def check_text_spam(self, message):
-        if message.channel.id == 526882555174191125:  # new-members
+        if message.channel.id == Reference.Channels.new_members:  # new-members
             return False
 
         # if the user has past messages
         if message.author.id in self.message_history_list:
             count = len(self.message_history_list[message.author.id])
             if count > 3:
-                if all(
-                    m.content == message.content
-                    for m in self.message_history_list[message.author.id][0:4]
-                ):
+                if all(m.content == message.content for m in self.message_history_list[message.author.id][0:4]):
                     return message.author.id
 
         if message.channel.id in self.message_history_list:
             if len(self.message_history_list[message.channel.id]) > 3:
-                if all(
-                    m.content == message.content
-                    for m in self.message_history_list[message.channel.id][0:4]
-                ):
+                if all(m.content == message.content for m in self.message_history_list[message.channel.id][0:4]):
                     return message.channel.id
 
     # check for mass ping
@@ -508,13 +484,13 @@ class Filter(commands.Cog):
 
     # check for gif bypass
     def check_gif_bypass(self, message):
-        filetypes = ["mp4", "gif", "webm", "gifv"]
+        filetypes = ["mp4", "gif", "webm", "gifv", "mov"]
 
-        # general, bot-testing and humanities
         if message.channel.id not in (
-            414027124836532236,
-            414179142020366336,
-            546315063745839115,
+            Reference.Channels.the_perch,
+            Reference.Channels.general,
+            Reference.Channels.bot_tests,
+            Reference.Channels.humanities,
         ):
             return
         # This is too aggressive and shouldn't be necessary. Leaving it commented for now though.
@@ -564,9 +540,7 @@ class Filter(commands.Cog):
             )
 
             embed = create_automod_embed(message=message, automod_type="profanity")
-            embed.add_field(
-                name="Blacklisted Word", value=is_profanity[:1024], inline=False
-            )
+            embed.add_field(name="Blacklisted Word", value=is_profanity[:1024], inline=False)
             file = discord.File(io.BytesIO(message.content.encode("UTF-8")), f"log.txt")
             await self.logging_channel.send(embed=embed, file=file)
             return
@@ -598,7 +572,6 @@ class Filter(commands.Cog):
 
         # this one goes last due to lock
         async with self.message_history_lock:
-
             # if getting past this point we write to message history and pop if to many messages
 
             if message.author.id in self.message_history_list:
@@ -772,5 +745,5 @@ class Filter(commands.Cog):
         return regexlist
 
 
-async def setup(bot):
+async def setup(bot: BirdBot):
     await bot.add_cog(Filter(bot))

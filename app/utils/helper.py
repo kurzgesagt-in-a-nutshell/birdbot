@@ -1,21 +1,37 @@
-import re
+# Copyright (C) 2024, Kurzgesagt Community Devs
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+
+"""
+Miscallaneous helper functions and classes that are used throught the bot.
+"""
+
 import datetime
-import json
 import logging
-from typing import List, Tuple, Union
-import typing
+import random
+import re
+from collections import deque
+from typing import List, Tuple
 
 import discord
 from discord.ext import commands
 
-from birdbot import BirdBot
+from app.birdbot import BirdBot
+
+from .config import Reference
 
 infraction_db = BirdBot.db.Infraction
 timed_actions_db = BirdBot.db.TimedAction
 cmd_blacklist_db = BirdBot.db.CommandBlacklist
 
-config_json = json.load(open("config.json"))
-config_roles = config_json["roles"]
 
 logger = logging.getLogger("Helper")
 
@@ -104,134 +120,34 @@ possible_commands = [
 
 # ----Exception classes begin------#
 class NoAuthorityError(commands.CheckFailure):
-    """Raised when user has no clearance to run a command"""
+    """
+    Raised when user has no clearance to run a command.
+    """
 
 
 class WrongChannel(commands.CheckFailure):
-    """Raised when trying to run a command in the wrong channel"""
+    """
+    Raised when trying to run a command in the wrong channel.
+    """
 
     def __init__(self, id):
         super().__init__(f"This command can only be run in <#{id}>")
 
 
 class DevBotOnly(commands.CheckFailure):
-    """Raised when trying to run commands meant for dev bots"""
+    """
+    Raised when trying to run commands meant for dev bots.
+    """
 
 
 # ----Exception classes end------#
 
-# ------Custom checks begin-------#
-
-
-def general_only():
-    async def predicate(ctx: commands.Context):
-        if (
-            ctx.channel.category_id != 414095379156434945  # Mod channel category
-            and ctx.channel.id != 414027124836532236  # general id
-        ):
-            raise WrongChannel(414027124836532236)
-        return True
-
-    return commands.check(predicate)
-
-
-def bot_commands_only():
-    async def predicate(ctx: commands.Context):
-        if (
-            ctx.channel.category_id != 414095379156434945  # Mod channel category
-            and ctx.channel.id != 414452106129571842  # bot commands id
-        ):
-            raise WrongChannel(414452106129571842)
-        return True
-
-    return commands.check(predicate)
-
-
-def devs_only():
-    async def predicate(ctx: commands.Context):
-        if not ctx.author.id in [
-            389718094270038018,  # FC
-            424843380342784011,  # Oeav
-            183092910495891467,  # Sloth
-            248790213386567680,  # Austin
-            229779964898181120,  # source
-        ]:
-            raise NoAuthorityError
-        return True
-
-    return commands.check(predicate)
-
-
-def mainbot_only():
-    async def predicate(ctx: commands.Context):
-        if not ctx.me.id == 471705718957801483:
-            raise DevBotOnly
-        return True
-
-    return commands.check(predicate)
-
-
-def role_and_above(id: int):
-    """Check if user has role above or equal to passed role"""
-
-    async def predicate(ctx: commands.Context):
-        check_role = ctx.guild.get_role(id)
-        if not ctx.author.top_role >= check_role:
-            raise NoAuthorityError
-        return True
-
-    return commands.check(predicate)
-
-
-def patreon_only():
-    async def predicate(ctx: commands.Context):
-
-        guild = discord.utils.get(ctx.bot.guilds, id=414027124836532234)
-        user = guild.get_member(ctx.author.id)
-        user_role_ids = [x.id for x in user.roles]
-        check_role_ids = [
-            config_roles["patreon_blue_role"],
-            config_roles["patreon_green_role"],
-            config_roles["patreon_orange_role"],
-        ]
-        if not any(x in user_role_ids for x in check_role_ids):
-            raise NoAuthorityError
-        return True
-
-    return commands.check(predicate)
-
-
-def mod_and_above():
-    async def predicate(ctx: commands.Context):
-        user_role_ids = [x.id for x in ctx.author.roles]
-        check_role_ids = [
-            config_roles["mod_role"],
-            config_roles["admin_role"],
-            config_roles["kgsofficial_role"],
-            config_roles["trainee_mod_role"],
-        ]
-        if not any(x in user_role_ids for x in check_role_ids):
-            raise NoAuthorityError
-        return True
-
-    return commands.check(predicate)
-
-
-def admin_and_above():
-    async def predicate(ctx: commands.Context):
-        user_role_ids = [x.id for x in ctx.author.roles]
-        check_role_ids = [config_roles["admin_role"], config_roles["kgsofficial_role"]]
-        if not any(x in user_role_ids for x in check_role_ids):
-            raise NoAuthorityError
-        return True
-
-    return commands.check(predicate)
-
 
 def is_internal_command(bot: commands.AutoShardedBot, message: discord.Message):
     """
-    check if message is a bird bot command
-    returns bool
+    Check if message is a bird bot command.
+
+    Returns bool.
     """
     for x in bot.commands:
         if any(message.content.startswith(f"!{y}") for y in x.aliases):
@@ -243,8 +159,9 @@ def is_internal_command(bot: commands.AutoShardedBot, message: discord.Message):
 
 def is_external_command(message: discord.Message):
     """
-    check if message is a third party bot command
-    returns bool
+    Check if message is a third party bot command.
+
+    Returns bool.
     """
     for command in possible_commands:
         if re.match(possible_prefixes + command, message.content, re.IGNORECASE):
@@ -252,13 +169,10 @@ def is_external_command(message: discord.Message):
     return False
 
 
-# ------Custom checks end-------#
-
-
 def create_embed(
-    author: Union[discord.User, discord.Member],
+    author: discord.User | discord.Member,
     action: str,
-    users: List[Union[discord.User, discord.Member]] = None,
+    users: List[discord.User | discord.Member] | None = None,
     reason=None,
     extra=None,
     color=discord.Color.blurple,
@@ -266,7 +180,7 @@ def create_embed(
     inf_level=None,
 ) -> discord.Embed:
     """
-    Creates an embed
+    Creates an embed.
 
     Args:
         author (discord.User or discord.Member): The author of the action (eg ctx.author)
@@ -309,13 +223,12 @@ def create_embed(
     return embed
 
 
-def create_timed_action(
-    users: List[Union[discord.User, discord.Member]], action: str, time: int
-):
+def create_timed_action(users: List[discord.User | discord.Member], action: str, time: int):
+    # TODO DELETE
     """Creates a database entry for timed action [not in use currently]
 
     Args:
-        users (List[Union[discord.User, discord.Member]]): List of affected users
+        users (List[discord.User | discord.Member]): List of affected users
         action (str): Action ("mute")
         time (int): Duration for which action will last
     """
@@ -328,14 +241,14 @@ def create_timed_action(
                 "action": action,
                 "action_start": datetime.datetime.utcnow(),
                 "duration": time,
-                "action_end": datetime.datetime.utcnow()
-                + datetime.timedelta(seconds=time),
+                "action_end": datetime.datetime.utcnow() + datetime.timedelta(seconds=time),
             }
         )
     ids = timed_actions_db.insert_many(data)
 
 
 def delete_timed_actions_uid(u_id: int):
+    # TODO DELETE
     """delete timed action by user_id [not in use currently]
 
     Args:
@@ -344,8 +257,10 @@ def delete_timed_actions_uid(u_id: int):
     timed_actions_db.remove({"user_id": u_id})
 
 
-def calc_time(args: List[str]) -> Tuple[int, str]:
-    """Parses time from given list.
+def calc_time(args: List[str]) -> Tuple[int | None, str | None]:
+    """
+    Parses time from given list (string.split(" ")).
+
     Example:
     ["1hr", "12m30s", "extra", "string"] => (4350, "extra string")
 
@@ -381,10 +296,8 @@ def calc_time(args: List[str]) -> Tuple[int, str]:
             if a[:s] == "":
                 break
             else:
-
                 t = 0
                 for i in a:
-
                     if i.isdigit():
                         t = t * 10 + int(i)
 
@@ -422,7 +335,8 @@ def calc_time(args: List[str]) -> Tuple[int, str]:
 
 
 def get_time_string(t: int) -> str:
-    """Convert provided time input (seconds) to Day-Hours-Mins-Second string
+    """
+    Convert provided time input (seconds) to Day-Hours-Mins-Second string.
 
     Args:
         t (int): Time in seconds
@@ -441,6 +355,7 @@ def get_time_string(t: int) -> str:
 
 
 def get_timed_actions():
+    # TODO DELETE
     """Fetch all timed action from db [not in use currently]"""
     return timed_actions_db.find().sort("action_end", 1)
 
@@ -449,7 +364,8 @@ def create_automod_embed(
     message: discord.Message,
     automod_type: str,
 ):
-    """Create embed for automod
+    """
+    Create embed for automod.
 
     Args:
         message (discord.Message): The message object
@@ -458,6 +374,7 @@ def create_automod_embed(
     Returns:
         embed: A discord.Embed object.
     """
+    assert isinstance(message.channel, discord.TextChannel)
     embed = discord.Embed(
         title=f"Message deleted. ({automod_type})",
         description=f"Message author: {message.author.mention}\nChannel: {message.channel.mention}",
@@ -466,77 +383,63 @@ def create_automod_embed(
     )
     embed.add_field(
         name="Message Content",
-        value=f"{message.content[:1024]}"
-        if message.content
-        else "it's an attachment/embed",
+        value=f"{message.content[:1024]}" if message.content else "it's an attachment/embed",
         inline=False,
     )
     return embed
 
 
-def get_active_staff(bot: commands.AutoShardedBot) -> str:
+def get_active_staff(bot: discord.Client) -> str:
     """
-    Gets string containing mentions of active staff (mods, trainee mods and admins)
+    Gets string containing mentions of active staff (mods, trainee mods and admins).
+
     Mentions both mod roles if no mod is online
     Returns: str
     """
 
-    guild = discord.utils.get(bot.guilds, id=414027124836532234)
+    guild = discord.utils.get(bot.guilds, id=Reference.guild)
+    assert guild
     active_staff = []
     mods_active = False
-    for role_id in [
-        config_roles["mod_role"],
-        config_roles["admin_role"],
-        config_roles["trainee_mod_role"],
-    ]:
-        for member in discord.utils.get(guild.roles, id=role_id).members:
+    for role_id in [Reference.Roles.moderator, Reference.Roles.administrator, Reference.Roles.trainee_mod]:
+        role = discord.utils.get(guild.roles, id=role_id)
+        assert role
+        for member in role.members:
             if member.bot:
                 continue
             if member in active_staff:
                 continue
-            if (
-                member.status == discord.Status.online
-                or member.status == discord.Status.idle
-            ):
+            if member.status == discord.Status.online or member.status == discord.Status.idle:
                 active_staff.append(member)
 
                 if not mods_active:
-                    if member.top_role.id in [
-                        config_roles["mod_role"],
-                        config_roles["trainee_mod_role"],
-                    ]:
+                    if member.top_role.id in [Reference.Roles.moderator, Reference.Roles.trainee_mod]:
                         # check for active mods
                         mods_active = True
 
     mention_str = " ".join([staff.mention for staff in active_staff])
 
     if not mods_active:
-        mention_str += (
-            f"<@&{config_roles['mod_role']}> <@&{config_roles['trainee_mod_role']}>"
-        )
+        mention_str += f"<@&{Reference.Roles.moderator}> <@&{Reference.Roles.trainee_mod}>"
 
     return mention_str
 
 
-def blacklist_member(
-    bot: commands.AutoShardedBot, member: discord.Member, command: commands.Command
-):
+# This is useless due to slash migration
+def blacklist_member(bot: commands.AutoShardedBot, member: discord.Member, command: commands.Command):
     """
-    Blacklists a member from a command
+    Blacklists a member from a command.
     """
 
     cmd = cmd_blacklist_db.find_one({"command_name": command.name})
     if cmd is None:
-        cmd_blacklist_db.insert_one(
-            {"command_name": command.name, "blacklisted_users": [member.id]}
-        )
+        cmd_blacklist_db.insert_one({"command_name": command.name, "blacklisted_users": [member.id]})
         return
 
-    cmd_blacklist_db.update_one(
-        {"command_name": command.name}, {"$push": {"blacklisted_users": member.id}}
-    )
+    cmd_blacklist_db.update_one({"command_name": command.name}, {"$push": {"blacklisted_users": member.id}})
 
 
+# This is useless due to slash migration
 def whitelist_member(member: discord.Member, command: commands.Command) -> bool:
     """
     Whitelist a member from a command and return True
@@ -546,20 +449,91 @@ def whitelist_member(member: discord.Member, command: commands.Command) -> bool:
     if cmd is None or member.id not in cmd["blacklisted_users"]:
         return False
 
-    cmd_blacklist_db.update_one(
-        {"command_name": command.name}, {"$pull": {"blacklisted_users": member.id}}
-    )
+    cmd_blacklist_db.update_one({"command_name": command.name}, {"$pull": {"blacklisted_users": member.id}})
     return True
 
 
-def is_public_channel(
-    channel: typing.Union[discord.TextChannel, discord.Thread]
-) -> bool:
+def is_public_channel(channel: discord.TextChannel | discord.Thread) -> bool:
     """
-    Returns true for all channels except those under the moderation category
+    Returns true for all channels except those under the moderation category.
 
     Currently used within the moderation cog to determine if an interaction
-    should be ephemeral
+    should be ephemeral.
     """
-    # check if channel is underneath the moderation category
-    return channel.category_id != 414095379156434945  # mod category id
+
+    return channel.category_id != Reference.Categories.moderation
+
+
+class Cycle(object):
+    """
+    Singleton iterator class used to cycle through a list randomly infinitely.
+    """
+
+    __instance = None
+
+    queue = []
+    dequeue = deque([], 0)
+
+    def __new__(cls, *args, **kwargs):
+        if cls.__instance is None:
+            cls.__instance = super(Cycle, cls).__new__(cls)
+        return cls.__instance
+
+    def __init__(self, queue: list | None = None, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if queue:
+            self.queue = queue
+            self.dequeue = deque(random.sample(self.queue, len(self.queue)))
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        """
+        Returns the current item in the queue and makes a new random queue if empty.
+        """
+        if len(self.dequeue) == 1:
+            self.dequeue.extend(random.sample(self.queue, len(self.queue)))
+
+        if not self.dequeue:
+            raise StopIteration
+
+        cur = self.dequeue.popleft()
+        return cur
+
+    def queue_last(self, entry):
+        """
+        Adds an item to the end of the queue.
+        """
+        self.dequeue.append(entry)
+
+    def queue_next(self, entry):
+        """
+        Adds an item to the beginning of the queue.
+        """
+        self.dequeue.extendleft([entry])
+
+    def queue_remove(self, entry):
+        """
+        Removes an item from the queue.
+        """
+        try:
+            self.dequeue.remove(entry)
+        except:
+            pass
+
+
+class BannerCycle(Cycle):
+    """
+    The iterator class for banners.
+    """
+
+    pass
+
+
+class TopicCycle(Cycle):
+    """
+    The iterator class for topics.
+    """
+
+    pass

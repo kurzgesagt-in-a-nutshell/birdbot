@@ -1,0 +1,14 @@
+name: Deploy Birdbot
+
+on:
+  push:
+    branches:
+      - 'master'
+      - 'main'
+      - 'public-refactor'
+      - 'staging'
+      - 'staging-deploy'
+
+jobs:
+  deploy:
+    uses: kurzgesagt-in-a-nutshell/.github/.github/workflows/deploy-birdbot.yml@self-hosted-runner

@@ -1,0 +1,26 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      - id: check-merge-conflict
+      - id: check-yaml
+  - repo: local
+    hooks:
+      - id: black-format
+        name: black-format
+        entry: black
+        language: system
+        types: [python]
+      - id: isort-format
+        name: isort-format
+        entry: isort
+        language: system
+        types: [python]
+        stages: [commit, push, manual]
+      - id: pyright
+        name: pyright
+        entry: pyright . 
+        language: system
+        types: [python]
+        pass_filenames: false
+        stages: [commit, push, manual]
