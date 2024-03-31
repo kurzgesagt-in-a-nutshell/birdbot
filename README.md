@@ -34,8 +34,9 @@ source birdbot/bin/activate
 # install the dependencies
 pip install -r requirements.txt
 ```
-
-- Navigate to /app/utils/config.py and change the values of the variables according to your requirements
+- Ensure you have excluded your virtualenv in `pyproject.toml` to prevent pyright errors
+  
+- Navigate to `app/utils/config.py` and change the values of the variables according to your requirements
 
 - Create a file named `.env` and paste the following lines in it. Change the values of the variables according to your requirements
 ```
