@@ -86,3 +86,14 @@ class InvalidFunctionUsage(InternalError):
     """
 
     pass
+
+
+class TransformerError(InternalError, app_commands.TransformerError):
+    """
+    Error for discord type conversion.
+    """
+
+    title = "Conversion Error"
+    content = f"{InternalError.content}"
+
+    pass
