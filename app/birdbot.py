@@ -127,7 +127,7 @@ class BirdTree(app_commands.CommandTree):
         elif isinstance(error, app_commands.TransformerError):
             # Raised when a type annotation fails to convert to its target type.
             user_shown_error = errors.TransformerError(
-                content=f"Failed to convert {error.value} to {error.transformer._error_display_name}. Make sure member/channel/role exist."
+                content=f"Failed to convert {error.value} to {error.transformer._error_display_name}. Make sure member/channel/role exists."
             )
 
             embed = user_shown_error.format_notif_embed(interaction)
