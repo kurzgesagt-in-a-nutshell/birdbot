@@ -123,6 +123,18 @@ class BirdTree(app_commands.CommandTree):
             await BirdTree.maybe_responded(interaction, embed=embed, ephemeral=True)
 
             return
+
+        elif isinstance(error, app_commands.TransformerError):
+            # Raised when a type annotation fails to convert to its target type.
+            user_shown_error = errors.TransformerError(
+                content=f"Failed to convert {error.value} to {error.transformer._error_display_name}. Make sure member/channel/role exist."
+            )
+
+            embed = user_shown_error.format_notif_embed(interaction)
+            await BirdTree.maybe_responded(interaction, embed=embed, ephemeral=True)
+
+            return
+
         elif isinstance(error, app_commands.CheckFailure):
             user_shown_error = errors.CheckFailure(content=str(error))
 
