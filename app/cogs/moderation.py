@@ -168,9 +168,18 @@ class Moderation(commands.Cog):
         self.mod_role = Reference.Roles.moderator
         self.admin_role = Reference.Roles.administrator
 
+        self.infraction_ctx = app_commands.ContextMenu(
+            name="Infraction",
+            callback=self.infractions_ctx_menu,
+        )
+        self.bot.tree.add_command(self.infraction_ctx)
+
     @commands.Cog.listener()
     async def on_ready(self):
         self.logger.info("loaded Moderation")
+
+    async def cog_unload(self) -> None:
+        self.bot.tree.remove_command(self.infraction_ctx.name, type=self.infraction_ctx.type)
 
     @app_commands.command()
     @app_commands.checks.cooldown(1, 30)
@@ -1083,7 +1092,7 @@ class Moderation(commands.Cog):
     @app_commands.guilds(Reference.guild)
     @app_commands.default_permissions(manage_messages=True)
     @checks.mod_and_above()
-    async def infractions(self, interaction: discord.Interaction, user: discord.User):
+    async def infractions(self, interaction: discord.Interaction, user: discord.User | discord.Member):
         """Checks a users infractions.
 
         Parameters
@@ -1150,6 +1159,13 @@ class Moderation(commands.Cog):
             view=InfractionView(user_infractions),
             ephemeral=is_public_channel(interaction.channel),
         )
+
+    @app_commands.guilds(Reference.guild)
+    @app_commands.default_permissions(manage_messages=True)
+    @checks.mod_and_above()
+    async def infractions_ctx_menu(self, interaction: discord.Interaction, user: discord.Member):
+        # FIXME: Pyright giving `error: Expected 2 positional argument` error
+        await self.infractions.callback(self, interaction, user)
 
     @app_commands.command()
     @app_commands.guilds(Reference.guild)
