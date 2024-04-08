@@ -23,7 +23,7 @@ packaging==24.0
 pathspec==0.12.1
 platformdirs==4.2.0
 Pygments==2.17.2
-pymongo==4.6.2
+pymongo==4.6.3
 pyright==1.1.355
 python-dotenv==1.0.1
 python-Levenshtein==0.25.0
