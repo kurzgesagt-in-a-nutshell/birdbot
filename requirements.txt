@@ -28,7 +28,7 @@ pyright==1.1.355
 python-dotenv==1.0.1
 python-Levenshtein==0.25.0
 rapidfuzz==3.7.0
-requests==2.31.0
+requests==2.32.0
 rich==13.7.1
 urllib3==2.2.1
 yarl==1.9.4
