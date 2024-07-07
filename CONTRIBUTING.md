@@ -39,7 +39,3 @@ Hotfixes are limited to major security issues and critical bugs. These will be p
 This workflow is intended to minimize the number of conflicts that arise in development allowing us to focus more on improving the code. In the case of a conflict, the dev working on the branch should have a better understanding of the code changed and be better equipped to respond to the conflict.
 
 Many features and fixes may be applied to staging before it is ready to merge into master. After testing, staging can be merged into master and a new version is assigned.
-
----
-
-## Pull Requests
