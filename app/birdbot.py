@@ -39,20 +39,22 @@ _log = logging.getLogger(__name__)
 
 
 @contextmanager
-def setup():
+def logging_context():
     """
     Setup the logger.
     """
     logger = logging.getLogger()
+    logging.getLogger("discord").setLevel(logging.INFO)
+    logging.getLogger("discord.http").setLevel(logging.INFO)
     try:
         dotenv.load_dotenv()
-        logging.getLogger("discord").setLevel(logging.INFO)
-        logging.getLogger("discord.http").setLevel(logging.INFO)
 
-        logger.setLevel(logging.DEBUG)
+        logger.setLevel(int(os.environ.get("LOGGING_LEVEL") or 20)) # defaults to INFO
         dtfmt = "%Y-%m-%d %H:%M:%S"
+        
         if not os.path.isdir("logs/"):
             os.mkdir("logs/")
+        
         handlers = [
             RichHandler(rich_tracebacks=True),
             TimedRotatingFileHandler(filename="logs/birdbot.log", when="d", interval=5),
