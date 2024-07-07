@@ -48,6 +48,7 @@ from app.utils.config import Reference
 from app.utils.helper import blacklist_member, get_active_staff, is_public_channel, whitelist_member
 from app.utils.infraction import InfractionKind, InfractionList
 
+_log = logging.getLogger(__name__)
 
 class FinalReconfirmation(discord.ui.View):
     """
@@ -162,7 +163,6 @@ class Moderation(commands.Cog):
     """
 
     def __init__(self, bot: BirdBot):
-        self.logger = logging.getLogger("Moderation")
         self.bot = bot
 
         self.mod_role = Reference.Roles.moderator
@@ -170,7 +170,7 @@ class Moderation(commands.Cog):
 
     @commands.Cog.listener()
     async def on_ready(self):
-        self.logger.info("loaded Moderation")
+        _log.info("Loaded")
 
     @app_commands.command()
     @app_commands.checks.cooldown(1, 30)

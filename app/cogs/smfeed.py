@@ -22,15 +22,15 @@ from discord.ext import commands
 from app.birdbot import BirdBot
 from app.utils.config import Reference
 
+_log = logging.getLogger(__name__)
 
 class Smfeed(commands.Cog):
     def __init__(self, bot: BirdBot):
-        self.logger = logging.getLogger("Smfeed")
         self.bot = bot
 
     @commands.Cog.listener()
     async def on_ready(self):
-        self.logger.info("loaded Smfeed")
+        _log.info("Loaded")
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):

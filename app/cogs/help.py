@@ -24,16 +24,16 @@ from app.birdbot import BirdBot
 from app.utils import checks
 from app.utils.config import Reference
 
+_log = logging.getLogger(__name__)
 
 class Help(commands.Cog):
     def __init__(self, bot: BirdBot):
-        self.logger = logging.getLogger("Help")
         self.bot = bot
         self.bot.remove_command("help")
 
     @commands.Cog.listener()
     async def on_ready(self):
-        self.logger.info("loaded Help")
+        _log.info("Loaded")
 
     # TODO: Convert the output to embed or some UI
     # TODO: Remove mod_and_above and default_permission check.

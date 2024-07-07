@@ -35,7 +35,7 @@ from rich.logging import RichHandler
 from .utils import errors
 from .utils.config import Reference
 
-logger = logging.getLogger("BirdBot")
+_log = logging.getLogger(__name__)
 
 
 @contextmanager
@@ -176,7 +176,7 @@ class BirdBot(commands.AutoShardedBot):
         """
         Create and return an instance of a Bot from argparse Namespace instance.
         """
-        logger.info(args)
+        _log.info(args)
         allowed_mentions = discord.AllowedMentions(roles=False, everyone=False, users=True)
         loop = asyncio.get_event_loop()
         intents = discord.Intents(
@@ -229,10 +229,10 @@ class BirdBot(commands.AutoShardedBot):
 
         db_key = os.environ.get("DB_KEY")
         if db_key is None:
-            logger.critical("NO DB KEY FOUND, USING LOCAL DB INSTEAD")
+            _log.critical("NO DB KEY FOUND, USING LOCAL DB INSTEAD")
         client = MongoClient(db_key, tlsCAFile=certifi.where())
         db = client.KurzBot
-        logger.info("Connected to mongoDB")
+        _log.info("Connected to mongoDB")
         cls.db = db
 
     async def setup_hook(self):
@@ -257,7 +257,7 @@ class BirdBot(commands.AutoShardedBot):
         for item in extdir.iterdir():
             # Ignore some cogs for the test bots.
             if item.stem in ("antiraid", "automod", "giveaway") and (args.beta or args.alpha):
-                logger.debug("Skipping: %s", item.name)
+                _log.debug("Skipping: %s", item.name)
                 continue
 
             if item.name.startswith("_"):
@@ -280,7 +280,7 @@ class BirdBot(commands.AutoShardedBot):
             await self.load_extension(extension)
             return True
         except Exception as e:
-            logger.error("an error occurred while loading extension", exc_info=e)
+            _log.exception("an error occurred while loading extension")
             return False
 
     async def close(self):
@@ -299,10 +299,10 @@ class BirdBot(commands.AutoShardedBot):
 
     async def on_ready(self):
         assert self.user is not None
-        logger.info("Logged in as")
-        logger.info(f"\tUser: {self.user.name}")
-        logger.info(f"\tID  : {self.user.id}")
-        logger.info("------")
+        _log.info("Logged in as")
+        _log.info(f"\tUser: {self.user.name}")
+        _log.info(f"\tID  : {self.user.id}")
+        _log.info("------")
 
     """"
     From here on it's custom functions we can use in cogs.

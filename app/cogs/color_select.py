@@ -27,7 +27,7 @@ from app.birdbot import BirdBot
 from app.utils import errors
 from app.utils.config import ExclusiveColors, Reference
 
-logger = logging.getLogger(__name__)
+_log = logging.getLogger(__name__)
 
 
 class ExclusiveColorTransformer(app_commands.Transformer):
@@ -124,7 +124,7 @@ class ColorSelect(commands.Cog):
                     break
 
             if value["id"] in roleids and not has_unlocker_role:
-                logger.info(
+                _log.debug(
                     f"removing : {value['id']} from user who does not \
                     have access to it anymore"
                 )
@@ -154,10 +154,10 @@ class ColorSelect(commands.Cog):
 
         if action == "add":
             await interaction.user.add_roles(color, reason="color role update")
-            logger.debug("added role")
+            _log.debug("added role")
         elif action == "remove":
             await interaction.user.remove_roles(color, reason="color role update")
-            logger.debug("removed role")
+            _log.debug("removed role")
 
         await interaction.response.send_message(content=f"{action.title().strip('e')}ed {color.name}", ephemeral=True)
 

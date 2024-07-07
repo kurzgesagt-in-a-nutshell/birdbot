@@ -29,10 +29,10 @@ from app.birdbot import BirdBot
 from app.utils import checks
 from app.utils.config import Reference
 
+_log = logging.getLogger(__name__)
 
 class Misc(commands.Cog):
     def __init__(self, bot: BirdBot):
-        self.logger = logging.getLogger("Misc")
         self.bot = bot
         self.intro_db = self.bot.db.StaffIntros
         self.kgs_guild: typing.Optional[discord.Guild] = None
@@ -46,7 +46,7 @@ class Misc(commands.Cog):
 
     @commands.Cog.listener()
     async def on_ready(self):
-        self.logger.info("Loaded Misc Cog")
+        _log.info("Loaded")
 
     @commands.Cog.listener()
     async def on_member_update(self, before: discord.Member, after: discord.Member):
@@ -221,8 +221,6 @@ class IntroModal(discord.ui.Modal):
     def __init__(self, oldIntro: dict, bot: BirdBot):
         super().__init__(title="Introduce yourself!")
 
-        self.logger = logging.getLogger("Misc")
-
         self.oldIntro = oldIntro
         self.intro_db = bot.db.StaffIntros
 
@@ -354,7 +352,7 @@ class IntroModal(discord.ui.Modal):
 
             newPos += 1
 
-        self.logger.info(f"the new pos {newPos}")
+        _log.debug(f"the new pos {newPos}")
 
         for i in range(1, newPos + 1):
             msg = embeds[i - 1][1]
@@ -380,7 +378,7 @@ class IntroModal(discord.ui.Modal):
         embeds: typing.List[typing.Tuple[dict, discord.Message]] = []
         newPos = 0
         embeds.append((self.oldIntro, oldmessage))
-        self.logger.info(f"Old message: {self.oldIntro['message_id']}")
+        _log.debug(f"Old message: {self.oldIntro['message_id']}")
         snowflake = discord.Object(self.oldIntro["message_id"])
         async for message in self.intro_channel.history(limit=limit, before=snowflake, oldest_first=False):
             if not message.embeds:

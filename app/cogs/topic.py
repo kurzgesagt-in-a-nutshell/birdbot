@@ -41,6 +41,7 @@ from app.utils.helper import TopicCycle
 if TYPE_CHECKING:
     from pymongo.collection import Collection
 
+_log = logging.getLogger(__name__)
 
 class TopicEditorModal(dui.Modal):
     """
@@ -195,7 +196,6 @@ class TopicAcceptorView(dui.View):
 
 class Topic(commands.Cog):
     def __init__(self, bot: BirdBot):
-        self.logger = logging.getLogger("Fun")
         self.bot = bot
 
         self.topics_db: Collection = self.bot.db.Topics
@@ -206,7 +206,7 @@ class Topic(commands.Cog):
 
     @commands.Cog.listener()
     async def on_ready(self):
-        self.logger.info("loaded Topic")
+        _log.info("Loaded")
 
     async def cog_load(self):
         self.TOPIC_ACCEPT = f"TOPIC-ACCEPT-{self.bot._user().id}"
