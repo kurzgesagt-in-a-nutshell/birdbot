@@ -24,6 +24,8 @@ from app.utils.config import Reference
 from app.utils.errors import *
 from app.utils.helper import NoAuthorityError
 
+_log = logging.getLogger(__name__)
+
 
 class Errors(commands.Cog):
     """
@@ -32,13 +34,11 @@ class Errors(commands.Cog):
 
     def __init__(self, bot: BirdBot):
         self.dev_logging_channel = Reference.Channels.Logging.dev
-
-        self.logger = logging.getLogger("Listeners")
         self.bot = bot
 
     @commands.Cog.listener()
     async def on_ready(self):
-        self.logger.info("loaded Error listener")
+        _log.info("Loaded")
 
     @commands.Cog.listener()
     async def on_command_error(self, ctx: commands.Context, err):
@@ -80,7 +80,7 @@ class Errors(commands.Cog):
                 pass
 
         else:
-            self.logger.exception(traceback_txt)
+            _log.error(traceback_txt)
             await ctx.message.add_reaction(Reference.Emoji.PartialString.kgsStop)
             if not self.bot.ismainbot():
                 return
