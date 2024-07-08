@@ -14,7 +14,7 @@ PR's that do not meet these standards will be denied.
 If a function that contains a doc-string or comments is edited, make sure they are updated to correctly describe the code.
 
 ---
-# Branch Etiquette
+## Branch Etiquette
 
 The birdbot repository consists of two everlasting branches: master and staging. 
 
@@ -27,7 +27,7 @@ General Rules of Thumb
 
 Branch out from master into the appropriate naming scheme. If your branch is a new feature name it `feature/feature-name`, and if your branch is a bugfix name it `bugfix/issue-####`.
 
-Do your work. Often times this can consist over a longer period. In this time, changes could have been made to master and/or staging. To avoid conflicts with your branch, it is recommended to git fetch often and keep your branch up to date with our base branches.
+Do your work. Often times this can consist over a longer period. In this time, changes could have been made to master and/or staging. To avoid conflicts with your branch, it is recommended to `git fetch` often and keep your branch up to date with our base branches.
 
 Once you are finished with the work on your branch and ready to merge, again clarify that your branch is caught up with master and/or staging. You will push your branch to the remote repository to then create a pull request into staging. 
 
@@ -39,3 +39,15 @@ Hotfixes are limited to major security issues and critical bugs. These will be p
 This workflow is intended to minimize the number of conflicts that arise in development allowing us to focus more on improving the code. In the case of a conflict, the dev working on the branch should have a better understanding of the code changed and be better equipped to respond to the conflict.
 
 Many features and fixes may be applied to staging before it is ready to merge into master. After testing, staging can be merged into master and a new version is assigned.
+
+---
+
+## Issues
+
+We use issues to keep track of our development and allow a smoother process. 
+
+- Create an issue for each feature/bug/enhancement you are working on. This will help avoid unnecessary effort in the case another dev is already working on the same issue.
+- Use appropriate tags to allow for easy filtering of issues.
+- Provide as much information in an issue to allow for another dev to pick it up in case it goes stale.
+
+---
