@@ -50,6 +50,7 @@ from app.utils.infraction import InfractionKind, InfractionList
 
 _log = logging.getLogger(__name__)
 
+
 class FinalReconfirmation(discord.ui.View):
     """
     This view handles the interaction with moderators to confirm action while a user is on final warn.

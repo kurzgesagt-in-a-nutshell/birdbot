@@ -43,6 +43,7 @@ from app.utils.config import Reference
 
 _log = logging.getLogger(__name__)
 
+
 class Dev(commands.Cog):
     def __init__(self, bot: BirdBot):
         self.bot = bot

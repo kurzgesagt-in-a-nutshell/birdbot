@@ -24,6 +24,7 @@ from app.utils.config import Reference
 
 _log = logging.getLogger(__name__)
 
+
 class Smfeed(commands.Cog):
     def __init__(self, bot: BirdBot):
         self.bot = bot

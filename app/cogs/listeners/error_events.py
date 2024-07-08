@@ -26,6 +26,7 @@ from app.utils.helper import NoAuthorityError
 
 _log = logging.getLogger(__name__)
 
+
 class Errors(commands.Cog):
     """
     Catches all exceptions coming in through commands.

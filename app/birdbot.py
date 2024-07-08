@@ -49,12 +49,12 @@ def logging_context():
     try:
         dotenv.load_dotenv()
 
-        logger.setLevel(int(os.environ.get("LOGGING_LEVEL") or 20)) # defaults to INFO
+        logger.setLevel(int(os.environ.get("LOGGING_LEVEL") or 20))  # defaults to INFO
         dtfmt = "%Y-%m-%d %H:%M:%S"
-        
+
         if not os.path.isdir("logs/"):
             os.mkdir("logs/")
-        
+
         handlers = [
             RichHandler(rich_tracebacks=True),
             TimedRotatingFileHandler(filename="logs/birdbot.log", when="d", interval=5),

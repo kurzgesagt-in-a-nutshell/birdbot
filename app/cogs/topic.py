@@ -43,6 +43,7 @@ if TYPE_CHECKING:
 
 _log = logging.getLogger(__name__)
 
+
 class TopicEditorModal(dui.Modal):
     """
     A modal sent to the user attempting to change the topic.
