@@ -25,20 +25,24 @@ General Rules of Thumb
 3. Rebase Rebase Rebase
 4. It is your job to deal with conflicts on your branch
 
-Branch out from master into the appropriate naming scheme. If your branch is a new feature name it `feature/feature-name`, and if your branch is a bugfix name it `bugfix/issue-####`.
+Branch out from staging into the appropriate naming scheme. If your branch is a new feature name it `feature/feature-name`, and if your branch is a bugfix name it `bugfix/issue-####`.
 
-Do your work. Often times this can consist over a longer period. In this time, changes could have been made to master and/or staging. To avoid conflicts with your branch, it is recommended to `git fetch` often and keep your branch up to date with our base branches.
+Do your work. Often times this can consist over a longer period. In this time, changes could have been made to staging. To avoid conflicts with your branch, it is recommended to `git fetch` often and keep your branch up to date with our base branches.
 
-Once you are finished with the work on your branch and ready to merge, again clarify that your branch is caught up with master and/or staging. You will push your branch to the remote repository to then create a pull request into staging. 
+Once you are finished with the work on your branch and ready to merge, again clarify that your branch is caught up with staging. You will push your branch to the remote repository to then create a pull request into staging. 
 
 #### Hotfixes
-Hotfixes are limited to major security issues and critical bugs. These will be primarily worked on by our BirdBot Devs. Hotfixes ignore the staging process and branch off and right back into master. They are named in the scheme of `hotfix/issue-####` or `hotfix/name`
+Hotfixes are limited to major security issues and critical bugs. These will be primarily worked on by our BirdBot Devs. Hotfixes ignore the staging process and branch off of and right back into master. They are named in the scheme of `hotfix/issue-####` or `hotfix/name`
+
+#### Releases
+
+Once a release milestone is met, a version branch is made off of staging for testing and final touchups. No new features are implemented in this phase. 
+
+Once all changes are ready for production, the release branch is merged into staging and master.
 
 ---
 
 This workflow is intended to minimize the number of conflicts that arise in development allowing us to focus more on improving the code. In the case of a conflict, the dev working on the branch should have a better understanding of the code changed and be better equipped to respond to the conflict.
-
-Many features and fixes may be applied to staging before it is ready to merge into master. After testing, staging can be merged into master and a new version is assigned.
 
 ---
 
@@ -51,3 +55,6 @@ We use issues to keep track of our development and allow a smoother process.
 - Provide as much information in an issue to allow for another dev to pick it up in case it goes stale.
 
 ---
+
+## Pull Requests
+
