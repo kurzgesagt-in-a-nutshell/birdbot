@@ -195,7 +195,7 @@ class InfractionList:
         self._user = user
 
         self._user_id = data.pop("user_id", user.id)
-        self._user_name = data.pop("user_name", user.name)
+        self._user_name = user.display_name  # data.pop("user_name", user.name)
         self._last_updated = data.pop("last_updated", discord.utils.utcnow())
         self._banned_patreon = data.pop("banned_patreon", False)
         self._final_warn = data.pop("final_warn", False)
