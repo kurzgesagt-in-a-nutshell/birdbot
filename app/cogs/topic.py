@@ -24,6 +24,7 @@ import asyncio
 import logging
 import re
 import typing
+from random import randint
 from typing import TYPE_CHECKING
 
 import discord
@@ -247,7 +248,18 @@ class Topic(commands.Cog):
         Fetches a random topic.
         """
         topic = next(self.topics_cycle)
-        await interaction.response.send_message(f"{topic}")
+        view = discord.utils.MISSING
+
+        if randint(0, 100) > 70:  # roughly 30% chance
+            view = dui.View()
+            button = dui.Button(
+                disabled=True,
+                style=discord.ButtonStyle.gray,
+                label=f"Seeing duplicate topics? Suggest new ones with /{self.topic_suggest.qualified_name}!",
+            )
+            view.add_item(button)
+
+        await interaction.response.send_message(f"{topic}", view=view)
 
     @topics_command.command()
     @checks.mod_and_above()
