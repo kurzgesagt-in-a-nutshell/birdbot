@@ -235,7 +235,7 @@ class Dev(commands.Cog):
 
         log = "".join(log)
 
-        if len(log) > 2000:
+        if len(log) > 1900:
             await ctx.send(
                 f"Returned over 2k chars, sending as file instead.\n"
                 f"(first 1k chars for quick reference)\n"
