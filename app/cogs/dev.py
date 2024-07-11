@@ -41,15 +41,16 @@ from app.birdbot import BirdBot
 from app.utils import checks, helper
 from app.utils.config import Reference
 
+_log = logging.getLogger(__name__)
+
 
 class Dev(commands.Cog):
     def __init__(self, bot: BirdBot):
-        self.logger = logging.getLogger("Dev")
         self.bot = bot
 
     @commands.Cog.listener()
     async def on_ready(self):
-        self.logger.info("loaded Dev")
+        _log.info("Loaded")
 
     def cleanup_code(self, content: str):
         """
@@ -141,7 +142,7 @@ class Dev(commands.Cog):
                 pass
 
             if ret is None:
-                self.logger.info(f"Output chars: {len(str(value))}")
+                _log.info(f"Output chars: {len(str(value))}")
                 if value:
                     if len(str(value)) >= 2000:
                         await ctx.send(
@@ -153,7 +154,7 @@ class Dev(commands.Cog):
                     else:
                         await ctx.send(f"```py\n{value}\n```")
             else:
-                self.logger.info(f"Output chars: {len(str(value)) + len(str(ret))}")
+                _log.info(f"Output chars: {len(str(value)) + len(str(ret))}")
                 self._last_result = ret
                 if len(str(value)) + len(str(ret)) >= 2000:
                     await ctx.send(
@@ -186,8 +187,7 @@ class Dev(commands.Cog):
                 delete_after=10,
             )
         except Exception as e:
-            self.logger.error("Unable to load module.")
-            self.logger.error("{}: {}".format(type(e).__name__, e))
+            _log.exception("Unable to load module.")
 
     @commands.command(hidden=True)
     @checks.mod_and_above()
@@ -235,7 +235,7 @@ class Dev(commands.Cog):
 
         log = "".join(log)
 
-        if len(log) > 2000:
+        if len(log) > 1900:
             await ctx.send(
                 f"Returned over 2k chars, sending as file instead.\n"
                 f"(first 1k chars for quick reference)\n"

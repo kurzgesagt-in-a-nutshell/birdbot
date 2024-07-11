@@ -28,7 +28,7 @@ import discord
 from app.birdbot import BirdBot
 
 INFRACTION_DB = BirdBot.db.Infraction
-logger = logging.getLogger(__name__)
+_log = logging.getLogger(__name__)
 
 
 class InfractionKind(enum.Enum):
@@ -195,7 +195,7 @@ class InfractionList:
         self._user = user
 
         self._user_id = data.pop("user_id", user.id)
-        self._user_name = data.pop("user_name", user.name)
+        self._user_name = user.display_name  # data.pop("user_name", user.name)
         self._last_updated = data.pop("last_updated", discord.utils.utcnow())
         self._banned_patreon = data.pop("banned_patreon", False)
         self._final_warn = data.pop("final_warn", False)
@@ -357,7 +357,7 @@ class InfractionList:
         if final:
             self._final_warn = True
 
-        logger.debug(
+        _log.debug(
             "appended new infraction (%s) to user (%s) final=(%s)",
             kind,
             self._user_id,
@@ -373,7 +373,7 @@ class InfractionList:
         """
         try:
             self._kind_to_list(kind)[id].detail(title, description)
-            logger.debug("locally detailed infraction for %s", self._user_id)
+            _log.debug("locally detailed infraction for %s", self._user_id)
 
         except IndexError:
             return False
@@ -391,7 +391,7 @@ class InfractionList:
 
         try:
             del self._kind_to_list(kind)[id]
-            logger.debug("locally deleted infraction for %s", self._user_id)
+            _log.debug("locally deleted infraction for %s", self._user_id)
 
         except IndexError:
             return False
@@ -484,7 +484,7 @@ class InfractionList:
         """
         Converts the data stored in the class into a dict and updates the database.
         """
-        logger.debug("updating infraction info for %s", self._user_id)
+        _log.debug("updating infraction info for %s", self._user_id)
 
         self._last_updated = discord.utils.utcnow()
         data = self.to_dict()
