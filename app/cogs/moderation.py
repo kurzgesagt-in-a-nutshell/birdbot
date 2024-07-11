@@ -1364,4 +1364,13 @@ class Moderation(commands.Cog):
 
 
 async def setup(bot: BirdBot):
-    await bot.add_cog(Moderation(bot))
+    module = Moderation(bot)
+    await bot.add_cog(module)
+
+    @app_commands.context_menu(name="User Infractions")
+    @app_commands.guilds(Reference.guild)
+    @app_commands.default_permissions(manage_messages=True)
+    async def infraction_contextmenu(interaction: discord.Interaction, user: discord.User):
+        """Check a user's infractions."""
+
+        await module.infractions.callback(module, interaction, user)  # type: ignore [reportCallIssue]
