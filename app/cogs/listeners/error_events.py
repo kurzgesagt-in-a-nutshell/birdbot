@@ -9,8 +9,10 @@
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
+"""Holds evennt listeners related to command errors."""
 
 import asyncio
+import contextlib
 import io
 import logging
 from traceback import TracebackException
@@ -21,27 +23,27 @@ from discord.ext.commands import errors
 
 from app.birdbot import BirdBot
 from app.utils.config import Reference
-from app.utils.errors import *
+from app.utils.errors import CheckFailure, InternalError
 from app.utils.helper import NoAuthorityError
 
 _log = logging.getLogger(__name__)
 
 
 class Errors(commands.Cog):
-    """
-    Catches all exceptions coming in through commands.
-    """
+    """Catches all exceptions coming in through text commands."""
 
-    def __init__(self, bot: BirdBot):
+    def __init__(self, bot: BirdBot) -> None:
         self.dev_logging_channel = Reference.Channels.Logging.dev
         self.bot = bot
 
     @commands.Cog.listener()
-    async def on_ready(self):
+    async def on_ready(self) -> None:
+        """Log the module as ready."""
         _log.info("Loaded")
 
     @commands.Cog.listener()
-    async def on_command_error(self, ctx: commands.Context, err):
+    async def on_command_error(self, ctx: commands.Context, err: Exception) -> None:
+        """Listen and report command errors."""
         if isinstance(err, commands.CommandNotFound):
             return
 
@@ -53,10 +55,8 @@ class Errors(commands.Cog):
 
             await ctx.send(embed=embed, delete_after=5)
             await asyncio.sleep(5)
-            try:
+            with contextlib.suppress(discord.errors.NotFound):
                 await ctx.message.delete()
-            except discord.errors.NotFound:
-                pass
 
         elif isinstance(
             err,
@@ -74,10 +74,8 @@ class Errors(commands.Cog):
 
             await ctx.send(embed=embed, delete_after=5)
             await asyncio.sleep(5)
-            try:
+            with contextlib.suppress(discord.errors.NotFound):
                 await ctx.message.delete()
-            except discord.errors.NotFound:
-                pass
 
         else:
             _log.error(traceback_txt)
@@ -85,16 +83,17 @@ class Errors(commands.Cog):
             if not self.bot.ismainbot():
                 return
             await ctx.send(
-                "Uh oh, an unhandled exception occured, if this issue persists please contact any of bot devs (Sloth, FC, Austin, Orav)."
+                "Uh oh, an unhandled exception occured, if this issue persists please contact any of bot devs (Sloth, FC, Austin, Orav, Source)."  # noqa: E501: line too long
             )
             description = (
                 f"An [**unhandled exception**]({ctx.message.jump_url}) occured in <#{ctx.message.channel.id}> when "
-                f"running the **{ctx.command.name}** command.```\n{err}```"  # type: ignore
+                f"running the **{ctx.command.name}** command.```\n{err}```" # type: ignore[reportOptionalMemberAccess]
             )
             embed = discord.Embed(title="Unhandled Exception", description=description, color=0xFF0000)
             file = discord.File(io.BytesIO(traceback_txt.encode()), filename="traceback.txt")
             await channel.send(embed=embed, file=file)
 
 
-async def setup(bot: BirdBot):
+async def setup(bot: BirdBot) -> None:
+    """Add the cog to the bot."""
     await bot.add_cog(Errors(bot))

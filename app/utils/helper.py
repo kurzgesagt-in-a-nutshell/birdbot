@@ -10,10 +10,9 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 
-"""
-Miscallaneous helper functions and classes that are used throught the bot.
-"""
+"""Miscallaneous helper functions and classes that are used throught the bot."""
 
+import contextlib
 import datetime
 import logging
 import random
@@ -120,32 +119,25 @@ possible_commands = [
 
 # ----Exception classes begin------#
 class NoAuthorityError(commands.CheckFailure):
-    """
-    Raised when user has no clearance to run a command.
-    """
+    """Raised when user has no clearance to run a command."""
 
 
 class WrongChannel(commands.CheckFailure):
-    """
-    Raised when trying to run a command in the wrong channel.
-    """
+    """Raised when trying to run a command in the wrong channel."""
 
-    def __init__(self, id):
+    def __init__(self, id) -> None:
         super().__init__(f"This command can only be run in <#{id}>")
 
 
 class DevBotOnly(commands.CheckFailure):
-    """
-    Raised when trying to run commands meant for dev bots.
-    """
+    """Raised when trying to run commands meant for dev bots."""
 
 
 # ----Exception classes end------#
 
 
-def is_internal_command(bot: commands.AutoShardedBot, message: discord.Message):
-    """
-    Check if message is a bird bot command.
+def is_internal_command(bot: commands.AutoShardedBot, message: discord.Message) -> bool:
+    """Check if message is a bird bot command.
 
     Returns bool.
     """
@@ -157,16 +149,12 @@ def is_internal_command(bot: commands.AutoShardedBot, message: discord.Message):
     return False
 
 
-def is_external_command(message: discord.Message):
-    """
-    Check if message is a third party bot command.
+def is_external_command(message: discord.Message) -> bool:
+    """Check if message is a third party bot command.
 
     Returns bool.
     """
-    for command in possible_commands:
-        if re.match(possible_prefixes + command, message.content, re.IGNORECASE):
-            return True
-    return False
+    return any(re.match(possible_prefixes + command, message.content, re.IGNORECASE) for command in possible_commands)
 
 
 def create_embed(
@@ -179,8 +167,7 @@ def create_embed(
     link=None,
     inf_level=None,
 ) -> discord.Embed:
-    """
-    Creates an embed.
+    """Creates an embed.
 
     Args:
         author (discord.User or discord.Member): The author of the action (eg ctx.author)
@@ -193,6 +180,7 @@ def create_embed(
 
     Returns:
         discord.Embed: An embed with provided information.
+
     """
     user_str = "None"
     if users is not None:
@@ -223,14 +211,15 @@ def create_embed(
     return embed
 
 
-def create_timed_action(users: List[discord.User | discord.Member], action: str, time: int):
+def create_timed_action(users: List[discord.User | discord.Member], action: str, time: int) -> None:
     # TODO DELETE
-    """Creates a database entry for timed action [not in use currently]
+    """Creates a database entry for timed action [not in use currently].
 
     Args:
         users (List[discord.User | discord.Member]): List of affected users
         action (str): Action ("mute")
         time (int): Duration for which action will last
+
     """
     data = []
     for u in users:
@@ -244,22 +233,22 @@ def create_timed_action(users: List[discord.User | discord.Member], action: str,
                 "action_end": datetime.datetime.utcnow() + datetime.timedelta(seconds=time),
             }
         )
-    ids = timed_actions_db.insert_many(data)
+    timed_actions_db.insert_many(data)
 
 
-def delete_timed_actions_uid(u_id: int):
+def delete_timed_actions_uid(u_id: int) -> None:
     # TODO DELETE
-    """delete timed action by user_id [not in use currently]
+    """Delete timed action by user_id [not in use currently].
 
     Args:
         u_id (int): user's id
+
     """
     timed_actions_db.remove({"user_id": u_id})
 
 
 def calc_time(args: List[str]) -> Tuple[int | None, str | None]:
-    """
-    Parses time from given list (string.split(" ")).
+    """Parses time from given list (string.split(" ")).
 
     Example:
     ["1hr", "12m30s", "extra", "string"] => (4350, "extra string")
@@ -269,6 +258,7 @@ def calc_time(args: List[str]) -> Tuple[int | None, str | None]:
 
     Returns:
         Tuple[int, str]: Returns parsed time (in seconds) and extra string.
+
     """
     tot_time = 0
     extra = None
@@ -295,34 +285,30 @@ def calc_time(args: List[str]) -> Tuple[int | None, str | None]:
 
             if a[:s] == "":
                 break
-            else:
-                t = 0
-                for i in a:
-                    if i.isdigit():
-                        t = t * 10 + int(i)
+            t = 0
+            for i in a:
+                if i.isdigit():
+                    t = t * 10 + int(i)
 
-                    else:
-                        if i == "w" or i == "W":
-                            tot_time = tot_time + t * 7 * 24 * 60 * 60
-                        elif i == "d" or i == "D":
-                            tot_time = tot_time + t * 24 * 60 * 60
-                        elif i == "h" or i == "H":
-                            tot_time = tot_time + t * 60 * 60
-                        elif i == "m" or i == "M":
-                            tot_time = tot_time + t * 60
-                        elif i == "s" or i == "S":
-                            tot_time = tot_time + t
+                else:
+                    if i == "w" or i == "W":
+                        tot_time = tot_time + t * 7 * 24 * 60 * 60
+                    elif i == "d" or i == "D":
+                        tot_time = tot_time + t * 24 * 60 * 60
+                    elif i == "h" or i == "H":
+                        tot_time = tot_time + t * 60 * 60
+                    elif i == "m" or i == "M":
+                        tot_time = tot_time + t * 60
+                    elif i == "s" or i == "S":
+                        tot_time = tot_time + t
 
-                        t = 0
+                    t = 0
 
-                r = r + 1
+            r = r + 1
 
         if r < len(args):
             for a in args[r:]:
-                if extra is None:
-                    extra = a
-                else:
-                    extra = extra + " " + a
+                extra = a if extra is None else extra + " " + a
 
         else:
             return None, None
@@ -335,14 +321,14 @@ def calc_time(args: List[str]) -> Tuple[int | None, str | None]:
 
 
 def get_time_string(t: int) -> str:
-    """
-    Convert provided time input (seconds) to Day-Hours-Mins-Second string.
+    """Convert provided time input (seconds) to Day-Hours-Mins-Second string.
 
     Args:
         t (int): Time in seconds
 
     Returns:
         str: Time string (Format: D-days H-hours M-mins S-seconds)
+
     """
     day = t // (24 * 3600)
     t = t % (24 * 3600)
@@ -356,7 +342,7 @@ def get_time_string(t: int) -> str:
 
 def get_timed_actions():
     # TODO DELETE
-    """Fetch all timed action from db [not in use currently]"""
+    """Fetch all timed action from db [not in use currently]."""
     return timed_actions_db.find().sort("action_end", 1)
 
 
@@ -364,8 +350,7 @@ def create_automod_embed(
     message: discord.Message,
     automod_type: str,
 ):
-    """
-    Create embed for automod.
+    """Create embed for automod.
 
     Args:
         message (discord.Message): The message object
@@ -373,6 +358,7 @@ def create_automod_embed(
 
     Returns:
         embed: A discord.Embed object.
+
     """
     assert isinstance(message.channel, discord.TextChannel)
     embed = discord.Embed(
@@ -390,13 +376,11 @@ def create_automod_embed(
 
 
 def get_active_staff(bot: discord.Client) -> str:
-    """
-    Gets string containing mentions of active staff (mods, trainee mods and admins).
+    """Gets string containing mentions of active staff (mods, trainee mods and admins).
 
     Mentions both mod roles if no mod is online
     Returns: str
     """
-
     guild = discord.utils.get(bot.guilds, id=Reference.guild)
     assert guild
     active_staff = []
@@ -426,11 +410,8 @@ def get_active_staff(bot: discord.Client) -> str:
 
 
 # This is useless due to slash migration
-def blacklist_member(bot: commands.AutoShardedBot, member: discord.Member, command: commands.Command):
-    """
-    Blacklists a member from a command.
-    """
-
+def blacklist_member(bot: commands.AutoShardedBot, member: discord.Member, command: commands.Command) -> None:
+    """Blacklists a member from a command."""
     cmd = cmd_blacklist_db.find_one({"command_name": command.name})
     if cmd is None:
         cmd_blacklist_db.insert_one({"command_name": command.name, "blacklisted_users": [member.id]})
@@ -441,9 +422,8 @@ def blacklist_member(bot: commands.AutoShardedBot, member: discord.Member, comma
 
 # This is useless due to slash migration
 def whitelist_member(member: discord.Member, command: commands.Command) -> bool:
-    """
-    Whitelist a member from a command and return True
-    If user is not blacklisted return False
+    """Whitelist a member from a command and return True
+    If user is not blacklisted return False.
     """
     cmd = cmd_blacklist_db.find_one({"command_name": command.name})
     if cmd is None or member.id not in cmd["blacklisted_users"]:
@@ -454,20 +434,16 @@ def whitelist_member(member: discord.Member, command: commands.Command) -> bool:
 
 
 def is_public_channel(channel: discord.TextChannel | discord.Thread) -> bool:
-    """
-    Returns true for all channels except those under the moderation category.
+    """Returns true for all channels except those under the moderation category.
 
     Currently used within the moderation cog to determine if an interaction
     should be ephemeral.
     """
-
     return channel.category_id != Reference.Categories.moderation
 
 
-class Cycle(object):
-    """
-    Singleton iterator class used to cycle through a list randomly infinitely.
-    """
+class Cycle:
+    """Singleton iterator class used to cycle through a list randomly infinitely."""
 
     __instance = None
 
@@ -476,10 +452,10 @@ class Cycle(object):
 
     def __new__(cls, *args, **kwargs):
         if cls.__instance is None:
-            cls.__instance = super(Cycle, cls).__new__(cls)
+            cls.__instance = super().__new__(cls)
         return cls.__instance
 
-    def __init__(self, queue: list | None = None, *args, **kwargs):
+    def __init__(self, queue: list | None = None, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         if queue:
             self.queue = queue
@@ -489,51 +465,34 @@ class Cycle(object):
         return self
 
     def __next__(self):
-        """
-        Returns the current item in the queue and makes a new random queue if empty.
-        """
+        """Returns the current item in the queue and makes a new random queue if empty."""
         if len(self.dequeue) == 1:
             self.dequeue.extend(random.sample(self.queue, len(self.queue)))
 
         if not self.dequeue:
             raise StopIteration
 
-        cur = self.dequeue.popleft()
-        return cur
+        return self.dequeue.popleft()
 
-    def queue_last(self, entry):
-        """
-        Adds an item to the end of the queue.
-        """
+    def queue_last(self, entry) -> None:
+        """Adds an item to the end of the queue."""
         self.dequeue.append(entry)
 
-    def queue_next(self, entry):
-        """
-        Adds an item to the beginning of the queue.
-        """
+    def queue_next(self, entry) -> None:
+        """Adds an item to the beginning of the queue."""
         self.dequeue.extendleft([entry])
 
-    def queue_remove(self, entry):
-        """
-        Removes an item from the queue.
-        """
-        try:
+    def queue_remove(self, entry) -> None:
+        """Removes an item from the queue."""
+        with contextlib.suppress(Exception):
             self.dequeue.remove(entry)
-        except:
-            pass
 
 
 class BannerCycle(Cycle):
-    """
-    The iterator class for banners.
-    """
+    """The iterator class for banners."""
 
-    pass
 
 
 class TopicCycle(Cycle):
-    """
-    The iterator class for topics.
-    """
+    """The iterator class for topics."""
 
-    pass

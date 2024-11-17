@@ -10,8 +10,7 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 
-"""
-This is the entrypoint used to start the bot.
+"""This is the entrypoint used to start the bot.
 It provides command-line arguments to specify which instance of the bot to run (beta, alpha, or main).
 It loads the necessary environment variables from a .env file and starts the bot with the specified token.
 

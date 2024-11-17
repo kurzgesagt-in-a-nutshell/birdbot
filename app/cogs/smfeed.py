@@ -10,8 +10,7 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 
-"""
-Social Media Feed Approval queue implementation. 
+"""Social Media Feed Approval queue implementation.
 Social media posts that are sent to the queue are approved by mods and above and sent to the feed channel.
 """
 import logging
@@ -26,26 +25,25 @@ _log = logging.getLogger(__name__)
 
 
 class Smfeed(commands.Cog):
-    def __init__(self, bot: BirdBot):
+    def __init__(self, bot: BirdBot) -> None:
         self.bot = bot
 
     @commands.Cog.listener()
-    async def on_ready(self):
+    async def on_ready(self) -> None:
         _log.info("Loaded")
 
     @commands.Cog.listener()
-    async def on_message(self, message: discord.Message):
-        """React to the twitter webhooks"""
-
+    async def on_message(self, message: discord.Message) -> None:
+        """React to the twitter webhooks."""
         if not self.bot.ismainbot():
             return
         if message.channel.id == Reference.Channels.social_media_queue:
             await message.add_reaction(Reference.Emoji.PartialString.kgsYes)
 
     @commands.Cog.listener()
-    async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent):
-        """If mod or above reacts to twitter webhook tweet, sends it to proper channel"""
-        if payload.member == None:
+    async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent) -> None:
+        """If mod or above reacts to twitter webhook tweet, sends it to proper channel."""
+        if payload.member is None:
             return
 
         if (
@@ -70,5 +68,5 @@ class Smfeed(commands.Cog):
                 break
 
 
-async def setup(bot: BirdBot):
+async def setup(bot: BirdBot) -> None:
     await bot.add_cog(Smfeed(bot))

@@ -10,9 +10,7 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 
-"""
-This cog provides the help command and the ping command.
-"""
+"""This cog provides the help command and the ping command."""
 
 import logging
 
@@ -28,12 +26,12 @@ _log = logging.getLogger(__name__)
 
 
 class Help(commands.Cog):
-    def __init__(self, bot: BirdBot):
+    def __init__(self, bot: BirdBot) -> None:
         self.bot = bot
         self.bot.remove_command("help")
 
     @commands.Cog.listener()
-    async def on_ready(self):
+    async def on_ready(self) -> None:
         _log.info("Loaded")
 
     # TODO: Convert the output to embed or some UI
@@ -45,11 +43,8 @@ class Help(commands.Cog):
         1,
         10,
     )
-    async def help(self, interaction: discord.Interaction):
-        """
-        Display help (Incomplete command).
-        """
-
+    async def help(self, interaction: discord.Interaction) -> None:
+        """Display help (Incomplete command)."""
         await interaction.response.defer(ephemeral=True)
 
         command_tree_global = self.bot.tree.get_commands()
@@ -105,12 +100,10 @@ class Help(commands.Cog):
         1,
         10,
     )
-    async def ping(self, interaction: discord.Interaction):
-        """
-        Ping Pong 🏓.
-        """
+    async def ping(self, interaction: discord.Interaction) -> None:
+        """Ping Pong 🏓."""
         await interaction.response.send_message(f"{int(self.bot.latency * 1000)} ms")
 
 
-async def setup(bot: BirdBot):
+async def setup(bot: BirdBot) -> None:
     await bot.add_cog(Help(bot))

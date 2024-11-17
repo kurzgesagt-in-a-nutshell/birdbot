@@ -10,9 +10,7 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 
-"""
-This module contains the implementation of the BirdBot class. Along with the setup function
-"""
+"""This module contains the implementation of the BirdBot class. Along with the setup function."""
 
 import argparse
 import asyncio
@@ -40,9 +38,7 @@ _log = logging.getLogger(__name__)
 
 @contextmanager
 def logging_context():
-    """
-    Setup the logger.
-    """
+    """Setup the logger."""
     logger = logging.getLogger()
     logging.getLogger("discord").setLevel(logging.INFO)
     logging.getLogger("discord.http").setLevel(logging.INFO)
@@ -75,17 +71,14 @@ def logging_context():
 
 
 class BirdTree(app_commands.CommandTree):
-    """
-    Subclass of app_commands.CommandTree to define the behavior for the birdbot tree.
+    """Subclass of app_commands.CommandTree to define the behavior for the birdbot tree.
 
     Handles thrown errors within the tree and interactions between all commands.
     """
 
     @classmethod
-    async def maybe_responded(cls, interaction: Interaction, *args, **kwargs):
-        """
-        Either responds or sends a followup on an interaction response.
-        """
+    async def maybe_responded(cls, interaction: Interaction, *args, **kwargs) -> None:
+        """Either responds or sends a followup on an interaction response."""
         if interaction.response.is_done():
             await interaction.followup.send(*args, **kwargs)
 
@@ -93,11 +86,8 @@ class BirdTree(app_commands.CommandTree):
 
         await interaction.response.send_message(*args, **kwargs)
 
-    async def alert(self, interaction: Interaction, error: app_commands.AppCommandError):
-        """
-        Attempts to alert the discord channel logs of an exception.
-        """
-
+    async def alert(self, interaction: Interaction, error: app_commands.AppCommandError) -> None:
+        """Attempts to alert the discord channel logs of an exception."""
         channel = await interaction.client.fetch_channel(Reference.Channels.Logging.dev)
         assert isinstance(channel, TextChannel)
 
@@ -107,14 +97,13 @@ class BirdTree(app_commands.CommandTree):
 
         embed = discord.Embed(
             title="Unhandled Exception Alert",
-            description=f"```\nContext: \nguild:{repr(interaction.guild)}\n{repr(interaction.channel)}\n{repr(interaction.user)}\n```",  # f"```py\n{content[2000:].strip()}\n```"
+            description=f"```\nContext: \nguild:{interaction.guild!r}\n{interaction.channel!r}\n{interaction.user!r}\n```",  # f"```py\n{content[2000:].strip()}\n```"
         )
 
         await channel.send(embed=embed, file=file)
 
-    async def on_error(self, interaction: Interaction, error: app_commands.AppCommandError):
-        """
-        Handles errors thrown within the command tree.
+    async def on_error(self, interaction: Interaction, error: app_commands.AppCommandError) -> None:
+        """Handles errors thrown within the command tree.
 
         Informs the user of failure and logs code errors.
         """
@@ -126,7 +115,7 @@ class BirdTree(app_commands.CommandTree):
 
             return
 
-        elif isinstance(error, app_commands.TransformerError):
+        if isinstance(error, app_commands.TransformerError):
             # Raised when a type annotation fails to convert to its target type.
             user_shown_error = errors.TransformerError(
                 content=f"Failed to convert {error.value} to {error.transformer._error_display_name}. Make sure member/channel/role exists."
@@ -137,7 +126,7 @@ class BirdTree(app_commands.CommandTree):
 
             return
 
-        elif isinstance(error, app_commands.CheckFailure):
+        if isinstance(error, app_commands.CheckFailure):
             user_shown_error = errors.CheckFailure(content=str(error))
 
             embed = user_shown_error.format_notif_embed(interaction)
@@ -164,20 +153,16 @@ class BirdTree(app_commands.CommandTree):
 
 
 class BirdBot(commands.AutoShardedBot):
-    """
-    Main Bot, inherited from AutoShardedBot.
-    """
+    """Main Bot, inherited from AutoShardedBot."""
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self.get_database()
         self.args = None
 
     @classmethod
     def from_parseargs(cls, args: argparse.Namespace):
-        """
-        Create and return an instance of a Bot from argparse Namespace instance.
-        """
+        """Create and return an instance of a Bot from argparse Namespace instance."""
         _log.info(args)
         allowed_mentions = discord.AllowedMentions(roles=False, everyone=False, users=True)
         loop = asyncio.get_event_loop()
@@ -223,10 +208,8 @@ class BirdBot(commands.AutoShardedBot):
         return x
 
     @classmethod
-    def get_database(cls):
-        """
-        Return MongoClient instance to self.db.
-        """
+    def get_database(cls) -> None:
+        """Return MongoClient instance to self.db."""
         from pymongo import MongoClient
 
         db_key = os.environ.get("DB_KEY")
@@ -237,18 +220,13 @@ class BirdBot(commands.AutoShardedBot):
         _log.info("Connected to mongoDB")
         cls.db = db
 
-    async def setup_hook(self):
-        """
-        Async setup for after the bot logs in.
-        """
+    async def setup_hook(self) -> None:
+        """Async setup for after the bot logs in."""
         if self.args:
             await self.load_extensions("app/cogs", self.args)
 
     async def load_extensions(self, folder: Path | str, args: argparse.Namespace) -> None:
-        """
-        Iterates over the extension folder and attempts to load all python files found.
-        """
-
+        """Iterates over the extension folder and attempts to load all python files found."""
         if folder is None:
             return
         extdir = Path(folder)
@@ -272,23 +250,18 @@ class BirdBot(commands.AutoShardedBot):
                 await self.try_load(item)
 
     async def try_load(self, path: Path) -> bool:
-        """
-        Attempts to load the given path and returns a boolean indicating successful status.
-        """
-
+        """Attempts to load the given path and returns a boolean indicating successful status."""
         extension = ".".join(path.with_suffix("").parts)
 
         try:
             await self.load_extension(extension)
             return True
-        except Exception as e:
+        except Exception:
             _log.exception("an error occurred while loading extension")
             return False
 
-    async def close(self):
-        """
-        Close the Discord connection and the aiohttp sessions if any (future perhaps?).
-        """
+    async def close(self) -> None:
+        """Close the Discord connection and the aiohttp sessions if any (future perhaps?)."""
         for ext in list(self.extensions):
             with suppress(Exception):
                 await self.unload_extension(ext)
@@ -299,7 +272,7 @@ class BirdBot(commands.AutoShardedBot):
 
         await super().close()
 
-    async def on_ready(self):
+    async def on_ready(self) -> None:
         assert self.user is not None
         _log.info("Logged in as")
         _log.info(f"\tUser: {self.user.name}")
@@ -311,40 +284,32 @@ class BirdBot(commands.AutoShardedBot):
     """
 
     def _user(self) -> discord.ClientUser:
-        """
-        Get self.bot.user.
+        """Get self.bot.user.
 
         This can only be used after login, as user can't be none.
         """
         user = self.user
-        if user == None:
-            raise errors.InvalidFunctionUsage()
+        if user is None:
+            raise errors.InvalidFunctionUsage
         return user
 
     def ismainbot(self) -> bool:
-        """
-        Checks if self.bot is mainbot.
+        """Checks if self.bot is mainbot.
 
         Only works after login.
         """
-        if self._user().id == Reference.mainbot:
-            return True
-        return False
+        return self._user().id == Reference.mainbot
 
     def _get_channel(self, id: int) -> discord.TextChannel:
-        """
-        Used to get Reference channels, only works with TextChannel.
-        """
+        """Used to get Reference channels, only works with TextChannel."""
         channel = self.get_channel(id)
         if not isinstance(channel, discord.TextChannel):
-            raise errors.InvalidFunctionUsage()
+            raise errors.InvalidFunctionUsage
         return channel
 
     def get_mainguild(self) -> discord.Guild:
-        """
-        Returns Reference guild.
-        """
+        """Returns Reference guild."""
         guild = self.get_guild(Reference.guild)
-        if guild == None:
-            raise errors.InvalidFunctionUsage()
+        if guild is None:
+            raise errors.InvalidFunctionUsage
         return guild

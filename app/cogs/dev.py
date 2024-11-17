@@ -10,8 +10,7 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 
-"""
-This cog implements commands for bot developers
+"""This cog implements commands for bot developers
 Commands include:
 - `eval`: Evaluate a piece of python code
 - `activity`: Set bot activity status
@@ -21,7 +20,7 @@ Commands include:
 - `log`: View the bot's logs
 - `launch`: Spawn child process of alpha/beta bot instance on the VM
 - `sync_apps`: Sync slash commands
-- `clear_apps`: Clear slash commands
+- `clear_apps`: Clear slash commands.
 """
 import asyncio
 import io
@@ -45,23 +44,21 @@ _log = logging.getLogger(__name__)
 
 
 class Dev(commands.Cog):
-    def __init__(self, bot: BirdBot):
+    def __init__(self, bot: BirdBot) -> None:
         self.bot = bot
 
     @commands.Cog.listener()
-    async def on_ready(self):
+    async def on_ready(self) -> None:
         _log.info("Loaded")
 
     def cleanup_code(self, content: str):
-        """
-        Remove code-block from eval.
-        """
+        """Remove code-block from eval."""
         if content.startswith("```") and content.endswith("```"):
             return "\n".join(content.split("\n")[1:-1])
 
         return content.strip("`\n")
 
-    def get_syntax_error(self, e):
+    def get_syntax_error(self, e) -> str:
         if e.text is None:
             return f"```py\n{e.__class__.__name__}: {e}\n```"
         return f'```py\n{e.text}{"^":>{e.offset}}\n{e.__class__.__name__}: {e}```'
@@ -75,9 +72,8 @@ class Dev(commands.Cog):
         interaction: discord.Interaction,
         activity_type: typing.Literal["listening", "watching", "playing"],
         message: str,
-    ):
-        """
-        Set bot activity status.
+    ) -> None:
+        """Set bot activity status.
 
         Parameters
         ----------
@@ -100,9 +96,7 @@ class Dev(commands.Cog):
     @commands.is_owner()
     @commands.command()
     async def eval(self, ctx: commands.Context, *, body: str):
-        """
-        Evaluates a code.
-        """
+        """Evaluates a code."""
         env = {
             "bot": self.bot,
             "ctx": ctx,
@@ -139,7 +133,6 @@ class Dev(commands.Cog):
                 await ctx.message.add_reaction(Reference.Emoji.PartialString.kgsYes)
             except Exception as _:
                 await ctx.message.add_reaction(Reference.Emoji.PartialString.kgsNo)
-                pass
 
             if ret is None:
                 _log.info(f"Output chars: {len(str(value))}")
@@ -168,42 +161,36 @@ class Dev(commands.Cog):
 
     @checks.devs_only()
     @commands.command(name="reload", hidden=True)
-    async def reload(self, ctx: commands.Context, *, module_name: str):
-        """
-        Reload a module.
-        """
+    async def reload(self, ctx: commands.Context, *, module_name: str) -> None:
+        """Reload a module."""
         try:
             try:
                 await self.bot.unload_extension(module_name)
-            except commands.errors.ExtensionNotLoaded as enl:
-                await ctx.send(f"Module not loaded. Trying to load it.", delete_after=6)
+            except commands.errors.ExtensionNotLoaded:
+                await ctx.send("Module not loaded. Trying to load it.", delete_after=6)
 
             await self.bot.load_extension(module_name)
             await ctx.send("Module Loaded")
 
-        except ExtensionNotFound as enf:
+        except ExtensionNotFound:
             await ctx.send(
-                f"Module not found. Possibly, wrong module name provided.",
+                "Module not found. Possibly, wrong module name provided.",
                 delete_after=10,
             )
-        except Exception as e:
+        except Exception:
             _log.exception("Unable to load module.")
 
     @commands.command(hidden=True)
     @checks.mod_and_above()
-    async def kill(self, ctx: commands.Context):
-        """
-        Kill the bot.
-        """
+    async def kill(self, ctx: commands.Context) -> None:
+        """Kill the bot."""
         await ctx.send("Bravo 6 going dark.")
         await self.bot.close()
 
     @commands.command(hidden=True)
     @checks.mod_and_above()
-    async def restart(self, ctx: commands.Context, instance: str):
-        """
-        Restarts a sub processes.
-        """
+    async def restart(self, ctx: commands.Context, instance: str) -> None:
+        """Restarts a sub processes."""
         if instance not in ("songbirdalpha", "songbirdbeta", "twitterfeed", "youtubefeed"):
             raise commands.BadArgument(
                 "Instance argument must be songbirdalpha, songbirdbeta, twitterfeed, youtubefeed"
@@ -228,9 +215,9 @@ class Dev(commands.Cog):
 
     @checks.devs_only()
     @commands.command(aliases=["logs"], hidden=True)
-    async def log(self, ctx: commands.Context, lines: int = 10):
-        """View the bot's logs"""
-        with open("logs/birdbot.log", "r") as f:
+    async def log(self, ctx: commands.Context, lines: int = 10) -> None:
+        """View the bot's logs."""
+        with open("logs/birdbot.log") as f:
             log = f.readlines()[-lines:]
 
         log = "".join(log)
@@ -248,17 +235,14 @@ class Dev(commands.Cog):
     @commands.command()
     @commands.is_owner()
     @checks.mainbot_only()
-    async def launch(self, ctx: commands.Context, instance: str):
-        """
-        Spawn child process of alpha/beta bot instance on the VM, only works on main bot.
-        """
-
+    async def launch(self, ctx: commands.Context, instance: str) -> None:
+        """Spawn child process of alpha/beta bot instance on the VM, only works on main bot."""
         if instance not in ("alpha", "beta"):
             raise commands.BadArgument("Instance argument must be `alpha` or `beta`")
 
         try:
             child = await asyncio.create_subprocess_shell(
-                "python3 startbot.py --{}".format(instance),
+                f"python3 startbot.py --{instance}",
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.STDOUT,
             )
@@ -283,10 +267,8 @@ class Dev(commands.Cog):
         interaction: discord.Interaction,
         msg: str,
         channel: typing.Optional[discord.TextChannel] = None,
-    ):
-        """
-        Send a message in a channel.
-        """
+    ) -> None:
+        """Send a message in a channel."""
         assert isinstance(interaction.channel, discord.TextChannel)
 
         if not channel:
@@ -299,27 +281,23 @@ class Dev(commands.Cog):
         embed = helper.create_embed(
             author=interaction.user,
             action="ran send command",
-            extra="Message sent: {}".format(msg),
+            extra=f"Message sent: {msg}",
             color=discord.Color.blurple(),
         )
         await logging_channel.send(embed=embed)
 
     @commands.command()
     @checks.devs_only()
-    async def sync_apps(self, ctx: commands.Context):
-        """
-        Sync slash commands.
-        """
+    async def sync_apps(self, ctx: commands.Context) -> None:
+        """Sync slash commands."""
         await ctx.bot.tree.sync()
         await ctx.bot.tree.sync(guild=discord.Object(Reference.guild))
         await ctx.reply("Synced local guild commands")
 
     @commands.command()
     @checks.devs_only()
-    async def clear_apps(self, ctx: commands.Context):
-        """
-        Clear slash commands.
-        """
+    async def clear_apps(self, ctx: commands.Context) -> None:
+        """Clear slash commands."""
         ctx.bot.tree.clear_commands(guild=discord.Object(Reference.guild))
         ctx.bot.tree.clear_commands(guild=None)
         await ctx.bot.tree.sync(guild=discord.Object(Reference.guild))
@@ -328,5 +306,5 @@ class Dev(commands.Cog):
         await ctx.send("cleared all commands")
 
 
-async def setup(bot: BirdBot):
+async def setup(bot: BirdBot) -> None:
     await bot.add_cog(Dev(bot))

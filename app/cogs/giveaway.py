@@ -10,9 +10,7 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 
-"""
-Cog implementing the giveaway system for the server
-"""
+"""Cog implementing the giveaway system for the server."""
 
 import logging
 import typing
@@ -32,23 +30,23 @@ _log = logging.getLogger(__name__)
 
 
 class Giveaway(commands.Cog):
-    def __init__(self, bot: BirdBot):
+    def __init__(self, bot: BirdBot) -> None:
         self.bot = bot
         self.active_giveaways = {}
         self.giveaway_db = self.bot.db.Giveaways
 
     @commands.Cog.listener()
-    async def on_ready(self):
+    async def on_ready(self) -> None:
         _log.info("Loaded")
 
-    def cog_load(self):
+    def cog_load(self) -> None:
         for giveaway in self.giveaway_db.find({"giveaway_over": False, "giveaway_cancelled": False}):
             giveaway["end_time"] = giveaway["end_time"].replace(tzinfo=timezone.utc)
             self.active_giveaways[giveaway["message_id"]] = giveaway
 
         self.giveaway_task.start()
 
-    def cog_unload(self):
+    def cog_unload(self) -> None:
         self.giveaway_task.cancel()
 
     giveaway_commands = app_commands.Group(
@@ -59,9 +57,8 @@ class Giveaway(commands.Cog):
         default_permissions=discord.permissions.Permissions(manage_messages=True),
     )
 
-    async def choose_winner(self, giveaway):
-        """
-        Does the giveaway logic.
+    async def choose_winner(self, giveaway) -> None:
+        """Does the giveaway logic.
 
         Chooses a winner, edits the giveaway embed and pings the winners.
         """
@@ -109,7 +106,7 @@ class Giveaway(commands.Cog):
                 probabilities = [w / total for w in weights]
                 prob = np.array(probabilities)
 
-                if giveaway["rigged"] == False:
+                if giveaway["rigged"] is False:
                     prob = None
 
                 size = giveaway["winners_no"]
@@ -179,9 +176,8 @@ class Giveaway(commands.Cog):
             self.giveaway_db.update_one(giveaway, {"$set": {"winners": winnerids}})
 
     @tasks.loop()
-    async def giveaway_task(self):
-        """
-        Keep track of active giveaways.
+    async def giveaway_task(self) -> None:
+        """Keep track of active giveaways.
 
         Ends giveaways and queues up active ones.
         """
@@ -225,8 +221,7 @@ class Giveaway(commands.Cog):
         sponsor: typing.Optional[discord.Member | discord.User] = None,
         rigged: typing.Optional[bool] = True,
     ):
-        """
-        Starts a new giveaway.
+        """Starts a new giveaway.
 
         Parameters
         ----------
@@ -240,8 +235,8 @@ class Giveaway(commands.Cog):
             Sponsor of the giveaway
         rigged: bool
             Is giveaway rigged/biased (default: True)
-        """
 
+        """
         await interaction.response.defer(ephemeral=True)
 
         (time, _) = calc_time([time, ""])  # type: ignore
@@ -309,51 +304,51 @@ class Giveaway(commands.Cog):
             self.giveaway_task.start()
 
         await interaction.edit_original_response(content="Giveaway started.")
+        return None
 
     @giveaway_commands.command()
     @checks.mod_and_above()
     async def end(self, interaction: discord.Interaction, message_id: str):
-        """
-        Ends the giveaway preemptively.
+        """Ends the giveaway preemptively.
 
         Parameters
         ----------
         message_id: str
             Message ID of the giveaway embed.
-        """
 
+        """
         await interaction.response.defer(ephemeral=True)
 
         try:
             message_id_ = int(message_id)
-        except ValueError as ve:
+        except ValueError:
             return await interaction.edit_original_response(content="Invalid message id.")
 
         if message_id_ in self.active_giveaways:
             await self.choose_winner(self.active_giveaways[message_id_])
             self.giveaway_task.restart()
             await interaction.edit_original_response(content=f"{Reference.Emoji.PartialString.kgsYes} Giveaway ended.")
-            return
+            return None
 
         await interaction.edit_original_response(content="Giveaway not found!")
+        return None
 
     @giveaway_commands.command()
     @checks.mod_and_above()
     async def cancel(self, interaction: discord.Interaction, message_id: str):
-        """
-        Cancels a giveaway.
+        """Cancels a giveaway.
 
         Parameters
         ----------
         message_id: str
             Message ID of the giveaway embed.
-        """
 
+        """
         await interaction.response.defer(ephemeral=True)
 
         try:
             message_id_ = int(message_id)
-        except ValueError as ve:
+        except ValueError:
             return await interaction.edit_original_response(content="Invalid message id.")
 
         if message_id_ in self.active_giveaways:
@@ -374,6 +369,7 @@ class Giveaway(commands.Cog):
                 raise e
 
         await interaction.edit_original_response(content="Giveaway not found!")
+        return None
 
     @giveaway_commands.command()
     @checks.mod_and_above()
@@ -389,8 +385,7 @@ class Giveaway(commands.Cog):
         ] = None,
         rigged: typing.Optional[bool] = None,
     ):
-        """
-        Reroll the giveaway to select new winners.
+        """Reroll the giveaway to select new winners.
 
         Parameters
         ----------
@@ -400,35 +395,33 @@ class Giveaway(commands.Cog):
             Number of winners (default: Same as original roll)
         rigged: bool
             Is giveaway rigged/biased (default: Same as original roll)
-        """
 
+        """
         await interaction.response.defer(ephemeral=True)
 
         try:
             message_id_ = int(message_id)
-        except ValueError as ve:
+        except ValueError:
             return await interaction.edit_original_response(content="Invalid message id.")
         doc = self.giveaway_db.find_one({"giveaway_over": True, "message_id": message_id_})
         if doc:
-            if winner_count != None:
+            if winner_count is not None:
                 doc["winners_no"] = winner_count
-            if rigged != None:
+            if rigged is not None:
                 doc["rigged"] = rigged
             await self.choose_winner(doc)
             await interaction.edit_original_response(
                 content=f"{Reference.Emoji.PartialString.kgsYes} Giveaway rerolled!"
             )
-            return
+            return None
 
         await interaction.edit_original_response(content="Giveaway not found!")
+        return None
 
     @giveaway_commands.command()
     @checks.mod_and_above()
     async def list(self, interaction: discord.Interaction):
-        """
-        List all active giveaways.
-        """
-
+        """List all active giveaways."""
         embed = discord.Embed(title="Active giveaways:")
         for messageid in self.active_giveaways:
             giveaway = self.active_giveaways[messageid]
@@ -443,7 +436,8 @@ class Giveaway(commands.Cog):
                 return await interaction.response.send_message("Error!!! Take a screenshot.", ephemeral=True)
 
         await interaction.response.send_message(embed=embed)
+        return None
 
 
-async def setup(bot: BirdBot):
+async def setup(bot: BirdBot) -> None:
     await bot.add_cog(Giveaway(bot))

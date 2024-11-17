@@ -9,6 +9,7 @@
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
+"""Holds evennt listeners related to members."""
 
 import discord
 from discord.ext import commands
@@ -18,11 +19,17 @@ from app.utils.config import Reference
 
 
 class MemberEvents(commands.Cog):
-    def __init__(self, bot: BirdBot):
+    """Module for member events."""
+
+    def __init__(self, bot: BirdBot) -> None:
         self.bot = bot
 
     @commands.Cog.listener()
-    async def on_member_join(self, member: discord.Member):
+    async def on_member_join(self, member: discord.Member) -> None:
+        """Event listener for member join.
+
+        This is set to listen on the mainbot only.
+        """
         if not self.bot.ismainbot():
             return
 
@@ -30,28 +37,27 @@ class MemberEvents(commands.Cog):
         await self.log_member_join(member)
 
     @commands.Cog.listener()
-    async def on_member_remove(self, member: discord.Member):
+    async def on_member_remove(self, member: discord.Member) -> None:
+        """Event listener for member removal.
+
+        This is set to listen on the mainbot only.
+        """
         if not self.bot.ismainbot():
             return
 
         await self.log_member_remove(member)
 
     @commands.Cog.listener()
-    async def on_member_update(self, before: discord.Member, after: discord.Member):
-        """
-        Grant roles upon passing membership screening.
-        """
-
+    async def on_member_update(self, before: discord.Member, after: discord.Member) -> None:
+        """Grant roles upon passing membership screening."""
         if not self.bot.ismainbot():
             return
 
         await self.check_member_screen(before, after)
         await self.log_nickname_change(before, after)
 
-    async def send_welcome(self, member: discord.Member):
-        """
-        Send welcome message.
-        """
+    async def send_welcome(self, member: discord.Member) -> None:
+        """Send welcome message."""
         new_member_channel = self.bot._get_channel(Reference.Channels.new_members)
         await new_member_channel.send(
             content=f"Welcome hatchling {member.mention}!\n"
@@ -59,10 +65,8 @@ class MemberEvents(commands.Cog):
             allowed_mentions=discord.AllowedMentions(users=True, roles=True),
         )
 
-    async def log_member_join(self, member: discord.Member):
-        """
-        Logs member joins in the logging channel.
-        """
+    async def log_member_join(self, member: discord.Member) -> None:
+        """Log member joins in the logging channel."""
         embed = discord.Embed(
             title="Member joined",
             description=f"{member.name}#{member.discriminator} ({member.id}) {member.mention}",
@@ -83,10 +87,8 @@ class MemberEvents(commands.Cog):
         member_logging_channel = self.bot._get_channel(Reference.Channels.Logging.member_actions)
         await member_logging_channel.send(embed=embed)
 
-    async def log_member_remove(self, member: discord.Member):
-        """
-        Logs member leaves in the logging channel.
-        """
+    async def log_member_remove(self, member: discord.Member) -> None:
+        """Log member leaves in the logging channel."""
         embed = discord.Embed(
             title="Member Left",
             description=f"{member.name}#{member.discriminator} ({member.id})",
@@ -117,20 +119,20 @@ class MemberEvents(commands.Cog):
         member_logging_channel = self.bot._get_channel(Reference.Channels.Logging.member_actions)
         await member_logging_channel.send(embed=embed)
 
-    async def check_member_screen(self, before: discord.Member, after: discord.Member):
+    async def check_member_screen(self, before: discord.Member, after: discord.Member) -> None:
+        """Check if a member has passed member screening and add roles accordingly."""
         if before.pending and (not after.pending):
             guild = self.bot.get_mainguild()
             english = guild.get_role(Reference.Roles.english)
-            assert english
+            if not english:
+                return
             await after.add_roles(
                 english,
                 reason="Membership screening passed",
             )
 
-    async def log_nickname_change(self, before: discord.Member, after: discord.Member):
-        """
-        Logs member nickname change in the logging channel.
-        """
+    async def log_nickname_change(self, before: discord.Member, after: discord.Member) -> None:
+        """Log member nickname change in the logging channel."""
         if before.nick == after.nick:
             return
 
@@ -155,5 +157,6 @@ class MemberEvents(commands.Cog):
         await member_logging_channel.send(embed=embed)
 
 
-async def setup(bot: BirdBot):
+async def setup(bot: BirdBot) -> None:
+    """Add the cog to the bot."""
     await bot.add_cog(MemberEvents(bot))

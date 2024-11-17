@@ -10,8 +10,7 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 
-"""
-This module contains the `Moderation` cog, which handles moderation-related commands and functionalities for the bot.
+"""This module contains the `Moderation` cog, which handles moderation-related commands and functionalities for the bot.
 
 Commands Defined:
 - `report`: Report issues to the moderation team, gives you an UI.
@@ -33,6 +32,7 @@ Commands Defined:
 - `yescmd` : whitelists a user from using commands.
 """
 
+import contextlib
 import datetime
 import io
 import logging
@@ -52,8 +52,7 @@ _log = logging.getLogger(__name__)
 
 
 class FinalReconfirmation(discord.ui.View):
-    """
-    This view handles the interaction with moderators to confirm action while a user is on final warn.
+    """This view handles the interaction with moderators to confirm action while a user is on final warn.
 
     The moderator can choose to continue with the action or to cancel the action and follow through with a more appropriate action.
 
@@ -68,13 +67,11 @@ class FinalReconfirmation(discord.ui.View):
         user: discord.Member,
         moderator: discord.Member,
     ):
-        """
-        Manages the action of the reconfirmation and returns once the action is complete.
+        """Manages the action of the reconfirmation and returns once the action is complete.
 
         Returns -1 if the action is to be canceled and 1 if the action is to proceed.
         The state change must be made before the call to stop.
         """
-
         reconfirmation = cls(user, moderator)
 
         # BECAUSE OF THIS INTERACTION, COMMANDS THAT USE THIS VIEW MUST USE
@@ -92,7 +89,7 @@ class FinalReconfirmation(discord.ui.View):
 
         return reconfirmation.state
 
-    def __init__(self, user: discord.Member, moderator: discord.Member):
+    def __init__(self, user: discord.Member, moderator: discord.Member) -> None:
         super().__init__(timeout=2 * 60)
 
         self.user = user
@@ -101,18 +98,12 @@ class FinalReconfirmation(discord.ui.View):
         self.state = 0
 
     async def interaction_check(self, interaction: discord.Interaction):
-        """
-        Checks that the user interacting with this is the moderator that issued the warn.
-        """
-
+        """Checks that the user interacting with this is the moderator that issued the warn."""
         return interaction.user.id == self.moderator.id
 
     @discord.ui.button(label="Continue", style=discord.ButtonStyle.danger)
-    async def _continue(self, interaction: discord.Interaction, button: discord.ui.Button):
-        """
-        Removes the view and edits the message to inform that the action will continue.
-        """
-
+    async def _continue(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
+        """Removes the view and edits the message to inform that the action will continue."""
         self.state = 1
         self.stop()
 
@@ -123,11 +114,8 @@ class FinalReconfirmation(discord.ui.View):
         )
 
     @discord.ui.button(label="Cancel", style=discord.ButtonStyle.grey, row=2)
-    async def _cancel(self, interaction: discord.Interaction, button: discord.ui.Button):
-        """
-        Removes the view to prevent more actions and edits the message to display the choice made.
-        """
-
+    async def _cancel(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
+        """Removes the view to prevent more actions and edits the message to display the choice made."""
         self.state = -1
         self.stop()
 
@@ -138,14 +126,12 @@ class FinalReconfirmation(discord.ui.View):
         )
 
     @discord.ui.button(label="10m Timeout", style=discord.ButtonStyle.blurple)
-    async def _timeout(self, interaction: discord.Interaction, button: discord.ui.Button):
-        """
-        Times out the user for 10 minutes to allow for further decision making.
+    async def _timeout(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
+        """Times out the user for 10 minutes to allow for further decision making.
 
         This does not record an infraction but allows the moderator to take time
         to think.
         """
-
         self.state = -1
         self.stop()
 
@@ -159,18 +145,16 @@ class FinalReconfirmation(discord.ui.View):
 
 
 class Moderation(commands.Cog):
-    """
-    A cog that provides moderation-related commands and functionalities.
-    """
+    """A cog that provides moderation-related commands and functionalities."""
 
-    def __init__(self, bot: BirdBot):
+    def __init__(self, bot: BirdBot) -> None:
         self.bot = bot
 
         self.mod_role = Reference.Roles.moderator
         self.admin_role = Reference.Roles.administrator
 
     @commands.Cog.listener()
-    async def on_ready(self):
+    async def on_ready(self) -> None:
         _log.info("Loaded")
 
     @app_commands.command()
@@ -179,19 +163,19 @@ class Moderation(commands.Cog):
         self,
         interaction: discord.Interaction,
         member: Optional[discord.Member | discord.User] = None,
-    ):
-        """
-        Report issues to the moderation team, gives you an UI.
+    ) -> None:
+        """Report issues to the moderation team, gives you an UI.
 
         Parameters
         ----------
         member: discord.Member
             Mention or ID of member to report (is optional)
+
         """
         mod_channel = self.bot._get_channel(Reference.Channels.mod_chat)
 
         class Modal(discord.ui.Modal):
-            def __init__(self, member):
+            def __init__(self, member) -> None:
                 super().__init__(title="Report")
                 self.member = member
 
@@ -206,7 +190,7 @@ class Moderation(commands.Cog):
                 required=False,
             )
 
-            async def on_submit(self, interaction: discord.Interaction):
+            async def on_submit(self, interaction: discord.Interaction) -> None:
                 description = self.children[0].value  # type: ignore
                 message_link = self.children[1].value  # type: ignore
 
@@ -258,9 +242,8 @@ class Moderation(commands.Cog):
         count: app_commands.Range[int, 1, 200],
         _from: Optional[discord.Member],
         channel: discord.TextChannel | discord.Thread | None = None,
-    ):
-        """
-        Cleans/Purge messages from a channel.
+    ) -> None:
+        """Cleans/Purge messages from a channel.
 
         Parameters
         ----------
@@ -270,8 +253,8 @@ class Moderation(commands.Cog):
             If provided, deletes all messages from this user from last "count" messages
         channel: discord.TextChannel
             Channel from which messages needs to be deleted (default: current channel)
-        """
 
+        """
         assert isinstance(interaction.channel, discord.TextChannel)
         assert interaction.guild
         if channel is None:
@@ -279,16 +262,14 @@ class Moderation(commands.Cog):
 
         await interaction.response.defer(ephemeral=True)
 
-        def check(message):
+        def check(message) -> bool:
             # Note:
             # This is conditional to check if the `message` is the interaction message that invoked the clean command.
             # The purge function works perfectly regardless of this conditional, but commenting it if it's needed in future.
             # if message.interaction and interaction.id == message.interaction.id:
             #     return False
 
-            if _from is None or _from.id == message.author.id:
-                return True
-            return False
+            return bool(_from is None or _from.id == message.author.id)
 
         deleted_messages = await channel.purge(
             limit=count,
@@ -303,7 +284,8 @@ class Moderation(commands.Cog):
         )
 
         # format the log
-        row_format = lambda x: "{author:<70} | {datetime:<20} | {content}".format(**x)
+        def row_format(x):
+            return "{author:<70} | {datetime:<20} | {content}".format(**x)
 
         message_log = [
             row_format(
@@ -354,9 +336,8 @@ class Moderation(commands.Cog):
         inf_level: app_commands.Range[int, 1, 5],
         user: discord.User,
         reason: str,
-    ):
-        """
-        Ban or Force ban a user.
+    ) -> None:
+        """Ban or Force ban a user.
 
         Parameters
         ----------
@@ -366,8 +347,8 @@ class Moderation(commands.Cog):
             User mention or ID to ban (Provide ID to force ban)
         reason: str
             Reason for the action
-        """
 
+        """
         assert interaction.guild
         assert isinstance(interaction.user, discord.Member)
         assert isinstance(interaction.channel, discord.TextChannel)
@@ -417,9 +398,8 @@ class Moderation(commands.Cog):
         interaction: discord.Interaction,
         user_id: discord.User,
         reason: Optional[str] = None,
-    ):
-        """
-        Unban a user.
+    ) -> None:
+        """Unban a user.
 
         Parameters
         ----------
@@ -427,15 +407,15 @@ class Moderation(commands.Cog):
             User's ID
         reason: str
             Reason for the action
-        """
 
+        """
         assert interaction.guild
         assert isinstance(interaction.channel, discord.TextChannel)
         try:
             await interaction.guild.unban(user_id, reason=reason)
         except discord.NotFound:
             await interaction.response.send_message(
-                f"User has not been banned before.",
+                "User has not been banned before.",
                 ephemeral=is_public_channel(interaction.channel),
             )
             return
@@ -463,9 +443,8 @@ class Moderation(commands.Cog):
         inf_level: app_commands.Range[int, 1, 5],
         member: discord.Member,
         reason: str,
-    ):
-        """
-        Kick a user.
+    ) -> None:
+        """Kick a user.
 
         Parameters
         ----------
@@ -475,8 +454,8 @@ class Moderation(commands.Cog):
             User mention or ID
         reason: str
             Reason for the action
-        """
 
+        """
         assert interaction.guild
         assert isinstance(interaction.user, discord.Member)
         assert isinstance(interaction.channel, discord.TextChannel)
@@ -528,9 +507,8 @@ class Moderation(commands.Cog):
         interaction: discord.Interaction,
         time: str,
         reason: Optional[str] = "Self Mute",
-    ):
-        """
-        Mute yourself.
+    ) -> None:
+        """Mute yourself.
 
         Parameters
         ----------
@@ -538,8 +516,8 @@ class Moderation(commands.Cog):
             Duration of mute (min 5 mins, max 7 days). Use suffix "s", "m", "h", "d" along with time. (ex 3m, 5h, 1d)
         reason: str
             Reason for the action
-        """
 
+        """
         assert interaction.guild
         assert isinstance(interaction.user, discord.Member)
 
@@ -547,9 +525,9 @@ class Moderation(commands.Cog):
 
         if tot_time is None or tot_time <= 0:
             raise errors.InvalidInvocationError(content="Improper time provided")
-        elif tot_time > 604801:
+        if tot_time > 604801:
             raise errors.InvalidInvocationError(content="Can't mute for longer than 7 days!")
-        elif tot_time < 300:
+        if tot_time < 300:
             raise errors.InvalidInvocationError(content="Can't mute for shorter than 5 minutes!")
 
         duration = datetime.timedelta(seconds=tot_time)
@@ -594,9 +572,8 @@ class Moderation(commands.Cog):
         time: str,
         reason: str,
         final: Optional[bool] = False,
-    ):
-        """
-        Mute a user.
+    ) -> None:
+        """Mute a user.
 
         Parameters
         ----------
@@ -606,8 +583,8 @@ class Moderation(commands.Cog):
             Member mention or ID
         reason: str
             Reason for the action
-        """
 
+        """
         assert interaction.guild
         assert isinstance(interaction.user, discord.Member)
         assert isinstance(interaction.channel, discord.TextChannel)
@@ -620,9 +597,9 @@ class Moderation(commands.Cog):
 
         if tot_time is None:
             raise errors.InvalidInvocationError(content="no valid time provided")
-        elif tot_time <= 0:
+        if tot_time <= 0:
             raise errors.InvalidInvocationError(content="time can not be 0 or less")
-        elif tot_time > 2419200:
+        if tot_time > 2419200:
             raise errors.InvalidInvocationError(content="time can not be longer than 28 days (2419200 seconds)")
 
         infractions = InfractionList.from_user(member)
@@ -646,10 +623,8 @@ class Moderation(commands.Cog):
         else:
             final = False
 
-        try:
+        with contextlib.suppress(discord.Forbidden):
             await member.send(f"You have been muted for {time_str}.\nGiven reason: {reason}\n{default_msg}")
-        except discord.Forbidden:
-            pass
 
         await member.timeout(finished)
 
@@ -693,9 +668,8 @@ class Moderation(commands.Cog):
         interaction: discord.Interaction,
         member: discord.Member,
         reason: Optional[str],
-    ):
-        """
-        Unmutes a user.
+    ) -> None:
+        """Unmutes a user.
 
         Parameters
         ----------
@@ -703,8 +677,8 @@ class Moderation(commands.Cog):
             Member mention or ID
         reason: str
             Reason for the action
-        """
 
+        """
         assert interaction.guild
         assert isinstance(interaction.channel, discord.TextChannel)
 
@@ -735,9 +709,8 @@ class Moderation(commands.Cog):
         interaction: discord.Interaction,
         member: discord.Member,
         role: discord.Role,
-    ):
-        """
-        Add or Remove role to/from a user.
+    ) -> None:
+        """Add or Remove role to/from a user.
 
         Parameters
         ----------
@@ -745,8 +718,8 @@ class Moderation(commands.Cog):
             Member mention or ID
         role: discord.Role
             Role to add or remove
-        """
 
+        """
         assert interaction.guild
         assert isinstance(interaction.user, discord.Member)
         assert isinstance(interaction.channel, discord.TextChannel)
@@ -795,9 +768,8 @@ class Moderation(commands.Cog):
         member: discord.Member,
         reason: str,
         final: Optional[bool] = False,
-    ):
-        """
-        Warns a user.
+    ) -> None:
+        """Warns a user.
 
         Parameters
         ----------
@@ -809,8 +781,8 @@ class Moderation(commands.Cog):
             Reason for the action
         final: bool
             Mark warn as final
-        """
 
+        """
         assert interaction.guild
         assert isinstance(interaction.user, discord.Member)
         assert isinstance(interaction.channel, discord.TextChannel)
@@ -835,10 +807,8 @@ class Moderation(commands.Cog):
         else:
             final = False
 
-        try:
+        with contextlib.suppress(discord.Forbidden):
             await member.send(f"You have been warned for {reason} {default_msg}")
-        except discord.Forbidden:
-            pass
 
         infractions.new_infraction(
             kind=InfractionKind.WARN,
@@ -877,9 +847,8 @@ class Moderation(commands.Cog):
         interaction: discord.Interaction,
         user: discord.User,
         infr_type: InfractionKind,
-    ):
-        """
-        Allows for the deletion of an infraction.
+    ) -> None:
+        """Allows for the deletion of an infraction.
 
         Since this is a lot of code, here is a breakdown...
 
@@ -897,15 +866,13 @@ class Moderation(commands.Cog):
         """
 
         class IdxButton(discord.ui.Button):
-            async def callback(self, interaction: discord.Interaction):
-                """
-                Calls select infraction on the DeleteInfractionView to proceed to the confirmation phase.
-                """
+            async def callback(self, interaction: discord.Interaction) -> None:
+                """Calls select infraction on the DeleteInfractionView to proceed to the confirmation phase."""
                 assert self.view
                 await self.view.select_infraction(interaction, self)
 
         class DeleteInfractionView(discord.ui.View):
-            def __init__(self, user_infractions: InfractionList, kind: InfractionKind):
+            def __init__(self, user_infractions: InfractionList, kind: InfractionKind) -> None:
                 super().__init__(timeout=60)
                 """
                 Splits the infractions into chunks of 5 or less and builds the
@@ -922,40 +889,36 @@ class Moderation(commands.Cog):
                 self.current_chunk = 0
                 self.delete_infraction_idx = -1
 
-                for i in range(0, 5):
+                for i in range(5):
                     disabled = i >= len(self.chunks[self.current_chunk])
                     button = IdxButton(label=str(i), disabled=disabled, row=0)
                     self.add_item(button)
                     self.idx_buttons.append(button)
 
             @discord.ui.button(label="<", style=discord.ButtonStyle.blurple, row=1)
-            async def back(self, interaction: discord.Interaction, button: discord.ui.Button):
-                """
-                Goes backwards in the pagination. Supports cycling around.
-                """
+            async def back(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
+                """Goes backwards in the pagination. Supports cycling around."""
                 new_chunk = (self.current_chunk - 1) % len(self.chunks)
 
                 self.current_chunk = new_chunk
                 await self.write_msg(interaction)
 
             @discord.ui.button(label=">", style=discord.ButtonStyle.blurple, row=1)
-            async def forward(self, interaction: discord.Interaction, button: discord.ui.Button):
-                """
-                Goes forwards in the pagination. Supports cycling around.
-                """
+            async def forward(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
+                """Goes forwards in the pagination. Supports cycling around."""
                 new_chunk = (self.current_chunk + 1) % len(self.chunks)
 
                 self.current_chunk = new_chunk
                 await self.write_msg(interaction)
 
             @discord.ui.button(label="x", style=discord.ButtonStyle.red, row=1)
-            async def exit(self, interaction: discord.Interaction, button: discord.ui.Button):
+            async def exit(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
                 assert interaction.message
                 await interaction.message.edit(content="Exited!!!", embed=None, view=None, delete_after=5)
                 self.stop()
 
             @discord.ui.button(label="✓", style=discord.ButtonStyle.green, row=1, disabled=True)
-            async def confirm(self, interaction: discord.Interaction, button: discord.ui.Button):
+            async def confirm(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
                 if self.delete_infraction_idx == -1:
                     # This should not happen with correct logic but should
                     # provide insight on an issue if it does
@@ -991,15 +954,12 @@ class Moderation(commands.Cog):
                 self.stop()
 
             def build_embed(self) -> discord.Embed:
-                """
-                Builds the embed to display the current page of infractions.
-                """
-
+                """Builds the embed to display the current page of infractions."""
                 embed = discord.Embed(
                     title=f"{infr_type.name.title()}s for {user.name} ({user.id})",
                     color=discord.Color.magenta(),
                     timestamp=discord.utils.utcnow(),
-                    description=f"Showing atmost 5 warns at a time",
+                    description="Showing atmost 5 warns at a time",
                 )
 
                 embed.set_footer(text=f"Page {self.current_chunk+1}/{len(self.chunks)}")
@@ -1012,15 +972,13 @@ class Moderation(commands.Cog):
 
                 return embed
 
-            async def select_infraction(self, interaction: discord.Interaction, button: discord.ui.Button):
-                """
-                Selects the infraction that corresponds to the button passed.
+            async def select_infraction(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
+                """Selects the infraction that corresponds to the button passed.
 
                 This enables the phase of confirmation or declining the update.
                 All index buttons are disabled and the infraction is shown to
                 the user to confirm the choice.
                 """
-
                 assert button.label
                 self.delete_infraction_idx = int(button.label) + (5 * self.current_chunk)
 
@@ -1041,11 +999,8 @@ class Moderation(commands.Cog):
 
                 await interaction.response.edit_message(embed=embed, view=self)
 
-            async def write_msg(self, interaction: discord.Interaction):
-                """
-                Builds the embed, updates button activation and edits the message.
-                """
-
+            async def write_msg(self, interaction: discord.Interaction) -> None:
+                """Builds the embed, updates button activation and edits the message."""
                 embed = self.build_embed()
 
                 # update disabled buttons
@@ -1054,18 +1009,15 @@ class Moderation(commands.Cog):
 
                 await interaction.response.edit_message(embed=embed, view=self)
 
-            async def on_timeout(self):
-                """
-                Removes the view on timeout.
-                """
-
+            async def on_timeout(self) -> None:
+                """Removes the view on timeout."""
                 await interaction.edit_original_response(view=None)
 
-            async def interaction_check(self, new_interaction):
+            async def interaction_check(self, new_interaction) -> Optional[bool]:
                 if new_interaction.user.id == interaction.user.id:
                     return True
-                else:
-                    await interaction.response.send_message("You can't use that", ephemeral=True)
+                await interaction.response.send_message("You can't use that", ephemeral=True)
+                return None
 
         user_infractions = InfractionList.from_user(user)
 
@@ -1084,7 +1036,7 @@ class Moderation(commands.Cog):
     @app_commands.guilds(Reference.guild)
     @app_commands.default_permissions(manage_messages=True)
     @checks.mod_and_above()
-    async def infractions(self, interaction: discord.Interaction, user: discord.User):
+    async def infractions(self, interaction: discord.Interaction, user: discord.User) -> None:
         """Checks a users infractions.
 
         Parameters
@@ -1095,9 +1047,7 @@ class Moderation(commands.Cog):
         """
 
         class InfButton(discord.ui.Button):
-            """
-            Represents a button to switch pages on an infraction embed view.
-            """
+            """Represents a button to switch pages on an infraction embed view."""
 
             def __init__(
                 self,
@@ -1105,28 +1055,24 @@ class Moderation(commands.Cog):
                 inf_type: InfractionKind,
                 label,
                 **kwargs,
-            ):
+            ) -> None:
                 super().__init__(label=label, **kwargs)
                 self.inf_type = inf_type
                 self.user_infractions = user_infractions
 
-            async def callback(self, interaction):
-                """
-                Switches the embed to display content for the corresponding infraction kind.
-                """
-
+            async def callback(self, interaction) -> None:
+                """Switches the embed to display content for the corresponding infraction kind."""
                 infs_embed = self.user_infractions.get_infractions_of_kind(self.inf_type)
 
                 await interaction.response.edit_message(embed=infs_embed)
 
         class InfractionView(discord.ui.View):
-            """
-            Represents an infraction embed view.
+            """Represents an infraction embed view.
 
             This hosts buttons of the different InfractionKinds to allow switching between the display of each infraction list.
             """
 
-            def __init__(self, user_infractions: InfractionList):
+            def __init__(self, user_infractions: InfractionList) -> None:
                 super().__init__(timeout=60)
 
                 self.user_infractions = user_infractions
@@ -1135,11 +1081,8 @@ class Moderation(commands.Cog):
                     button = InfButton(user_infractions, inf_type=kind, label=kind.name.title() + "s")
                     self.add_item(button)
 
-            async def on_timeout(self):
-                """
-                Removes the view on timeout for visual aid.
-                """
-
+            async def on_timeout(self) -> None:
+                """Removes the view on timeout for visual aid."""
                 await interaction.edit_original_response(view=None)
 
         user_infractions = InfractionList.from_user(user)
@@ -1162,9 +1105,8 @@ class Moderation(commands.Cog):
         user: discord.User,
         infr_type: InfractionKind,
         infr_id: int,
-    ):
-        """
-        Get detailed view of an infraction.
+    ) -> None:
+        """Get detailed view of an infraction.
 
         Parameters
         ----------
@@ -1174,8 +1116,8 @@ class Moderation(commands.Cog):
             Type of infraction "warn", "ban", "mute", "kick"
         infr_id: int
             ID as mentioned as last field of the infraction
-        """
 
+        """
         assert isinstance(interaction.channel, discord.TextChannel)
         user_infractions = InfractionList.from_user(user)
         embed = user_infractions.get_detailed_infraction(infr_type, infr_id)
@@ -1199,9 +1141,8 @@ class Moderation(commands.Cog):
         infr_id: int,
         title: str,
         description: str,
-    ):
-        """
-        Add extra fields to an infractions.
+    ) -> None:
+        """Add extra fields to an infractions.
 
         Parameters
         ----------
@@ -1215,8 +1156,8 @@ class Moderation(commands.Cog):
             Title for the field
         description: str
             Description for the field
-        """
 
+        """
         assert interaction.guild
         assert isinstance(interaction.channel, discord.TextChannel)
 
@@ -1257,20 +1198,19 @@ class Moderation(commands.Cog):
         duration: app_commands.Range[int, 0, 360],
         channel: discord.TextChannel | discord.Thread | None,
         reason: Optional[str],
-    ):
-        """
-        Add or remove slowmode in a channel.
+    ) -> None:
+        """Add or remove slowmode in a channel.
 
         Parameters
-        -----------
+        ----------
         duration: int
             Duration in seconds (0 - 360), 0 to remove slowmode
         channel: discord.TextChannel
             Channel to enable slowmode (default: current channel)
         reason: str
             Reason for the action
-        """
 
+        """
         assert interaction.guild
         assert isinstance(interaction.channel, discord.TextChannel)
 
@@ -1306,8 +1246,7 @@ class Moderation(commands.Cog):
         member: discord.Member,
         command_name: str,
     ):
-        """
-        Blacklists a member from using a command.
+        """Blacklists a member from using a command.
 
         Parameters
         ----------
@@ -1315,8 +1254,8 @@ class Moderation(commands.Cog):
             Member or Member ID
         command_name: str
             command to blacklist
-        """
 
+        """
         command = discord.utils.get(self.bot.commands, name=command_name)
         if command is None:
             return await interaction.response.send_message(f"{command_name} is not a valid command", ephemeral=True)
@@ -1326,11 +1265,12 @@ class Moderation(commands.Cog):
         if interaction.user.top_role > member.top_role:
             blacklist_member(self.bot, member, command)
             await interaction.response.send_message(f"{member.name} can no longer use {command_name}", ephemeral=True)
-        else:
-            await interaction.response.send_message(
-                f"You cannot blacklist someone higher or equal to you smh.",
-                ephemeral=True,
-            )
+            return None
+        await interaction.response.send_message(
+            "You cannot blacklist someone higher or equal to you smh.",
+            ephemeral=True,
+        )
+        return None
 
     @app_commands.command()
     @app_commands.guilds(Reference.guild)
@@ -1342,8 +1282,7 @@ class Moderation(commands.Cog):
         member: discord.Member,
         command_name: str,
     ):
-        """
-        Whitelist a member from using a command.
+        """Whitelist a member from using a command.
 
         Parameters
         ----------
@@ -1351,17 +1290,19 @@ class Moderation(commands.Cog):
             Member or Member ID
         command_name: str
             command to whitelist
+
         """
         command = discord.utils.get(self.bot.commands, name=command_name)
         if command is None:
             return await interaction.response.send_message(f"{command_name} is not a valid command", ephemeral=True)
         if whitelist_member(member, command):
             await interaction.response.send_message(f"{member.name} can now use {command.name}", ephemeral=True)
-        else:
-            await interaction.response.send_message(
-                f"{member.name} is not blacklisted from {command.name}", ephemeral=True
-            )
+            return None
+        await interaction.response.send_message(
+            f"{member.name} is not blacklisted from {command.name}", ephemeral=True
+        )
+        return None
 
 
-async def setup(bot: BirdBot):
+async def setup(bot: BirdBot) -> None:
     await bot.add_cog(Moderation(bot))

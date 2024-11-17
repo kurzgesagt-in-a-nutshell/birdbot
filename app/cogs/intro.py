@@ -10,9 +10,7 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 
-"""
-Intro functionality
-"""
+"""Intro functionality."""
 import asyncio
 import logging
 import re
@@ -30,7 +28,7 @@ _log = logging.getLogger(__name__)
 
 
 class Intro(commands.Cog):
-    def __init__(self, bot: BirdBot):
+    def __init__(self, bot: BirdBot) -> None:
         self.bot = bot
         self.intro_db = self.bot.db.StaffIntros
         self.kgs_guild: typing.Optional[discord.Guild] = None
@@ -43,11 +41,11 @@ class Intro(commands.Cog):
         )
 
     @commands.Cog.listener()
-    async def on_ready(self):
+    async def on_ready(self) -> None:
         _log.info("Loaded")
 
     @commands.Cog.listener()
-    async def on_member_update(self, before: discord.Member, after: discord.Member):
+    async def on_member_update(self, before: discord.Member, after: discord.Member) -> None:
         if before.nick == after.nick:
             return
 
@@ -61,7 +59,7 @@ class Intro(commands.Cog):
             await self.edit_intro(after)
 
     @commands.Cog.listener()
-    async def on_user_update(self, before: discord.User, after: discord.User):
+    async def on_user_update(self, before: discord.User, after: discord.User) -> None:
         self.kgs_guild = self.bot.get_mainguild()
 
         member = self.kgs_guild.get_member(before.id)
@@ -74,10 +72,8 @@ class Intro(commands.Cog):
         async with IntroLock.reorder_lock:
             await self.edit_intro(after)
 
-    async def edit_intro(self, member: discord.Member | discord.User):
-        """
-        Edits the intro with new name or avatar.
-        """
+    async def edit_intro(self, member: discord.Member | discord.User) -> None:
+        """Edits the intro with new name or avatar."""
         intro = self.intro_db.find_one({"_id": member.id})
         if not intro:
             return
@@ -96,32 +92,25 @@ class Intro(commands.Cog):
 
     @app_commands.command()
     @checks.role_and_above(Reference.Roles.subreddit_mod)
-    async def intro(self, interaction: discord.Interaction):
-        """
-        Staff intro command, create or edit an intro.
-        """
+    async def intro(self, interaction: discord.Interaction) -> None:
+        """Staff intro command, create or edit an intro."""
         oldIntro = self.intro_db.find_one({"_id": interaction.user.id})
         await interaction.response.send_modal(IntroModal(oldIntro=oldIntro, bot=self.bot))  # type: ignore
 
     @app_commands.command()
     @checks.admin_and_above()
-    async def intro_reorg(self, interaction: discord.Interaction):
-        """
-        Admin intro command, reorganizes all intros.
+    async def intro_reorg(self, interaction: discord.Interaction) -> None:
+        """Admin intro command, reorganizes all intros.
 
         Delete demoted entries in mongo, purge the channel and send all up to date intro embeds.
         """
-
         await interaction.response.send_message("Will be done!", ephemeral=True)
 
         def make_intro_embed(member: discord.Member, introDoc) -> discord.Embed:
             description = f'**{introDoc["tz_text"]}**\n\n' + introDoc["bio"]
             role = member.top_role
             footer_name = "Kurzgesagt Official" if role.id == Reference.Roles.kgsmaintenance else role.name
-            if role.icon:
-                footer_icon = role.icon.url
-            else:
-                footer_icon = None
+            footer_icon = role.icon.url if role.icon else None
 
             embed = discord.Embed(description=description, color=member.color)
             embed.set_author(
@@ -167,16 +156,14 @@ class Intro(commands.Cog):
             self.intro_db.update_one({"_id": member.id}, {"$set": {"message_id": msg.id}})
 
 
-async def setup(bot: BirdBot):
+async def setup(bot: BirdBot) -> None:
     await bot.add_cog(Intro(bot))
 
 
 class IntroModal(discord.ui.Modal):
-    """
-    The modal UI for intro commands.
-    """
+    """The modal UI for intro commands."""
 
-    def __init__(self, oldIntro: dict, bot: BirdBot):
+    def __init__(self, oldIntro: dict, bot: BirdBot) -> None:
         super().__init__(title="Introduce yourself!")
 
         self.oldIntro = oldIntro
@@ -227,20 +214,13 @@ class IntroModal(discord.ui.Modal):
         self.add_item(self.image)
 
     def get_footer(self, role: discord.Role) -> typing.Tuple[str, str | None]:
-        """
-        Get the role name and icon for the footer.
-        """
+        """Get the role name and icon for the footer."""
         footer_name = "Kurzgesagt Official" if role.id == Reference.Roles.kgsmaintenance else role.name
-        if role.icon:
-            footer_icon = role.icon.url
-        else:
-            footer_icon = None
+        footer_icon = role.icon.url if role.icon else None
         return footer_name, footer_icon
 
     def create_embed(self) -> discord.Embed:
-        """
-        Make and return a new intro embed.
-        """
+        """Make and return a new intro embed."""
         assert self.user
         description = f"**{self.timezone_txt}**\n\n" + self.bio_txt
 
@@ -257,9 +237,7 @@ class IntroModal(discord.ui.Modal):
         return embed
 
     def add_emojis(self, text: str) -> str:
-        """
-        Add server emojis, because modals don't support them.
-        """
+        """Add server emojis, because modals don't support them."""
         # make a simplified version of emojis
         serverEmojis: dict = {}
         for emoji in self.kgs_guild.emojis:
@@ -273,10 +251,8 @@ class IntroModal(discord.ui.Modal):
             text,
         )
 
-    async def reorder_demotion(self, oldmessage: discord.Message):
-        """
-        Reorder the intros when user was demoted.
-        """
+    async def reorder_demotion(self, oldmessage: discord.Message) -> None:
+        """Reorder the intros when user was demoted."""
         # make a list of messages that have to be edited (doc, msg)
         # limit = self.intro_db.count_documents({})
         assert self.user
@@ -324,10 +300,8 @@ class IntroModal(discord.ui.Modal):
         await msg.edit(embed=embed)
         self.intro_db.update_one({"_id": self.user.id}, {"$set": {"message_id": msg.id}})
 
-    async def reorder_promotion(self, oldmessage: discord.Message):
-        """
-        Reorder intros when user was promoted.
-        """
+    async def reorder_promotion(self, oldmessage: discord.Message) -> None:
+        """Reorder intros when user was promoted."""
         # make a list of messages that have to be edited (doc, msg)
         # limit = self.intro_db.count_documents({})
         assert self.user
@@ -374,10 +348,8 @@ class IntroModal(discord.ui.Modal):
         await msg.edit(embed=embed)
         self.intro_db.update_one({"_id": self.user.id}, {"$set": {"message_id": msg.id}})
 
-    async def reorder_add(self):
-        """
-        Reorder intros when a new intro was added.
-        """
+    async def reorder_add(self) -> None:
+        """Reorder intros when a new intro was added."""
         # make a list of messages that have to be edited (doc, msg)
         # limit = self.intro_db.count_documents({})
         assert self.user
@@ -429,10 +401,8 @@ class IntroModal(discord.ui.Modal):
         self.intro_db.update_one({"_id": self.user.id}, {"$set": {"message_id": message.id}})
         await message.edit(embed=newembed)
 
-    async def on_submit(self, interaction: discord.Interaction):
-        """
-        Most of the intro command logic is here.
-        """
+    async def on_submit(self, interaction: discord.Interaction) -> None:
+        """Most of the intro command logic is here."""
         oldIntroMessage = None  # if we're adding a new intro this will remain None
 
         self.user = self.kgs_guild.get_member(interaction.user.id)
@@ -444,7 +414,7 @@ class IntroModal(discord.ui.Modal):
         self.bio_txt = self.add_emojis(self.bio.value)
         self.image_txt = self.image.value
 
-        async def edit_intro(oldIntroMessage: discord.Message):
+        async def edit_intro(oldIntroMessage: discord.Message) -> None:
             embed = oldIntroMessage.embeds[0]
             await interaction.response.send_message("Your intro will be edited!", ephemeral=True)
             # check if the user's top role has changed (promotion/demotion)

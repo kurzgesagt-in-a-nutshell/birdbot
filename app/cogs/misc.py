@@ -10,9 +10,7 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 
-"""
-Misc bot functionality
-"""
+"""Misc bot functionality."""
 import logging
 import re
 
@@ -29,23 +27,22 @@ _log = logging.getLogger(__name__)
 
 
 class Misc(commands.Cog):
-    def __init__(self, bot: BirdBot):
+    def __init__(self, bot: BirdBot) -> None:
         self.bot = bot
 
     @app_commands.command()
     @app_commands.guilds(Reference.guild)
     @app_commands.checks.cooldown(1, 10)
     @checks.bot_commands_only()
-    async def big_emote(self, interaction: discord.Interaction, emoji: str):
-        """
-        Get image for server emote.
+    async def big_emote(self, interaction: discord.Interaction, emoji: str) -> None:
+        """Get image for server emote.
 
         Parameters
         ----------
         emoji: str
             Discord Emoji (only use in #bot-commands)
+
         """
-        print(len(demoji.findall_list(emoji)))
         if len(demoji.findall_list(emoji)) == 1:
             code = (
                 str(emoji.encode("unicode-escape"))
@@ -54,7 +51,6 @@ class Misc(commands.Cog):
                 .replace("'", "")
                 .replace("u", "-")[2:]
             )
-            print(code)
             name = demoji.replace_with_desc(emoji).replace(" ", "-").replace(":", "").replace("_", "-")
             await interaction.response.send_message(
                 "https://em-content.zobj.net/thumbs/160/twitter/322/" + name + "_" + code + ".png"
@@ -66,12 +62,11 @@ class Misc(commands.Cog):
                 emoji = str(re.findall(r"<a:\w+:(\d{17,19})>", str(emoji))[0]) + ".gif"
                 await interaction.response.send_message("https://cdn.discordapp.com/emojis/" + str(emoji))
             elif re.match(r"<:\w+:(\d{17,19})>", str(emoji)):
-                print("png")
                 emoji = str(re.findall(r"<:\w+:(\d{17,19})>", str(emoji))[0]) + ".png"
                 await interaction.response.send_message("https://cdn.discordapp.com/emojis/" + str(emoji))
             else:
                 await interaction.response.send_message("Could not process this emoji")
 
 
-async def setup(bot: BirdBot):
+async def setup(bot: BirdBot) -> None:
     await bot.add_cog(Misc(bot))

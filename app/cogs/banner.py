@@ -10,8 +10,7 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 
-"""
-banner.py
+"""banner.py.
 
 The banners that are stored within the mongo database are the image urls that
 are sent in the banners_and_topics channel. If the reference to these are
@@ -19,11 +18,11 @@ removed then the urls are lost.
 
 The banner suggest design goes as following:
 User runs command to suggest photo. In this process an embed is created to
-be displayed to the qualified users to accept or deny the suggested photo. A 
+be displayed to the qualified users to accept or deny the suggested photo. A
 view is attached to the embed's message to enable the user input of accepting
 or denying the photo. This view is a global view and therefore can be used
 multiple times with different messages and listens to all active references of
-it. 
+it.
 
 Once the qualified user selects the action, the view is removed, the embed is
 updated to display the chocie made and the banner is added or not.
@@ -54,11 +53,9 @@ _log = logging.getLogger(__name__)
 
 
 class BannerView(dui.View):
-    """
-    The static view that is used for handling the controls of accepting or denying a banner suggestion.
-    """
+    """The static view that is used for handling the controls of accepting or denying a banner suggestion."""
 
-    def __init__(self, banner_db, banners: list, accept_id: str, deny_id: str):
+    def __init__(self, banner_db, banners: list, accept_id: str, deny_id: str) -> None:
         super().__init__(timeout=None)
 
         self.banner_db: Collection = banner_db
@@ -68,22 +65,14 @@ class BannerView(dui.View):
         self._deny.custom_id = deny_id
 
     def filename_from_url(self, url: str | None):
-        """
-        Get the image filename from the discord link.
+        """Get the image filename from the discord link.
 
         Only works for cdn.discordapp.com links.
         """
-        if url:
-            filename = url.split("/")[6].split("?")[0]
-        else:
-            filename = "banner.png"
-        return filename
+        return url.split("/")[6].split("?")[0] if url else "banner.png"
 
     async def interaction_check(self, interaction: Interaction) -> bool:
-        """
-        Checks that the interactor is a moderator+ for the defined guild.
-        """
-
+        """Checks that the interactor is a moderator+ for the defined guild."""
         guild = discord.utils.get(interaction.client.guilds, id=Reference.guild)
 
         assert guild
@@ -99,9 +88,8 @@ class BannerView(dui.View):
         style=discord.ButtonStyle.blurple,
         emoji=discord.PartialEmoji.from_str(Reference.Emoji.PartialString.kgsYes),
     )
-    async def _accept(self, interaction: Interaction, button: dui.Button):
-        """
-        Accepts the banner and removes the view from the message.
+    async def _accept(self, interaction: Interaction, button: dui.Button) -> None:
+        """Accepts the banner and removes the view from the message.
 
         Changes the embed to indicate it was accepted and by who.
         """
@@ -141,9 +129,8 @@ class BannerView(dui.View):
         style=discord.ButtonStyle.danger,
         emoji=discord.PartialEmoji.from_str(Reference.Emoji.PartialString.kgsNo),
     )
-    async def _deny(self, interaction: Interaction, button: dui.Button):
-        """
-        Denies the banner and removes the view from the message.
+    async def _deny(self, interaction: Interaction, button: dui.Button) -> None:
+        """Denies the banner and removes the view from the message.
 
         Changes the embed to indicate it was denied and by who.
         """
@@ -164,7 +151,7 @@ class BannerView(dui.View):
 
 
 class Banner(commands.Cog):
-    def __init__(self, bot: BirdBot):
+    def __init__(self, bot: BirdBot) -> None:
         self.bot = bot
 
         self.index = 0
@@ -172,7 +159,7 @@ class Banner(commands.Cog):
 
     async def cog_load(self) -> None:
         banners_find = self.banner_db.find_one({"name": "banners_id"})
-        if banners_find == None:
+        if banners_find is None:
             raise CollectionInvalid
         self.banners: typing.List = banners_find["banners"]
         self.banner_cycle = BannerCycle(self.banners)
@@ -186,12 +173,12 @@ class Banner(commands.Cog):
 
         self.bot.add_view(self.BANNER_VIEW)
 
-    async def cog_unload(self):
+    async def cog_unload(self) -> None:
         self.timed_banner_rotation.cancel()
         self.BANNER_VIEW.stop()
 
     @commands.Cog.listener()
-    async def on_ready(self):
+    async def on_ready(self) -> None:
         _log.info("Loaded")
 
     banner_commands = app_commands.Group(
@@ -202,28 +189,26 @@ class Banner(commands.Cog):
     )
 
     async def verify_url(self, url: str, byte: bool = False):
-        """
-        Returns url or bytes after verifyng size and content_type.
+        """Returns url or bytes after verifyng size and content_type.
 
         Returns bytes object if byte is set to True.
         """
         try:
-            async with aiohttp.ClientSession() as session:
-                async with session.get(url) as response:
-                    if response.content_type.startswith("image"):
-                        banner = await response.content.read()
+            async with aiohttp.ClientSession() as session, session.get(url) as response:
+                if response.content_type.startswith("image"):
+                    banner = await response.content.read()
 
-                        if len(banner) / 1024 < 10240:
-                            if byte:
-                                return banner, response.content_type.split("/")[1]
-                            return url, response.content_type.split("/")[1]
-                        raise errors.InvalidParameterError(
-                            content=f"Image must be less than 10240kb, yours is {int(len(banner)/1024)}kb."
-                        )
-
+                    if len(banner) / 1024 < 10240:
+                        if byte:
+                            return banner, response.content_type.split("/")[1]
+                        return url, response.content_type.split("/")[1]
                     raise errors.InvalidParameterError(
-                        content=f"Link must be for an image file not {response.content_type}."
+                        content=f"Image must be less than 10240kb, yours is {int(len(banner)/1024)}kb."
                     )
+
+                raise errors.InvalidParameterError(
+                    content=f"Link must be for an image file not {response.content_type}."
+                )
 
         except aiohttp.InvalidURL:
             raise errors.InvalidParameterError(content="The link provided is not valid")
@@ -235,9 +220,8 @@ class Banner(commands.Cog):
         interaction: discord.Interaction,
         image: typing.Optional[discord.Attachment] = None,
         url: typing.Optional[str] = None,
-    ):
-        """
-        Add or upload a banner.
+    ) -> None:
+        """Add or upload a banner.
 
         Parameters
         ----------
@@ -245,8 +229,8 @@ class Banner(commands.Cog):
             An image file
         url: str
             URL or Link of an image
-        """
 
+        """
         await interaction.response.defer(ephemeral=True)
 
         automated_channel = self.bot._get_channel(Reference.Channels.banners_and_topics)
@@ -288,8 +272,7 @@ class Banner(commands.Cog):
         duration: typing.Optional[str] = None,
         stop: typing.Optional[bool] = False,
     ):
-        """
-        Change server banner rotation duration or stop the rotation.
+        """Change server banner rotation duration or stop the rotation.
 
         Parameters
         ----------
@@ -297,8 +280,8 @@ class Banner(commands.Cog):
             Time (example: 3hr or 1d)
         stop: bool
             Weather to stop banner rotation
-        """
 
+        """
         if not stop and not duration:
             return await interaction.response.send_message(
                 "Please provide value for atleast one argument.", ephemeral=True
@@ -320,6 +303,7 @@ class Banner(commands.Cog):
         self.timed_banner_rotation.change_interval(seconds=time)
 
         await interaction.response.send_message(f"Banners are rotating every {get_time_string(time)}.", ephemeral=True)
+        return None
 
     @app_commands.command()
     @app_commands.default_permissions(send_messages=True)
@@ -330,9 +314,8 @@ class Banner(commands.Cog):
         interaction: discord.Interaction,
         image: typing.Optional[discord.Attachment] = None,
         url: typing.Optional[str] = None,
-    ):
-        """
-        Suggest an image from kurzgesagt for server banner.
+    ) -> None:
+        """Suggest an image from kurzgesagt for server banner.
 
         Parameters
         ----------
@@ -340,6 +323,7 @@ class Banner(commands.Cog):
             An image file
         url: str
             URL or Link of an image
+
         """
         await interaction.response.defer(ephemeral=True)
 
@@ -379,9 +363,8 @@ class Banner(commands.Cog):
         image: typing.Optional[discord.Attachment] = None,
         url: typing.Optional[str] = None,
         queue: typing.Optional[bool] = False,
-    ):
-        """
-        Change the current server banner.
+    ) -> None:
+        """Change the current server banner.
 
         Parameters
         ----------
@@ -391,6 +374,7 @@ class Banner(commands.Cog):
             URL or Link of an image
         queue: bool
             Queue this banner next in rotation
+
         """
         url_: str | bytes
         if url:
@@ -413,10 +397,8 @@ class Banner(commands.Cog):
             await interaction.response.send_message("Banner queued next", ephemeral=True)
 
     @tasks.loop()
-    async def timed_banner_rotation(self):
-        """
-        Task that rotates the banners.
-        """
+    async def timed_banner_rotation(self) -> None:
+        """Task that rotates the banners."""
         guild = self.bot.get_mainguild()
         cur_banner_id = next(self.banner_cycle)
         _log.debug(f"{cur_banner_id}")
@@ -432,17 +414,16 @@ class Banner(commands.Cog):
                 elif message.attachments:
                     url = message.attachments[0].url
                 if url is None:
-                    raise commands.BadArgument()
+                    raise commands.BadArgument
             else:
                 url = cur_banner_id
-            async with aiohttp.ClientSession() as session:
-                async with session.get(url) as response:
-                    banner = await response.content.read()
-                    await guild.edit(banner=banner)
-                    _log.debug(f"Rotated Banner {url}")
+            async with aiohttp.ClientSession() as session, session.get(url) as response:
+                banner = await response.content.read()
+                await guild.edit(banner=banner)
+                _log.debug(f"Rotated Banner {url}")
         except:
             _log.exception("Failed rotating banner")
 
 
-async def setup(bot: BirdBot):
+async def setup(bot: BirdBot) -> None:
     await bot.add_cog(Banner(bot))

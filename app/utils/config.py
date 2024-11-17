@@ -10,9 +10,7 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 
-"""
-This module contains the configuration settings for guild level items such as roles, channels and emojis.
-"""
+"""This module contains the configuration settings for guild level items such as roles, channels and emojis."""
 
 import discord
 
@@ -119,10 +117,7 @@ class Reference:
 
         @staticmethod
         async def fetch(client: discord.Client, ref: int) -> discord.Emoji | None:
-            """
-            When given a client object and an emoji id, returns a discord.Emoji
-            """
-
+            """When given a client object and an emoji id, returns a discord.Emoji."""
             if em := client.get_emoji(ref) is not None:
                 return em  # type: ignore
             return None
@@ -155,9 +150,7 @@ class GiveawayBias:
 
 
 class ExclusiveColors:
-    """
-    Contains a list of selectable colored roles that can be provided to a user if they have the role that unlocks the color.
-    """
+    """Contains a list of selectable colored roles that can be provided to a user if they have the role that unlocks the color."""
 
     exclusive_colors = {
         "Patreon Orange": {
