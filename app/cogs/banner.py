@@ -38,7 +38,6 @@ import discord
 from discord import Interaction, app_commands
 from discord import ui as dui
 from discord.ext import commands, tasks
-from discord.interactions import Interaction
 from pymongo.errors import CollectionInvalid
 
 from app.birdbot import BirdBot
@@ -53,9 +52,13 @@ _log = logging.getLogger(__name__)
 
 
 class BannerView(dui.View):
-    """The static view that is used for handling the controls of accepting or denying a banner suggestion."""
+    """A static view.
 
-    def __init__(self, banner_db, banners: list, accept_id: str, deny_id: str) -> None:
+    This view is placed on all banner suggestions to be approved or denied. It is
+    removed once a button is interacted with successfully.
+    """
+
+    def __init__(self, banner_db: Collection, banners: list, accept_id: str, deny_id: str) -> None:
         super().__init__(timeout=None)
 
         self.banner_db: Collection = banner_db
@@ -64,7 +67,7 @@ class BannerView(dui.View):
         self._accept.custom_id = accept_id
         self._deny.custom_id = deny_id
 
-    def filename_from_url(self, url: str | None):
+    def filename_from_url(self, url: str | None) -> str:
         """Get the image filename from the discord link.
 
         Only works for cdn.discordapp.com links.
@@ -72,12 +75,11 @@ class BannerView(dui.View):
         return url.split("/")[6].split("?")[0] if url else "banner.png"
 
     async def interaction_check(self, interaction: Interaction) -> bool:
-        """Checks that the interactor is a moderator+ for the defined guild."""
+        """Check that the interactor is a moderator+ for the defined master guild."""
         guild = discord.utils.get(interaction.client.guilds, id=Reference.guild)
 
-        assert guild
-        assert interaction.guild
-        assert isinstance(interaction.user, discord.Member)
+        if guild is None or interaction.guild is None or not isinstance(interaction.user, discord.Member):
+            return False # TODO: set valid exception
 
         mod_role = guild.get_role(Reference.Roles.moderator)
 
@@ -89,12 +91,13 @@ class BannerView(dui.View):
         emoji=discord.PartialEmoji.from_str(Reference.Emoji.PartialString.kgsYes),
     )
     async def _accept(self, interaction: Interaction, button: dui.Button) -> None:
-        """Accepts the banner and removes the view from the message.
+        """Accept the banner and remove the view from the message.
 
-        Changes the embed to indicate it was accepted and by who.
+        Alter the embed to indicate who accepted the submission, and add the
+        banner embed message to the database if accepted.
         """
-        message = interaction.message
-        assert message
+        if (message := interaction.message) is None:
+            return # TODO: set valid exception
 
         embed = message.embeds[0]
         url = embed.image.url
@@ -113,7 +116,10 @@ class BannerView(dui.View):
         BannerCycle().queue_last(message.id)
 
         await interaction.response.edit_message(embed=embed, view=None)
-        assert embed.author.name
+
+        if embed.author.name is None:
+            return # TODO: set valid exception
+
         try:
             match = re.match(r".*\(([0-9]+)\)$", embed.author.name)
             if match:
@@ -122,6 +128,7 @@ class BannerView(dui.View):
                 await suggester.send(f"Your banner suggestion was accepted {url}")
 
         except discord.Forbidden:
+            # This occurs when the user cannot be DMed for any reason.
             pass
 
     @dui.button(
@@ -130,12 +137,12 @@ class BannerView(dui.View):
         emoji=discord.PartialEmoji.from_str(Reference.Emoji.PartialString.kgsNo),
     )
     async def _deny(self, interaction: Interaction, button: dui.Button) -> None:
-        """Denies the banner and removes the view from the message.
+        """Deny the banner and remove the view from the message.
 
-        Changes the embed to indicate it was denied and by who.
+        Alter the embed to indicate who denied the submission.
         """
-        message = interaction.message
-        assert message
+        if (message := interaction.message) is None:
+            return # TODO: set valid exception
         embed = message.embeds[0]
 
         embed.title = f"Denied by {interaction.user.name}"
@@ -151,6 +158,8 @@ class BannerView(dui.View):
 
 
 class Banner(commands.Cog):
+    """Module to handle banners in the master server."""
+
     def __init__(self, bot: BirdBot) -> None:
         self.bot = bot
 
@@ -158,6 +167,11 @@ class Banner(commands.Cog):
         self.banner_db: Collection = self.bot.db.Banners
 
     async def cog_load(self) -> None:
+        """Load the cog.
+
+        Load in the banners and initiate the cycle. Create the view and begin
+        listening for interactions.
+        """
         banners_find = self.banner_db.find_one({"name": "banners_id"})
         if banners_find is None:
             raise CollectionInvalid
@@ -174,12 +188,12 @@ class Banner(commands.Cog):
         self.bot.add_view(self.BANNER_VIEW)
 
     async def cog_unload(self) -> None:
+        """Unload the cog.
+
+        Cancel the banner rotation and stop the banner view listening.
+        """
         self.timed_banner_rotation.cancel()
         self.BANNER_VIEW.stop()
-
-    @commands.Cog.listener()
-    async def on_ready(self) -> None:
-        _log.info("Loaded")
 
     banner_commands = app_commands.Group(
         name="banner",
@@ -188,10 +202,11 @@ class Banner(commands.Cog):
         default_permissions=discord.permissions.Permissions(manage_messages=True),
     )
 
-    async def verify_url(self, url: str, byte: bool = False):
-        """Returns url or bytes after verifyng size and content_type.
+    async def verify_url(self, url: str, byte: bool = False) -> typing.Tuple[str | bytes, str]:
+        """Return a url or bytes after verifyng size and content_type.
 
         Returns bytes object if byte is set to True.
+        TODO: Check the validity and use of this function. Should this be split in two.
         """
         try:
             async with aiohttp.ClientSession() as session, session.get(url) as response:
@@ -210,8 +225,8 @@ class Banner(commands.Cog):
                     content=f"Link must be for an image file not {response.content_type}."
                 )
 
-        except aiohttp.InvalidURL:
-            raise errors.InvalidParameterError(content="The link provided is not valid")
+        except aiohttp.InvalidURL as err:
+            raise errors.InvalidParameterError(content="The link provided is not valid") from err
 
     @banner_commands.command()
     @checks.mod_and_above()
@@ -221,16 +236,7 @@ class Banner(commands.Cog):
         image: typing.Optional[discord.Attachment] = None,
         url: typing.Optional[str] = None,
     ) -> None:
-        """Add or upload a banner.
-
-        Parameters
-        ----------
-        image: discord.Attachment
-            An image file
-        url: str
-            URL or Link of an image
-
-        """
+        """Add or upload a banner to the rotation + database."""
         await interaction.response.defer(ephemeral=True)
 
         automated_channel = self.bot._get_channel(Reference.Channels.banners_and_topics)
@@ -243,7 +249,7 @@ class Banner(commands.Cog):
         else:
             raise errors.InvalidParameterError(content="An image file or url is required")
 
-        file = discord.File(io.BytesIO(url_), filename=f"banner.{img_type}")  # type: ignore
+        file = discord.File(io.BytesIO(url_), filename=f"banner.{img_type}") # type: ignore[reportArgumentType]
 
         embed = discord.Embed(title="Banner Added", color=discord.Color.green())
         embed.set_author(
@@ -271,39 +277,37 @@ class Banner(commands.Cog):
         interaction: discord.Interaction,
         duration: typing.Optional[str] = None,
         stop: typing.Optional[bool] = False,
-    ):
-        """Change server banner rotation duration or stop the rotation.
-
-        Parameters
-        ----------
-        duration: str
-            Time (example: 3hr or 1d)
-        stop: bool
-            Weather to stop banner rotation
-
-        """
+    ) -> None:
+        """Change server banner rotation duration or stop the rotation."""
         if not stop and not duration:
-            return await interaction.response.send_message(
+            await interaction.response.send_message(
                 "Please provide value for atleast one argument.", ephemeral=True
             )
+            return # TODO: change to valid exception
 
         if stop:
             self.timed_banner_rotation.cancel()
-            return await interaction.response.send_message("Banner rotation stopped.", ephemeral=True)
+            await interaction.response.send_message("Banner rotation stopped.", ephemeral=True)
+            return
 
-        assert duration
+        if duration is None:
+            return # TODO: set valid exception
+
         time, extra = calc_time([duration, ""])
         if time == 0:
-            return await interaction.response.send_message("Wrong time syntax.", ephemeral=True)
+            await interaction.response.send_message("Wrong time syntax.", ephemeral=True)
+            return
 
         if not self.timed_banner_rotation.is_running():
             self.timed_banner_rotation.start()
 
-        assert time
+        if time is None:
+            return # TODO:  set valid exception
+
         self.timed_banner_rotation.change_interval(seconds=time)
 
         await interaction.response.send_message(f"Banners are rotating every {get_time_string(time)}.", ephemeral=True)
-        return None
+        return
 
     @app_commands.command()
     @app_commands.default_permissions(send_messages=True)
@@ -315,16 +319,7 @@ class Banner(commands.Cog):
         image: typing.Optional[discord.Attachment] = None,
         url: typing.Optional[str] = None,
     ) -> None:
-        """Suggest an image from kurzgesagt for server banner.
-
-        Parameters
-        ----------
-        image: discord.Attachment
-            An image file
-        url: str
-            URL or Link of an image
-
-        """
+        """Suggest an image from kurzgesagt for server banner."""
         await interaction.response.defer(ephemeral=True)
 
         automated_channel = self.bot._get_channel(Reference.Channels.banners_and_topics)
@@ -341,7 +336,7 @@ class Banner(commands.Cog):
         else:
             raise errors.InvalidParameterError(content="An image file or url is required")
 
-        file = discord.File(io.BytesIO(url_), filename=f"banner.{img_type}")  # type: ignore
+        file = discord.File(io.BytesIO(url_), filename=f"banner.{img_type}")  # type: ignore[reportArgumentType]
 
         embed = discord.Embed(color=0xC8A2C8)
         embed.set_author(
@@ -364,18 +359,7 @@ class Banner(commands.Cog):
         url: typing.Optional[str] = None,
         queue: typing.Optional[bool] = False,
     ) -> None:
-        """Change the current server banner.
-
-        Parameters
-        ----------
-        image: discord.Attachment
-            An image file
-        url: str
-            URL or Link of an image
-        queue: bool
-            Queue this banner next in rotation
-
-        """
+        """Change the current server banner."""
         url_: str | bytes
         if url:
             url_, img_type = await self.verify_url(url=url, byte=not queue)
@@ -426,4 +410,5 @@ class Banner(commands.Cog):
 
 
 async def setup(bot: BirdBot) -> None:
+    """Add the cog to the bot."""
     await bot.add_cog(Banner(bot))

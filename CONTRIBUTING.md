@@ -9,9 +9,13 @@ PR's that do not meet these standards will be denied.
 - Use dedicated, well-named variables and functions so the purpose is clearly discernible. 
 - Use doc-strings in each file, class and function to detail the purpose of the code.
 - For complex logic, use comments to allow a reviewer or future dev to easily understand what the code does.
-- We use `black` and `isort` to enforce formatting standards.
+- We use `ruff` to enforce formatting standards. Our selected standards can be found in the `pyproject.toml` file.
 
-If a function that contains a doc-string or comments is edited, make sure they are updated to correctly describe the code.
+### Documentation
+
+As enforced by ruff, we document all of our functions and classes. Within our commands, we only require a simple sentence summary for the end user to read. Our internal functions/methods/classes require more in-depth documentation. 
+
+If a function that contains a doc-string or comments is edited, make sure it is updated to correctly describe the code.
 
 ---
 ## Branch Etiquette
@@ -29,7 +33,7 @@ Branch out from staging into the appropriate naming scheme. If your branch is a 
 
 Do your work. Often times this can consist over a longer period. In this time, changes could have been made to staging. To avoid conflicts with your branch, it is recommended to `git fetch` often and keep your branch up to date with our base branches.
 
-Once you are finished with the work on your branch and ready to merge, again clarify that your branch is caught up with staging. You will push your branch to the remote repository to then create a pull request into staging. 
+Once you are finished with the work on your branch and ready to merge, again clarify that your branch is caught up with staging and master. You will push your branch to the remote repository to then create a pull request into staging.
 
 #### Hotfixes
 Hotfixes are limited to major security issues and critical bugs. These will be primarily worked on by our BirdBot Devs. Hotfixes ignore the staging process and branch off of and right back into master. They are named in the scheme of `hotfix/issue-####` or `hotfix/name`

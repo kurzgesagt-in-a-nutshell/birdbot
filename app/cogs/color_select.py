@@ -10,9 +10,9 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 
-"""This cog defines ColorSelect, which is responsible for handling the removal and addition
-of exclusive colored roles. It also listens when a member no longer has the role that provides an
-exclusive color.
+"""Defines ColorSelect which is responsible for handling the removal and addition of exclusive colored roles.
+
+It also listens when a member no longer has the role that provides an exclusive color.
 """
 import logging
 from typing import List, Literal
@@ -30,13 +30,11 @@ _log = logging.getLogger(__name__)
 
 
 class ExclusiveColorTransformer(app_commands.Transformer):
-    """A transformer that filters through member roles to determine what exclusive
-    colored roles can be added.
-    """
+    """A transformer that filters through member roles to determine what exclusive colored roles can be added."""
 
     @staticmethod
     def selectable_roles(member: discord.Member) -> List[discord.Role]:
-        """Returns a list of selectable roles from the member's found roles."""
+        """Return a list of selectable roles from the member's found roles."""
         # iterate through all of the exclusive colors
         # if the member has an unlocker for an exclusive role, add it to the
         # result list to be returned
@@ -51,7 +49,10 @@ class ExclusiveColorTransformer(app_commands.Transformer):
         return result
 
     async def transform(self, interaction: Interaction, value: str) -> discord.Role:
-        """Transforms the string value into an exclusive colored role."""
+        """Transform the string value into an exclusive colored role.
+
+        The value is autocompleted but it can be a dummy value.
+        """
         if not isinstance(interaction.user, discord.Member):
             raise errors.InvalidInvocationError(content="This command must be ran in a server")
 
@@ -67,7 +68,7 @@ class ExclusiveColorTransformer(app_commands.Transformer):
         )
 
     async def autocomplete(self, interaction: Interaction, value: str) -> List[Choice[str]]:
-        """Returns a list of chocies (exclusive colored roles) for the member to pick from.
+        """Return a list of chocies (exclusive colored roles) for the member to pick from.
 
         This method only returns roles that they have access to.
         """
@@ -80,8 +81,9 @@ class ExclusiveColorTransformer(app_commands.Transformer):
 
 
 class ColorSelect(commands.Cog):
-    """Handles the removal of exclusive colored roles when a member no longer has the role that proves the color.
+    """Handles the user selectable exclusive colored roles.
 
+    Removes exclusive colored roles when a member no longer has the role that proves the color.
     Allows users to add or remove a colored role based on their current roles.
     """
 
@@ -90,7 +92,7 @@ class ColorSelect(commands.Cog):
 
     @commands.Cog.listener()
     async def on_member_update(self, before: discord.Member, after: discord.Member) -> None:
-        """Checks if the provided members roles are different.
+        """Check if the provided members roles are different.
 
         If so, check if the exclusive colored roles applied, if any, are valid.
         """
@@ -125,7 +127,7 @@ class ColorSelect(commands.Cog):
         action: Literal["add", "remove"],
         color: app_commands.Transform[discord.Role, ExclusiveColorTransformer],
     ) -> None:
-        """Allows the member to select a role to apply to themselves based on the colored configuration.
+        """Allow the member to select a role to apply to themselves based on the colored configuration.
 
         They can select to add or remove the role and only roles they have access to apply are provided in autocomplete.
         """
@@ -148,4 +150,5 @@ class ColorSelect(commands.Cog):
 
 
 async def setup(bot: BirdBot) -> None:
+    """Add the cog to the bot."""
     await bot.add_cog(ColorSelect(bot))
