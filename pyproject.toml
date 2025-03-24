@@ -20,7 +20,7 @@ requests = "^2.32.3"
 
 [tool.poetry.group.dev.dependencies]
 pyright = "^1.1.389"
-ruff = "^0.7.4"
+ruff = "^0.8.2"
 
 [tool.pyright]
 pythonVersion = "3.11"  
@@ -60,8 +60,9 @@ select = [
 ]
 
 ignore = [
-    "ANN101", "ANN401", 
+    "ANN401", 
     "D104", "D107", "D203", "D213",
+    "ISC001",
     "N818",
     "RUF006"
 ]

@@ -492,7 +492,5 @@ class BannerCycle(Cycle):
     """The iterator class for banners."""
 
 
-
 class TopicCycle(Cycle):
     """The iterator class for topics."""
-

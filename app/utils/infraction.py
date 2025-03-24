@@ -432,7 +432,6 @@ class InfractionList:
             "ban": [inf.to_dict() for inf in self._bans],
         }
 
-
     def update(self) -> None:
         """Converts the data stored in the class into a dict and updates the database."""
         _log.debug("updating infraction info for %s", self._user_id)

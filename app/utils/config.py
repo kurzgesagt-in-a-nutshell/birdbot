@@ -32,7 +32,6 @@ class Reference:
     bannsystembot = 697374082509045800
 
     class Roles:
-
         moderator = 414092550031278091
         administrator = 414029841101225985
         kgsofficial = 414954904382210049

@@ -367,15 +367,15 @@ class Topic(commands.Cog):
         msg = await interaction.edit_original_response(embed=embed)
 
         emote_list = [
-            "\u0031\uFE0F\u20E3",
-            "\u0032\uFE0F\u20E3",
-            "\u0033\uFE0F\u20E3",
-            "\u0034\uFE0F\u20E3",
-            "\u0035\uFE0F\u20E3",
-            "\u0036\uFE0F\u20E3",
-            "\u0037\uFE0F\u20E3",
-            "\u0038\uFE0F\u20E3",
-            "\u0039\uFE0F\u20E3",
+            "\u0031\ufe0f\u20e3",
+            "\u0032\ufe0f\u20e3",
+            "\u0033\ufe0f\u20e3",
+            "\u0034\ufe0f\u20e3",
+            "\u0035\ufe0f\u20e3",
+            "\u0036\ufe0f\u20e3",
+            "\u0037\ufe0f\u20e3",
+            "\u0038\ufe0f\u20e3",
+            "\u0039\ufe0f\u20e3",
         ]
 
         for emote in emote_list[: len(t)]:

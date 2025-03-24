@@ -22,6 +22,7 @@ Commands include:
 - `sync_apps`: Sync slash commands
 - `clear_apps`: Clear slash commands.
 """
+
 import asyncio
 import io
 import logging

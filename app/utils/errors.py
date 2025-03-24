@@ -39,7 +39,6 @@ class InternalError(Exception):
         return Embed(title=self.title, color=self.color, description=self.content.format(info=info))
 
 
-
 class CheckFailure(InternalError, app_commands.CheckFailure, commands.CheckFailure):
     """InternalError and CheckFailure for both slash and message commands."""
 
@@ -72,10 +71,8 @@ class InvalidFunctionUsage(InternalError):
     """Usually raised when self.bot custom functions are used incorrectly."""
 
 
-
 class TransformerError(InternalError, app_commands.TransformerError):
     """Error for discord type conversion."""
 
     title = "Conversion Error"
     content = f"{InternalError.content}"
-

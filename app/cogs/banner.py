@@ -79,7 +79,7 @@ class BannerView(dui.View):
         guild = discord.utils.get(interaction.client.guilds, id=Reference.guild)
 
         if guild is None or interaction.guild is None or not isinstance(interaction.user, discord.Member):
-            return False # TODO: set valid exception
+            return False  # TODO: set valid exception
 
         mod_role = guild.get_role(Reference.Roles.moderator)
 
@@ -97,7 +97,7 @@ class BannerView(dui.View):
         banner embed message to the database if accepted.
         """
         if (message := interaction.message) is None:
-            return # TODO: set valid exception
+            return  # TODO: set valid exception
 
         embed = message.embeds[0]
         url = embed.image.url
@@ -118,7 +118,7 @@ class BannerView(dui.View):
         await interaction.response.edit_message(embed=embed, view=None)
 
         if embed.author.name is None:
-            return # TODO: set valid exception
+            return  # TODO: set valid exception
 
         try:
             match = re.match(r".*\(([0-9]+)\)$", embed.author.name)
@@ -142,7 +142,7 @@ class BannerView(dui.View):
         Alter the embed to indicate who denied the submission.
         """
         if (message := interaction.message) is None:
-            return # TODO: set valid exception
+            return  # TODO: set valid exception
         embed = message.embeds[0]
 
         embed.title = f"Denied by {interaction.user.name}"
@@ -249,7 +249,7 @@ class Banner(commands.Cog):
         else:
             raise errors.InvalidParameterError(content="An image file or url is required")
 
-        file = discord.File(io.BytesIO(url_), filename=f"banner.{img_type}") # type: ignore[reportArgumentType]
+        file = discord.File(io.BytesIO(url_), filename=f"banner.{img_type}")  # type: ignore[reportArgumentType]
 
         embed = discord.Embed(title="Banner Added", color=discord.Color.green())
         embed.set_author(
@@ -280,10 +280,8 @@ class Banner(commands.Cog):
     ) -> None:
         """Change server banner rotation duration or stop the rotation."""
         if not stop and not duration:
-            await interaction.response.send_message(
-                "Please provide value for atleast one argument.", ephemeral=True
-            )
-            return # TODO: change to valid exception
+            await interaction.response.send_message("Please provide value for atleast one argument.", ephemeral=True)
+            return  # TODO: change to valid exception
 
         if stop:
             self.timed_banner_rotation.cancel()
@@ -291,7 +289,7 @@ class Banner(commands.Cog):
             return
 
         if duration is None:
-            return # TODO: set valid exception
+            return  # TODO: set valid exception
 
         time, extra = calc_time([duration, ""])
         if time == 0:
@@ -302,7 +300,7 @@ class Banner(commands.Cog):
             self.timed_banner_rotation.start()
 
         if time is None:
-            return # TODO:  set valid exception
+            return  # TODO:  set valid exception
 
         self.timed_banner_rotation.change_interval(seconds=time)
 

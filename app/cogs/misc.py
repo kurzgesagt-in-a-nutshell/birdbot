@@ -11,6 +11,7 @@
 # GNU General Public License for more details.
 
 """Misc bot functionality."""
+
 import logging
 import re
 

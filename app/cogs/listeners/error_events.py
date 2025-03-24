@@ -87,7 +87,7 @@ class Errors(commands.Cog):
             )
             description = (
                 f"An [**unhandled exception**]({ctx.message.jump_url}) occured in <#{ctx.message.channel.id}> when "
-                f"running the **{ctx.command.name}** command.```\n{err}```" # type: ignore[reportOptionalMemberAccess]
+                f"running the **{ctx.command.name}** command.```\n{err}```"  # type: ignore[reportOptionalMemberAccess]
             )
             embed = discord.Embed(title="Unhandled Exception", description=description, color=0xFF0000)
             file = discord.File(io.BytesIO(traceback_txt.encode()), filename="traceback.txt")

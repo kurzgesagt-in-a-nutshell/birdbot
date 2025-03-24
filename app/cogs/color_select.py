@@ -14,6 +14,7 @@
 
 It also listens when a member no longer has the role that provides an exclusive color.
 """
+
 import logging
 from typing import List, Literal
 
@@ -41,7 +42,6 @@ class ExclusiveColorTransformer(app_commands.Transformer):
         result = []
 
         for role in member.roles:
-
             for _, value in ExclusiveColors.exclusive_colors.items():
                 if role.id in value["unlockers"]:
                     result.append(member.guild.get_role(value["id"]))
@@ -136,7 +136,6 @@ class ColorSelect(commands.Cog):
             or interaction.guild is None
             or interaction.guild.id != Reference.guild
         ):
-
             raise errors.InvalidInvocationError(content="This command must be ran in the kurzgesagt guild")
 
         if action == "add":

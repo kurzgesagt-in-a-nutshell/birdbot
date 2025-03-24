@@ -10,8 +10,9 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 
-"""This is the entrypoint used to start the bot.
-It provides command-line arguments to specify which instance of the bot to run (beta, alpha, or main).
+"""Entrypoint used to start the bot.
+
+Provides command-line arguments to specify which instance of the bot to run (beta, alpha, or main).
 It loads the necessary environment variables from a .env file and starts the bot with the specified token.
 
 Usage:
@@ -37,6 +38,7 @@ parser.add_argument("-a", "--alpha", help="Run the alpha instance of the bot", a
 
 
 async def main() -> None:
+    """Run the bot in the desired context."""
     with logging_context():
         logger = logging.getLogger(__name__)
         dotenv.load_dotenv()

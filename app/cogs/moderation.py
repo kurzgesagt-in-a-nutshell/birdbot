@@ -1298,9 +1298,7 @@ class Moderation(commands.Cog):
         if whitelist_member(member, command):
             await interaction.response.send_message(f"{member.name} can now use {command.name}", ephemeral=True)
             return None
-        await interaction.response.send_message(
-            f"{member.name} is not blacklisted from {command.name}", ephemeral=True
-        )
+        await interaction.response.send_message(f"{member.name} is not blacklisted from {command.name}", ephemeral=True)
         return None
 
 
