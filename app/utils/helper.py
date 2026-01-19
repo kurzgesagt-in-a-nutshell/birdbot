@@ -22,6 +22,7 @@ from collections import deque
 from typing import List, Tuple
 
 import discord
+from discord import app_commands
 from discord.ext import commands
 
 from app.birdbot import BirdBot
@@ -425,8 +426,8 @@ def get_active_staff(bot: discord.Client) -> str:
     return mention_str
 
 
-# This is useless due to slash migration
-def blacklist_member(bot: commands.AutoShardedBot, member: discord.Member, command: commands.Command):
+# Stores blacklist entry in CommandBlacklist collection (used by global slash enforcement in BirdTree)
+def blacklist_member(bot: commands.AutoShardedBot, member: discord.Member, command: app_commands.Command | app_commands.Group):
     """
     Blacklists a member from a command.
     """
@@ -439,8 +440,8 @@ def blacklist_member(bot: commands.AutoShardedBot, member: discord.Member, comma
     cmd_blacklist_db.update_one({"command_name": command.name}, {"$push": {"blacklisted_users": member.id}})
 
 
-# This is useless due to slash migration
-def whitelist_member(member: discord.Member, command: commands.Command) -> bool:
+# Removes blacklist entry from CommandBlacklist collection (used by global slash enforcement in BirdTree)
+def whitelist_member(member: discord.Member, command: app_commands.Command | app_commands.Group) -> bool:
     """
     Whitelist a member from a command and return True
     If user is not blacklisted return False
@@ -451,6 +452,17 @@ def whitelist_member(member: discord.Member, command: commands.Command) -> bool:
 
     cmd_blacklist_db.update_one({"command_name": command.name}, {"$pull": {"blacklisted_users": member.id}})
     return True
+
+
+def is_user_blacklisted_for_command(user_id: int, command_name: str) -> bool:
+    """
+    Check if a user is blacklisted from using a specific command name.
+    Returns True if blacklisted, False otherwise.
+    """
+    cmd = cmd_blacklist_db.find_one({"command_name": command_name})
+    if cmd is None:
+        return False
+    return user_id in cmd.get("blacklisted_users", [])
 
 
 def is_public_channel(channel: discord.TextChannel | discord.Thread) -> bool:

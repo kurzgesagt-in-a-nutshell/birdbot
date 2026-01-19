@@ -249,8 +249,8 @@ class Moderation(commands.Cog):
 
     @app_commands.command()
     @app_commands.guilds(Reference.guild)
-    @checks.mod_and_above()
     @app_commands.default_permissions(manage_messages=True)
+    @checks.mod_and_above()
     @app_commands.rename(_from="from")
     async def clean(
         self,
@@ -1317,7 +1317,7 @@ class Moderation(commands.Cog):
             command to blacklist
         """
 
-        command = discord.utils.get(self.bot.commands, name=command_name)
+        command = self.bot.tree.get_command(command_name)
         if command is None:
             return await interaction.response.send_message(f"{command_name} is not a valid command", ephemeral=True)
 
@@ -1352,7 +1352,7 @@ class Moderation(commands.Cog):
         command_name: str
             command to whitelist
         """
-        command = discord.utils.get(self.bot.commands, name=command_name)
+        command = self.bot.tree.get_command(command_name)
         if command is None:
             return await interaction.response.send_message(f"{command_name} is not a valid command", ephemeral=True)
         if whitelist_member(member, command):
