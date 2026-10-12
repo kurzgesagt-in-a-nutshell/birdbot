@@ -190,7 +190,6 @@ class BirdBot(commands.AutoShardedBot):
             messages=True,
             reactions=True,
             message_content=True,
-            presences=True,
         )
         max_messages = 1000
         if args.beta:
