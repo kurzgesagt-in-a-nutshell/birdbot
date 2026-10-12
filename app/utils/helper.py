@@ -33,7 +33,7 @@ timed_actions_db = BirdBot.db.TimedAction
 cmd_blacklist_db = BirdBot.db.CommandBlacklist
 
 
-logger = logging.getLogger("Helper")
+_log = logging.getLogger(__name__)
 
 
 # commands from third party bots

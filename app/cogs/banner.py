@@ -50,7 +50,7 @@ from app.utils.helper import BannerCycle, calc_time, get_time_string
 if typing.TYPE_CHECKING:
     from pymongo.collection import Collection
 
-logger = logging.getLogger(__name__)
+_log = logging.getLogger(__name__)
 
 
 class BannerView(dui.View):
@@ -165,7 +165,6 @@ class BannerView(dui.View):
 
 class Banner(commands.Cog):
     def __init__(self, bot: BirdBot):
-        self.logger = logging.getLogger("Banners")
         self.bot = bot
 
         self.index = 0
@@ -193,7 +192,7 @@ class Banner(commands.Cog):
 
     @commands.Cog.listener()
     async def on_ready(self):
-        self.logger.info("loaded Banners")
+        _log.info("Loaded")
 
     banner_commands = app_commands.Group(
         name="banner",
@@ -405,11 +404,11 @@ class Banner(commands.Cog):
 
         if not queue:
             assert isinstance(url_, bytes)
-            self.logger.info(f"Changed Banner to {url_}")
+            _log.debug(f"Changed Banner to {url_}")
             await self.bot.get_mainguild().edit(banner=url_)
             await interaction.response.send_message("Server banner changed!", ephemeral=True)
         else:
-            logger.info("Added banner to be queued next")
+            _log.debug("Added banner to be queued next")
             BannerCycle().queue_next(url_)
             await interaction.response.send_message("Banner queued next", ephemeral=True)
 
@@ -420,7 +419,7 @@ class Banner(commands.Cog):
         """
         guild = self.bot.get_mainguild()
         cur_banner_id = next(self.banner_cycle)
-        self.logger.info(f"{cur_banner_id}")
+        _log.debug(f"{cur_banner_id}")
         automated_channel = self.bot._get_channel(Reference.Channels.banners_and_topics)
         try:
             # check if banner is a message id (int) or url (str)
@@ -440,9 +439,9 @@ class Banner(commands.Cog):
                 async with session.get(url) as response:
                     banner = await response.content.read()
                     await guild.edit(banner=banner)
-                    self.logger.info(f"Rotated Banner {url}")
+                    _log.debug(f"Rotated Banner {url}")
         except:
-            logger.exception("Failed rotating banner")
+            _log.exception("Failed rotating banner")
 
 
 async def setup(bot: BirdBot):

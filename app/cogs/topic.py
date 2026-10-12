@@ -24,6 +24,7 @@ import asyncio
 import logging
 import re
 import typing
+from random import randint
 from typing import TYPE_CHECKING
 
 import discord
@@ -40,6 +41,8 @@ from app.utils.helper import TopicCycle
 
 if TYPE_CHECKING:
     from pymongo.collection import Collection
+
+_log = logging.getLogger(__name__)
 
 
 class TopicEditorModal(dui.Modal):
@@ -195,7 +198,6 @@ class TopicAcceptorView(dui.View):
 
 class Topic(commands.Cog):
     def __init__(self, bot: BirdBot):
-        self.logger = logging.getLogger("Fun")
         self.bot = bot
 
         self.topics_db: Collection = self.bot.db.Topics
@@ -206,7 +208,7 @@ class Topic(commands.Cog):
 
     @commands.Cog.listener()
     async def on_ready(self):
-        self.logger.info("loaded Topic")
+        _log.info("Loaded")
 
     async def cog_load(self):
         self.TOPIC_ACCEPT = f"TOPIC-ACCEPT-{self.bot._user().id}"
@@ -246,7 +248,18 @@ class Topic(commands.Cog):
         Fetches a random topic.
         """
         topic = next(self.topics_cycle)
-        await interaction.response.send_message(f"{topic}")
+        view = discord.utils.MISSING
+
+        if randint(0, 100) > 70:  # roughly 30% chance
+            view = dui.View()
+            button = dui.Button(
+                disabled=True,
+                style=discord.ButtonStyle.gray,
+                label=f"Seeing duplicate topics? Suggest new ones with /{self.topic_suggest.qualified_name}!",
+            )
+            view.add_item(button)
+
+        await interaction.response.send_message(f"{topic}", view=view)
 
     @topics_command.command()
     @checks.mod_and_above()

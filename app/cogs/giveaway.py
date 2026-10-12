@@ -28,17 +28,18 @@ from app.utils import checks
 from app.utils.config import GiveawayBias, Reference
 from app.utils.helper import calc_time
 
+_log = logging.getLogger(__name__)
+
 
 class Giveaway(commands.Cog):
     def __init__(self, bot: BirdBot):
-        self.logger = logging.getLogger("Giveaway")
         self.bot = bot
         self.active_giveaways = {}
         self.giveaway_db = self.bot.db.Giveaways
 
     @commands.Cog.listener()
     async def on_ready(self):
-        self.logger.info("loaded Giveaway")
+        _log.info("Loaded")
 
     def cog_load(self):
         for giveaway in self.giveaway_db.find({"giveaway_over": False, "giveaway_cancelled": False}):
@@ -79,7 +80,7 @@ class Giveaway(commands.Cog):
                 return
 
             members: typing.List[discord.Member] = []
-            self.logger.debug("Fetching reactions from users")
+            _log.debug("Fetching reactions from users")
             guild = message.guild
             assert guild
             for reaction in message.reactions:
@@ -90,10 +91,10 @@ class Giveaway(commands.Cog):
                         if member:
                             members.append(member)
 
-            self.logger.debug("Fetched users")
+            _log.debug("Fetched users")
 
             if members != []:
-                self.logger.debug("Calculating weights")
+                _log.debug("Calculating weights")
                 weights = []
                 for member in members:
                     bias = GiveawayBias.default
@@ -115,12 +116,12 @@ class Giveaway(commands.Cog):
                 if len(members) < size:
                     size = len(members)
 
-                self.logger.debug("Choosing winner(s)")
+                _log.debug("Choosing winner(s)")
                 users: list = members  # why is type hinting
                 choice = np.random.choice(users, size=size, replace=False, p=prob)
                 winners = []
                 winnerids = ", ".join([str(i.id) for i in choice])
-                self.logger.debug(f"Fetched winner(s): {winnerids}")
+                _log.debug(f"Fetched winner(s): {winnerids}")
                 for winner in choice:
                     await message.reply(f"{winner.mention} won **{giveaway['prize']}**!")
                     winners.append(f"> {winner.mention}")
@@ -130,7 +131,7 @@ class Giveaway(commands.Cog):
                 winners = "> Nobody participated :("
                 winnerids = ""
 
-            self.logger.debug("Sending new embed")
+            _log.debug("Sending new embed")
 
             time = giveaway["end_time"]
 
@@ -159,21 +160,21 @@ class Giveaway(commands.Cog):
             await message.edit(embed=embed)
 
         else:
-            self.logger.debug("Message not found")
-            self.logger.debug("Deleting giveaway")
+            _log.debug("Message not found")
+            _log.debug("Deleting giveaway")
             del self.active_giveaways[giveaway["message_id"]]
             self.giveaway_db.update_one(giveaway, {"$set": {"giveaway_cancelled": True}})
             return
 
         if giveaway["message_id"] in self.active_giveaways:
-            self.logger.debug("Deleting giveaway")
+            _log.debug("Deleting giveaway")
             del self.active_giveaways[giveaway["message_id"]]
             self.giveaway_db.update_one(
                 giveaway,
                 {"$set": {"giveaway_over": True, "winners": winnerids}},
             )
         else:
-            self.logger.debug("Appending old winners and updating giveaway")
+            _log.debug("Appending old winners and updating giveaway")
             winnerids += f", old: {giveaway['winners']}"
             self.giveaway_db.update_one(giveaway, {"$set": {"winners": winnerids}})
 
@@ -187,8 +188,8 @@ class Giveaway(commands.Cog):
         templist = list(self.active_giveaways)
         firstgiveaway = {}
 
-        self.logger.debug("Checking for giveaways")
-        self.logger.debug(f"{len(templist)} giveaways found: {templist}")
+        _log.debug("Checking for giveaways")
+        _log.debug(f"{len(templist)} giveaways found: {templist}")
         for i in templist:
             giveaway = self.active_giveaways[i]
             if giveaway["end_time"] - discord.utils.utcnow() <= timedelta():
@@ -199,11 +200,11 @@ class Giveaway(commands.Cog):
                 if giveaway["end_time"] < firstgiveaway["end_time"]:
                     firstgiveaway = giveaway
 
-        self.logger.debug(f"Checking for first giveaway, {firstgiveaway}")
+        _log.debug(f"Checking for first giveaway, {firstgiveaway}")
         if firstgiveaway:
-            self.logger.debug(f"Sleeping for: {firstgiveaway['end_time']}")
+            _log.debug(f"Sleeping for: {firstgiveaway['end_time']}")
             await discord.utils.sleep_until(firstgiveaway["end_time"])
-            self.logger.debug(f"Choosing winner for {firstgiveaway}")
+            _log.debug(f"Choosing winner for {firstgiveaway}")
             await self.choose_winner(firstgiveaway)
         else:
             self.giveaway_task.cancel()
@@ -438,7 +439,7 @@ class Giveaway(commands.Cog):
                     value=f"[Giveaway](https://discord.com/channels/414027124836532234/{giveaway['channel_id']}/{giveaway['message_id']}) ends in <t:{time}:R>",
                 )
             except Exception as e:
-                self.logger.exception(e)
+                _log.exception(str(e))
                 return await interaction.response.send_message("Error!!! Take a screenshot.", ephemeral=True)
 
         await interaction.response.send_message(embed=embed)
